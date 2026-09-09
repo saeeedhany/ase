@@ -151,6 +151,15 @@ Nothing left on the original phase list — remaining work is the
 tracked follow-ups below (mostly: wiring the plugin host and LSP client
 into the GUI) and the still-open license decision.
 
+## Post-v1 fixes
+
+- **Caret drift** (user-reported): the caret and syntax-highlight run
+  positions were both computed as `column * m_charWidth`, an assumed
+  fixed-pitch approximation that drifted visibly from the actually
+  rendered text on long lines. Fixed by measuring actual rendered text
+  width (`QFontMetrics::horizontalAdvance`) instead of assuming one.
+  See [ADR 0013](adr/0013-caret-drift-fix.md).
+
 ## Explicit non-goals for v1
 
 - No built-in terminal emulator (defer to external terminal or a later plugin).

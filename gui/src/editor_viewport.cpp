@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
-#include <vector>
 
 #include <QFileInfo>
 #include <QFontDatabase>
@@ -176,6 +175,10 @@ size_t EditorViewport::offsetForLineColumn(int line, int column) const {
 size_t EditorViewport::offsetForPoint(const QPoint &pos) const {
     int line = m_scrollLine + pos.y() / std::max(1, m_lineHeight);
     line = std::clamp(line, 0, static_cast<int>(m_lineStarts.size()) - 1);
+    /* Approximate on purpose: unlike the caret (docs/adr/0013), a click a
+     * character off on a long or styled line is a minor miss, not a
+     * growing visible bug — not worth an O(line length) exact-measurement
+     * search on every click. */
     int col = pos.x() / std::max(1, m_charWidth);
     size_t offset = offsetForLineColumn(line, col);
 
@@ -219,8 +222,11 @@ void EditorViewport::paintEvent(QPaintEvent *) {
         for (size_t cursor : m_cursors) {
             int line = lineForOffset(cursor);
             if (line >= firstLine && line < lastLine) {
+                int lineStart = m_lineStarts[line];
+                int lineEnd =
+                    (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
                 int col = columnForOffset(cursor, line);
-                int x = col * m_charWidth;
+                int x = xForColumn(lineStart, lineEnd, col);
                 int y = (line - firstLine) * m_lineHeight;
                 painter.fillRect(QRect(x, y, 2, m_lineHeight), caretColor);
             }
@@ -228,18 +234,13 @@ void EditorViewport::paintEvent(QPaintEvent *) {
     }
 }
 
-/* Splits [start, end) into same-capture runs and draws each with its own
- * style. All captures render in m_textColor's hue — only opacity/weight/style
- * vary — so the query's captures don't need to be mutually exclusive in
- * general, just non-overlapping in practice for the leaf-level nodes
- * c_highlights.scm captures. See docs/adr/0007, decision 1. */
-void EditorViewport::drawLine(QPainter &painter, int start, int end, int y) {
+/* One entry per byte in [start, end), naming which capture (if any) that
+ * byte belongs to — shared by drawLine and xForColumn so both segment a
+ * line into runs identically. */
+QVector<AseHighlightCapture> EditorViewport::capturesForLine(int start, int end) const {
     int lineLen = end - start;
-    if (lineLen <= 0) {
-        return;
-    }
+    QVector<AseHighlightCapture> captures(std::max(0, lineLen), ASE_HL_NONE);
 
-    std::vector<AseHighlightCapture> captures(static_cast<size_t>(lineLen), ASE_HL_NONE);
     for (const AseHighlightSpan &span : m_highlights) {
         int spanStart = static_cast<int>(span.start);
         int spanEnd = static_cast<int>(span.end);
@@ -249,36 +250,88 @@ void EditorViewport::drawLine(QPainter &painter, int start, int end, int y) {
         int clampedStart = std::max(spanStart, start);
         int clampedEnd = std::min(spanEnd, end);
         for (int i = clampedStart; i < clampedEnd; ++i) {
-            captures[static_cast<size_t>(i - start)] = span.capture;
+            captures[i - start] = span.capture;
         }
     }
+    return captures;
+}
+
+/* Splits [start, end) into same-capture runs and draws each with its own
+ * style. All captures render in m_textColor's hue — only opacity/weight/style
+ * vary — so the query's captures don't need to be mutually exclusive in
+ * general, just non-overlapping in practice for the leaf-level nodes
+ * c_highlights.scm captures. See docs/adr/0007, decision 1.
+ *
+ * Each run's on-screen advance is that run's own *measured* rendered
+ * width (QFontMetrics::horizontalAdvance on the actual run text, with
+ * that run's actual font), not runLen * m_charWidth — see docs/adr/0013
+ * for why the latter drifts visibly on longer lines. */
+void EditorViewport::drawLine(QPainter &painter, int start, int end, int y) {
+    int lineLen = end - start;
+    if (lineLen <= 0) {
+        return;
+    }
+
+    QVector<AseHighlightCapture> captures = capturesForLine(start, end);
 
     int x = 0;
     int runStart = 0;
     for (int i = 1; i <= lineLen; ++i) {
-        if (i < lineLen && captures[static_cast<size_t>(i)] == captures[static_cast<size_t>(runStart)]) {
+        if (i < lineLen && captures[i] == captures[runStart]) {
             continue;
         }
         int runLen = i - runStart;
         QString text = QString::fromUtf8(m_cache.constData() + start + runStart, runLen);
-        applyCaptureStyle(painter, captures[static_cast<size_t>(runStart)]);
+        QFont runFont = fontForCapture(captures[runStart]);
+        painter.setFont(runFont);
+        painter.setPen(colorForCapture(captures[runStart]));
         painter.drawText(QRect(x, y, width() - x, m_lineHeight), Qt::AlignLeft | Qt::AlignVCenter, text);
-        x += runLen * m_charWidth;
+        x += QFontMetrics(runFont).horizontalAdvance(text);
         runStart = i;
     }
 }
 
-void EditorViewport::applyCaptureStyle(QPainter &painter, AseHighlightCapture capture) {
-    QFont font = m_font;
-    QColor color = m_textColor;
+/* Same run segmentation as drawLine, stopping at `column` instead of the
+ * end of the line — so the caret lands exactly where drawLine actually
+ * painted the character before it, even mid-run or mid-bold/italic-run.
+ * See docs/adr/0013. */
+int EditorViewport::xForColumn(int lineStart, int lineEnd, int column) const {
+    int lineLen = lineEnd - lineStart;
+    column = std::clamp(column, 0, lineLen);
+    if (column == 0) {
+        return 0;
+    }
 
-    switch (capture) {
-    case ASE_HL_KEYWORD:
+    QVector<AseHighlightCapture> captures = capturesForLine(lineStart, lineEnd);
+
+    int x = 0;
+    int runStart = 0;
+    for (int i = 1; i <= column; ++i) {
+        if (i < column && captures[i] == captures[runStart]) {
+            continue;
+        }
+        int runLen = i - runStart;
+        QString text = QString::fromUtf8(m_cache.constData() + lineStart + runStart, runLen);
+        QFont runFont = fontForCapture(captures[runStart]);
+        x += QFontMetrics(runFont).horizontalAdvance(text);
+        runStart = i;
+    }
+    return x;
+}
+
+QFont EditorViewport::fontForCapture(AseHighlightCapture capture) const {
+    QFont font = m_font;
+    if (capture == ASE_HL_KEYWORD) {
         font.setBold(true);
-        break;
-    case ASE_HL_TYPE:
+    } else if (capture == ASE_HL_TYPE) {
         font.setItalic(true);
-        break;
+    }
+    return font;
+}
+
+QColor EditorViewport::colorForCapture(AseHighlightCapture capture) const {
+    QColor color = m_textColor;
+    switch (capture) {
     case ASE_HL_STRING:
     case ASE_HL_NUMBER:
         color.setAlpha(200);
@@ -289,13 +342,13 @@ void EditorViewport::applyCaptureStyle(QPainter &painter, AseHighlightCapture ca
          * text. See docs/adr/0012, decision 4. */
         color.setAlpha(145);
         break;
+    case ASE_HL_KEYWORD:
+    case ASE_HL_TYPE:
     case ASE_HL_NONE:
     default:
         break;
     }
-
-    painter.setFont(font);
-    painter.setPen(color);
+    return color;
 }
 
 void EditorViewport::keyPressEvent(QKeyEvent *event) {

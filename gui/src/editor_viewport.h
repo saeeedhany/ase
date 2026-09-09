@@ -43,7 +43,14 @@ private:
     void checkConfigReload();
     void refreshCache();
     void drawLine(QPainter &painter, int start, int end, int y);
-    void applyCaptureStyle(QPainter &painter, AseHighlightCapture capture);
+    QFont fontForCapture(AseHighlightCapture capture) const;
+    QColor colorForCapture(AseHighlightCapture capture) const;
+    QVector<AseHighlightCapture> capturesForLine(int start, int end) const;
+    /* Exact pixel x of `column` within [lineStart, lineEnd), measured the
+     * same way drawLine actually renders (per-run, with that run's real
+     * font) rather than assumed via column * m_charWidth — see
+     * docs/adr/0013's caret-drift fix. */
+    int xForColumn(int lineStart, int lineEnd, int column) const;
 
     /* All of these act on every cursor in m_cursors (a single cursor is
      * just the size-1 case) — see docs/adr/0012, decision 1, for why
