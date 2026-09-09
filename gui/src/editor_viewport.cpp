@@ -54,9 +54,10 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     m_blinkTimer = new QTimer(this);
     connect(m_blinkTimer, &QTimer::timeout, this, [this]() {
         m_caretTick++;
+        m_idleTicks++;
         if (m_animationsEnabled) {
             update();
-        } else if (m_caretTick % 17 == 0) { /* ~500ms at this 30ms tick */
+        } else if (m_idleTicks % 17 == 0) { /* ~500ms idle at this 30ms tick — see docs/adr/0016 */
             m_caretVisible = !m_caretVisible;
             update();
         }
@@ -302,9 +303,17 @@ void EditorViewport::paintEvent(QPaintEvent *) {
  * target. Called from the top of paintEvent — see docs/adr/0015. */
 void EditorViewport::updateAnimation() {
     if (!m_animationsEnabled) {
+        /* Snap every rendered value to its exact target — NOT clear
+         * m_renderedCaretPos. paintEvent only draws carets when that
+         * array is non-empty, so clearing it here (an earlier bug)
+         * meant the caret never rendered at all with the default
+         * animations = false config. */
         m_renderedScrollLine = m_scrollLine;
         m_renderedScrollX = m_scrollX;
-        m_renderedCaretPos.clear();
+        m_renderedCaretPos.resize(m_cursors.size());
+        for (int i = 0; i < m_cursors.size(); ++i) {
+            m_renderedCaretPos[i] = caretTargetFor(m_cursors[i]);
+        }
         return;
     }
 
@@ -344,6 +353,11 @@ QPointF EditorViewport::caretTargetFor(size_t cursor) const {
     double x = gutterWidth() - m_renderedScrollX + xForColumn(lineStart, lineEnd, col);
     double y = (line - m_renderedScrollLine) * m_lineHeight;
     return QPointF(x, y);
+}
+
+void EditorViewport::resetCaretBlink() {
+    m_caretVisible = true;
+    m_idleTicks = 0;
 }
 
 /* One entry per byte in [start, end), naming which capture (if any) that
@@ -483,7 +497,7 @@ QColor EditorViewport::colorForCapture(AseHighlightCapture capture) const {
 }
 
 void EditorViewport::keyPressEvent(QKeyEvent *event) {
-    m_caretVisible = true;
+    resetCaretBlink();
 
     if (event->key() == Qt::Key_Up) {
         moveCursorVertically(-1);
@@ -585,7 +599,7 @@ void EditorViewport::mousePressEvent(QMouseEvent *event) {
     }
 
     m_desiredColumn = -1;
-    m_caretVisible = true;
+    resetCaretBlink();
     ensureCursorVisible();
     update();
 }

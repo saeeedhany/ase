@@ -70,6 +70,12 @@ private:
      * space, given the *current* (possibly still-easing) scroll
      * position — not its final settled position. */
     QPointF caretTargetFor(size_t cursor) const;
+    /* Forces the caret solid-visible and restarts the idle countdown
+     * to the next hard-blink toggle — call on every cursor-moving
+     * action (key or mouse) so the caret never blinks away mid-use and
+     * resumes a normal blink only once activity actually stops. See
+     * docs/adr/0016. */
+    void resetCaretBlink();
 
     /* All of these act on every cursor in m_cursors (a single cursor is
      * just the size-1 case) — see docs/adr/0012, decision 1, for why
@@ -142,7 +148,10 @@ private:
 
     QTimer *m_blinkTimer;
     bool m_caretVisible = true;
-    int m_caretTick = 0;
+    int m_caretTick = 0;   /* drives the animated fade phase only — see docs/adr/0016 */
+    int m_idleTicks = 0;   /* ticks since the last cursor-moving action; drives the
+                             * hard blink's toggle, kept separate from m_caretTick so
+                             * activity doesn't restart the fade's phase too */
 };
 
 #endif /* ASE_EDITOR_VIEWPORT_H */

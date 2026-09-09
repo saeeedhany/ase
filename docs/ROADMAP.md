@@ -159,6 +159,17 @@ into the GUI) and the still-open license decision.
   rendered text on long lines. Fixed by measuring actual rendered text
   width (`QFontMetrics::horizontalAdvance`) instead of assuming one.
   See [ADR 0013](adr/0013-caret-drift-fix.md).
+- **Invisible caret** (user-reported, immediately after Phase 9): the
+  disabled-animation branch of `updateAnimation` cleared
+  `m_renderedCaretPos` every frame instead of populating it, and
+  `paintEvent` only draws carets when that array is non-empty — so the
+  caret never rendered at all under the default `animations = false`
+  config. Fixed alongside a requested blink-mechanism change: the hard
+  blink now resets on every cursor-moving action (stays solid visible
+  throughout active use) and only resumes toggling ~500ms after input
+  actually stops, via a separate idle-tick counter so it can't
+  interfere with the animated fade's own phase. See
+  [ADR 0016](adr/0016-caret-visibility-fix.md).
 
 ## Post-v1 "feel alive" initiative
 
