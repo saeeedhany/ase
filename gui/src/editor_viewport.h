@@ -52,6 +52,12 @@ private:
      * docs/adr/0013's caret-drift fix. */
     int xForColumn(int lineStart, int lineEnd, int column) const;
 
+    /* 0 when line numbers are off; otherwise measured (not assumed —
+     * see docs/adr/0014) from the widest line-number string actually
+     * needed. */
+    int gutterWidth() const;
+    QString gutterLabelForLine(int line, int cursorLine) const;
+
     /* All of these act on every cursor in m_cursors (a single cursor is
      * just the size-1 case) — see docs/adr/0012, decision 1, for why
      * processing highest-offset-first needs no cross-cursor bookkeeping.
@@ -106,7 +112,9 @@ private:
 
     QVector<size_t> m_cursors {0}; /* always non-empty, sorted ascending, de-duplicated */
     int m_scrollLine = 0;
+    int m_scrollX = 0; /* leftmost visible pixel, not column — see docs/adr/0014 */
     int m_desiredColumn = -1; /* sticky column — single-cursor mode only, see docs/adr/0012 */
+    QString m_lineNumberMode = QStringLiteral("absolute"); /* "off" / "absolute" / "relative" */
 
     QFont m_font;
     int m_lineHeight = 0;

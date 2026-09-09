@@ -16,6 +16,8 @@
 namespace {
 constexpr int kCaretAnimationTicks = 34; /* ~1020ms period at the 30ms tick below */
 constexpr double kTwoPi = 6.283185307179586;
+constexpr int kCaretWidth = 2;
+constexpr int kGutterPadding = 8; /* on each side of the line-number text */
 
 bool isUtf8ContinuationByte(char byte) {
     return (static_cast<unsigned char>(byte) & 0xC0) == 0x80;
@@ -113,6 +115,17 @@ void EditorViewport::applyConfig() {
     const char *animationsStr = ase_config_get_string(m_config, "animations");
     m_animationsEnabled = animationsStr != nullptr &&
                           QString::fromUtf8(animationsStr).compare(QLatin1String("true"), Qt::CaseInsensitive) == 0;
+
+    /* On by default, unlike animations — see docs/adr/0014, decision 4.
+     * An unrecognized value falls back to "absolute" rather than
+     * treating it as an error — a bad config value should never break
+     * the editor. */
+    const char *lineNumbersStr = ase_config_get_string(m_config, "line_numbers");
+    m_lineNumberMode = lineNumbersStr != nullptr ? QString::fromUtf8(lineNumbersStr).toLower()
+                                                  : QStringLiteral("absolute");
+    if (m_lineNumberMode != QLatin1String("off") && m_lineNumberMode != QLatin1String("relative")) {
+        m_lineNumberMode = QStringLiteral("absolute");
+    }
 }
 
 void EditorViewport::checkConfigReload() {
@@ -178,8 +191,11 @@ size_t EditorViewport::offsetForPoint(const QPoint &pos) const {
     /* Approximate on purpose: unlike the caret (docs/adr/0013), a click a
      * character off on a long or styled line is a minor miss, not a
      * growing visible bug — not worth an O(line length) exact-measurement
-     * search on every click. */
-    int col = pos.x() / std::max(1, m_charWidth);
+     * search on every click. Shifted by the gutter and horizontal scroll
+     * (docs/adr/0014) to land in the same local coordinate space
+     * paintEvent's translate uses. */
+    int localX = std::max(0, pos.x() - gutterWidth() + m_scrollX);
+    int col = localX / std::max(1, m_charWidth);
     size_t offset = offsetForLineColumn(line, col);
 
     /* Column counting is byte-based (see docs/adr/0012, decision 1) — a
@@ -197,9 +213,20 @@ void EditorViewport::paintEvent(QPaintEvent *) {
     QPainter painter(this);
     painter.fillRect(rect(), m_backgroundColor);
 
+    int gutter = gutterWidth();
+    int textAreaWidth = std::max(1, width() - gutter);
     int visibleLines = std::max(1, height() / m_lineHeight + 1);
     int firstLine = m_scrollLine;
     int lastLine = std::min(firstLine + visibleLines, static_cast<int>(m_lineStarts.size()));
+
+    /* Everything from here to restore() draws in "local" (document)
+     * coordinates — the translate folds in both the gutter offset and
+     * horizontal scroll, so drawLine/xForColumn/the caret below didn't
+     * need to change at all. The clip keeps any of it from painting
+     * over the gutter. See docs/adr/0014. */
+    painter.save();
+    painter.translate(gutter - m_scrollX, 0);
+    painter.setClipRect(QRect(m_scrollX, 0, textAreaWidth, height()));
 
     for (int line = firstLine; line < lastLine; ++line) {
         int start = m_lineStarts[line];
@@ -228,8 +255,28 @@ void EditorViewport::paintEvent(QPaintEvent *) {
                 int col = columnForOffset(cursor, line);
                 int x = xForColumn(lineStart, lineEnd, col);
                 int y = (line - firstLine) * m_lineHeight;
-                painter.fillRect(QRect(x, y, 2, m_lineHeight), caretColor);
+                painter.fillRect(QRect(x, y, kCaretWidth, m_lineHeight), caretColor);
             }
+        }
+    }
+
+    painter.restore();
+
+    if (gutter > 0) {
+        painter.fillRect(QRect(0, 0, gutter, height()), m_backgroundColor);
+
+        int cursorLine = lineForOffset(m_cursors.last());
+        QColor dim = m_textColor;
+        dim.setAlpha(145); /* reuses the comment-dimming tier — see docs/adr/0014, decision 4 */
+        QColor current = m_textColor;
+        current.setAlpha(220);
+
+        painter.setFont(m_font);
+        for (int line = firstLine; line < lastLine; ++line) {
+            painter.setPen(line == cursorLine ? current : dim);
+            int y = (line - firstLine) * m_lineHeight;
+            painter.drawText(QRect(0, y, gutter - kGutterPadding, m_lineHeight), Qt::AlignRight | Qt::AlignVCenter,
+                              gutterLabelForLine(line, cursorLine));
         }
     }
 }
@@ -317,6 +364,25 @@ int EditorViewport::xForColumn(int lineStart, int lineEnd, int column) const {
         runStart = i;
     }
     return x;
+}
+
+int EditorViewport::gutterWidth() const {
+    if (m_lineNumberMode == QLatin1String("off")) {
+        return 0;
+    }
+    /* Measured from the actual widest label, not digit-count * a fixed
+     * per-digit width — same reasoning as the caret-drift fix, applied
+     * to new code. See docs/adr/0014, decision 4. */
+    QString widest = QString::number(std::max(1, static_cast<int>(m_lineStarts.size())));
+    int textWidth = QFontMetrics(m_font).horizontalAdvance(widest);
+    return textWidth + kGutterPadding * 2;
+}
+
+QString EditorViewport::gutterLabelForLine(int line, int cursorLine) const {
+    if (m_lineNumberMode == QLatin1String("relative") && line != cursorLine) {
+        return QString::number(std::abs(line - cursorLine));
+    }
+    return QString::number(line + 1); /* 1-based display */
 }
 
 QFont EditorViewport::fontForCapture(AseHighlightCapture capture) const {
@@ -670,13 +736,29 @@ void EditorViewport::moveCursorEndAt(size_t &cursor) {
 }
 
 void EditorViewport::ensureCursorVisible() {
-    int line = lineForOffset(m_cursors.last());
+    size_t cursor = m_cursors.last();
+    int line = lineForOffset(cursor);
     int visibleLines = std::max(1, height() / m_lineHeight);
     if (line < m_scrollLine) {
         m_scrollLine = line;
     } else if (line >= m_scrollLine + visibleLines) {
         m_scrollLine = line - visibleLines + 1;
     }
+
+    /* Horizontal half, symmetric to the vertical logic above — see
+     * docs/adr/0014, decision 3. */
+    int lineStart = m_lineStarts[line];
+    int lineEnd = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
+    int col = columnForOffset(cursor, line);
+    int caretX = xForColumn(lineStart, lineEnd, col);
+
+    int textAreaWidth = std::max(1, width() - gutterWidth());
+    if (caretX < m_scrollX) {
+        m_scrollX = caretX;
+    } else if (caretX + kCaretWidth > m_scrollX + textAreaWidth) {
+        m_scrollX = caretX + kCaretWidth - textAreaWidth;
+    }
+    m_scrollX = std::max(0, m_scrollX);
 }
 
 void EditorViewport::save() {

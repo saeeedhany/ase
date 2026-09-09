@@ -160,6 +160,29 @@ into the GUI) and the still-open license decision.
   width (`QFontMetrics::horizontalAdvance`) instead of assuming one.
   See [ADR 0013](adr/0013-caret-drift-fix.md).
 
+## Post-v1 "feel alive" initiative
+
+Direct feedback after v1: the editor works but doesn't feel alive
+(abrupt caret, no view-follow, no line numbers), plus a request for a
+command system (and, past that, full modal Vim emulation). Sequenced as
+Phases 8–12 — full plan at the time of writing in
+`~/.claude/plans/noble-herding-quokka.md`, phase-by-phase ADRs as each
+lands here going forward.
+
+- [x] **Phase 8 — Viewport geometry**: horizontal scroll, two-axis
+      view-follow, and an optional line-number gutter (`line_numbers`
+      config key: `off`/`absolute`/`relative`, default `absolute`).
+      See [ADR 0014](adr/0014-viewport-geometry.md).
+- [ ] **Phase 9 — Smooth motion**: caret glide + smooth scroll, building
+      on Phase 8's exact-pixel-position plumbing.
+- [ ] **Phase 10 — Command line + `:compile` + output panel**: extracts
+      a reusable `AseProcess` from the LSP client's process-spawning
+      code; first real second panel.
+- [ ] **Phase 11 — Undo/redo**: hard prerequisite for Phase 12, also a
+      real standalone gap (deferred since ADR 0005).
+- [ ] **Phase 12 — Vim mode**: full modal emulation, confirmed scope,
+      planned in detail only once Phase 11 lands.
+
 ## Explicit non-goals for v1
 
 - No built-in terminal emulator (defer to external terminal or a later plugin).

@@ -273,7 +273,11 @@ static const char kDefaultConfigTemplate[] =
     "# Off by default (opt-in, per the aesthetic pillar and for anyone who\n"
     "# prefers reduced motion). Set true for a smooth caret fade instead of\n"
     "# a hard on/off blink.\n"
-    "animations = false\n";
+    "animations = false\n"
+    "\n"
+    "# off / absolute / relative (relative shows distance from the current\n"
+    "# line, Vim-style, except the current line itself which stays absolute).\n"
+    "line_numbers = absolute\n";
 
 /* Creates only the immediate parent directory, not any missing
  * grandparent — see docs/adr/0008, decision 5. */
