@@ -16,6 +16,12 @@ add_executable(ase_config_tests
 target_link_libraries(ase_config_tests PRIVATE ase_core)
 add_test(NAME ase_config_tests COMMAND ase_config_tests)
 
+add_executable(ase_json_tests
+    test_json.c
+)
+target_link_libraries(ase_json_tests PRIVATE ase_core)
+add_test(NAME ase_json_tests COMMAND ase_json_tests)
+
 # Native plugin test fixture: built as a loadable module (dlopen'd by
 # the test at runtime, never linked directly) into a build-dir copy of
 # fixtures/ alongside the .lua fixture, so the source tree stays clean
@@ -45,3 +51,19 @@ target_compile_definitions(ase_plugin_host_tests PRIVATE
 )
 add_dependencies(ase_plugin_host_tests test_native_plugin)
 add_test(NAME ase_plugin_host_tests COMMAND ase_plugin_host_tests)
+
+# Fake LSP server test fixture — a standalone black-box executable, not
+# linked against ase_core (see docs/adr/0011, decision 7).
+add_executable(fake_lsp_server
+    fixtures/fake_lsp_server.c
+)
+
+add_executable(ase_lsp_client_tests
+    test_lsp_client.c
+)
+target_link_libraries(ase_lsp_client_tests PRIVATE ase_core)
+target_compile_definitions(ase_lsp_client_tests PRIVATE
+    ASE_TEST_FAKE_LSP_SERVER="$<TARGET_FILE:fake_lsp_server>"
+)
+add_dependencies(ase_lsp_client_tests fake_lsp_server)
+add_test(NAME ase_lsp_client_tests COMMAND ase_lsp_client_tests)

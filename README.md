@@ -10,15 +10,17 @@ Why things are built the way they are: [`docs/adr/`](docs/adr/).
 
 ## Status
 
-**Phases 1–5 done** (see [`docs/ROADMAP.md`](docs/ROADMAP.md)): a
-piece-table buffer engine, a minimal Qt shell that renders and edits
-real files, Tree-sitter-backed syntax highlighting for C, a
-hot-reloadable config/theme system, and a plugin host (Lua scripts +
-native `dlopen` plugins sharing one command registry). No LSP yet, and
-plugins aren't wired to a keybinding/command-palette in the GUI yet.
-Not published publicly — see
-[ADR 0003](docs/adr/0003-license-decision-pending.md), the license is
-still an open decision.
+**Phases 1–6 done** (see [`docs/ROADMAP.md`](docs/ROADMAP.md)) — every
+phase but the final "polish" pass: a piece-table buffer engine, a
+minimal Qt shell that renders and edits real files, Tree-sitter-backed
+syntax highlighting for C, a hot-reloadable config/theme system, a
+plugin host (Lua scripts + native `dlopen` plugins sharing one command
+registry), and an LSP client (process-isolated, diagnostics/completion/
+go-to-definition, POSIX only so far). The plugin host and LSP client
+both work standalone but aren't wired into the GUI yet — no
+keybinding/command-palette, no diagnostics/completion UI. Not published
+publicly — see [ADR 0003](docs/adr/0003-license-decision-pending.md),
+the license is still an open decision.
 
 ## Architecture
 
@@ -81,8 +83,9 @@ cmake --build build
 
 ## Layout
 
-- `core/` — the engine: buffer, undo/redo, config/theme parsing, plugin ABI.
-  Builds and runs headless.
+- `core/` — the engine: buffer, config/theme parsing, plugin ABI + Lua
+  host, JSON + LSP client. Builds and runs headless. (Undo/redo is
+  spec'd for this layer but not implemented yet — see `docs/ROADMAP.md`.)
 - `gui/` — Qt6 shell: native chrome + custom-painted viewport.
 - `modules/` — pluggable feature modules (syntax, LSP, plugins); empty
   placeholders until their respective phases (see `docs/ROADMAP.md`).

@@ -36,8 +36,8 @@ bool ase_plugin_host_run_command(AsePluginHost *host, const char *name, AseBuffe
 
 size_t ase_plugin_host_command_count(const AsePluginHost *host);
 
-/* Loads every *.lua script (run through the embedded Lua VM) and every
- * native plugin (*.so/*.dylib/*.dll per platform, via dlopen) in `dir`,
+/* Loads every .lua script (run through the embedded Lua VM) and every
+ * native plugin (.so / .dylib / .dll per platform, via dlopen) in `dir`,
  * non-recursively. Both register commands into `host` the same way —
  * see docs/adr/0009. A missing directory is not an error (returns 0).
  * A script/plugin that errors during load is skipped (logged to

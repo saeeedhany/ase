@@ -14,3 +14,18 @@ target_compile_options(ase_core_fuzz_buffer PRIVATE
 target_link_options(ase_core_fuzz_buffer PRIVATE
     -fsanitize=fuzzer,address,undefined
 )
+
+add_executable(ase_core_fuzz_json
+    fuzz_json.c
+)
+
+target_link_libraries(ase_core_fuzz_json PRIVATE ase_core)
+
+target_compile_options(ase_core_fuzz_json PRIVATE
+    -fsanitize=fuzzer,address,undefined
+    -fno-omit-frame-pointer
+    -g
+)
+target_link_options(ase_core_fuzz_json PRIVATE
+    -fsanitize=fuzzer,address,undefined
+)

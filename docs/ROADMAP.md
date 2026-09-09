@@ -85,14 +85,38 @@ Each phase should land with tests/benchmarks before the next begins.
       architecture diagram.
       Not wired into the GUI yet — no keybinding/command-palette exists
       to trigger a registered command interactively; tracked below.
-- [ ] **Phase 6 — LSP client module**
-      Diagnostics, completion, go-to-definition.
+- [x] **Phase 6 — LSP client module**
+      `AseLspClient` in core (`core/include/ase/lsp_client.h`,
+      `core/src/lsp_client.c`), on top of a new hand-rolled JSON module
+      (`core/include/ase/json.h`, `core/src/json.c` — not a vendored
+      library, see [ADR 0010](adr/0010-hand-rolled-json.md)). Spawns a
+      language server as an isolated child process, speaks
+      `Content-Length`-framed JSON-RPC over its stdio, does a bounded
+      synchronous `initialize` handshake, then everything else
+      (diagnostics via a standing callback, completion/definition via
+      per-request callbacks) is non-blocking and timer-poll-driven, the
+      same shape as config hot-reload. POSIX only in v1 — Windows
+      `ase_lsp_client_start` returns `NULL` cleanly rather than shipping
+      untested async-I/O code (`docs/adr/0011`, decision 6). Verified
+      against a fake LSP server test fixture (deliberately independent
+      of the real JSON module, so a shared bug can't hide symmetrically)
+      covering the full lifecycle — handshake, `didOpen` → diagnostics,
+      completion, definition, shutdown — plus a missing-executable case.
+      All clean under ASan/UBSan. The JSON module alone also has 37.8M
+      clean fuzz executions (`core/fuzz/fuzz_json.c`). See
+      [ADR 0011](adr/0011-lsp-client.md) for the full design, including
+      why `SIGPIPE` is now disabled process-wide and why server-to-client
+      requests aren't answered.
+      Not wired into the GUI yet — no diagnostics/completion/
+      go-to-definition UI exists; tracked below, same pattern as
+      Phase 5's plugin host.
 - [ ] **Phase 7 — Polish**
       Multi-cursor, minimal/opt-in animations, panel layout, accessibility pass.
 
 ## Current status
 
-Phases 1–5 are done (see above). Phase 6 (LSP client) has not started.
+Phases 1–6 are done (see above). Phase 7 (polish) has not started —
+that's the last phase in the spec's build order.
 
 ## Explicit non-goals for v1
 
@@ -120,3 +144,11 @@ Phases 1–5 are done (see above). Phase 6 (LSP client) has not started.
 - Plugin directory isn't loaded automatically by the GUI at startup
   (unlike config, which is). Natural to add once there's a way to
   invoke a loaded command.
+- LSP client isn't wired into the GUI: no diagnostics rendering
+  (squiggly underlines/gutter marks), no completion popup, no
+  go-to-definition navigation. `AseLspClient` works standalone
+  (ADR 0011) but nothing in `EditorViewport` calls into it yet.
+- LSP client is POSIX-only — Windows support needs overlapped I/O or a
+  reader thread (ADR 0011, decision 6), real work, not a quick add-on.
+- No `textDocument/didChange` — the LSP client can tell a server a
+  document was opened but not that it changed afterward.
