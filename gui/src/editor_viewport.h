@@ -9,9 +9,11 @@
 
 extern "C" {
 #include "ase/buffer.h"
+#include "ase/syntax.h"
 }
 
 class QTimer;
+class QPainter;
 
 /*
  * Custom-painted text viewport: fills the whole window, no chrome of its
@@ -32,6 +34,8 @@ protected:
 
 private:
     void refreshCache();
+    void drawLine(QPainter &painter, int start, int end, int y);
+    void applyCaptureStyle(QPainter &painter, AseHighlightCapture capture);
     void insertText(const QByteArray &bytes);
     void deleteBackward();
     void deleteForward();
@@ -49,6 +53,9 @@ private:
 
     AseBuffer *m_buffer;
     QString m_filePath;
+
+    AseSyntax *m_syntax = nullptr; /* null for unsupported file types — see docs/adr/0007 */
+    QVector<AseHighlightSpan> m_highlights;
 
     QByteArray m_cache;
     QVector<int> m_lineStarts;

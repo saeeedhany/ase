@@ -1,7 +1,9 @@
 #include "editor_viewport.h"
 
 #include <algorithm>
+#include <vector>
 
+#include <QFileInfo>
 #include <QFontDatabase>
 #include <QFontMetrics>
 #include <QKeyEvent>
@@ -15,6 +17,10 @@ constexpr QColor kText(0xF5, 0xE6, 0xC8);
 
 bool isUtf8ContinuationByte(char byte) {
     return (static_cast<unsigned char>(byte) & 0xC0) == 0x80;
+}
+
+void collectHighlightSpan(void *user_data, AseHighlightSpan span) {
+    static_cast<QVector<AseHighlightSpan> *>(user_data)->push_back(span);
 }
 } // namespace
 
@@ -31,6 +37,11 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     m_lineHeight = metrics.height();
     m_charWidth = metrics.horizontalAdvance(QLatin1Char('M'));
 
+    QString suffix = QFileInfo(m_filePath).suffix().toLower();
+    if (suffix == QLatin1String("c") || suffix == QLatin1String("h")) {
+        m_syntax = ase_syntax_create_c();
+    }
+
     refreshCache();
 
     m_blinkTimer = new QTimer(this);
@@ -42,6 +53,7 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 }
 
 EditorViewport::~EditorViewport() {
+    ase_syntax_destroy(m_syntax);
     ase_buffer_destroy(m_buffer);
 }
 
@@ -58,6 +70,12 @@ void EditorViewport::refreshCache() {
         if (m_cache[i] == '\n') {
             m_lineStarts.push_back(i + 1);
         }
+    }
+
+    m_highlights.clear();
+    if (m_syntax != nullptr) {
+        ase_syntax_highlight(m_syntax, m_cache.constData(), static_cast<size_t>(m_cache.size()),
+                              collectHighlightSpan, &m_highlights);
     }
 }
 
@@ -81,8 +99,6 @@ size_t EditorViewport::offsetForLineColumn(int line, int column) const {
 void EditorViewport::paintEvent(QPaintEvent *) {
     QPainter painter(this);
     painter.fillRect(rect(), kBackground);
-    painter.setFont(m_font);
-    painter.setPen(kText);
 
     int visibleLines = std::max(1, height() / m_lineHeight + 1);
     int firstLine = m_scrollLine;
@@ -91,9 +107,8 @@ void EditorViewport::paintEvent(QPaintEvent *) {
     for (int line = firstLine; line < lastLine; ++line) {
         int start = m_lineStarts[line];
         int end = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
-        QString text = QString::fromUtf8(m_cache.constData() + start, end - start);
         int y = (line - firstLine) * m_lineHeight;
-        painter.drawText(QRect(0, y, width(), m_lineHeight), Qt::AlignLeft | Qt::AlignVCenter, text);
+        drawLine(painter, start, end, y);
     }
 
     if (m_caretVisible) {
@@ -105,6 +120,73 @@ void EditorViewport::paintEvent(QPaintEvent *) {
             painter.fillRect(QRect(x, y, 2, m_lineHeight), kText);
         }
     }
+}
+
+/* Splits [start, end) into same-capture runs and draws each with its own
+ * style. All captures render in kText's hue — only opacity/weight/style
+ * vary — so the query's captures don't need to be mutually exclusive in
+ * general, just non-overlapping in practice for the leaf-level nodes
+ * c_highlights.scm captures. See docs/adr/0007, decision 1. */
+void EditorViewport::drawLine(QPainter &painter, int start, int end, int y) {
+    int lineLen = end - start;
+    if (lineLen <= 0) {
+        return;
+    }
+
+    std::vector<AseHighlightCapture> captures(static_cast<size_t>(lineLen), ASE_HL_NONE);
+    for (const AseHighlightSpan &span : m_highlights) {
+        int spanStart = static_cast<int>(span.start);
+        int spanEnd = static_cast<int>(span.end);
+        if (spanEnd <= start || spanStart >= end) {
+            continue;
+        }
+        int clampedStart = std::max(spanStart, start);
+        int clampedEnd = std::min(spanEnd, end);
+        for (int i = clampedStart; i < clampedEnd; ++i) {
+            captures[static_cast<size_t>(i - start)] = span.capture;
+        }
+    }
+
+    int x = 0;
+    int runStart = 0;
+    for (int i = 1; i <= lineLen; ++i) {
+        if (i < lineLen && captures[static_cast<size_t>(i)] == captures[static_cast<size_t>(runStart)]) {
+            continue;
+        }
+        int runLen = i - runStart;
+        QString text = QString::fromUtf8(m_cache.constData() + start + runStart, runLen);
+        applyCaptureStyle(painter, captures[static_cast<size_t>(runStart)]);
+        painter.drawText(QRect(x, y, width() - x, m_lineHeight), Qt::AlignLeft | Qt::AlignVCenter, text);
+        x += runLen * m_charWidth;
+        runStart = i;
+    }
+}
+
+void EditorViewport::applyCaptureStyle(QPainter &painter, AseHighlightCapture capture) {
+    QFont font = m_font;
+    QColor color = kText;
+
+    switch (capture) {
+    case ASE_HL_KEYWORD:
+        font.setBold(true);
+        break;
+    case ASE_HL_TYPE:
+        font.setItalic(true);
+        break;
+    case ASE_HL_STRING:
+    case ASE_HL_NUMBER:
+        color.setAlpha(200);
+        break;
+    case ASE_HL_COMMENT:
+        color.setAlpha(115);
+        break;
+    case ASE_HL_NONE:
+    default:
+        break;
+    }
+
+    painter.setFont(font);
+    painter.setPen(color);
 }
 
 void EditorViewport::keyPressEvent(QKeyEvent *event) {

@@ -10,10 +10,10 @@ Why things are built the way they are: [`docs/adr/`](docs/adr/).
 
 ## Status
 
-**Phases 1–2 done** (see [`docs/ROADMAP.md`](docs/ROADMAP.md)): a
-piece-table buffer engine and a minimal Qt shell that renders and edits
-real files. No syntax highlighting, theming, plugins, or LSP yet. Not
-published publicly — see
+**Phases 1–3 done** (see [`docs/ROADMAP.md`](docs/ROADMAP.md)): a
+piece-table buffer engine, a minimal Qt shell that renders and edits
+real files, and Tree-sitter-backed syntax highlighting for C. No
+theming/config, plugins, or LSP yet. Not published publicly — see
 [ADR 0003](docs/adr/0003-license-decision-pending.md), the license is
 still an open decision.
 
@@ -47,7 +47,12 @@ core through a stable C ABI. See
 
 Requires CMake ≥ 3.20 and a C11/C++20 compiler. Qt6 (Widgets) is required
 only for the GUI target — if it isn't found, the GUI target is skipped and
-the core still builds and tests cleanly.
+the core still builds and tests cleanly. The syntax module
+(`-DASE_BUILD_SYNTAX=ON`, default) fetches Tree-sitter and its C grammar
+from GitHub at configure time — needs network access on a clean build.
+The GUI target depends on it (`-DASE_BUILD_GUI=ON` requires
+`-DASE_BUILD_SYNTAX=ON`); disabling syntax while keeping the GUI on is
+not a supported combination.
 
 ```sh
 cmake -B build -DASE_BUILD_GUI=ON -DASE_BUILD_TESTS=ON

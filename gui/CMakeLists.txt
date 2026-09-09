@@ -18,5 +18,6 @@ add_executable(ase_gui
 target_link_libraries(ase_gui
     PRIVATE
         ase_core
+        ase_syntax
         Qt6::Widgets
 )

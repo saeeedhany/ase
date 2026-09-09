@@ -30,8 +30,22 @@ Each phase should land with tests/benchmarks before the next begins.
       [ADR 0006](adr/0006-gui-shell-v1-shortcuts.md) for this phase's
       deliberate shortcuts (full-buffer mirroring per keystroke,
       byte-level cursor, no IME, no dirty-tracking).
-- [ ] **Phase 3 — Syntax highlighting**
-      Tree-sitter integration into the viewport render path.
+- [x] **Phase 3 — Syntax highlighting**
+      Tree-sitter wired in via a new `ase_syntax` module
+      (`modules/syntax/`): runtime + one grammar (C) fetched with CMake
+      `FetchContent` and pinned to exact revisions, a hand-authored
+      query (`src/queries/c_highlights.scm`), unit tests, and a
+      libFuzzer harness on the parser boundary
+      (`-DASE_BUILD_FUZZERS=ON`). Wired into `EditorViewport`: `.c`/`.h`
+      files get highlighted, everything else renders plain. The default
+      theme resolves the "one font color" pillar vs. "syntax
+      highlighting" tension by varying only weight/style/opacity of the
+      single text color (bold keywords, italic types, dimmed comments) —
+      never a second hue. Verified by unit test and by screenshotting
+      the editor highlighting its own `core/src/buffer.c`. See
+      [ADR 0007](adr/0007-syntax-highlighting-tree-sitter.md) for all of
+      this phase's decisions, including a measured (bounded, not
+      leaking) memory characteristic of full-reparse-every-edit.
 - [ ] **Phase 4 — Theming & config system**
       Parser, hot-reload, default theme(s) matching the visual identity.
 - [ ] **Phase 5 — Plugin ABI + Lua scripting host**
@@ -43,8 +57,8 @@ Each phase should land with tests/benchmarks before the next begins.
 
 ## Current status
 
-Phases 1 and 2 are done (see above). Phase 3 (syntax highlighting) has
-not started.
+Phases 1–3 are done (see above). Phase 4 (theming & config) has not
+started.
 
 ## Explicit non-goals for v1
 
