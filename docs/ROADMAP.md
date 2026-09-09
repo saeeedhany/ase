@@ -167,9 +167,19 @@ into the GUI) and the still-open license decision.
   config. Fixed alongside a requested blink-mechanism change: the hard
   blink now resets on every cursor-moving action (stays solid visible
   throughout active use) and only resumes toggling ~500ms after input
-  actually stops, via a separate idle-tick counter so it can't
-  interfere with the animated fade's own phase. See
-  [ADR 0016](adr/0016-caret-visibility-fix.md).
+  actually stops. See [ADR 0016](adr/0016-caret-visibility-fix.md) —
+  note its "kept separate from the animated fade's phase" reasoning was
+  superseded by ADR 0017 below, which found that separation was itself
+  the cause of the fade still blinking during movement.
+- **Viewport review pass** (user-reported, four issues at once): text
+  rendered as blank space once a line scrolled far enough right
+  (`width() - x` going negative in translated coordinates — the most
+  severe of the four); the animated fade still blinked during movement
+  (a free-running counter ADR 0016 didn't touch); typing/deleting fast
+  felt laggy (the caret-glide easing couldn't keep pace with rapid
+  small jumps and was never meant to try); and `QFontMetrics` was being
+  reconstructed per styled run per frame instead of cached. All four
+  fixed together — see [ADR 0017](adr/0017-viewport-review-pass.md).
 
 ## Post-v1 "feel alive" initiative
 

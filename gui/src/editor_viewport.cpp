@@ -53,10 +53,9 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 
     m_blinkTimer = new QTimer(this);
     connect(m_blinkTimer, &QTimer::timeout, this, [this]() {
-        m_caretTick++;
         m_idleTicks++;
         if (m_animationsEnabled) {
-            update();
+            update(); /* the fade's phase is also idle-tick-driven — see docs/adr/0017 */
         } else if (m_idleTicks % 17 == 0) { /* ~500ms idle at this 30ms tick — see docs/adr/0016 */
             m_caretVisible = !m_caretVisible;
             update();
@@ -109,9 +108,18 @@ void EditorViewport::applyConfig() {
                  : QFont(family);
     m_font.setPointSize(static_cast<int>(size));
 
-    QFontMetrics metrics(m_font);
-    m_lineHeight = metrics.height();
-    m_charWidth = metrics.horizontalAdvance(QLatin1Char('M'));
+    /* Cached once here rather than reconstructed per run per paint — see
+     * docs/adr/0017. */
+    m_metrics = QFontMetrics(m_font);
+    QFont boldFont = m_font;
+    boldFont.setBold(true);
+    m_boldMetrics = QFontMetrics(boldFont);
+    QFont italicFont = m_font;
+    italicFont.setItalic(true);
+    m_italicMetrics = QFontMetrics(italicFont);
+
+    m_lineHeight = m_metrics.height();
+    m_charWidth = m_metrics.horizontalAdvance(QLatin1Char('M'));
 
     /* Opt-in, off by default — see docs/adr/0012, decision 2. */
     const char *animationsStr = ase_config_get_string(m_config, "animations");
@@ -258,10 +266,18 @@ void EditorViewport::paintEvent(QPaintEvent *) {
      * *rendered* (eased) positions — decoupled from the instant scroll
      * target above so a caret mid-glide isn't forced to jump with it.
      * See docs/adr/0015. */
+    /* Both branches key off m_idleTicks (reset to 0 by resetCaretBlink on
+     * every cursor-moving action), not a free-running counter — so both
+     * "the caret must not blink/fade while the user is actively moving
+     * it" for either mode. cos (not sin) means phase 0 — i.e. the instant
+     * something goes idle — evaluates to full brightness, so the fade
+     * always starts from "was solid, now easing into the breathing
+     * cycle" rather than jumping to some arbitrary point in the curve.
+     * See docs/adr/0017. */
     int caretAlpha = 255;
     if (m_animationsEnabled) {
-        double phase = (m_caretTick % kCaretAnimationTicks) / static_cast<double>(kCaretAnimationTicks);
-        caretAlpha = std::clamp(static_cast<int>(128 + 127 * std::sin(phase * kTwoPi)), 0, 255);
+        double phase = (m_idleTicks % kCaretAnimationTicks) / static_cast<double>(kCaretAnimationTicks);
+        caretAlpha = std::clamp(static_cast<int>(128 + 127 * std::cos(phase * kTwoPi)), 0, 255);
     } else if (!m_caretVisible) {
         caretAlpha = 0;
     }
@@ -308,12 +324,7 @@ void EditorViewport::updateAnimation() {
          * array is non-empty, so clearing it here (an earlier bug)
          * meant the caret never rendered at all with the default
          * animations = false config. */
-        m_renderedScrollLine = m_scrollLine;
-        m_renderedScrollX = m_scrollX;
-        m_renderedCaretPos.resize(m_cursors.size());
-        for (int i = 0; i < m_cursors.size(); ++i) {
-            m_renderedCaretPos[i] = caretTargetFor(m_cursors[i]);
-        }
+        snapAnimationToTarget();
         return;
     }
 
@@ -360,6 +371,15 @@ void EditorViewport::resetCaretBlink() {
     m_idleTicks = 0;
 }
 
+void EditorViewport::snapAnimationToTarget() {
+    m_renderedScrollLine = m_scrollLine;
+    m_renderedScrollX = m_scrollX;
+    m_renderedCaretPos.resize(m_cursors.size());
+    for (int i = 0; i < m_cursors.size(); ++i) {
+        m_renderedCaretPos[i] = caretTargetFor(m_cursors[i]);
+    }
+}
+
 /* One entry per byte in [start, end), naming which capture (if any) that
  * byte belongs to — shared by drawLine and xForColumn so both segment a
  * line into runs identically. */
@@ -391,7 +411,15 @@ QVector<AseHighlightCapture> EditorViewport::capturesForLine(int start, int end)
  * Each run's on-screen advance is that run's own *measured* rendered
  * width (QFontMetrics::horizontalAdvance on the actual run text, with
  * that run's actual font), not runLen * m_charWidth — see docs/adr/0013
- * for why the latter drifts visibly on longer lines. */
+ * for why the latter drifts visibly on longer lines.
+ *
+ * The drawText rect's width is that same measured runWidth, never
+ * width() - x. Once horizontal scroll is in play (docs/adr/0014), x is
+ * a *local* (translated) coordinate that can legitimately exceed the
+ * widget's raw width() — width() - x then goes negative, and a
+ * negative-width QRect makes drawText paint nothing. That was a real
+ * bug: characters typed past the point a line had scrolled rendered as
+ * blank space. See docs/adr/0017. */
 void EditorViewport::drawLine(QPainter &painter, int start, int end, int y) {
     int lineLen = end - start;
     if (lineLen <= 0) {
@@ -408,11 +436,12 @@ void EditorViewport::drawLine(QPainter &painter, int start, int end, int y) {
         }
         int runLen = i - runStart;
         QString text = QString::fromUtf8(m_cache.constData() + start + runStart, runLen);
-        QFont runFont = fontForCapture(captures[runStart]);
-        painter.setFont(runFont);
-        painter.setPen(colorForCapture(captures[runStart]));
-        painter.drawText(QRect(x, y, width() - x, m_lineHeight), Qt::AlignLeft | Qt::AlignVCenter, text);
-        x += QFontMetrics(runFont).horizontalAdvance(text);
+        AseHighlightCapture capture = captures[runStart];
+        int runWidth = metricsForCapture(capture).horizontalAdvance(text);
+        painter.setFont(fontForCapture(capture));
+        painter.setPen(colorForCapture(capture));
+        painter.drawText(QRect(x, y, runWidth, m_lineHeight), Qt::AlignLeft | Qt::AlignVCenter, text);
+        x += runWidth;
         runStart = i;
     }
 }
@@ -438,8 +467,7 @@ int EditorViewport::xForColumn(int lineStart, int lineEnd, int column) const {
         }
         int runLen = i - runStart;
         QString text = QString::fromUtf8(m_cache.constData() + lineStart + runStart, runLen);
-        QFont runFont = fontForCapture(captures[runStart]);
-        x += QFontMetrics(runFont).horizontalAdvance(text);
+        x += metricsForCapture(captures[runStart]).horizontalAdvance(text);
         runStart = i;
     }
     return x;
@@ -472,6 +500,16 @@ QFont EditorViewport::fontForCapture(AseHighlightCapture capture) const {
         font.setItalic(true);
     }
     return font;
+}
+
+const QFontMetrics &EditorViewport::metricsForCapture(AseHighlightCapture capture) const {
+    if (capture == ASE_HL_KEYWORD) {
+        return m_boldMetrics;
+    }
+    if (capture == ASE_HL_TYPE) {
+        return m_italicMetrics;
+    }
+    return m_metrics;
 }
 
 QColor EditorViewport::colorForCapture(AseHighlightCapture capture) const {
@@ -519,6 +557,14 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
     }
 
     m_desiredColumn = -1;
+    /* Set for the branches that actually mutate the buffer — see
+     * snapAnimationToTarget's doc comment (docs/adr/0017): typing/
+     * deleting always renders instantly, even with animations on,
+     * because gliding can't keep pace with fast repeated small jumps
+     * and the result reads as lag, not smoothness. Pure navigation
+     * (left/right/Home/End, and the click/Ctrl+D paths below and in
+     * mousePressEvent) keeps the glide. */
+    bool isEdit = false;
 
     switch (event->key()) {
     case Qt::Key_Left:
@@ -535,13 +581,16 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         break;
     case Qt::Key_Backspace:
         deleteBackward();
+        isEdit = true;
         break;
     case Qt::Key_Delete:
         deleteForward();
+        isEdit = true;
         break;
     case Qt::Key_Return:
     case Qt::Key_Enter:
         insertText(QByteArrayLiteral("\n"));
+        isEdit = true;
         break;
     default:
         if (event->modifiers() & Qt::ControlModifier) {
@@ -568,10 +617,14 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
                 return;
             }
             insertText(text.toUtf8());
+            isEdit = true;
         }
     }
 
     ensureCursorVisible();
+    if (isEdit) {
+        snapAnimationToTarget();
+    }
     update();
 }
 

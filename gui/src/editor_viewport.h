@@ -5,6 +5,7 @@
 #include <QColor>
 #include <QDateTime>
 #include <QFont>
+#include <QFontMetrics>
 #include <QPointF>
 #include <QString>
 #include <QVector>
@@ -46,6 +47,11 @@ private:
     void drawLine(QPainter &painter, int start, int end, int y);
     QFont fontForCapture(AseHighlightCapture capture) const;
     QColor colorForCapture(AseHighlightCapture capture) const;
+    /* Cached per applyConfig() call, not reconstructed per run per paint
+     * — QFontMetrics construction isn't free, and drawLine/xForColumn
+     * were doing it for every styled run on every visible line, every
+     * frame. See docs/adr/0017. */
+    const QFontMetrics &metricsForCapture(AseHighlightCapture capture) const;
     QVector<AseHighlightCapture> capturesForLine(int start, int end) const;
     /* Exact pixel x of `column` within [lineStart, lineEnd), measured the
      * same way drawLine actually renders (per-run, with that run's real
@@ -71,11 +77,21 @@ private:
      * position — not its final settled position. */
     QPointF caretTargetFor(size_t cursor) const;
     /* Forces the caret solid-visible and restarts the idle countdown
-     * to the next hard-blink toggle — call on every cursor-moving
-     * action (key or mouse) so the caret never blinks away mid-use and
-     * resumes a normal blink only once activity actually stops. See
-     * docs/adr/0016. */
+     * that both the hard blink's toggle and the animated fade's phase
+     * are measured from — call on every cursor-moving action (key or
+     * mouse) so the caret never blinks/fades away mid-use, in either
+     * mode, and only resumes once activity actually stops. See
+     * docs/adr/0016 and docs/adr/0017. */
     void resetCaretBlink();
+    /* Forces m_renderedScrollLine/X and every m_renderedCaretPos entry
+     * to their exact logical target, bypassing the easing in
+     * updateAnimation() for this one update. Called after a text edit
+     * (typing/deleting), even with animations on — gliding to keep up
+     * with fast, repeated small jumps just shows up as a caret that
+     * can't keep pace with typing, which is a "the editor is slow"
+     * feeling with the wrong cause. Navigation (arrows, click, Ctrl+D)
+     * keeps the glide. See docs/adr/0017. */
+    void snapAnimationToTarget();
 
     /* All of these act on every cursor in m_cursors (a single cursor is
      * just the size-1 case) — see docs/adr/0012, decision 1, for why
@@ -145,13 +161,19 @@ private:
     QFont m_font;
     int m_lineHeight = 0;
     int m_charWidth = 0;
+    /* One QFontMetrics per capture-style variant actually used, cached
+     * in applyConfig() — see docs/adr/0017. */
+    QFontMetrics m_metrics {m_font};
+    QFontMetrics m_boldMetrics {m_font};
+    QFontMetrics m_italicMetrics {m_font};
 
     QTimer *m_blinkTimer;
     bool m_caretVisible = true;
-    int m_caretTick = 0;   /* drives the animated fade phase only — see docs/adr/0016 */
-    int m_idleTicks = 0;   /* ticks since the last cursor-moving action; drives the
-                             * hard blink's toggle, kept separate from m_caretTick so
-                             * activity doesn't restart the fade's phase too */
+    /* Ticks since the last cursor-moving action. Drives both the hard
+     * blink's toggle and the animated fade's phase (docs/adr/0017) — a
+     * single counter, reset to 0 by resetCaretBlink(), so "stay visible
+     * while active" holds for either mode without special-casing. */
+    int m_idleTicks = 0;
 };
 
 #endif /* ASE_EDITOR_VIEWPORT_H */
