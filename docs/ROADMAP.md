@@ -14,9 +14,10 @@ Each phase should land with tests/benchmarks before the next begins.
       ASan/UBSan locally, not yet wired into CI). No GUI dependency; see
       [ADR 0002](adr/0002-headless-core-separation.md) and
       [ADR 0005](adr/0005-buffer-engine-piece-table.md).
-      Deferred out of this phase, tracked as follow-ups: undo/redo
-      history, line-index acceleration, periodic memory
-      compaction, and CI fuzz integration (all called out in ADR 0005).
+      Deferred out of this phase, tracked as follow-ups: line-index
+      acceleration, periodic memory compaction, and CI fuzz integration
+      (all called out in ADR 0005). Undo/redo — also called out there —
+      landed as Phase 10 below.
 - [x] **Phase 2 — Minimal Qt shell**
       `QMainWindow` + a custom-painted `EditorViewport` widget
       (`gui/src/editor_viewport.{h,cpp}`): renders the buffer with
@@ -184,11 +185,8 @@ into the GUI) and the still-open license decision.
 ## Post-v1 "feel alive" initiative
 
 Direct feedback after v1: the editor works but doesn't feel alive
-(abrupt caret, no view-follow, no line numbers), plus a request for a
-command system (and, past that, full modal Vim emulation). Sequenced as
-Phases 8–12 — full plan at the time of writing in
-`~/.claude/plans/noble-herding-quokka.md`, phase-by-phase ADRs as each
-lands here going forward.
+(abrupt caret, no view-follow, no line numbers). Phases 8–9 below
+addressed that.
 
 - [x] **Phase 8 — Viewport geometry**: horizontal scroll, two-axis
       view-follow, and an optional line-number gutter (`line_numbers`
@@ -205,13 +203,54 @@ lands here going forward.
       232 → 237 → 238); `animations = false` produces pixel-identical
       consecutive frames after the same jump (true instant snap, no
       regression). See [ADR 0015](adr/0015-smooth-motion.md).
-- [ ] **Phase 10 — Command line + `:compile` + output panel**: extracts
+
+## Post-v1 "complete normal editor" initiative
+
+Explicit direction: finish the editor as a complete *normal* text
+editor first (undo, selection, clipboard, find/replace, chrome,
+compile, LSP UI) — full modal Vim emulation is confirmed scope but
+deliberately pushed to *after* this list, planned in detail only once
+it's reached. Single file per window (no tabs) for now — multi-file
+may become a tmux-like tiling plugin later. Full plan at the time of
+writing in `~/.claude/plans/noble-herding-quokka.md`, phase-by-phase
+ADRs as each lands here going forward.
+
+- [x] **Phase 10 — Undo/redo**: `AseUndoStack` in core
+      (`core/include/ase/undo.h`, `core/src/undo.c`) — records edit
+      intent (offset + inserted/removed bytes), not snapshots, matching
+      the diff-based design ADR 0005 anticipated. A whole multi-cursor
+      keystroke undoes/redoes as one group, unwound in the exact
+      reverse of application order. `Ctrl+Z`/`Ctrl+Shift+Z`. No
+      coalescing of consecutive keystrokes (each is its own group) —
+      deliberate v1 simplicity. See
+      [ADR 0018](adr/0018-undo-redo.md).
+- [ ] **Phase 11 — Selection model**: keyboard (Shift+arrows/Home/End)
+      and mouse (click-drag, Shift+click) selection; currently there is
+      no selection/anchor concept at all, only point cursors.
+- [ ] **Phase 12 — Clipboard**: cut/copy/paste via `QClipboard`,
+      built on Phase 11's selection.
+- [ ] **Phase 13 — Find & replace**: `Ctrl+F`/`Ctrl+H`, plain substring
+      match (no regex in v1), replace/replace-all as undo groups.
+- [ ] **Phase 14 — Editor chrome**: status bar (line/col, dirty
+      indicator — dirty tracking doesn't exist yet, ADR 0006 deferred
+      it), `Ctrl+O` open / `Ctrl+Shift+S` save-as dialogs.
+- [ ] **Phase 15 — Command line + `:compile` + output panel**: extracts
       a reusable `AseProcess` from the LSP client's process-spawning
       code; first real second panel.
-- [ ] **Phase 11 — Undo/redo**: hard prerequisite for Phase 12, also a
-      real standalone gap (deferred since ADR 0005).
-- [ ] **Phase 12 — Vim mode**: full modal emulation, confirmed scope,
-      planned in detail only once Phase 11 lands.
+- [ ] **Phase 16 — LSP diagnostics wiring**: `textDocument/didChange`
+      (never sent today — results go stale after the first edit),
+      GUI poll + diagnostic markers. `publishDiagnostics` parsing
+      already exists in core and is tested; this is GUI wiring plus
+      the one core addition.
+- [ ] **Phase 17 — LSP completion + hover**: completion response
+      parsing (currently handed back raw/unparsed) plus a popup;
+      hover doesn't exist in the client at all yet, needs a new
+      request/response pair added first.
+- [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
+      emulation, not a lighter subset. Hard prerequisite (undo/redo)
+      now satisfied by Phase 10; also benefits from Phase 11's
+      selection model (Visual mode) and Phase 15's `:` command line
+      (becomes the ex-command line).
 
 ## Explicit non-goals for v1
 

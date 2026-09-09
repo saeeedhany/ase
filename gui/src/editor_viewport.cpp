@@ -51,6 +51,8 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 
     refreshCache();
 
+    m_undo = ase_undo_create();
+
     m_blinkTimer = new QTimer(this);
     connect(m_blinkTimer, &QTimer::timeout, this, [this]() {
         m_idleTicks++;
@@ -71,6 +73,7 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 EditorViewport::~EditorViewport() {
     ase_syntax_destroy(m_syntax);
     ase_config_destroy(m_config);
+    ase_undo_destroy(m_undo);
     ase_buffer_destroy(m_buffer);
 }
 
@@ -606,6 +609,14 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
                 addCursorAtNextOccurrence();
                 return;
             }
+            if (event->key() == Qt::Key_Z) {
+                if (event->modifiers() & Qt::ShiftModifier) {
+                    redo();
+                } else {
+                    undo();
+                }
+                return;
+            }
             QWidget::keyPressEvent(event);
             return;
         }
@@ -720,27 +731,43 @@ void EditorViewport::insertText(const QByteArray &bytes) {
     if (bytes.isEmpty()) {
         return;
     }
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     for (int i = m_cursors.size() - 1; i >= 0; --i) {
         insertTextAt(m_cursors[i], bytes);
     }
     normalizeCursors();
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     refreshCache();
 }
 
 void EditorViewport::insertTextAt(size_t &cursor, const QByteArray &bytes) {
     if (ase_buffer_insert(m_buffer, cursor, bytes.constData(), static_cast<size_t>(bytes.size()))) {
+        ase_undo_record_insert(m_undo, cursor, bytes.constData(), static_cast<size_t>(bytes.size()));
         cursor += static_cast<size_t>(bytes.size());
     }
 }
 
 void EditorViewport::deleteBackward() {
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     for (int i = m_cursors.size() - 1; i >= 0; --i) {
         deleteBackwardAt(m_cursors[i]);
     }
     normalizeCursors();
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     refreshCache();
 }
 
+/* m_cache still mirrors the buffer as it stood *before this whole batch*
+ * (refreshCache() only runs once, after every cursor in the loop has
+ * been processed) — but reading the about-to-be-deleted bytes out of it
+ * here is still correct: cursors are processed highest-offset-first, so
+ * by the time this particular cursor's [start, cursor) range is touched,
+ * no earlier step in the loop could have written into it (only ranges at
+ * or above this cursor's own offset could have moved, per the same
+ * invariant that already lets deleteBackwardAt skip cross-cursor
+ * bookkeeping — see docs/adr/0012). See docs/adr/0018 for why the undo
+ * stack needs this snapshot at all: ase_buffer_delete doesn't hand back
+ * what it removed. */
 void EditorViewport::deleteBackwardAt(size_t &cursor) {
     if (cursor == 0) {
         return;
@@ -749,16 +776,20 @@ void EditorViewport::deleteBackwardAt(size_t &cursor) {
     while (start > 0 && isUtf8ContinuationByte(m_cache[static_cast<int>(start)])) {
         start--;
     }
+    QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(cursor - start));
     if (ase_buffer_delete(m_buffer, start, cursor - start)) {
+        ase_undo_record_delete(m_undo, start, removed.constData(), static_cast<size_t>(removed.size()));
         cursor = start;
     }
 }
 
 void EditorViewport::deleteForward() {
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     for (int i = m_cursors.size() - 1; i >= 0; --i) {
         deleteForwardAt(m_cursors[i]);
     }
     normalizeCursors();
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     refreshCache();
 }
 
@@ -771,7 +802,10 @@ void EditorViewport::deleteForwardAt(size_t &cursor) {
     while (end < len && isUtf8ContinuationByte(m_cache[static_cast<int>(end)])) {
         end++;
     }
-    ase_buffer_delete(m_buffer, cursor, end - cursor);
+    QByteArray removed = m_cache.mid(static_cast<int>(cursor), static_cast<int>(end - cursor));
+    if (ase_buffer_delete(m_buffer, cursor, end - cursor)) {
+        ase_undo_record_delete(m_undo, cursor, removed.constData(), static_cast<size_t>(removed.size()));
+    }
 }
 
 void EditorViewport::moveCursorLeft() {
@@ -898,4 +932,44 @@ void EditorViewport::save() {
         return;
     }
     ase_buffer_save_to_file(m_buffer, m_filePath.toUtf8().constData());
+}
+
+/* Shared by undo()/redo(): apply the cursor snapshot the undo stack
+ * handed back, refresh everything downstream of a buffer mutation, and
+ * render instantly (like any other edit — see snapAnimationToTarget's
+ * doc comment) rather than gliding. */
+void EditorViewport::applyUndoResult(size_t *cursors, size_t count) {
+    m_cursors.clear();
+    m_cursors.reserve(static_cast<int>(count));
+    for (size_t i = 0; i < count; ++i) {
+        m_cursors.push_back(cursors[i]);
+    }
+    free(cursors);
+    if (m_cursors.isEmpty()) {
+        m_cursors.push_back(0);
+    }
+
+    refreshCache();
+    ensureCursorVisible();
+    resetCaretBlink();
+    snapAnimationToTarget();
+    update();
+}
+
+void EditorViewport::undo() {
+    size_t *cursors = nullptr;
+    size_t count = 0;
+    if (!ase_undo_undo(m_undo, m_buffer, &cursors, &count)) {
+        return;
+    }
+    applyUndoResult(cursors, count);
+}
+
+void EditorViewport::redo() {
+    size_t *cursors = nullptr;
+    size_t count = 0;
+    if (!ase_undo_redo(m_undo, m_buffer, &cursors, &count)) {
+        return;
+    }
+    applyUndoResult(cursors, count);
 }

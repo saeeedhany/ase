@@ -36,6 +36,7 @@ add_library(ase_core
     src/plugin_host.c
     src/json.c
     src/lsp_client.c
+    src/undo.c
 )
 
 target_include_directories(ase_core

@@ -22,6 +22,12 @@ add_executable(ase_json_tests
 target_link_libraries(ase_json_tests PRIVATE ase_core)
 add_test(NAME ase_json_tests COMMAND ase_json_tests)
 
+add_executable(ase_undo_tests
+    test_undo.c
+)
+target_link_libraries(ase_undo_tests PRIVATE ase_core)
+add_test(NAME ase_undo_tests COMMAND ase_undo_tests)
+
 # Native plugin test fixture: built as a loadable module (dlopen'd by
 # the test at runtime, never linked directly) into a build-dir copy of
 # fixtures/ alongside the .lua fixture, so the source tree stays clean

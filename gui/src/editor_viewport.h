@@ -15,6 +15,7 @@ extern "C" {
 #include "ase/buffer.h"
 #include "ase/config.h"
 #include "ase/syntax.h"
+#include "ase/undo.h"
 }
 
 class QTimer;
@@ -123,6 +124,14 @@ private:
     void ensureCursorVisible();
     void save();
 
+    /* Ctrl+Z / Ctrl+Shift+Z — see docs/adr/0018. Both restore m_cursors
+     * from the undo stack's recorded snapshot rather than deriving a
+     * position, refreshCache(), and snapAnimationToTarget() so the edit
+     * (like typing) renders instantly, not glided. */
+    void undo();
+    void redo();
+    void applyUndoResult(size_t *cursors, size_t count);
+
     size_t offsetForPoint(const QPoint &pos) const;
     int lineForOffset(size_t offset) const;
     int columnForOffset(size_t offset, int line) const;
@@ -130,6 +139,7 @@ private:
 
     AseBuffer *m_buffer;
     QString m_filePath;
+    AseUndoStack *m_undo;
 
     AseConfig *m_config = nullptr;
     QString m_configPath;
