@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core-headless:
+    name: core (headless, ${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -B build -DASE_BUILD_GUI=OFF -DASE_BUILD_TESTS=ON
+      - name: Build
+        run: cmake --build build --config Debug
+      - name: Test
+        run: ctest --test-dir build --output-on-failure -C Debug
+
+  core-sanitizers:
+    name: core (ASan/UBSan, ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -B build -DASE_BUILD_GUI=OFF -DASE_BUILD_TESTS=ON -DASE_ENABLE_SANITIZERS=ON -DCMAKE_BUILD_TYPE=Debug
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  # TODO: add a gui job once Phase 2 lands (needs a Qt6 install step per OS).
