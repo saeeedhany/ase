@@ -10,6 +10,12 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ase_core is a static library that also gets linked into dlopen'd
+# plugin modules (core/tests/fixtures/test_native_plugin.c, and any real
+# native plugin later) — those require -fPIC in everything they link
+# against, so set it project-wide rather than per-target.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 option(ASE_BUILD_GUI "Build the Qt6 GUI shell" ON)
 option(ASE_BUILD_TESTS "Build unit tests for the core engine" ON)
 option(ASE_ENABLE_SANITIZERS "Build core with ASan/UBSan" OFF)

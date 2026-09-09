@@ -61,8 +61,30 @@ Each phase should land with tests/benchmarks before the next begins.
       Resolves both ROADMAP open-decision items below (format, and the
       exact accent color — now a live-tunable value, not a hardcoded
       guess).
-- [ ] **Phase 5 — Plugin ABI + Lua scripting host**
-      Stable extension surface.
+- [x] **Phase 5 — Plugin ABI + Lua scripting host**
+      `AsePluginHost` in core (`core/include/ase/plugin_host.h`,
+      `core/include/ase/plugin_abi.h`, `core/src/plugin_host.c`): one
+      named-command registry populated two ways — Lua scripts (embedded
+      Lua 5.4, fetched via `FetchContent` same as Tree-sitter) calling
+      `ase.register_command`, or native `.so`/`.dylib`/`.dll` plugins
+      exporting one `ase_plugin_register` symbol via `dlopen`. Both get
+      a small buffer-editing API (`ase.buffer_*` for Lua,
+      `AseBuffer*`-taking commands for native). Install-by-file, no
+      registry/marketplace, per spec section 6. Verified with unit
+      tests covering registration/replacement, missing-directory and
+      broken-script handling (a syntax error in one script doesn't
+      block others or crash the host), and an end-to-end test loading a
+      real `.lua` fixture and a compiled native fixture from the same
+      directory and running both against a buffer. All clean under
+      ASan/UBSan (needed `CMAKE_POSITION_INDEPENDENT_CODE ON`
+      project-wide once a static lib had to link into a dlopen'd
+      module). See
+      [ADR 0009](adr/0009-plugin-abi-and-lua-host.md) — including the
+      correction of an earlier placeholder that had this living in
+      `modules/plugins/` instead of core, per the spec's own
+      architecture diagram.
+      Not wired into the GUI yet — no keybinding/command-palette exists
+      to trigger a registered command interactively; tracked below.
 - [ ] **Phase 6 — LSP client module**
       Diagnostics, completion, go-to-definition.
 - [ ] **Phase 7 — Polish**
@@ -70,8 +92,7 @@ Each phase should land with tests/benchmarks before the next begins.
 
 ## Current status
 
-Phases 1–4 are done (see above). Phase 5 (plugin ABI + Lua) has not
-started.
+Phases 1–5 are done (see above). Phase 6 (LSP client) has not started.
 
 ## Explicit non-goals for v1
 
@@ -92,3 +113,10 @@ started.
   as config keys.
 - Keybinding customization isn't implemented — Phase 4 covered
   theme/editor config only, per its own scope in `docs/SPEC.md` section 7.
+- No keybinding/command-palette wiring from the GUI to
+  `ase_plugin_host_run_command` — plugins can register commands but
+  nothing in the running editor triggers one interactively yet
+  (ADR 0009, decision 4).
+- Plugin directory isn't loaded automatically by the GUI at startup
+  (unlike config, which is). Natural to add once there's a way to
+  invoke a loaded command.

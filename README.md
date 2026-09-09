@@ -10,11 +10,13 @@ Why things are built the way they are: [`docs/adr/`](docs/adr/).
 
 ## Status
 
-**Phases 1–4 done** (see [`docs/ROADMAP.md`](docs/ROADMAP.md)): a
+**Phases 1–5 done** (see [`docs/ROADMAP.md`](docs/ROADMAP.md)): a
 piece-table buffer engine, a minimal Qt shell that renders and edits
-real files, Tree-sitter-backed syntax highlighting for C, and a
-hot-reloadable config/theme system. No plugins or LSP yet. Not
-published publicly — see
+real files, Tree-sitter-backed syntax highlighting for C, a
+hot-reloadable config/theme system, and a plugin host (Lua scripts +
+native `dlopen` plugins sharing one command registry). No LSP yet, and
+plugins aren't wired to a keybinding/command-palette in the GUI yet.
+Not published publicly — see
 [ADR 0003](docs/adr/0003-license-decision-pending.md), the license is
 still an open decision.
 
@@ -48,11 +50,12 @@ core through a stable C ABI. See
 
 Requires CMake ≥ 3.20 and a C11/C++20 compiler. Qt6 (Widgets) is required
 only for the GUI target — if it isn't found, the GUI target is skipped and
-the core still builds and tests cleanly. The syntax module
-(`-DASE_BUILD_SYNTAX=ON`, default) fetches Tree-sitter and its C grammar
-from GitHub at configure time — needs network access on a clean build.
-The GUI target depends on it (`-DASE_BUILD_GUI=ON` requires
-`-DASE_BUILD_SYNTAX=ON`); disabling syntax while keeping the GUI on is
+the core still builds and tests cleanly. `core/` itself fetches Lua at
+configure time (needs network access on a clean build), and the syntax
+module (`-DASE_BUILD_SYNTAX=ON`, default) likewise fetches Tree-sitter
+and its C grammar — both cached after the first configure.
+The GUI target depends on the syntax module (`-DASE_BUILD_GUI=ON`
+requires `-DASE_BUILD_SYNTAX=ON`); disabling syntax while keeping the GUI on is
 not a supported combination.
 
 ```sh
