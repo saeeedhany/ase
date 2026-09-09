@@ -5,6 +5,7 @@
 #include <QColor>
 #include <QDateTime>
 #include <QFont>
+#include <QPointF>
 #include <QString>
 #include <QVector>
 #include <QWidget>
@@ -57,6 +58,18 @@ private:
      * needed. */
     int gutterWidth() const;
     QString gutterLabelForLine(int line, int cursorLine) const;
+
+    /* Eases m_renderedScrollLine/X and m_renderedCaretPos toward their
+     * logical targets (m_scrollLine/X, m_cursors) by one step. Called
+     * from the top of paintEvent, not the timer, so it's never stale
+     * relative to what's about to be drawn — see docs/adr/0015. When
+     * animations are off, snaps rendered state to the target instead
+     * of easing (today's instant behavior, preserved). */
+    void updateAnimation();
+    /* Where cursor's caret should render right now, in widget pixel
+     * space, given the *current* (possibly still-easing) scroll
+     * position — not its final settled position. */
+    QPointF caretTargetFor(size_t cursor) const;
 
     /* All of these act on every cursor in m_cursors (a single cursor is
      * just the size-1 case) — see docs/adr/0012, decision 1, for why
@@ -115,6 +128,13 @@ private:
     int m_scrollX = 0; /* leftmost visible pixel, not column — see docs/adr/0014 */
     int m_desiredColumn = -1; /* sticky column — single-cursor mode only, see docs/adr/0012 */
     QString m_lineNumberMode = QStringLiteral("absolute"); /* "off" / "absolute" / "relative" */
+
+    /* Rendered (possibly still-easing) counterparts of m_scrollLine/X and
+     * m_cursors — see docs/adr/0015. Equal to the logical values whenever
+     * animations are off or nothing is moving. */
+    double m_renderedScrollLine = 0.0;
+    double m_renderedScrollX = 0.0;
+    QVector<QPointF> m_renderedCaretPos;
 
     QFont m_font;
     int m_lineHeight = 0;

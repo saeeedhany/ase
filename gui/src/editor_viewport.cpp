@@ -18,6 +18,7 @@ constexpr int kCaretAnimationTicks = 34; /* ~1020ms period at the 30ms tick belo
 constexpr double kTwoPi = 6.283185307179586;
 constexpr int kCaretWidth = 2;
 constexpr int kGutterPadding = 8; /* on each side of the line-number text */
+constexpr double kEaseFactor = 0.35; /* per paint — see docs/adr/0015 */
 
 bool isUtf8ContinuationByte(char byte) {
     return (static_cast<unsigned char>(byte) & 0xC0) == 0x80;
@@ -186,7 +187,14 @@ size_t EditorViewport::offsetForLineColumn(int line, int column) const {
 }
 
 size_t EditorViewport::offsetForPoint(const QPoint &pos) const {
-    int line = m_scrollLine + pos.y() / std::max(1, m_lineHeight);
+    /* Uses the *rendered* (possibly still-easing) scroll position, not
+     * the logical target — a click during an active scroll animation
+     * has to map against what's actually on screen right now. See
+     * docs/adr/0015. The vertical fractional part is ignored (floor
+     * only) — a sub-line-height miss mid-animation is a transient,
+     * approximate case, consistent with docs/adr/0013's click-precision
+     * philosophy. */
+    int line = static_cast<int>(std::floor(m_renderedScrollLine)) + pos.y() / std::max(1, m_lineHeight);
     line = std::clamp(line, 0, static_cast<int>(m_lineStarts.size()) - 1);
     /* Approximate on purpose: unlike the caret (docs/adr/0013), a click a
      * character off on a long or styled line is a minor miss, not a
@@ -194,7 +202,7 @@ size_t EditorViewport::offsetForPoint(const QPoint &pos) const {
      * search on every click. Shifted by the gutter and horizontal scroll
      * (docs/adr/0014) to land in the same local coordinate space
      * paintEvent's translate uses. */
-    int localX = std::max(0, pos.x() - gutterWidth() + m_scrollX);
+    int localX = std::max(0, static_cast<int>(pos.x() - gutterWidth() + m_renderedScrollX));
     int col = localX / std::max(1, m_charWidth);
     size_t offset = offsetForLineColumn(line, col);
 
@@ -210,23 +218,32 @@ size_t EditorViewport::offsetForPoint(const QPoint &pos) const {
 }
 
 void EditorViewport::paintEvent(QPaintEvent *) {
+    updateAnimation();
+
     QPainter painter(this);
     painter.fillRect(rect(), m_backgroundColor);
 
     int gutter = gutterWidth();
     int textAreaWidth = std::max(1, width() - gutter);
-    int visibleLines = std::max(1, height() / m_lineHeight + 1);
-    int firstLine = m_scrollLine;
+
+    int firstLine = std::max(0, static_cast<int>(std::floor(m_renderedScrollLine)));
+    double fracLine = m_renderedScrollLine - std::floor(m_renderedScrollLine);
+    /* +2, not +1: the fractional vertical shift below can reveal a line
+     * beyond what a plain height()/lineHeight count would cover. */
+    int visibleLines = std::max(1, height() / m_lineHeight + 2);
     int lastLine = std::min(firstLine + visibleLines, static_cast<int>(m_lineStarts.size()));
 
     /* Everything from here to restore() draws in "local" (document)
-     * coordinates — the translate folds in both the gutter offset and
-     * horizontal scroll, so drawLine/xForColumn/the caret below didn't
-     * need to change at all. The clip keeps any of it from painting
-     * over the gutter. See docs/adr/0014. */
+     * coordinates — the translate folds in the gutter offset, horizontal
+     * scroll, and the sub-line-height vertical remainder together, so
+     * drawLine/xForColumn didn't need to change at all. The clip keeps
+     * any of it from painting over the gutter. See docs/adr/0014
+     * (gutter/scroll) and docs/adr/0015 (the fractional part, added for
+     * smooth scrolling). */
     painter.save();
-    painter.translate(gutter - m_scrollX, 0);
-    painter.setClipRect(QRect(m_scrollX, 0, textAreaWidth, height()));
+    painter.translate(gutter - m_renderedScrollX, -fracLine * m_lineHeight);
+    painter.setClipRect(QRectF(m_renderedScrollX, -static_cast<double>(m_lineHeight), textAreaWidth,
+                                height() + 2.0 * m_lineHeight));
 
     for (int line = firstLine; line < lastLine; ++line) {
         int start = m_lineStarts[line];
@@ -234,7 +251,12 @@ void EditorViewport::paintEvent(QPaintEvent *) {
         int y = (line - firstLine) * m_lineHeight;
         drawLine(painter, start, end, y);
     }
+    painter.restore();
 
+    /* Carets are drawn separately, in absolute widget space, at their
+     * *rendered* (eased) positions — decoupled from the instant scroll
+     * target above so a caret mid-glide isn't forced to jump with it.
+     * See docs/adr/0015. */
     int caretAlpha = 255;
     if (m_animationsEnabled) {
         double phase = (m_caretTick % kCaretAnimationTicks) / static_cast<double>(kCaretAnimationTicks);
@@ -243,27 +265,21 @@ void EditorViewport::paintEvent(QPaintEvent *) {
         caretAlpha = 0;
     }
 
-    if (caretAlpha > 0) {
+    if (caretAlpha > 0 && !m_renderedCaretPos.isEmpty()) {
         QColor caretColor = m_textColor;
         caretColor.setAlpha(caretAlpha);
-        for (size_t cursor : m_cursors) {
-            int line = lineForOffset(cursor);
-            if (line >= firstLine && line < lastLine) {
-                int lineStart = m_lineStarts[line];
-                int lineEnd =
-                    (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
-                int col = columnForOffset(cursor, line);
-                int x = xForColumn(lineStart, lineEnd, col);
-                int y = (line - firstLine) * m_lineHeight;
-                painter.fillRect(QRect(x, y, kCaretWidth, m_lineHeight), caretColor);
-            }
+        painter.save();
+        painter.setClipRect(QRect(gutter, 0, textAreaWidth, height()));
+        for (const QPointF &pos : m_renderedCaretPos) {
+            painter.fillRect(QRectF(pos.x(), pos.y(), kCaretWidth, m_lineHeight), caretColor);
         }
+        painter.restore();
     }
 
-    painter.restore();
-
     if (gutter > 0) {
-        painter.fillRect(QRect(0, 0, gutter, height()), m_backgroundColor);
+        painter.save();
+        painter.translate(0, -fracLine * m_lineHeight);
+        painter.fillRect(QRectF(0, -m_lineHeight, gutter, height() + 2.0 * m_lineHeight), m_backgroundColor);
 
         int cursorLine = lineForOffset(m_cursors.last());
         QColor dim = m_textColor;
@@ -278,7 +294,56 @@ void EditorViewport::paintEvent(QPaintEvent *) {
             painter.drawText(QRect(0, y, gutter - kGutterPadding, m_lineHeight), Qt::AlignRight | Qt::AlignVCenter,
                               gutterLabelForLine(line, cursorLine));
         }
+        painter.restore();
     }
+}
+
+/* Advances the rendered scroll/caret state one step toward its logical
+ * target. Called from the top of paintEvent — see docs/adr/0015. */
+void EditorViewport::updateAnimation() {
+    if (!m_animationsEnabled) {
+        m_renderedScrollLine = m_scrollLine;
+        m_renderedScrollX = m_scrollX;
+        m_renderedCaretPos.clear();
+        return;
+    }
+
+    double deltaLine = m_scrollLine - m_renderedScrollLine;
+    m_renderedScrollLine += (std::abs(deltaLine) < 0.02) ? deltaLine : deltaLine * kEaseFactor;
+
+    double deltaX = m_scrollX - m_renderedScrollX;
+    m_renderedScrollX += (std::abs(deltaX) < 0.5) ? deltaX : deltaX * kEaseFactor;
+
+    if (m_renderedCaretPos.size() != m_cursors.size()) {
+        /* Cursor count just changed (added/removed) — snap to targets
+         * this frame rather than gliding from a mismatched old array. */
+        m_renderedCaretPos.resize(m_cursors.size());
+        for (int i = 0; i < m_cursors.size(); ++i) {
+            m_renderedCaretPos[i] = caretTargetFor(m_cursors[i]);
+        }
+        return;
+    }
+
+    for (int i = 0; i < m_cursors.size(); ++i) {
+        QPointF target = caretTargetFor(m_cursors[i]);
+        QPointF &rendered = m_renderedCaretPos[i];
+        QPointF delta = target - rendered;
+        if (std::abs(delta.x()) < 0.5 && std::abs(delta.y()) < 0.5) {
+            rendered = target;
+        } else {
+            rendered += delta * kEaseFactor;
+        }
+    }
+}
+
+QPointF EditorViewport::caretTargetFor(size_t cursor) const {
+    int line = lineForOffset(cursor);
+    int lineStart = m_lineStarts[line];
+    int lineEnd = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
+    int col = columnForOffset(cursor, line);
+    double x = gutterWidth() - m_renderedScrollX + xForColumn(lineStart, lineEnd, col);
+    double y = (line - m_renderedScrollLine) * m_lineHeight;
+    return QPointF(x, y);
 }
 
 /* One entry per byte in [start, end), naming which capture (if any) that

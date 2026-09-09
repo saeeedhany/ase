@@ -173,8 +173,17 @@ lands here going forward.
       view-follow, and an optional line-number gutter (`line_numbers`
       config key: `off`/`absolute`/`relative`, default `absolute`).
       See [ADR 0014](adr/0014-viewport-geometry.md).
-- [ ] **Phase 9 — Smooth motion**: caret glide + smooth scroll, building
-      on Phase 8's exact-pixel-position plumbing.
+- [x] **Phase 9 — Smooth motion**: caret glide + smooth scroll, one
+      easing mechanism driving both, advanced from `paintEvent` itself
+      (never stale relative to what's drawn). Fractional vertical
+      scroll needed the one real new trick — render from
+      `floor(renderedScrollLine)`, shift the whole line loop by the
+      remainder, request one extra line at the bottom. Verified live:
+      `animations = true` shows a large scroll jump visibly
+      interpolating across frames (sampled gutter numbers converging
+      232 → 237 → 238); `animations = false` produces pixel-identical
+      consecutive frames after the same jump (true instant snap, no
+      regression). See [ADR 0015](adr/0015-smooth-motion.md).
 - [ ] **Phase 10 — Command line + `:compile` + output panel**: extracts
       a reusable `AseProcess` from the LSP client's process-spawning
       code; first real second panel.
