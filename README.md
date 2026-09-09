@@ -10,17 +10,18 @@ Why things are built the way they are: [`docs/adr/`](docs/adr/).
 
 ## Status
 
-**Phases 1–6 done** (see [`docs/ROADMAP.md`](docs/ROADMAP.md)) — every
-phase but the final "polish" pass: a piece-table buffer engine, a
-minimal Qt shell that renders and edits real files, Tree-sitter-backed
-syntax highlighting for C, a hot-reloadable config/theme system, a
-plugin host (Lua scripts + native `dlopen` plugins sharing one command
-registry), and an LSP client (process-isolated, diagnostics/completion/
-go-to-definition, POSIX only so far). The plugin host and LSP client
-both work standalone but aren't wired into the GUI yet — no
-keybinding/command-palette, no diagnostics/completion UI. Not published
-publicly — see [ADR 0003](docs/adr/0003-license-decision-pending.md),
-the license is still an open decision.
+**All seven spec phases done** (see [`docs/ROADMAP.md`](docs/ROADMAP.md)):
+a piece-table buffer engine, a minimal Qt shell with multi-cursor
+editing, Tree-sitter-backed syntax highlighting for C, a hot-reloadable
+config/theme system with one opt-in animation, a plugin host (Lua
+scripts + native `dlopen` plugins sharing one command registry), and an
+LSP client (process-isolated, diagnostics/completion/go-to-definition,
+POSIX only so far). The plugin host and LSP client both work standalone
+but aren't wired into the GUI yet — no keybinding/command-palette, no
+diagnostics/completion UI; see `docs/ROADMAP.md` for the full list of
+tracked follow-ups. Not published publicly — see
+[ADR 0003](docs/adr/0003-license-decision-pending.md), the license is
+still an open decision.
 
 ## Architecture
 
@@ -86,9 +87,10 @@ cmake --build build
 - `core/` — the engine: buffer, config/theme parsing, plugin ABI + Lua
   host, JSON + LSP client. Builds and runs headless. (Undo/redo is
   spec'd for this layer but not implemented yet — see `docs/ROADMAP.md`.)
-- `gui/` — Qt6 shell: native chrome + custom-painted viewport.
-- `modules/` — pluggable feature modules (syntax, LSP, plugins); empty
-  placeholders until their respective phases (see `docs/ROADMAP.md`).
+- `gui/` — Qt6 shell: native chrome + custom-painted, multi-cursor viewport.
+- `modules/syntax/` — Tree-sitter syntax highlighting (the only feature
+  module built so far — LSP and the plugin host both ended up living in
+  `core/` instead; see `modules/README.md`).
 - `docs/` — spec, roadmap, and ADRs.
 
 ## Contributing

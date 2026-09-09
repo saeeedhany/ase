@@ -1,6 +1,7 @@
 #include "editor_viewport.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <vector>
 
@@ -8,13 +9,22 @@
 #include <QFontDatabase>
 #include <QFontMetrics>
 #include <QKeyEvent>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QTimer>
 #include <QWheelEvent>
 
 namespace {
+constexpr int kCaretAnimationTicks = 34; /* ~1020ms period at the 30ms tick below */
+constexpr double kTwoPi = 6.283185307179586;
+
 bool isUtf8ContinuationByte(char byte) {
     return (static_cast<unsigned char>(byte) & 0xC0) == 0x80;
+}
+
+bool isWordChar(char c) {
+    unsigned char uc = static_cast<unsigned char>(c);
+    return (uc >= 'a' && uc <= 'z') || (uc >= 'A' && uc <= 'Z') || (uc >= '0' && uc <= '9') || uc == '_';
 }
 
 void collectHighlightSpan(void *user_data, AseHighlightSpan span) {
@@ -27,6 +37,8 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     setFocusPolicy(Qt::StrongFocus);
     setContextMenuPolicy(Qt::NoContextMenu);
     setAutoFillBackground(false);
+    setAccessibleName(QStringLiteral("Editor"));
+    setAccessibleDescription(QStringLiteral("Text editing area"));
 
     loadConfig();
 
@@ -39,10 +51,15 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 
     m_blinkTimer = new QTimer(this);
     connect(m_blinkTimer, &QTimer::timeout, this, [this]() {
-        m_caretVisible = !m_caretVisible;
-        update();
+        m_caretTick++;
+        if (m_animationsEnabled) {
+            update();
+        } else if (m_caretTick % 17 == 0) { /* ~500ms at this 30ms tick */
+            m_caretVisible = !m_caretVisible;
+            update();
+        }
     });
-    m_blinkTimer->start(500);
+    m_blinkTimer->start(30);
 
     m_configTimer = new QTimer(this);
     connect(m_configTimer, &QTimer::timeout, this, [this]() { checkConfigReload(); });
@@ -92,6 +109,11 @@ void EditorViewport::applyConfig() {
     QFontMetrics metrics(m_font);
     m_lineHeight = metrics.height();
     m_charWidth = metrics.horizontalAdvance(QLatin1Char('M'));
+
+    /* Opt-in, off by default — see docs/adr/0012, decision 2. */
+    const char *animationsStr = ase_config_get_string(m_config, "animations");
+    m_animationsEnabled = animationsStr != nullptr &&
+                          QString::fromUtf8(animationsStr).compare(QLatin1String("true"), Qt::CaseInsensitive) == 0;
 }
 
 void EditorViewport::checkConfigReload() {
@@ -151,6 +173,23 @@ size_t EditorViewport::offsetForLineColumn(int line, int column) const {
     return static_cast<size_t>(start + column);
 }
 
+size_t EditorViewport::offsetForPoint(const QPoint &pos) const {
+    int line = m_scrollLine + pos.y() / std::max(1, m_lineHeight);
+    line = std::clamp(line, 0, static_cast<int>(m_lineStarts.size()) - 1);
+    int col = pos.x() / std::max(1, m_charWidth);
+    size_t offset = offsetForLineColumn(line, col);
+
+    /* Column counting is byte-based (see docs/adr/0012, decision 1) — a
+     * pixel click can land mid-codepoint; snap forward to the next
+     * lead-byte boundary so every cursor position stays one that the
+     * multi-cursor edit operations' invariant assumes. */
+    while (offset > 0 && offset < static_cast<size_t>(m_cache.size()) &&
+           isUtf8ContinuationByte(m_cache[static_cast<int>(offset)])) {
+        offset++;
+    }
+    return offset;
+}
+
 void EditorViewport::paintEvent(QPaintEvent *) {
     QPainter painter(this);
     painter.fillRect(rect(), m_backgroundColor);
@@ -166,13 +205,25 @@ void EditorViewport::paintEvent(QPaintEvent *) {
         drawLine(painter, start, end, y);
     }
 
-    if (m_caretVisible) {
-        int line = lineForOffset(m_cursor);
-        if (line >= firstLine && line < lastLine) {
-            int col = columnForOffset(m_cursor, line);
-            int x = col * m_charWidth;
-            int y = (line - firstLine) * m_lineHeight;
-            painter.fillRect(QRect(x, y, 2, m_lineHeight), m_textColor);
+    int caretAlpha = 255;
+    if (m_animationsEnabled) {
+        double phase = (m_caretTick % kCaretAnimationTicks) / static_cast<double>(kCaretAnimationTicks);
+        caretAlpha = std::clamp(static_cast<int>(128 + 127 * std::sin(phase * kTwoPi)), 0, 255);
+    } else if (!m_caretVisible) {
+        caretAlpha = 0;
+    }
+
+    if (caretAlpha > 0) {
+        QColor caretColor = m_textColor;
+        caretColor.setAlpha(caretAlpha);
+        for (size_t cursor : m_cursors) {
+            int line = lineForOffset(cursor);
+            if (line >= firstLine && line < lastLine) {
+                int col = columnForOffset(cursor, line);
+                int x = col * m_charWidth;
+                int y = (line - firstLine) * m_lineHeight;
+                painter.fillRect(QRect(x, y, 2, m_lineHeight), caretColor);
+            }
         }
     }
 }
@@ -233,7 +284,10 @@ void EditorViewport::applyCaptureStyle(QPainter &painter, AseHighlightCapture ca
         color.setAlpha(200);
         break;
     case ASE_HL_COMMENT:
-        color.setAlpha(115);
+        /* 145/255 (~57%), not the original 115/255 (~45%) — that measured
+         * 3.64:1 against the background, below WCAG AA's 4.5:1 for normal
+         * text. See docs/adr/0012, decision 4. */
+        color.setAlpha(145);
         break;
     case ASE_HL_NONE:
     default:
@@ -255,6 +309,12 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
     }
     if (event->key() == Qt::Key_Down) {
         moveCursorVertically(1);
+        ensureCursorVisible();
+        update();
+        return;
+    }
+    if (event->key() == Qt::Key_Escape) {
+        collapseToOneCursor();
         ensureCursorVisible();
         update();
         return;
@@ -295,6 +355,10 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
                 window()->close();
                 return;
             }
+            if (event->key() == Qt::Key_D) {
+                addCursorAtNextOccurrence();
+                return;
+            }
             QWidget::keyPressEvent(event);
             return;
         }
@@ -320,93 +384,240 @@ void EditorViewport::wheelEvent(QWheelEvent *event) {
     update();
 }
 
+void EditorViewport::mousePressEvent(QMouseEvent *event) {
+    if (event->button() != Qt::LeftButton) {
+        QWidget::mousePressEvent(event);
+        return;
+    }
+
+    size_t offset = offsetForPoint(event->position().toPoint());
+
+    if (event->modifiers() & Qt::AltModifier) {
+        m_cursors.push_back(offset);
+        normalizeCursors();
+    } else {
+        m_cursors.clear();
+        m_cursors.push_back(offset);
+    }
+
+    m_desiredColumn = -1;
+    m_caretVisible = true;
+    ensureCursorVisible();
+    update();
+}
+
+void EditorViewport::normalizeCursors() {
+    std::sort(m_cursors.begin(), m_cursors.end());
+    m_cursors.erase(std::unique(m_cursors.begin(), m_cursors.end()), m_cursors.end());
+    if (m_cursors.isEmpty()) {
+        m_cursors.push_back(0);
+    }
+}
+
+void EditorViewport::collapseToOneCursor() {
+    if (m_cursors.size() <= 1) {
+        return;
+    }
+    size_t keep = m_cursors.last();
+    m_cursors.clear();
+    m_cursors.push_back(keep);
+}
+
+/* "Select next occurrence" (Ctrl+D, Sublime/VS Code convention) without a
+ * selection-range model: adds a point cursor at the end of the next
+ * whole-word match after the word at the last cursor. Doesn't wrap. */
+void EditorViewport::addCursorAtNextOccurrence() {
+    if (m_cursors.isEmpty()) {
+        return;
+    }
+    size_t anchor = m_cursors.last();
+    int len = m_cache.size();
+
+    int wordStart = static_cast<int>(anchor);
+    while (wordStart > 0 && isWordChar(m_cache[wordStart - 1])) {
+        wordStart--;
+    }
+    int wordEnd = static_cast<int>(anchor);
+    while (wordEnd < len && isWordChar(m_cache[wordEnd])) {
+        wordEnd++;
+    }
+    if (wordStart == wordEnd) {
+        return; /* anchor isn't touching a word */
+    }
+
+    QByteArray word = m_cache.mid(wordStart, wordEnd - wordStart);
+    int wordLen = word.size();
+
+    for (int searchStart = wordEnd; searchStart + wordLen <= len; ++searchStart) {
+        if (m_cache.mid(searchStart, wordLen) != word) {
+            continue;
+        }
+        bool boundaryBefore = (searchStart == 0) || !isWordChar(m_cache[searchStart - 1]);
+        bool boundaryAfter = (searchStart + wordLen == len) || !isWordChar(m_cache[searchStart + wordLen]);
+        if (boundaryBefore && boundaryAfter) {
+            m_cursors.push_back(static_cast<size_t>(searchStart + wordLen));
+            normalizeCursors();
+            ensureCursorVisible();
+            update();
+            return;
+        }
+    }
+    /* no further occurrence forward — no-op, see docs/adr/0012 */
+}
+
 void EditorViewport::insertText(const QByteArray &bytes) {
     if (bytes.isEmpty()) {
         return;
     }
-    if (!ase_buffer_insert(m_buffer, m_cursor, bytes.constData(), static_cast<size_t>(bytes.size()))) {
-        return;
+    for (int i = m_cursors.size() - 1; i >= 0; --i) {
+        insertTextAt(m_cursors[i], bytes);
     }
-    m_cursor += static_cast<size_t>(bytes.size());
+    normalizeCursors();
     refreshCache();
 }
 
+void EditorViewport::insertTextAt(size_t &cursor, const QByteArray &bytes) {
+    if (ase_buffer_insert(m_buffer, cursor, bytes.constData(), static_cast<size_t>(bytes.size()))) {
+        cursor += static_cast<size_t>(bytes.size());
+    }
+}
+
 void EditorViewport::deleteBackward() {
-    if (m_cursor == 0) {
+    for (int i = m_cursors.size() - 1; i >= 0; --i) {
+        deleteBackwardAt(m_cursors[i]);
+    }
+    normalizeCursors();
+    refreshCache();
+}
+
+void EditorViewport::deleteBackwardAt(size_t &cursor) {
+    if (cursor == 0) {
         return;
     }
-    size_t start = m_cursor - 1;
+    size_t start = cursor - 1;
     while (start > 0 && isUtf8ContinuationByte(m_cache[static_cast<int>(start)])) {
         start--;
     }
-    if (ase_buffer_delete(m_buffer, start, m_cursor - start)) {
-        m_cursor = start;
-        refreshCache();
+    if (ase_buffer_delete(m_buffer, start, cursor - start)) {
+        cursor = start;
     }
 }
 
 void EditorViewport::deleteForward() {
+    for (int i = m_cursors.size() - 1; i >= 0; --i) {
+        deleteForwardAt(m_cursors[i]);
+    }
+    normalizeCursors();
+    refreshCache();
+}
+
+void EditorViewport::deleteForwardAt(size_t &cursor) {
     size_t len = static_cast<size_t>(m_cache.size());
-    if (m_cursor >= len) {
+    if (cursor >= len) {
         return;
     }
-    size_t end = m_cursor + 1;
+    size_t end = cursor + 1;
     while (end < len && isUtf8ContinuationByte(m_cache[static_cast<int>(end)])) {
         end++;
     }
-    if (ase_buffer_delete(m_buffer, m_cursor, end - m_cursor)) {
-        refreshCache();
-    }
+    ase_buffer_delete(m_buffer, cursor, end - cursor);
 }
 
 void EditorViewport::moveCursorLeft() {
-    if (m_cursor == 0) {
+    for (size_t &cursor : m_cursors) {
+        moveCursorLeftAt(cursor);
+    }
+    normalizeCursors();
+}
+
+void EditorViewport::moveCursorLeftAt(size_t &cursor) {
+    if (cursor == 0) {
         return;
     }
-    size_t pos = m_cursor - 1;
+    size_t pos = cursor - 1;
     while (pos > 0 && isUtf8ContinuationByte(m_cache[static_cast<int>(pos)])) {
         pos--;
     }
-    m_cursor = pos;
+    cursor = pos;
 }
 
 void EditorViewport::moveCursorRight() {
+    for (size_t &cursor : m_cursors) {
+        moveCursorRightAt(cursor);
+    }
+    normalizeCursors();
+}
+
+void EditorViewport::moveCursorRightAt(size_t &cursor) {
     size_t len = static_cast<size_t>(m_cache.size());
-    if (m_cursor >= len) {
+    if (cursor >= len) {
         return;
     }
-    size_t pos = m_cursor + 1;
+    size_t pos = cursor + 1;
     while (pos < len && isUtf8ContinuationByte(m_cache[static_cast<int>(pos)])) {
         pos++;
     }
-    m_cursor = pos;
+    cursor = pos;
 }
 
 void EditorViewport::moveCursorVertically(int lineDelta) {
-    int line = lineForOffset(m_cursor);
-    int column = (m_desiredColumn >= 0) ? m_desiredColumn : columnForOffset(m_cursor, line);
-    m_desiredColumn = column;
+    if (m_cursors.size() == 1) {
+        /* sticky column — see docs/adr/0012, decision 1 */
+        size_t cursor = m_cursors[0];
+        int line = lineForOffset(cursor);
+        int column = (m_desiredColumn >= 0) ? m_desiredColumn : columnForOffset(cursor, line);
+        m_desiredColumn = column;
 
+        int newLine = line + lineDelta;
+        if (newLine >= 0 && newLine < m_lineStarts.size()) {
+            m_cursors[0] = offsetForLineColumn(newLine, column);
+        }
+        return;
+    }
+
+    for (size_t &cursor : m_cursors) {
+        moveCursorVerticallyAt(cursor, lineDelta);
+    }
+    normalizeCursors();
+}
+
+void EditorViewport::moveCursorVerticallyAt(size_t &cursor, int lineDelta) {
+    int line = lineForOffset(cursor);
+    int column = columnForOffset(cursor, line);
     int newLine = line + lineDelta;
     if (newLine < 0 || newLine >= m_lineStarts.size()) {
         return;
     }
-    m_cursor = offsetForLineColumn(newLine, column);
+    cursor = offsetForLineColumn(newLine, column);
 }
 
 void EditorViewport::moveCursorHome() {
-    int line = lineForOffset(m_cursor);
-    m_cursor = static_cast<size_t>(m_lineStarts[line]);
+    for (size_t &cursor : m_cursors) {
+        moveCursorHomeAt(cursor);
+    }
+    normalizeCursors();
+}
+
+void EditorViewport::moveCursorHomeAt(size_t &cursor) {
+    int line = lineForOffset(cursor);
+    cursor = static_cast<size_t>(m_lineStarts[line]);
 }
 
 void EditorViewport::moveCursorEnd() {
-    int line = lineForOffset(m_cursor);
+    for (size_t &cursor : m_cursors) {
+        moveCursorEndAt(cursor);
+    }
+    normalizeCursors();
+}
+
+void EditorViewport::moveCursorEndAt(size_t &cursor) {
+    int line = lineForOffset(cursor);
     int end = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
-    m_cursor = static_cast<size_t>(end);
+    cursor = static_cast<size_t>(end);
 }
 
 void EditorViewport::ensureCursorVisible() {
-    int line = lineForOffset(m_cursor);
+    int line = lineForOffset(m_cursors.last());
     int visibleLines = std::max(1, height() / m_lineHeight);
     if (line < m_scrollLine) {
         m_scrollLine = line;

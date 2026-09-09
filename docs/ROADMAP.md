@@ -110,13 +110,46 @@ Each phase should land with tests/benchmarks before the next begins.
       Not wired into the GUI yet — no diagnostics/completion/
       go-to-definition UI exists; tracked below, same pattern as
       Phase 5's plugin host.
-- [ ] **Phase 7 — Polish**
-      Multi-cursor, minimal/opt-in animations, panel layout, accessibility pass.
+- [x] **Phase 7 — Polish**
+      All four items scoped and recorded in
+      [ADR 0012](adr/0012-polish-phase-scope.md):
+      - **Multi-cursor**: `EditorViewport` moved from one `size_t` cursor
+        to `QVector<size_t> m_cursors`. New cursors via mouse click
+        (new — there was no mouse handling before this phase),
+        `Alt`+click, or `Ctrl+D` ("select next occurrence," Sublime/
+        VS Code convention); `Escape` collapses back to one. Every edit
+        applies at every cursor, processed highest-offset-first — proven
+        safe without cross-cursor offset bookkeeping (ADR 0012, decision
+        1). Verified live: clicking, `Alt`+clicking, and `Ctrl+D` each
+        confirmed by typing afterward and screenshotting the same
+        character landing at every active cursor simultaneously.
+      - **Animation**: one, opt-in (`animations = true` in config,
+        default `false`) — a smooth caret alpha-fade replacing the hard
+        blink toggle. Verified live: sampled the caret's actual pixel
+        color across three screenshots taken moments apart with
+        animations on, confirming a continuously-varying alpha rather
+        than a hard on/off value.
+      - **Panel layout**: deliberately not built — there is, and has
+        been through every phase, exactly one panel. Building a second
+        one now just to have something to arrange would be unscoped
+        scope creep; deferred until a real second panel exists (most
+        plausibly an LSP diagnostics panel).
+      - **Accessibility pass**: found and fixed a real issue —
+        ADR 0007's dimmed comment color measured 3.64:1 contrast against
+        the background, under WCAG AA's 4.5:1 for normal text; raised to
+        4.91:1. Added accessible name/description. Full screen-reader
+        text exposure (`QAccessibleInterface`) deliberately not
+        attempted — unverifiable in this environment, and an untested
+        implementation of an interface real assistive tech calls into
+        risks being worse than the honest gap (same reasoning as
+        ADR 0011's Windows decision). Tracked below.
 
 ## Current status
 
-Phases 1–6 are done (see above). Phase 7 (polish) has not started —
-that's the last phase in the spec's build order.
+All seven phases from the spec's build order are done (see above).
+Nothing left on the original phase list — remaining work is the
+tracked follow-ups below (mostly: wiring the plugin host and LSP client
+into the GUI) and the still-open license decision.
 
 ## Explicit non-goals for v1
 
@@ -152,3 +185,15 @@ that's the last phase in the spec's build order.
   reader thread (ADR 0011, decision 6), real work, not a quick add-on.
 - No `textDocument/didChange` — the LSP client can tell a server a
   document was opened but not that it changed afterward.
+- No panel layout infrastructure — there's exactly one panel; build
+  this when a second one (e.g. LSP diagnostics) actually exists
+  (ADR 0012, decision 3).
+- No screen-reader text exposure (`QAccessibleInterface`) for the
+  custom-painted viewport — a real, open accessibility gap, not
+  attempted because it's unverifiable without a live AT-SPI client in
+  this environment (ADR 0012, decision 4). Needs dedicated follow-up
+  with proper assistive-technology test tooling.
+- Vertical multi-cursor movement doesn't track a sticky column per
+  cursor (only single-cursor mode does) — a minor, rare-in-practice
+  paper cut (ADR 0012, decision 1).
+- `Ctrl+D` "select next occurrence" doesn't wrap around the buffer.

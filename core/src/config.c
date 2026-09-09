@@ -268,7 +268,12 @@ static const char kDefaultConfigTemplate[] =
     "text = #F5E6C8\n"
     "\n"
     "font_family = monospace\n"
-    "font_size = 12\n";
+    "font_size = 12\n"
+    "\n"
+    "# Off by default (opt-in, per the aesthetic pillar and for anyone who\n"
+    "# prefers reduced motion). Set true for a smooth caret fade instead of\n"
+    "# a hard on/off blink.\n"
+    "animations = false\n";
 
 /* Creates only the immediate parent directory, not any missing
  * grandparent — see docs/adr/0008, decision 5. */

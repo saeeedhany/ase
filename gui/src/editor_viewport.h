@@ -23,7 +23,8 @@ class QPainter;
  * own. Owns the AseBuffer it renders — see docs/adr/0002 for why this
  * class, not the core, holds Qt-specific state. Known v1 shortcuts (full-
  * buffer mirroring, byte-level cursor, no IME) are documented in
- * docs/adr/0006, not repeated here.
+ * docs/adr/0006, not repeated here. Multi-cursor, the opt-in caret-fade
+ * animation, and the accessibility pass are documented in docs/adr/0012.
  */
 class EditorViewport : public QWidget {
 public:
@@ -34,6 +35,7 @@ protected:
     void paintEvent(QPaintEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
 
 private:
     void loadConfig();
@@ -42,6 +44,12 @@ private:
     void refreshCache();
     void drawLine(QPainter &painter, int start, int end, int y);
     void applyCaptureStyle(QPainter &painter, AseHighlightCapture capture);
+
+    /* All of these act on every cursor in m_cursors (a single cursor is
+     * just the size-1 case) — see docs/adr/0012, decision 1, for why
+     * processing highest-offset-first needs no cross-cursor bookkeeping.
+     * Each loops over m_cursors calling the matching *At single-cursor
+     * primitive below. */
     void insertText(const QByteArray &bytes);
     void deleteBackward();
     void deleteForward();
@@ -50,9 +58,24 @@ private:
     void moveCursorVertically(int lineDelta);
     void moveCursorHome();
     void moveCursorEnd();
+    void addCursorAtNextOccurrence();
+    void collapseToOneCursor();
+    void normalizeCursors();
+
+    /* Single-cursor primitives — operate on one cursor's position. */
+    void insertTextAt(size_t &cursor, const QByteArray &bytes);
+    void deleteBackwardAt(size_t &cursor);
+    void deleteForwardAt(size_t &cursor);
+    void moveCursorLeftAt(size_t &cursor);
+    void moveCursorRightAt(size_t &cursor);
+    void moveCursorVerticallyAt(size_t &cursor, int lineDelta);
+    void moveCursorHomeAt(size_t &cursor);
+    void moveCursorEndAt(size_t &cursor);
+
     void ensureCursorVisible();
     void save();
 
+    size_t offsetForPoint(const QPoint &pos) const;
     int lineForOffset(size_t offset) const;
     int columnForOffset(size_t offset, int line) const;
     size_t offsetForLineColumn(int line, int column) const;
@@ -66,6 +89,7 @@ private:
     QTimer *m_configTimer;
     QColor m_backgroundColor;
     QColor m_textColor;
+    bool m_animationsEnabled = false;
 
     AseSyntax *m_syntax = nullptr; /* null for unsupported file types — see docs/adr/0007 */
     QVector<AseHighlightSpan> m_highlights;
@@ -73,9 +97,9 @@ private:
     QByteArray m_cache;
     QVector<int> m_lineStarts;
 
-    size_t m_cursor = 0;
+    QVector<size_t> m_cursors {0}; /* always non-empty, sorted ascending, de-duplicated */
     int m_scrollLine = 0;
-    int m_desiredColumn = -1;
+    int m_desiredColumn = -1; /* sticky column — single-cursor mode only, see docs/adr/0012 */
 
     QFont m_font;
     int m_lineHeight = 0;
@@ -83,6 +107,7 @@ private:
 
     QTimer *m_blinkTimer;
     bool m_caretVisible = true;
+    int m_caretTick = 0;
 };
 
 #endif /* ASE_EDITOR_VIEWPORT_H */
