@@ -10,10 +10,12 @@ Why things are built the way they are: [`docs/adr/`](docs/adr/).
 
 ## Status
 
-**Pre-Phase-1.** This is a scaffold: directory layout, build system, and
-docs only. No buffer engine, no rendering, no editing yet. Not published
-publicly — see [ADR 0003](docs/adr/0003-license-decision-pending.md), the
-license is still an open decision.
+**Phases 1–2 done** (see [`docs/ROADMAP.md`](docs/ROADMAP.md)): a
+piece-table buffer engine and a minimal Qt shell that renders and edits
+real files. No syntax highlighting, theming, plugins, or LSP yet. Not
+published publicly — see
+[ADR 0003](docs/adr/0003-license-decision-pending.md), the license is
+still an open decision.
 
 ## Architecture
 

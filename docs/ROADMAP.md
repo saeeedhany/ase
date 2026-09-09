@@ -17,9 +17,19 @@ Each phase should land with tests/benchmarks before the next begins.
       Deferred out of this phase, tracked as follow-ups: undo/redo
       history, line-index acceleration, periodic memory
       compaction, and CI fuzz integration (all called out in ADR 0005).
-- [ ] **Phase 2 — Minimal Qt shell**
-      Window, custom-painted viewport rendering the buffer, keyboard input
-      wired to core edit operations.
+- [x] **Phase 2 — Minimal Qt shell**
+      `QMainWindow` + a custom-painted `EditorViewport` widget
+      (`gui/src/editor_viewport.{h,cpp}`): renders the buffer with
+      `QPainter` against the default palette, blinking caret, keyboard
+      wired to `ase_buffer_insert/_delete` (typing, backspace/delete,
+      arrow/Home/End navigation with a sticky column for up/down),
+      wheel scrolling, `Ctrl+S` save / `Ctrl+Q` quit, no menu bar or
+      other chrome. Verified by launching it against a real file,
+      screenshotting the render, and confirming typed edits round-trip
+      to disk via Ctrl+S. See
+      [ADR 0006](adr/0006-gui-shell-v1-shortcuts.md) for this phase's
+      deliberate shortcuts (full-buffer mirroring per keystroke,
+      byte-level cursor, no IME, no dirty-tracking).
 - [ ] **Phase 3 — Syntax highlighting**
       Tree-sitter integration into the viewport render path.
 - [ ] **Phase 4 — Theming & config system**
@@ -33,8 +43,8 @@ Each phase should land with tests/benchmarks before the next begins.
 
 ## Current status
 
-Phase 1's buffer engine is implemented, tested, benchmarked, and fuzzed
-(see above). Phase 2 (Qt shell) has not started.
+Phases 1 and 2 are done (see above). Phase 3 (syntax highlighting) has
+not started.
 
 ## Explicit non-goals for v1
 
