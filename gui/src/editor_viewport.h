@@ -2,6 +2,8 @@
 #define ASE_EDITOR_VIEWPORT_H
 
 #include <QByteArray>
+#include <QColor>
+#include <QDateTime>
 #include <QFont>
 #include <QString>
 #include <QVector>
@@ -9,6 +11,7 @@
 
 extern "C" {
 #include "ase/buffer.h"
+#include "ase/config.h"
 #include "ase/syntax.h"
 }
 
@@ -33,6 +36,9 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
 
 private:
+    void loadConfig();
+    void applyConfig();
+    void checkConfigReload();
     void refreshCache();
     void drawLine(QPainter &painter, int start, int end, int y);
     void applyCaptureStyle(QPainter &painter, AseHighlightCapture capture);
@@ -53,6 +59,13 @@ private:
 
     AseBuffer *m_buffer;
     QString m_filePath;
+
+    AseConfig *m_config = nullptr;
+    QString m_configPath;
+    QDateTime m_configModified;
+    QTimer *m_configTimer;
+    QColor m_backgroundColor;
+    QColor m_textColor;
 
     AseSyntax *m_syntax = nullptr; /* null for unsupported file types — see docs/adr/0007 */
     QVector<AseHighlightSpan> m_highlights;

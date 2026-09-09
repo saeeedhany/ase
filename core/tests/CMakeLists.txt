@@ -9,3 +9,9 @@ add_executable(ase_buffer_tests
 )
 target_link_libraries(ase_buffer_tests PRIVATE ase_core)
 add_test(NAME ase_buffer_tests COMMAND ase_buffer_tests)
+
+add_executable(ase_config_tests
+    test_config.c
+)
+target_link_libraries(ase_config_tests PRIVATE ase_core)
+add_test(NAME ase_config_tests COMMAND ase_config_tests)

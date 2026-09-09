@@ -10,10 +10,11 @@ Why things are built the way they are: [`docs/adr/`](docs/adr/).
 
 ## Status
 
-**Phases 1–3 done** (see [`docs/ROADMAP.md`](docs/ROADMAP.md)): a
+**Phases 1–4 done** (see [`docs/ROADMAP.md`](docs/ROADMAP.md)): a
 piece-table buffer engine, a minimal Qt shell that renders and edits
-real files, and Tree-sitter-backed syntax highlighting for C. No
-theming/config, plugins, or LSP yet. Not published publicly — see
+real files, Tree-sitter-backed syntax highlighting for C, and a
+hot-reloadable config/theme system. No plugins or LSP yet. Not
+published publicly — see
 [ADR 0003](docs/adr/0003-license-decision-pending.md), the license is
 still an open decision.
 

@@ -1,6 +1,7 @@
 add_library(ase_core
     src/core.c
     src/buffer.c
+    src/config.c
 )
 
 target_include_directories(ase_core

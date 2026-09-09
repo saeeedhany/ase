@@ -1,6 +1,7 @@
 #include "editor_viewport.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <vector>
 
 #include <QFileInfo>
@@ -12,9 +13,6 @@
 #include <QWheelEvent>
 
 namespace {
-constexpr QColor kBackground(0x28, 0x28, 0x28);
-constexpr QColor kText(0xF5, 0xE6, 0xC8);
-
 bool isUtf8ContinuationByte(char byte) {
     return (static_cast<unsigned char>(byte) & 0xC0) == 0x80;
 }
@@ -30,12 +28,7 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     setContextMenuPolicy(Qt::NoContextMenu);
     setAutoFillBackground(false);
 
-    m_font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
-    m_font.setPointSize(12);
-
-    QFontMetrics metrics(m_font);
-    m_lineHeight = metrics.height();
-    m_charWidth = metrics.horizontalAdvance(QLatin1Char('M'));
+    loadConfig();
 
     QString suffix = QFileInfo(m_filePath).suffix().toLower();
     if (suffix == QLatin1String("c") || suffix == QLatin1String("h")) {
@@ -50,11 +43,73 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
         update();
     });
     m_blinkTimer->start(500);
+
+    m_configTimer = new QTimer(this);
+    connect(m_configTimer, &QTimer::timeout, this, [this]() { checkConfigReload(); });
+    m_configTimer->start(750); /* see docs/adr/0008, decision 4 */
 }
 
 EditorViewport::~EditorViewport() {
     ase_syntax_destroy(m_syntax);
+    ase_config_destroy(m_config);
     ase_buffer_destroy(m_buffer);
+}
+
+void EditorViewport::loadConfig() {
+    char *path = ase_config_default_path();
+    if (path != nullptr) {
+        m_configPath = QString::fromLocal8Bit(path);
+        free(path);
+        ase_config_write_default_if_missing(m_configPath.toUtf8().constData());
+    }
+
+    m_config = ase_config_load(m_configPath.isEmpty() ? nullptr : m_configPath.toUtf8().constData());
+    applyConfig();
+
+    if (!m_configPath.isEmpty()) {
+        m_configModified = QFileInfo(m_configPath).lastModified();
+    }
+}
+
+void EditorViewport::applyConfig() {
+    uint8_t r, g, b, a;
+    if (ase_config_get_color(m_config, "background", &r, &g, &b, &a)) {
+        m_backgroundColor = QColor(r, g, b, a);
+    }
+    if (ase_config_get_color(m_config, "text", &r, &g, &b, &a)) {
+        m_textColor = QColor(r, g, b, a);
+    }
+
+    const char *familyStr = ase_config_get_string(m_config, "font_family");
+    QString family = familyStr != nullptr ? QString::fromUtf8(familyStr) : QStringLiteral("monospace");
+    long size = ase_config_get_int(m_config, "font_size", 12);
+
+    m_font = family.compare(QLatin1String("monospace"), Qt::CaseInsensitive) == 0
+                 ? QFontDatabase::systemFont(QFontDatabase::FixedFont)
+                 : QFont(family);
+    m_font.setPointSize(static_cast<int>(size));
+
+    QFontMetrics metrics(m_font);
+    m_lineHeight = metrics.height();
+    m_charWidth = metrics.horizontalAdvance(QLatin1Char('M'));
+}
+
+void EditorViewport::checkConfigReload() {
+    if (m_configPath.isEmpty()) {
+        return;
+    }
+
+    QDateTime modified = QFileInfo(m_configPath).lastModified();
+    if (!modified.isValid() || modified == m_configModified) {
+        return;
+    }
+    m_configModified = modified;
+
+    ase_config_destroy(m_config);
+    m_config = ase_config_load(m_configPath.toUtf8().constData());
+    applyConfig();
+    ensureCursorVisible();
+    update();
 }
 
 void EditorViewport::refreshCache() {
@@ -98,7 +153,7 @@ size_t EditorViewport::offsetForLineColumn(int line, int column) const {
 
 void EditorViewport::paintEvent(QPaintEvent *) {
     QPainter painter(this);
-    painter.fillRect(rect(), kBackground);
+    painter.fillRect(rect(), m_backgroundColor);
 
     int visibleLines = std::max(1, height() / m_lineHeight + 1);
     int firstLine = m_scrollLine;
@@ -117,13 +172,13 @@ void EditorViewport::paintEvent(QPaintEvent *) {
             int col = columnForOffset(m_cursor, line);
             int x = col * m_charWidth;
             int y = (line - firstLine) * m_lineHeight;
-            painter.fillRect(QRect(x, y, 2, m_lineHeight), kText);
+            painter.fillRect(QRect(x, y, 2, m_lineHeight), m_textColor);
         }
     }
 }
 
 /* Splits [start, end) into same-capture runs and draws each with its own
- * style. All captures render in kText's hue — only opacity/weight/style
+ * style. All captures render in m_textColor's hue — only opacity/weight/style
  * vary — so the query's captures don't need to be mutually exclusive in
  * general, just non-overlapping in practice for the leaf-level nodes
  * c_highlights.scm captures. See docs/adr/0007, decision 1. */
@@ -164,7 +219,7 @@ void EditorViewport::drawLine(QPainter &painter, int start, int end, int y) {
 
 void EditorViewport::applyCaptureStyle(QPainter &painter, AseHighlightCapture capture) {
     QFont font = m_font;
-    QColor color = kText;
+    QColor color = m_textColor;
 
     switch (capture) {
     case ASE_HL_KEYWORD:

@@ -46,8 +46,21 @@ Each phase should land with tests/benchmarks before the next begins.
       [ADR 0007](adr/0007-syntax-highlighting-tree-sitter.md) for all of
       this phase's decisions, including a measured (bounded, not
       leaking) memory characteristic of full-reparse-every-edit.
-- [ ] **Phase 4 — Theming & config system**
-      Parser, hot-reload, default theme(s) matching the visual identity.
+- [x] **Phase 4 — Theming & config system**
+      `AseConfig` in core (`core/src/config.c`, `core/include/ase/config.h`):
+      a minimal hand-rolled `key = value` parser (not TOML — see
+      [ADR 0008](adr/0008-config-theme-format.md)) shared by config and
+      theme. Ships built-in defaults, overlays a loaded file on top, and
+      best-effort writes a commented starter file to
+      `$XDG_CONFIG_HOME/ase/config.ase` (or platform equivalent) on
+      first run. Wired into `EditorViewport`: background/text colors
+      and font family/size all come from config now, and a 750ms poll
+      hot-reloads on save — no restart. Verified with unit tests and by
+      editing the live config file while the editor was running and
+      screenshotting the color/font change landing without a restart.
+      Resolves both ROADMAP open-decision items below (format, and the
+      exact accent color — now a live-tunable value, not a hardcoded
+      guess).
 - [ ] **Phase 5 — Plugin ABI + Lua scripting host**
       Stable extension surface.
 - [ ] **Phase 6 — LSP client module**
@@ -57,7 +70,7 @@ Each phase should land with tests/benchmarks before the next begins.
 
 ## Current status
 
-Phases 1–3 are done (see above). Phase 4 (theming & config) has not
+Phases 1–4 are done (see above). Phase 5 (plugin ABI + Lua) has not
 started.
 
 ## Explicit non-goals for v1
@@ -71,6 +84,11 @@ started.
 
 - **License** — permissive vs. copyleft, deliberately deferred.
   See [ADR 0003](adr/0003-license-decision-pending.md) (blocks going public).
-- **Config/theme format** — TOML vs. minimal custom format (blocks Phase 4).
-- **Exact accent text color** — approx. `#F5E6C8`, to be tuned by eye against
-  background `#282828` (blocks Phase 4 default theme).
+
+## Follow-ups noted but not yet scheduled
+
+- Syntax highlight capture styles (bold keyword, italic type, comment
+  opacity — ADR 0007) are hardcoded in `EditorViewport`, not yet exposed
+  as config keys.
+- Keybinding customization isn't implemented — Phase 4 covered
+  theme/editor config only, per its own scope in `docs/SPEC.md` section 7.
