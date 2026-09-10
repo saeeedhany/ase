@@ -23,12 +23,25 @@ typedef struct AseProcess AseProcess;
 /* command[0] is the executable; command is a NULL-terminated argv-style
  * array. cwd may be NULL (inherit the caller's working directory).
  * Returns NULL if the process couldn't be spawned (or on Windows,
- * always). */
+ * always). Equivalent to ase_process_spawn_ex(command, cwd, true) —
+ * stderr merged into the same stream as stdout, which is what
+ * :compile wants (see docs/adr/0025). */
 AseProcess *ase_process_spawn(const char *const *command, const char *cwd);
 
-/* Non-blocking: reads whatever stdout bytes (stderr is redirected into
- * the same stream — v1 doesn't separate them, matching the LSP
- * client's own stdout-only framing) are currently available into
+/* Same as ase_process_spawn, but with stderr merging optional. A
+ * real LSP server (unlike the test fixture that stood in for one
+ * through Phase 16.0) routinely logs to stderr — merging that into
+ * the same pipe as the framed JSON-RPC stdout stream corrupts the
+ * Content-Length framing, breaking every response after the first
+ * stray log line. Pass merge_stderr=false for that case: the
+ * child's stderr is left inherited (not piped, not discarded), so
+ * server-side logging is still visible wherever the caller's own
+ * stderr goes, but never touches the read side of this AseProcess.
+ * See docs/adr/0029. */
+AseProcess *ase_process_spawn_ex(const char *const *command, const char *cwd, bool merge_stderr);
+
+/* Non-blocking: reads whatever stdout bytes (merged with stderr only
+ * if spawned with merge_stderr=true) are currently available into
  * `buf`, up to `cap`. Returns the number of bytes read, 0 on EOF (the
  * process closed its output, though it may not have exited yet), or
  * -1 if nothing is available right now (not an error — poll again

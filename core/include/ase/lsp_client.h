@@ -66,6 +66,14 @@ void ase_lsp_client_set_diagnostics_callback(AseLspClient *client,
 bool ase_lsp_client_did_open(AseLspClient *client, const char *uri,
                               const char *language_id, const char *text);
 
+/* textDocument/didChange notification — full-document sync (the whole
+ * new `text`, not an incremental range), matching this project's
+ * existing "full-buffer mirroring" philosophy (docs/adr/0006) rather
+ * than tracking incremental edit ranges. `version` must increase on
+ * every call for the same document (per the LSP spec); the caller owns
+ * that counter. Fire-and-forget, no response — see docs/adr/0029. */
+bool ase_lsp_client_did_change(AseLspClient *client, const char *uri, int version, const char *text);
+
 /* Async: the request is sent immediately, but `callback` only fires
  * later, from inside ase_lsp_client_poll(), once the response arrives.
  * Returns false immediately (callback never fires) if the client is

@@ -433,8 +433,11 @@ AseLspClient *ase_lsp_client_start(const char *const *command, const char *root_
     }
 
     /* LSP servers run in the caller's own working directory — no cwd
-     * override needed (unlike :compile, which sets one explicitly). */
-    AseProcess *process = ase_process_spawn(command, NULL);
+     * override needed (unlike :compile, which sets one explicitly).
+     * merge_stderr=false: a real server's stderr logging must not land
+     * in the same pipe as the framed JSON-RPC stdout stream — see
+     * ase_process_spawn_ex's doc comment and docs/adr/0029. */
+    AseProcess *process = ase_process_spawn_ex(command, NULL, false);
     if (process == NULL) {
         return NULL;
     }
@@ -521,6 +524,29 @@ bool ase_lsp_client_did_open(AseLspClient *client, const char *uri, const char *
     ase_json_object_set(params, "textDocument", text_document);
 
     return send_message(client, make_notification("textDocument/didOpen", params));
+}
+
+bool ase_lsp_client_did_change(AseLspClient *client, const char *uri, int version, const char *text) {
+    if (client == NULL || !client->alive) {
+        return false;
+    }
+
+    AseJsonValue *text_document = ase_json_object();
+    ase_json_object_set(text_document, "uri", ase_json_string(uri));
+    ase_json_object_set(text_document, "version", ase_json_number(version));
+
+    /* No "range" field — a whole-document replacement (TextDocumentSyncKind.Full),
+     * not an incremental change. */
+    AseJsonValue *change = ase_json_object();
+    ase_json_object_set(change, "text", ase_json_string(text));
+    AseJsonValue *content_changes = ase_json_array();
+    ase_json_array_append(content_changes, change);
+
+    AseJsonValue *params = ase_json_object();
+    ase_json_object_set(params, "textDocument", text_document);
+    ase_json_object_set(params, "contentChanges", content_changes);
+
+    return send_message(client, make_notification("textDocument/didChange", params));
 }
 
 bool ase_lsp_client_request_completion(AseLspClient *client, const char *uri, AseLspPosition position,

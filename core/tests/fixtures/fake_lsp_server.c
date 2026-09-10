@@ -7,7 +7,11 @@
  *
  * Handles exactly the methods the real client sends: initialize,
  * initialized, textDocument/didOpen (replies with a canned
- * publishDiagnostics notification), textDocument/completion,
+ * publishDiagnostics notification), textDocument/didChange (replies
+ * with a *different*, empty publishDiagnostics — simulating "the
+ * error was just fixed," so a test can prove didChange actually
+ * refreshes diagnostics rather than leaving the didOpen-time snapshot
+ * stale — see docs/adr/0029), textDocument/completion,
  * textDocument/definition, shutdown, exit. Anything else is silently
  * ignored, matching how a real server tolerates unknown methods.
  */
@@ -93,6 +97,9 @@ int main(void) {
                 "{\"range\":{\"start\":{\"line\":0,\"character\":0},"
                 "\"end\":{\"line\":0,\"character\":5}},"
                 "\"severity\":1,\"message\":\"fake diagnostic\"}]}}");
+        } else if (has_method(body, "textDocument/didChange")) {
+            send_message("{\"jsonrpc\":\"2.0\",\"method\":\"textDocument/publishDiagnostics\","
+                         "\"params\":{\"uri\":\"file:///fake.txt\",\"diagnostics\":[]}}");
         } else if (has_method(body, "textDocument/completion")) {
             long id = extract_id(body);
             char response[512];

@@ -35,6 +35,13 @@ AseProcess *ase_process_spawn(const char *const *command, const char *cwd) {
     return NULL;
 }
 
+AseProcess *ase_process_spawn_ex(const char *const *command, const char *cwd, bool merge_stderr) {
+    (void)command;
+    (void)cwd;
+    (void)merge_stderr;
+    return NULL;
+}
+
 long ase_process_read(AseProcess *process, char *buf, size_t cap) {
     (void)process;
     (void)buf;
@@ -63,8 +70,8 @@ void ase_process_destroy(AseProcess *process) {
 
 #else /* POSIX */
 
-static bool platform_spawn(const char *const *command, const char *cwd, long *out_pid, int *out_read_fd,
-                            int *out_write_fd) {
+static bool platform_spawn(const char *const *command, const char *cwd, bool merge_stderr, long *out_pid,
+                            int *out_read_fd, int *out_write_fd) {
     int stdin_pipe[2];
     int stdout_pipe[2];
 
@@ -93,7 +100,9 @@ static bool platform_spawn(const char *const *command, const char *cwd, long *ou
         }
         dup2(stdin_pipe[0], STDIN_FILENO);
         dup2(stdout_pipe[1], STDOUT_FILENO);
-        dup2(stdout_pipe[1], STDERR_FILENO); /* merged with stdout — see ase_process_read's doc comment */
+        if (merge_stderr) {
+            dup2(stdout_pipe[1], STDERR_FILENO); /* see ase_process_spawn_ex's doc comment */
+        }
         close(stdin_pipe[0]);
         close(stdin_pipe[1]);
         close(stdout_pipe[0]);
@@ -140,6 +149,10 @@ static void platform_terminate(long pid, int read_fd, int write_fd) {
 }
 
 AseProcess *ase_process_spawn(const char *const *command, const char *cwd) {
+    return ase_process_spawn_ex(command, cwd, true);
+}
+
+AseProcess *ase_process_spawn_ex(const char *const *command, const char *cwd, bool merge_stderr) {
     if (command == NULL || command[0] == NULL) {
         return NULL;
     }
@@ -149,7 +162,7 @@ AseProcess *ase_process_spawn(const char *const *command, const char *cwd) {
     long pid;
     int read_fd;
     int write_fd;
-    if (!platform_spawn(command, cwd, &pid, &read_fd, &write_fd)) {
+    if (!platform_spawn(command, cwd, merge_stderr, &pid, &read_fd, &write_fd)) {
         return NULL;
     }
 

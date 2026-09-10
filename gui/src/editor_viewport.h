@@ -14,10 +14,23 @@
 extern "C" {
 #include "ase/buffer.h"
 #include "ase/config.h"
+#include "ase/lsp_client.h"
 #include "ase/process.h"
 #include "ase/syntax.h"
 #include "ase/undo.h"
 }
+
+/* GUI-side copy of one AseLspDiagnostic — the core struct's `message`
+ * is a borrowed pointer, only valid during the diagnostics callback,
+ * so it can't be stored as-is. See docs/adr/0029. */
+struct GuiDiagnostic {
+    int startLine;
+    int startChar;
+    int endLine;
+    int endChar;
+    int severity; /* 1=Error, 2=Warning, 3=Information, 4=Hint — per LSP */
+    QString message;
+};
 
 class QTimer;
 class QPainter;
@@ -120,6 +133,13 @@ public:
     void findPrevious();
     void replaceCurrentMatch(const QByteArray &replacement);
     void replaceAllMatches(const QByteArray &replacement);
+
+    /* Public only so the AseLspClient diagnostics-callback trampoline (a
+     * free function in editor_viewport.cpp — C callbacks can't be member
+     * functions) can reach it; not meant to be called from elsewhere.
+     * Copies the borrowed AseLspDiagnostic array into m_diagnostics and
+     * repaints. See docs/adr/0029. */
+    void applyLspDiagnostics(const char *uri, const AseLspDiagnostic *diagnostics, size_t count);
 
 signals:
     /* Emitted from ensureCursorVisible() — every call site that already
@@ -254,6 +274,12 @@ private:
      * highlight too. See docs/adr/0019, docs/adr/0021. */
     void highlightRange(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
                          const QColor &color) const;
+    /* A wavy underline (small zigzag QPainterPath) across [start, end),
+     * one per visual line spanned — same per-line splitting as
+     * highlightRange, but a stroked path instead of a filled rect. Used
+     * for diagnostic squiggles. See docs/adr/0029. */
+    void drawSquiggle(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
+                       const QColor &color) const;
 
     /* Find/replace — see docs/adr/0021. Plain substring, ASCII-
      * case-insensitive (QByteArray::toLower() is ASCII-only; documented
@@ -282,6 +308,21 @@ private:
     void pollCompile();
     /* Shared by Ctrl+Shift+O and `:output` — see docs/adr/0025. */
     void toggleOutputPanel();
+
+    /* LSP diagnostics — see docs/adr/0029. Reads `lsp_command` from
+     * config (no default) at construction time; a no-op (m_lspClient
+     * stays null) if unconfigured, the file isn't .c/.h (same gate
+     * Tree-sitter highlighting already uses), or the server fails to
+     * start/handshake. */
+    void startLspClientIfConfigured();
+    /* m_lspPollTimer's slot. */
+    void pollLsp();
+    /* Called from refreshCache() — the one choke point every edit
+     * already passes through — so results never go stale after the
+     * first edit, the gap this phase exists to close. A no-op if no
+     * LSP client is running. */
+    void sendLspDidChange();
+    QColor colorForSeverity(int severity) const;
 
     /* Ctrl+Z / Ctrl+Shift+Z — see docs/adr/0018. Both restore m_cursors
      * from the undo stack's recorded snapshot rather than deriving a
@@ -344,6 +385,17 @@ private:
     AboutPanel *m_aboutPanel = nullptr;
     AseProcess *m_compileProcess = nullptr;
     QTimer *m_compilePollTimer;
+
+    /* LSP — see docs/adr/0029. m_lspClient null means no LSP for this
+     * buffer (unconfigured, wrong file type, or the server failed to
+     * start) — every LSP-touching method already checks that first. */
+    AseLspClient *m_lspClient = nullptr;
+    QString m_lspUri;
+    int m_lspVersion = 1; /* didOpen implicitly sends version 1; didChange starts at 2 */
+    QTimer *m_lspPollTimer;
+    QVector<GuiDiagnostic> m_diagnostics;
+    QColor m_diagnosticErrorColor;
+    QColor m_diagnosticWarningColor;
 
     int m_scrollLine = 0;
     int m_scrollX = 0; /* leftmost visible pixel, not column — see docs/adr/0014 */

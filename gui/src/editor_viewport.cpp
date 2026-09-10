@@ -19,8 +19,10 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QStringList>
 #include <QTimer>
+#include <QUrl>
 #include <QWheelEvent>
 
 namespace {
@@ -89,9 +91,15 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 
     m_compilePollTimer = new QTimer(this);
     connect(m_compilePollTimer, &QTimer::timeout, this, [this]() { pollCompile(); });
+
+    m_lspPollTimer = new QTimer(this);
+    connect(m_lspPollTimer, &QTimer::timeout, this, [this]() { pollLsp(); });
+    m_lspPollTimer->start(200); /* non-blocking poll, same shape as config-reload/compile-output polling */
+    startLspClientIfConfigured();
 }
 
 EditorViewport::~EditorViewport() {
+    ase_lsp_client_stop(m_lspClient);
     ase_process_destroy(m_compileProcess);
     ase_syntax_destroy(m_syntax);
     ase_config_destroy(m_config);
@@ -131,6 +139,12 @@ void EditorViewport::applyConfig() {
     }
     if (ase_config_get_color(m_config, "panel_background", &r, &g, &b, &a)) {
         m_panelBackgroundColor = QColor(r, g, b, a);
+    }
+    if (ase_config_get_color(m_config, "diagnostic_error", &r, &g, &b, &a)) {
+        m_diagnosticErrorColor = QColor(r, g, b, a);
+    }
+    if (ase_config_get_color(m_config, "diagnostic_warning", &r, &g, &b, &a)) {
+        m_diagnosticWarningColor = QColor(r, g, b, a);
     }
 
     const char *familyStr = ase_config_get_string(m_config, "font_family");
@@ -230,6 +244,7 @@ void EditorViewport::refreshCache() {
     }
 
     recomputeMatches();
+    sendLspDidChange();
 }
 
 int EditorViewport::lineForOffset(size_t offset) const {
@@ -348,6 +363,22 @@ void EditorViewport::paintEvent(QPaintEvent *) {
         int y = (line - firstLine) * m_lineHeight;
         drawLine(painter, start, end, y);
     }
+
+    /* LSP diagnostic squiggles — drawn on top of the glyphs, same
+     * translate/clip as the text loop above. `character` is treated as a
+     * direct byte offset within the line (ASCII-only v1 simplification,
+     * consistent with this codebase's existing byte-level cursor
+     * shortcuts — see docs/adr/0029); offsetForLineColumn's clamping
+     * also keeps a diagnostic that's gone stale after an edit (line no
+     * longer exists) from drawing garbage. */
+    for (const GuiDiagnostic &d : m_diagnostics) {
+        size_t start = offsetForLineColumn(d.startLine, d.startChar);
+        size_t end = offsetForLineColumn(d.endLine, d.endChar);
+        if (end <= start) {
+            end = start + 1;
+        }
+        drawSquiggle(painter, start, end, firstLine, lastLine, colorForSeverity(d.severity));
+    }
     painter.restore();
 
     /* Carets are drawn separately, in absolute widget space, at their
@@ -396,6 +427,28 @@ void EditorViewport::paintEvent(QPaintEvent *) {
         for (int line = firstLine; line < lastLine; ++line) {
             painter.setPen(line == cursorLine ? current : dim);
             int y = (line - firstLine) * m_lineHeight;
+
+            /* Diagnostic gutter dot — drawn in the left padding the
+             * right-aligned line number text never reaches (see
+             * docs/adr/0029). Worst (lowest-numbered) severity among any
+             * diagnostic spanning this line wins; a small O(lines *
+             * diagnostics) scan is fine at realistic diagnostic counts. */
+            int worstSeverity = 0;
+            for (const GuiDiagnostic &d : m_diagnostics) {
+                if (line >= d.startLine && line <= d.endLine && (worstSeverity == 0 || d.severity < worstSeverity)) {
+                    worstSeverity = d.severity;
+                }
+            }
+            if (worstSeverity != 0) {
+                painter.save();
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(colorForSeverity(worstSeverity));
+                painter.setRenderHint(QPainter::Antialiasing, true);
+                constexpr double kDotSize = 4.0;
+                painter.drawEllipse(QRectF(2.0, y + (m_lineHeight - kDotSize) / 2.0, kDotSize, kDotSize));
+                painter.restore();
+            }
+
             painter.drawText(QRect(0, y, gutter - kGutterPadding, m_lineHeight), Qt::AlignRight | Qt::AlignVCenter,
                               gutterLabelForLine(line, cursorLine));
         }
@@ -586,6 +639,53 @@ void EditorViewport::highlightRange(QPainter &painter, size_t start, size_t end,
         }
         painter.fillRect(QRectF(x0, y, std::max(1, rectWidth), m_lineHeight), color);
     }
+}
+
+/* A wavy underline across [start, end) — same per-line splitting as
+ * highlightRange, but strokes a small zigzag QPainterPath sitting just
+ * under the text baseline instead of filling the whole line height.
+ * See docs/adr/0029. */
+void EditorViewport::drawSquiggle(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
+                                   const QColor &color) const {
+    if (start >= end) {
+        return;
+    }
+    constexpr double kAmplitude = 2.0;
+    constexpr double kPeriod = 4.0; /* pixels per half-wave */
+
+    int startLine = lineForOffset(start);
+    int endLine = lineForOffset(end);
+    painter.save();
+    QPen pen(color);
+    pen.setWidthF(1.2);
+    painter.setPen(pen);
+    painter.setBrush(Qt::NoBrush);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    for (int line = std::max(firstLine, startLine); line <= std::min(lastLine - 1, endLine); ++line) {
+        int lineStart = m_lineStarts[line];
+        int lineEnd = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
+        int rangeStartCol = (line == startLine) ? static_cast<int>(start) - lineStart : 0;
+        int rangeEndCol = (line == endLine) ? static_cast<int>(end) - lineStart : lineEnd - lineStart;
+        int x0 = xForColumn(lineStart, lineEnd, rangeStartCol);
+        int x1 = xForColumn(lineStart, lineEnd, rangeEndCol);
+        if (line < endLine) {
+            x1 += m_charWidth / 2;
+        }
+        x1 = std::max(x0 + 1, x1);
+        double baseY = (line - firstLine) * m_lineHeight + m_lineHeight - 3.0;
+
+        QPainterPath path;
+        path.moveTo(x0, baseY);
+        bool up = false;
+        for (double x = x0; x < x1; x += kPeriod) {
+            double nextX = std::min(x + kPeriod, static_cast<double>(x1));
+            path.lineTo(nextX, baseY + (up ? -kAmplitude : kAmplitude));
+            up = !up;
+        }
+        painter.drawPath(path);
+    }
+    painter.restore();
 }
 
 int EditorViewport::gutterWidth() const {
@@ -1548,6 +1648,16 @@ void EditorViewport::save() {
  * initial launch (docs/adr/0006) — opening a not-yet-existing file by
  * name is a normal editor action, not an error. */
 void EditorViewport::openFile(const QString &path) {
+    /* The old client (if any) is tied to the old file's URI — stop it
+     * before refreshCache() below can send it a stale-URI didChange,
+     * and clear its diagnostics rather than leave them drawn against
+     * the new file's unrelated content. startLspClientIfConfigured()
+     * at the end starts a fresh one for the new file, same as the
+     * constructor does for the initial one. */
+    ase_lsp_client_stop(m_lspClient);
+    m_lspClient = nullptr;
+    m_diagnostics.clear();
+
     ase_syntax_destroy(m_syntax);
     m_syntax = nullptr;
     ase_undo_destroy(m_undo);
@@ -1575,6 +1685,7 @@ void EditorViewport::openFile(const QString &path) {
     m_dirty = false;
 
     refreshCache();
+    startLspClientIfConfigured();
     ensureCursorVisible();
     resetCaretBlink();
     snapAnimationToTarget();
@@ -1677,6 +1788,105 @@ void EditorViewport::pollCompile() {
         m_compileProcess = nullptr;
         m_compilePollTimer->stop();
     }
+}
+
+namespace {
+void lspDiagnosticsTrampoline(void *user_data, const char *uri, const AseLspDiagnostic *diagnostics, size_t count) {
+    static_cast<EditorViewport *>(user_data)->applyLspDiagnostics(uri, diagnostics, count);
+}
+} // namespace
+
+/* Gated the same way Tree-sitter syntax highlighting already is
+ * (.c/.h suffix) — a language server for anything else would need a
+ * per-language command mapping this v1 doesn't attempt. No default for
+ * `lsp_command` (config.c) — unconfigured means no LSP for this
+ * session, not a guess at which server is installed. Only ever called
+ * once, from the constructor: changing `lsp_command` mid-session (or
+ * opening a different file via openFile()) doesn't restart the client
+ * — a documented v1 gap, see docs/adr/0029. */
+void EditorViewport::startLspClientIfConfigured() {
+    QString suffix = QFileInfo(m_filePath).suffix().toLower();
+    if (suffix != QLatin1String("c") && suffix != QLatin1String("h")) {
+        return;
+    }
+    const char *lspCommand = ase_config_get_string(m_config, "lsp_command");
+    if (lspCommand == nullptr || m_filePath.isEmpty()) {
+        return;
+    }
+
+    const char *argv[] = {lspCommand, nullptr};
+    m_lspUri = QUrl::fromLocalFile(m_filePath).toString();
+    m_lspClient = ase_lsp_client_start(argv, nullptr);
+    if (m_lspClient == nullptr) {
+        return;
+    }
+
+    ase_lsp_client_set_diagnostics_callback(m_lspClient, lspDiagnosticsTrampoline, this);
+    ase_lsp_client_did_open(m_lspClient, m_lspUri.toUtf8().constData(), "c", m_cache.constData());
+    m_lspVersion = 1;
+}
+
+void EditorViewport::pollLsp() {
+    if (m_lspClient != nullptr) {
+        ase_lsp_client_poll(m_lspClient);
+    }
+}
+
+/* Full-document sync — see ase_lsp_client_did_change's own doc
+ * comment. Called from refreshCache(), the one choke point every edit
+ * already passes through, so this is the fix for "diagnostics go stale
+ * after the first edit." m_cache is already a full, current mirror of
+ * the buffer (ADR 0006) and, like the rest of this codebase, assumed
+ * NUL-free — passing it as a C string needs no extra copy. */
+void EditorViewport::sendLspDidChange() {
+    if (m_lspClient == nullptr) {
+        return;
+    }
+    m_lspVersion++;
+    ase_lsp_client_did_change(m_lspClient, m_lspUri.toUtf8().constData(), m_lspVersion, m_cache.constData());
+}
+
+/* The diagnostics callback — see docs/adr/0029. `diagnostics` is
+ * borrowed (valid only during this call), so every field that matters
+ * is copied out, including `message` (QString, not a stored pointer).
+ * A URI for a different document is ignored outright — defensive only,
+ * since v1 has exactly one open document per client. */
+void EditorViewport::applyLspDiagnostics(const char *uri, const AseLspDiagnostic *diagnostics, size_t count) {
+    if (QString::fromUtf8(uri) != m_lspUri) {
+        return;
+    }
+    m_diagnostics.clear();
+    m_diagnostics.reserve(static_cast<int>(count));
+    for (size_t i = 0; i < count; ++i) {
+        GuiDiagnostic d;
+        d.startLine = diagnostics[i].start.line;
+        d.startChar = diagnostics[i].start.character;
+        d.endLine = diagnostics[i].end.line;
+        d.endChar = diagnostics[i].end.character;
+        d.severity = diagnostics[i].severity;
+        d.message = QString::fromUtf8(diagnostics[i].message);
+        m_diagnostics.push_back(d);
+    }
+    update();
+}
+
+/* Error red / warning amber, both configurable (docs/adr/0029) — the
+ * one deliberate departure from the "one font color" pillar, since
+ * severity color-coding is too strong and too expected a convention to
+ * fold into opacity/weight the way syntax highlighting does.
+ * Information/Hint (severities 3/4) and anything unspecified fall back
+ * to the plain text color at low alpha — present, but not competing
+ * for attention with an actual error. */
+QColor EditorViewport::colorForSeverity(int severity) const {
+    if (severity == 1) {
+        return m_diagnosticErrorColor;
+    }
+    if (severity == 2) {
+        return m_diagnosticWarningColor;
+    }
+    QColor c = m_textColor;
+    c.setAlpha(140);
+    return c;
 }
 
 /* Shared by undo()/redo(): apply the cursor snapshot the undo stack

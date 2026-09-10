@@ -92,6 +92,19 @@ static void test_full_lifecycle(void) {
     assert(diag_capture.first.severity == 1);
     assert(diag_capture.first.end.character == 5);
 
+    /* didChange must actually reach the server and refresh diagnostics
+     * — the documented gap this phase exists to close ("results go
+     * stale after the first edit"). The fake server replies to
+     * didChange with an *empty* diagnostics list, distinguishable from
+     * didOpen's one-item reply, so this proves the notification was
+     * really sent and really dispatched, not just that some stale
+     * callback fired again. */
+    diag_capture.called = false;
+    assert(ase_lsp_client_did_change(client, "file:///fake.txt", 2, "hello world, fixed"));
+    poll_until(client, &diag_capture.called, 1000000);
+    assert(diag_capture.called);
+    assert(diag_capture.count == 0);
+
     ResultCapture completion_capture;
     memset(&completion_capture, 0, sizeof(completion_capture));
     AseLspPosition pos;

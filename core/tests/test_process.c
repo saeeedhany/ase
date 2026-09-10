@@ -117,6 +117,38 @@ static void test_null_command_rejected(void) {
     assert(ase_process_spawn(empty, NULL) == NULL);
 }
 
+/* The bug this covers: a real LSP server logs to stderr, and if that
+ * lands in the same pipe as the framed JSON-RPC stdout stream it
+ * corrupts the Content-Length framing — see docs/adr/0029. Proves both
+ * directions: merge_stderr=true still merges (ase_process_spawn's
+ * existing, unchanged behavior — used by :compile), merge_stderr=false
+ * keeps stderr out of the readable stream entirely. */
+static void test_stderr_merge_toggle(void) {
+    const char *command[] = {"/bin/sh", "-c", "echo to-stdout; echo to-stderr 1>&2", NULL};
+
+    AseProcess *merged = ase_process_spawn_ex(command, NULL, true);
+    assert(merged != NULL);
+    assert(poll_until(exited, merged, 2000));
+    char merged_buf[256];
+    long merged_n = ase_process_read(merged, merged_buf, sizeof(merged_buf) - 1);
+    assert(merged_n > 0);
+    merged_buf[merged_n] = '\0';
+    assert(strstr(merged_buf, "to-stdout") != NULL);
+    assert(strstr(merged_buf, "to-stderr") != NULL);
+    ase_process_destroy(merged);
+
+    AseProcess *separated = ase_process_spawn_ex(command, NULL, false);
+    assert(separated != NULL);
+    assert(poll_until(exited, separated, 2000));
+    char separated_buf[256];
+    long separated_n = ase_process_read(separated, separated_buf, sizeof(separated_buf) - 1);
+    assert(separated_n > 0);
+    separated_buf[separated_n] = '\0';
+    assert(strstr(separated_buf, "to-stdout") != NULL);
+    assert(strstr(separated_buf, "to-stderr") == NULL);
+    ase_process_destroy(separated);
+}
+
 int main(void) {
     test_echo_output();
     test_exit_code_nonzero();
@@ -124,6 +156,7 @@ int main(void) {
     test_write_roundtrip();
     test_bad_command_exits_nonzero();
     test_null_command_rejected();
+    test_stderr_merge_toggle();
     printf("test_process: all tests passed\n");
     return 0;
 }

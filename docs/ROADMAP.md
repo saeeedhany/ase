@@ -399,11 +399,25 @@ ADRs as each lands here going forward.
       animation global" — Qt's native caret can't do the smooth fade,
       only match the rate). See
       [ADR 0028](adr/0028-click-precision-select-all-deletion-glide.md).
-- [ ] **Phase 16 — LSP diagnostics wiring**: `textDocument/didChange`
-      (never sent today — results go stale after the first edit),
-      GUI poll + diagnostic markers. `publishDiagnostics` parsing
-      already exists in core and is tested; this is GUI wiring plus
-      the one core addition.
+- [x] **Phase 16 — LSP diagnostics wiring**: new `ase_lsp_client_did_change`
+      (full-document sync, called from `refreshCache()` so diagnostics
+      never go stale after an edit), a 200ms GUI poll timer, and
+      rendering — a wavy squiggle under each diagnostic's range plus a
+      severity-colored gutter dot, both driven by two new config keys
+      (`diagnostic_error`/`diagnostic_warning` — a deliberate, documented
+      exception to the one-font-color pillar) and a third,
+      `lsp_command`, following `build_command`'s "no default, don't
+      guess" pattern. Found and fixed a real bug along the way: the
+      shared `AseProcess` spawn helper always merged a child's stderr
+      into its stdout pipe, which is fine for `:compile` and for the
+      test fixture but silently corrupted the framed JSON-RPC stream
+      against a real server (`clangd` logs to stderr) — split into
+      `ase_process_spawn` (unchanged, merged) and a new
+      `ase_process_spawn_ex(..., merge_stderr)` the LSP client calls
+      with `false`. Verified live against real `clangd`: a missing-
+      semicolon error produced a visible squiggle + gutter dot, and
+      retyping the fix cleared both without restarting the editor. See
+      [ADR 0029](adr/0029-lsp-diagnostics-wiring.md).
 - [ ] **Phase 17 — LSP completion + hover**: completion response
       parsing (currently handed back raw/unparsed) plus a popup;
       hover doesn't exist in the client at all yet, needs a new

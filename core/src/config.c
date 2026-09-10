@@ -94,6 +94,13 @@ AseConfig *ase_config_create_default(void) {
     config_set(config, "selection", "#45403866");
     config_set(config, "find_match", "#45403899");
     config_set(config, "panel_background", "#282828E6");
+    /* Diagnostic severity colors — the one deliberate departure from
+     * the "one font color" pillar (see docs/adr/0029): error/warning
+     * color-coding is too strong and too widely expected a convention
+     * to fold into opacity/weight variation the way syntax highlighting
+     * does. */
+    config_set(config, "diagnostic_error", "#E06C75");
+    config_set(config, "diagnostic_warning", "#E5C07B");
     config_set(config, "font_family", "monospace");
     config_set(config, "font_size", "12");
 
@@ -277,6 +284,10 @@ static const char kDefaultConfigTemplate[] =
     "# render at full contrast, unaffected by this alpha.\n"
     "panel_background = #282828E6\n"
     "\n"
+    "# LSP diagnostic severity — the squiggly underline and gutter dot.\n"
+    "diagnostic_error = #E06C75\n"
+    "diagnostic_warning = #E5C07B\n"
+    "\n"
     "font_family = monospace\n"
     "font_size = 12\n"
     "\n"
@@ -292,7 +303,13 @@ static const char kDefaultConfigTemplate[] =
     "# :compile's shell command — %f is replaced with the current file's\n"
     "# path, run with the file's directory as cwd. No default: an\n"
     "# unconfigured build_command is reported as such, not guessed.\n"
-    "# build_command = gcc %f -o /tmp/a.out && /tmp/a.out\n";
+    "# build_command = gcc %f -o /tmp/a.out && /tmp/a.out\n"
+    "\n"
+    "# Language server to spawn for .c/.h files — diagnostics only for\n"
+    "# now (see docs/adr/0029). No default, same reasoning as\n"
+    "# build_command: an unconfigured lsp_command just means no LSP\n"
+    "# features, not a guess at which server you have installed.\n"
+    "# lsp_command = clangd\n";
 
 /* Creates only the immediate parent directory, not any missing
  * grandparent — see docs/adr/0008, decision 5. */
