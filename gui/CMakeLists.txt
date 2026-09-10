@@ -24,8 +24,10 @@ add_executable(ase_gui
     src/letter_badge.cpp
     src/translucent_bar.cpp
     src/scrollbar_style.cpp
+    src/tracking_popup.cpp
     src/completion_popup.cpp
     src/hover_panel.cpp
+    src/smooth_scroll.cpp
     resources/resources.qrc
 )
 

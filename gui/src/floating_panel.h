@@ -88,6 +88,19 @@ public:
     /* Animates out, then hides (or snaps hidden if not animated). */
     void closePanel();
 
+    /* Makes `handle` (typically a panel's LetterBadge — every panel
+     * already has one, so this needs no layout changes anywhere) drag
+     * this panel by left-press-and-move, clamped to stay fully inside
+     * the host. One call, usually right after constructing the badge —
+     * every subclass gets dragging for free instead of implementing its
+     * own mouse handling; a future panel gets it the same way. A drag
+     * is a temporary, per-open adjustment, not persisted state: it
+     * resets to targetGeometry() the next time the panel opens (already
+     * true — openPanel() always calls revealForSetup(), which always
+     * repositions) or if the host resizes while still open (recenter(),
+     * unless actively mid-drag). See docs/adr/0031. */
+    void setDragHandle(QWidget *handle);
+
 protected:
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
@@ -126,6 +139,11 @@ private:
     QPropertyAnimation *m_opacityAnimation;
     QPropertyAnimation *m_geometryAnimation;
     QParallelAnimationGroup *m_animGroup;
+
+    QWidget *m_dragHandle = nullptr;
+    bool m_dragging = false;
+    QPoint m_dragStartMouse;   /* global pos at press */
+    QPoint m_dragStartPanelPos; /* this->pos() at press */
 };
 
 #endif /* ASE_FLOATING_PANEL_H */

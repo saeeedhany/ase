@@ -5,9 +5,7 @@
 #include <algorithm>
 
 #include <QFontMetrics>
-#include <QGraphicsOpacityEffect>
 #include <QPainter>
-#include <QPropertyAnimation>
 
 namespace {
 constexpr int kRowPaddingX = 8;
@@ -15,37 +13,17 @@ constexpr int kMaxVisibleRows = 8;
 constexpr int kMinWidth = 160;
 constexpr int kMaxWidth = 420;
 constexpr int kDetailGap = 16;
-constexpr int kFadeDurationMs = 90; /* faster than FloatingPanel's 110ms — see the header's doc comment */
 } // namespace
 
-CompletionPopup::CompletionPopup(EditorViewport *viewport) : QWidget(viewport), m_viewport(viewport) {
-    setAutoFillBackground(false);
-    setAttribute(Qt::WA_TransparentForMouseEvents);
-    setFocusPolicy(Qt::NoFocus);
-
-    m_opacityEffect = new QGraphicsOpacityEffect(this);
-    m_opacityEffect->setOpacity(1.0);
-    setGraphicsEffect(m_opacityEffect);
-
-    m_fadeAnimation = new QPropertyAnimation(m_opacityEffect, "opacity", this);
-    m_fadeAnimation->setDuration(kFadeDurationMs);
-    m_fadeAnimation->setEasingCurve(QEasingCurve::OutCubic);
-    connect(m_fadeAnimation, &QPropertyAnimation::finished, this, [this]() {
-        if (m_opacityEffect->opacity() <= 0.001) {
-            hide();
-        }
-    });
-
+CompletionPopup::CompletionPopup(EditorViewport *viewport) : TrackingPopup(viewport) {
     refreshTheme();
-    hide();
 }
 
 void CompletionPopup::refreshTheme() {
+    TrackingPopup::refreshTheme();
     if (m_viewport == nullptr) {
         return;
     }
-    m_background = m_viewport->panelBackgroundColor();
-    m_border = m_viewport->panelBorderColor();
     m_textColor = m_viewport->textColor();
     m_dimColor = m_textColor;
     m_dimColor.setAlpha(140);
@@ -87,56 +65,8 @@ void CompletionPopup::showItems(const QVector<Item> &items, const QPoint &pos) {
         return;
     }
 
-    bool wasVisible = isVisible() && m_opacityEffect->opacity() > 0.001;
-
-    QSize size = contentSize();
-    QRect hostRect = m_viewport->rect();
-    int x = std::clamp(pos.x(), 0, std::max(0, hostRect.width() - size.width()));
-    int y = pos.y();
-    if (y + size.height() > hostRect.height()) {
-        /* No room below the caret line — flip to just above it. `pos`
-         * is already the caret's *bottom* edge, so subtracting the
-         * popup height plus one line's worth clears the line itself. */
-        y = std::max(0, pos.y() - size.height());
-    }
-
-    m_fadeAnimation->stop();
-    setGeometry(x, y, size.width(), size.height());
-    raise();
-
-    if (!m_viewport->animationsEnabled()) {
-        m_opacityEffect->setOpacity(1.0);
-        show();
-        update();
-        return;
-    }
-
-    if (!wasVisible) {
-        m_opacityEffect->setOpacity(0.0);
-        show();
-        m_fadeAnimation->setStartValue(0.0);
-        m_fadeAnimation->setEndValue(1.0);
-        m_fadeAnimation->start();
-    } else {
-        /* Already open — just refresh in place, no re-fade. */
-        show();
-        update();
-    }
-}
-
-void CompletionPopup::dismiss() {
-    m_items.clear();
-    m_fadeAnimation->stop();
-    if (!m_viewport->animationsEnabled()) {
-        hide();
-        return;
-    }
-    if (!isVisible()) {
-        return;
-    }
-    m_fadeAnimation->setStartValue(m_opacityEffect->opacity());
-    m_fadeAnimation->setEndValue(0.0);
-    m_fadeAnimation->start();
+    retarget(pos, contentSize());
+    update();
 }
 
 void CompletionPopup::moveSelection(int delta) {
@@ -159,12 +89,10 @@ const CompletionPopup::Item *CompletionPopup::selectedItem() const {
     return &m_items[m_selected];
 }
 
-void CompletionPopup::paintEvent(QPaintEvent *) {
-    QPainter painter(this);
-    painter.fillRect(rect(), m_background);
-    painter.setPen(m_border);
-    painter.drawRect(rect().adjusted(0, 0, -1, -1));
+void CompletionPopup::paintEvent(QPaintEvent *event) {
+    TrackingPopup::paintEvent(event);
 
+    QPainter painter(this);
     QFontMetrics metrics(font());
     int rowHeight = metrics.height() + 6;
     painter.setFont(font());

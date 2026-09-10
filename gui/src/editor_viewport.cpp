@@ -895,6 +895,28 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
     case Qt::Key_Delete:
         deleteForward();
         break;
+    case Qt::Key_Tab:
+        /* Qt::Key_Tab's event->text() is "\t", a control character —
+         * QChar::isPrint() is false for it, so it fell through to the
+         * default branch below and out to QWidget::keyPressEvent
+         * (Qt's default focus-traversal handling), meaning it did
+         * nothing at all: a real, reported gap, not a deliberate
+         * omission. Inserts 4 spaces, not a literal tab byte:
+         * drawLine/xForColumn measure each run with plain
+         * QFontMetrics::horizontalAdvance (no QTextLayout, no tab-stop
+         * expansion), so a raw '\t' would measure at ~0 width and
+         * render as an invisible non-indent — a soft tab renders
+         * correctly with the exact same per-glyph measurement every
+         * other character already uses, and is simplicity keeping with
+         * the byte-level column model (docs/adr/0012) rather than
+         * adding tab-stop-aware rendering for one key. Treated as a
+         * plain character insertion (isEdit = true, instant, not
+         * glided). Completion-popup Tab-to-accept is intercepted
+         * earlier in this function and never reaches here. See
+         * docs/adr/0031. */
+        insertText(QByteArrayLiteral("    "));
+        isEdit = true;
+        break;
     case Qt::Key_Return:
     case Qt::Key_Enter:
         /* Deliberately *not* isEdit = true — see docs/adr/0027 and
@@ -2155,7 +2177,14 @@ void EditorViewport::scheduleHoverRequest(const QPoint &viewportPos) {
     size_t offset = offsetForPoint(viewportPos);
 
     if (m_hoverPanel->isShowingHover() && offset >= m_hoverShownRangeStart && offset < m_hoverShownRangeEnd) {
-        return; /* still hovering the word the open tooltip covers — leave it alone */
+        /* Still hovering the word the open tooltip covers — no new
+         * request needed, but keep it glued to the actual pointer
+         * position (it eases there, doesn't jump — see
+         * TrackingPopup::retarget) rather than staying pinned to
+         * wherever it first appeared. */
+        m_hoverPendingPos = viewportPos;
+        m_hoverPanel->moveTo(viewportPos);
+        return;
     }
     if (m_hoverPanel->isShowingHover()) {
         dismissHover();

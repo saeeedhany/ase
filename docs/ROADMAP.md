@@ -435,6 +435,27 @@ ADRs as each lands here going forward.
       tooltip showing clangd's real type/value/declaration info,
       dismissing correctly on mouse-away. See
       [ADR 0030](adr/0030-lsp-completion-hover.md).
+- [x] **Phase 17.5 — Draggable panels, smooth panel scroll, tracking-
+      popup glide, Tab**: user feedback framed as "finish the base
+      editor" rather than a new feature. `FloatingPanel::setDragHandle`
+      (one call per panel, using the badge every panel already has) —
+      every existing panel is now draggable, and any future one is too
+      with the same one line. `installSmoothScroll()`, a free function
+      working on any `QAbstractScrollArea` (`QScrollArea`,
+      `QListWidget`, `QPlainTextEdit` all qualify), eases wheel-scroll
+      instead of jumping — applied to Help, File browser, and Output.
+      New shared `TrackingPopup` base for `CompletionPopup`/`HoverPanel`
+      (Phase 17): both now glide their *position* toward a moving
+      target (the caret while typing, the pointer while still hovering
+      the same word) instead of jumping, and any future tracking
+      overlay gets the same fade/paint/glide identity for free by
+      deriving from it. Tab now inserts a soft (4-space) indent — a
+      real, reported gap (it previously did nothing at all). Checked,
+      not just fixed: FindBar's open/close/resize animation was
+      confirmed (via a temporary debug print) to already fire
+      identically to every other panel — nothing was actually broken
+      there. See
+      [ADR 0031](adr/0031-draggable-panels-smooth-scroll-tracking-glide.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's

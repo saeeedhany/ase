@@ -2,6 +2,7 @@
 
 #include "editor_viewport.h"
 #include "scrollbar_style.h"
+#include "smooth_scroll.h"
 #include "translucent_bar.h"
 
 #include <QFontDatabase>
@@ -46,6 +47,7 @@ OutputPanel::OutputPanel(EditorViewport *viewport, QWidget *parent) : QWidget(pa
     m_text->setMinimumHeight(150);
     m_text->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     layout->addWidget(m_text);
+    installSmoothScroll(m_text, m_viewport); /* see docs/adr/0031 */
 
     hide(); /* until the first :compile — see the class comment */
 }

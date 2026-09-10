@@ -40,6 +40,7 @@ AboutPanel::AboutPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_vi
     headerRow->setSpacing(8);
     m_badge = new LetterBadge(QLatin1Char('i'), content);
     headerRow->addWidget(m_badge);
+    setDragHandle(m_badge); /* see docs/adr/0031 */
     m_title = new QLabel(QStringLiteral("About"), content);
     QFont titleFont = m_title->font();
     titleFont.setBold(true);

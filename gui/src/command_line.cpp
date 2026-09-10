@@ -16,6 +16,7 @@ CommandLine::CommandLine(EditorViewport *viewport) : FloatingPanel(viewport), m_
 
     m_badge = new LetterBadge(QLatin1Char(':'), content);
     layout->addWidget(m_badge);
+    setDragHandle(m_badge); /* see docs/adr/0031 */
     m_edit = new QLineEdit(content);
     m_edit->setMinimumWidth(320);
     m_edit->setFrame(false);

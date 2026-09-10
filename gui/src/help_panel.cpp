@@ -3,6 +3,7 @@
 #include "editor_viewport.h"
 #include "letter_badge.h"
 #include "scrollbar_style.h"
+#include "smooth_scroll.h"
 
 #include <QHBoxLayout>
 #include <QKeyEvent>
@@ -80,6 +81,7 @@ HelpPanel::HelpPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_view
     headerRow->setSpacing(8);
     m_badge = new LetterBadge(QLatin1Char('?'), content);
     headerRow->addWidget(m_badge);
+    setDragHandle(m_badge); /* see docs/adr/0031 */
     m_title = new QLabel(QStringLiteral("Keyboard shortcuts"), content);
     QFont titleFont = m_title->font();
     titleFont.setBold(true);
@@ -101,6 +103,7 @@ HelpPanel::HelpPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_view
     layout->addWidget(m_scrollArea);
 
     m_scrollArea->installEventFilter(this);
+    installSmoothScroll(m_scrollArea, m_viewport); /* see docs/adr/0031 */
 }
 
 void HelpPanel::openHelp() {

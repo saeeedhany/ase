@@ -2,10 +2,12 @@
 
 #include <algorithm>
 
+#include <QCursor>
 #include <QEvent>
 #include <QGraphicsOpacityEffect>
 #include <QLabel>
 #include <QLayout>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QParallelAnimationGroup>
 #include <QPropertyAnimation>
@@ -97,7 +99,21 @@ QRect FloatingPanel::targetGeometry() const {
 }
 
 void FloatingPanel::recenter() {
+    if (m_dragging) {
+        return; /* don't fight a drag in progress — see setDragHandle's doc comment */
+    }
     setGeometry(targetGeometry());
+}
+
+void FloatingPanel::setDragHandle(QWidget *handle) {
+    if (m_dragHandle != nullptr) {
+        m_dragHandle->removeEventFilter(this);
+    }
+    m_dragHandle = handle;
+    if (m_dragHandle != nullptr) {
+        m_dragHandle->installEventFilter(this);
+        m_dragHandle->setCursor(Qt::SizeAllCursor);
+    }
 }
 
 /* Forces contentWidget()'s geometry (and its layout's child geometry)
@@ -209,5 +225,30 @@ bool FloatingPanel::eventFilter(QObject *watched, QEvent *event) {
     if (watched == m_host && event->type() == QEvent::Resize && isVisible()) {
         recenter();
     }
+
+    if (watched == m_dragHandle) {
+        if (event->type() == QEvent::MouseButtonPress) {
+            auto *mouseEvent = static_cast<QMouseEvent *>(event);
+            if (mouseEvent->button() == Qt::LeftButton) {
+                m_dragging = true;
+                m_dragStartMouse = mouseEvent->globalPosition().toPoint();
+                m_dragStartPanelPos = pos();
+            }
+        } else if (event->type() == QEvent::MouseMove && m_dragging) {
+            auto *mouseEvent = static_cast<QMouseEvent *>(event);
+            QPoint delta = mouseEvent->globalPosition().toPoint() - m_dragStartMouse;
+            QPoint newPos = m_dragStartPanelPos + delta;
+            if (m_host != nullptr) {
+                int maxX = std::max(0, m_host->width() - width());
+                int maxY = std::max(0, m_host->height() - height());
+                newPos.setX(std::clamp(newPos.x(), 0, maxX));
+                newPos.setY(std::clamp(newPos.y(), 0, maxY));
+            }
+            move(newPos);
+        } else if (event->type() == QEvent::MouseButtonRelease) {
+            m_dragging = false;
+        }
+    }
+
     return QWidget::eventFilter(watched, event);
 }

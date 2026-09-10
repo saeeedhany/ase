@@ -3,6 +3,7 @@
 #include "editor_viewport.h"
 #include "letter_badge.h"
 #include "scrollbar_style.h"
+#include "smooth_scroll.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -29,6 +30,7 @@ FileBrowserPanel::FileBrowserPanel(EditorViewport *viewport) : FloatingPanel(vie
     pathRow->setSpacing(8);
     m_badge = new LetterBadge(QLatin1Char('O'), content);
     pathRow->addWidget(m_badge);
+    setDragHandle(m_badge); /* see docs/adr/0031 */
     m_filterEdit = new QLineEdit(content);
     m_filterEdit->setMinimumWidth(480);
     m_filterEdit->setFrame(false);
@@ -39,6 +41,7 @@ FileBrowserPanel::FileBrowserPanel(EditorViewport *viewport) : FloatingPanel(vie
     m_listWidget->setMinimumHeight(260);
     m_listWidget->setFrameShape(QFrame::NoFrame);
     layout->addWidget(m_listWidget);
+    installSmoothScroll(m_listWidget, m_viewport); /* see docs/adr/0031 */
 
     /* A plain flat bar, child of the list's viewport, sliding between
      * rows on an animation instead of relying on the native (instant,

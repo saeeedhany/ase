@@ -25,6 +25,7 @@ FindBar::FindBar(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport
     findRow->setSpacing(8);
     m_findBadge = new LetterBadge(QLatin1Char('F'), content);
     findRow->addWidget(m_findBadge);
+    setDragHandle(m_findBadge); /* see docs/adr/0031 */
     m_findEdit = new QLineEdit(content);
     m_findEdit->setMinimumWidth(240);
     findRow->addWidget(m_findEdit);
