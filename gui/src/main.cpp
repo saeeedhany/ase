@@ -2,6 +2,7 @@
 #include <QFileInfo>
 #include <QLabel>
 #include <QMainWindow>
+#include <QPalette>
 #include <QStatusBar>
 #include <QString>
 
@@ -20,6 +21,20 @@ QString windowTitleFor(const QString &filePath, bool dirty) {
     QString name = filePath.isEmpty() ? QStringLiteral("untitled") : filePath;
     return (dirty ? QStringLiteral("%1 [modified] — Absolute Simple Editor") : QStringLiteral("%1 — Absolute Simple Editor"))
         .arg(name);
+}
+
+/* QStatusBar defaults to a native, light OS-styled bar — jarring
+ * against this app's dark, minimal palette, same problem the floating
+ * panels' native-white QLineEdits had (docs/adr/0022). Re-applied on
+ * every statusChanged (see below), so a hot-reloaded config color
+ * reaches the status bar too, not just the editor. See docs/adr/0024. */
+void applyStatusBarTheme(QMainWindow &window, QLabel *statusLabel, EditorViewport *viewport) {
+    QPalette pal = window.statusBar()->palette();
+    pal.setColor(QPalette::Window, viewport->backgroundColor());
+    pal.setColor(QPalette::WindowText, viewport->textColor());
+    window.statusBar()->setPalette(pal);
+    window.statusBar()->setAutoFillBackground(true);
+    statusLabel->setPalette(pal);
 }
 } // namespace
 
@@ -62,8 +77,10 @@ int main(int argc, char *argv[]) {
     auto *fileBrowser = new FileBrowserPanel(viewport);
     viewport->setFileBrowser(fileBrowser);
 
+    window.statusBar()->setSizeGripEnabled(false);
     auto *statusLabel = new QLabel(QStringLiteral("Ln 1, Col 1"));
-    window.statusBar()->addWidget(statusLabel);
+    window.statusBar()->addPermanentWidget(statusLabel);
+    applyStatusBarTheme(window, statusLabel, viewport);
 
     QObject::connect(viewport, &EditorViewport::statusChanged, &window,
                       [&window, viewport, statusLabel](int line, int column, bool dirty) {
@@ -72,6 +89,7 @@ int main(int argc, char *argv[]) {
                                                     .arg(column)
                                                     .arg(dirty ? QStringLiteral(" *") : QString()));
                           window.setWindowTitle(windowTitleFor(viewport->filePath(), dirty));
+                          applyStatusBarTheme(window, statusLabel, viewport);
                       });
 
     window.resize(900, 650);

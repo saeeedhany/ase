@@ -10,20 +10,21 @@
 #include <QVBoxLayout>
 
 FindBar::FindBar(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport(viewport) {
-    auto *layout = new QVBoxLayout(this);
+    QWidget *content = contentWidget();
+    auto *layout = new QVBoxLayout(content);
     layout->setContentsMargins(10, 8, 10, 8);
     layout->setSpacing(6);
 
     auto *findRow = new QHBoxLayout();
     findRow->setSpacing(8);
-    m_findBadge = new LetterBadge(QLatin1Char('F'), this);
+    m_findBadge = new LetterBadge(QLatin1Char('F'), content);
     findRow->addWidget(m_findBadge);
-    m_findEdit = new QLineEdit(this);
+    m_findEdit = new QLineEdit(content);
     m_findEdit->setMinimumWidth(240);
     findRow->addWidget(m_findEdit);
     layout->addLayout(findRow);
 
-    m_replaceRow = new QWidget(this);
+    m_replaceRow = new QWidget(content);
     auto *replaceRowLayout = new QHBoxLayout(m_replaceRow);
     replaceRowLayout->setContentsMargins(0, 0, 0, 0);
     replaceRowLayout->setSpacing(8);

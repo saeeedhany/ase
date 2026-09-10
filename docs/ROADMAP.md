@@ -302,6 +302,29 @@ ADRs as each lands here going forward.
       inside the handler was causing the same key press to be
       redelivered to the freshly-focused editor afterward. See
       [ADR 0023](adr/0023-editor-chrome.md).
+- [x] **Phase 14.5 — Panel polish, scroll margin, status bar theme**:
+      direct feedback that `FileBrowserPanel`'s close animation and
+      navigation "felt unsmooth," plus a request to search by name
+      instead of editing a path, and a scrolloff-style viewport margin.
+      Root-caused the animation jank to `FloatingPanel` animating its
+      own real `geometry` (forcing a live `QVBoxLayout`/`QListWidget`
+      relayout every frame) — reworked to animate a static snapshot
+      image instead (`contentWidget()`, `m_snapshot`), which also
+      surfaced and fixed a genuine "geometry set while hidden doesn't
+      survive the child's first show()" class of bug. The file
+      browser's path field is now a filter (placeholder shows just the
+      directory name, typing filters the list and auto-selects the
+      first match) with a custom animated sliding highlight bar — which
+      itself uncovered a real, previously-invisible bug: `..` was
+      being fully hidden by an opaque highlight (`QPalette`/
+      `setAutoFillBackground` silently ignores alpha), fixed with a
+      small `TranslucentBar` that paints via `QPainter::fillRect`
+      directly, same technique the editor's own selection/find-match
+      overlays already use. `ensureCursorVisible()` now keeps a
+      3-line/4-character margin around the cursor before scrolling.
+      Status bar themed to match the app (`QPalette`, re-applied on
+      every `statusChanged`). See
+      [ADR 0024](adr/0024-panel-polish-and-scroll-margin.md).
 - [ ] **Phase 15 — Command line + `:compile` + output panel**: extracts
       a reusable `AseProcess` from the LSP client's process-spawning
       code; first real second panel.

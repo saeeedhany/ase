@@ -5,30 +5,58 @@
 #include <QRect>
 #include <QWidget>
 
+class QLabel;
 class QGraphicsOpacityEffect;
 class QPropertyAnimation;
 class QParallelAnimationGroup;
 
 /*
  * Base for every centered, floating chrome window in this app — find/
- * replace today, Open/Save-As and others later. See docs/adr/0022 for
- * the design this codifies: a plain child widget (not a top-level
- * QWindow) raised above its host and kept self-centered on the host's
- * full geometry (re-centering on host resize, via an event filter
- * installed on the host — no signal from the host is needed). Paints a
- * flat, translucent background plus a thin low-alpha border — no
- * shadows, no gradients, no rounded corners. Subclasses own their own
- * content/layout entirely; this class only owns show/hide/center/animate.
+ * replace and Open/Save-As today, others later. See docs/adr/0022 for
+ * the design this codifies, and its animation-approach addendum
+ * (docs/adr/0024) for why open/close animates a *snapshot image*
+ * rather than the real widget's geometry.
  *
- * Open/close animates opacity and a small scale-from-96% together (see
- * docs/adr/0022's animation-polish addendum) — fast (150ms) and
- * one-shot, not the continuous text-motion the `animations` config key
- * otherwise gates (caret fade, smooth scroll), but wired to the same
- * key anyway: one lever for "does this app move," not a second knob.
+ * A plain child widget (not a top-level QWindow) raised above its
+ * host, kept self-centered on the host's full geometry (re-centering
+ * on host resize, via an event filter installed on the host — no
+ * signal from the host is needed). Paints a flat, translucent
+ * background plus a thin low-alpha border — no shadows, no gradients,
+ * no rounded corners.
+ *
+ * Subclasses must build their content on contentWidget(), not on
+ * `this` directly — FloatingPanel needs to be able to hide that
+ * content and show a static snapshot in its place during animation,
+ * so animating a scale+fade never triggers real child-layout
+ * recalculation (the cause of a real, reported jank when this instead
+ * animated the widget's own `geometry`, forcing QVBoxLayout/QListWidget
+ * to relayout on every frame).
  */
 class FloatingPanel : public QWidget {
 public:
     explicit FloatingPanel(QWidget *host);
+
+    /* Subclasses lay out their real UI on this widget, not on `this`. */
+    QWidget *contentWidget() const { return m_content; }
+
+    /* Makes contentWidget() visible and correctly, finally sized — call
+     * this, populate any data-dependent child view (e.g. a
+     * QListWidget's rows), *then* call openPanel(). openPanel() calls
+     * this too, so calling it yourself first is optional, not required
+     * — but if a child view needs to compute its own internal row/
+     * scroll geometry from real content, that population must happen
+     * between this call and openPanel()'s snapshot grab, not before
+     * it. Populating such a view before the panel had ever been shown
+     * produced real, reproducible bugs (top rows landing permanently
+     * "scrolled out of view", wrong highlight-rect geometry): a plain
+     * setGeometry() while hidden doesn't survive the content's *first*
+     * show — Qt's own first-show auto-sizing for a freshly-visible
+     * child (observed with QListWidget specifically) can override it
+     * again, after the fact, even though geometry() reads correctly
+     * right up until that first show() call. This method's job is to
+     * absorb that and leave geometry genuinely settled. See
+     * docs/adr/0024. */
+    void revealForSetup();
 
     /* Both colors are pushed in by the subclass (from EditorViewport's
      * config-driven accessors) rather than read here — FloatingPanel
@@ -49,6 +77,7 @@ public:
 
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
@@ -60,8 +89,22 @@ private:
      * while already open (a host resize isn't a user open/close action,
      * so it shouldn't replay the pop-in). */
     void recenter();
+    /* Forces contentWidget()'s geometry (and its layout's child
+     * geometry) to match this panel's rect synchronously — see
+     * docs/adr/0024. */
+    void syncContentGeometry();
+    /* Grabs contentWidget()'s current appearance (with this panel's own
+     * flat background/border baked in — see paintEvent) into a static
+     * pixmap on m_snapshot, then hides the real content and shows that
+     * pixmap in its place — see the class comment. Assumes
+     * revealForSetup() already ran (openPanel() ensures this). */
+    void beginSnapshotAnimation();
 
     QWidget *m_host;
+    QWidget *m_content;
+    QLabel *m_snapshot;
+    bool m_showingSnapshot = false;
+
     QColor m_panelBackground;
     QColor m_borderColor;
     bool m_animated = true;

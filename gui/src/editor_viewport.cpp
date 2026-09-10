@@ -25,6 +25,10 @@ constexpr double kTwoPi = 6.283185307179586;
 constexpr int kCaretWidth = 2;
 constexpr int kGutterPadding = 8; /* on each side of the line-number text */
 constexpr double kEaseFactor = 0.35; /* per paint — see docs/adr/0015 */
+/* "scrolloff"-style context margin, in lines/characters, kept visible
+ * around the cursor before the view scrolls — see docs/adr/0024. */
+constexpr int kVerticalScrollMargin = 3;
+constexpr int kHorizontalScrollMarginChars = 4;
 
 bool isUtf8ContinuationByte(char byte) {
     return (static_cast<unsigned char>(byte) & 0xC0) == 0x80;
@@ -1397,11 +1401,16 @@ void EditorViewport::ensureCursorVisible() {
     size_t cursor = m_cursors.last();
     int line = lineForOffset(cursor);
     int visibleLines = std::max(1, height() / m_lineHeight);
-    if (line < m_scrollLine) {
-        m_scrollLine = line;
-    } else if (line >= m_scrollLine + visibleLines) {
-        m_scrollLine = line - visibleLines + 1;
+    /* Clamped so the margin can never exceed half the viewport — a
+     * short/narrow window degrades to less context instead of
+     * oscillating or refusing to scroll. See docs/adr/0024. */
+    int vMargin = std::min(kVerticalScrollMargin, std::max(0, (visibleLines - 1) / 2));
+    if (line < m_scrollLine + vMargin) {
+        m_scrollLine = line - vMargin;
+    } else if (line >= m_scrollLine + visibleLines - vMargin) {
+        m_scrollLine = line - visibleLines + 1 + vMargin;
     }
+    m_scrollLine = std::max(0, m_scrollLine);
 
     /* Horizontal half, symmetric to the vertical logic above — see
      * docs/adr/0014, decision 3. */
@@ -1411,10 +1420,11 @@ void EditorViewport::ensureCursorVisible() {
     int caretX = xForColumn(lineStart, lineEnd, col);
 
     int textAreaWidth = std::max(1, width() - gutterWidth());
-    if (caretX < m_scrollX) {
-        m_scrollX = caretX;
-    } else if (caretX + kCaretWidth > m_scrollX + textAreaWidth) {
-        m_scrollX = caretX + kCaretWidth - textAreaWidth;
+    int hMargin = std::min(m_charWidth * kHorizontalScrollMarginChars, std::max(0, (textAreaWidth - kCaretWidth) / 2));
+    if (caretX < m_scrollX + hMargin) {
+        m_scrollX = caretX - hMargin;
+    } else if (caretX + kCaretWidth > m_scrollX + textAreaWidth - hMargin) {
+        m_scrollX = caretX + kCaretWidth - textAreaWidth + hMargin;
     }
     m_scrollX = std::max(0, m_scrollX);
 

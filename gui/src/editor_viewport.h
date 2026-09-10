@@ -70,6 +70,7 @@ public:
      * these rather than duplicating config parsing. */
     QColor backgroundColor() const { return m_backgroundColor; }
     QColor textColor() const { return m_textColor; }
+    QColor selectionColor() const { return m_selectionColor; }
     QColor panelBackgroundColor() const { return m_panelBackgroundColor; }
     /* Derived, not configured — a low-alpha tint of the text color, so
      * a floating panel's border never needs its own config key. */

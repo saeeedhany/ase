@@ -3,22 +3,44 @@
 
 #include "floating_panel.h"
 
+#include <QColor>
 #include <QString>
+#include <QWidget>
 
 class QLineEdit;
 class QListWidget;
 class QListWidgetItem;
+class QPropertyAnimation;
 class EditorViewport;
 class LetterBadge;
 
+/* A plain rect filled via QPainter::fillRect, not QPalette/
+ * setAutoFillBackground — the latter was a real bug here: it silently
+ * ignores a QColor's alpha channel and paints fully opaque, which hid
+ * whatever row text sat underneath instead of tinting it. See
+ * docs/adr/0024. */
+class TranslucentBar : public QWidget {
+public:
+    explicit TranslucentBar(QWidget *parent);
+    void setColor(const QColor &color);
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+
+private:
+    QColor m_color;
+};
+
 /*
  * Open/Save-As as a centered floating panel, same family as FindBar —
- * see docs/adr/0022 (the design system) and docs/adr/0023 (this
- * panel). One badge ("O"/"S", swapped via LetterBadge::setLetter
- * rather than two separate badges) plus a path field that doubles as
- * the current-directory display, and a directory listing below it.
- * Owns only navigation/input; EditorViewport::openFile/saveAs do the
- * actual buffer work.
+ * see docs/adr/0022 (the design system), docs/adr/0023 (this panel),
+ * and docs/adr/0024 (the search/highlight rework below). One badge
+ * ("O"/"S", swapped via LetterBadge::setLetter rather than two
+ * separate badges) plus a filter field — it shows only the *current
+ * directory's name* as a placeholder, not a path to edit, and typing
+ * into it filters the listing below rather than being parsed as a
+ * literal path. Owns only navigation/input; EditorViewport::openFile/
+ * saveAs do the actual buffer work.
  */
 class FileBrowserPanel : public FloatingPanel {
 public:
@@ -35,27 +57,46 @@ protected:
 private:
     void hideBar();
     /* Lists `dir`'s entries (dirs first, then files, dotfiles excluded
-     * — a v1 simplification, no toggle) and updates m_pathEdit to show
-     * it as the implicit "current directory + type a name" field. */
+     * — a v1 simplification, no toggle), clears the filter, and sets
+     * the placeholder to `dir`'s own name (not the full path — you
+     * search for a file by name, you don't read/edit a path string). */
     void setDirectory(const QString &dir);
+    /* Hides list rows that don't match `query` (case-insensitive
+     * substring; ".." always stays visible) and selects the first
+     * remaining match, so Enter picks whatever's fluently highlighted
+     * without a separate confirm step. */
+    void applyFilter(const QString &query);
     /* `name` is exactly one list entry's text (".." or "name"/"name/").
-     * Directories navigate; a file either confirms (Open mode) or just
-     * fills the path field without confirming (Save-As mode — avoids
-     * an accidental overwrite from a stray double-click). */
+     * Directories navigate; a file either opens (Open mode) or fills
+     * the filter field without confirming (Save-As mode — avoids an
+     * accidental overwrite from a stray double-click). */
     void activateEntry(const QString &name);
-    /* Resolves `rawPath` against the current directory if relative,
-     * navigates into it if it's a directory, otherwise commits: opens
-     * (Open mode) or saves (Save-As mode) and closes the panel. Used by
-     * both Enter-in-the-path-field and Open-mode file activation. */
-    void confirmPath(const QString &rawPath);
+    /* Enter's behavior, split by mode: Open confirms whichever row is
+     * currently highlighted in the (possibly filtered) list — there's
+     * no reason to open a file that doesn't exist. Save-As instead
+     * reads the filter field's own text as the filename to save
+     * (resolved against the current directory), since typing a brand
+     * new name that isn't in the listing yet is the whole point of
+     * Save-As. */
+    void confirmCurrent();
+    /* The next non-hidden (i.e. not filtered-out) row from `fromRow`,
+     * stepping by `step` (+1/-1), or -1 if none — used to forward
+     * Up/Down from the filter field to the list, skipping filtered
+     * rows the same way focus-on-the-list navigation already would. */
+    int nextVisibleRow(int fromRow, int step) const;
+    /* Moves (or, if not `animate`, snaps) the sliding highlight bar to
+     * `row`'s rect — see docs/adr/0024. */
+    void moveRowHighlight(int row, bool animate);
 
     EditorViewport *m_viewport;
     Mode m_mode = Mode::Open;
     QString m_currentDir;
 
     LetterBadge *m_badge;
-    QLineEdit *m_pathEdit;
+    QLineEdit *m_filterEdit;
     QListWidget *m_listWidget;
+    TranslucentBar *m_rowHighlight;
+    QPropertyAnimation *m_rowHighlightAnim;
 };
 
 #endif /* ASE_FILE_BROWSER_PANEL_H */
