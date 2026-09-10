@@ -181,6 +181,17 @@ into the GUI) and the still-open license decision.
   small jumps and was never meant to try); and `QFontMetrics` was being
   reconstructed per styled run per frame instead of cached. All four
   fixed together — see [ADR 0017](adr/0017-viewport-review-pass.md).
+- **LSP silently not working with a relative path** (user-reported,
+  after Phase 17): launching as `ase_gui file.c` (relative, the common
+  case) built the LSP document URI straight from the unresolved
+  argument via `QUrl::fromLocalFile`, which expects an absolute path —
+  a real server (`clangd`) rejected every message outright
+  ("unresolvable URI"), silently disabling diagnostics, completion,
+  and hover with no visible error in the editor itself. Fixed by
+  resolving through `QFileInfo::absoluteFilePath` first. Verified live
+  by reproducing the report's exact launch shape (relative path,
+  matching working directory) and confirming a clean `clangd` round
+  trip. See [ADR 0032](adr/0032-lsp-relative-path-uri-fix.md).
 
 ## Post-v1 "feel alive" initiative
 

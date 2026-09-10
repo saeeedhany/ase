@@ -1943,10 +1943,12 @@ void lspHoverTrampoline(void *user_data, const AseJsonValue *result, const char 
  * (.c/.h suffix) — a language server for anything else would need a
  * per-language command mapping this v1 doesn't attempt. No default for
  * `lsp_command` (config.c) — unconfigured means no LSP for this
- * session, not a guess at which server is installed. Only ever called
- * once, from the constructor: changing `lsp_command` mid-session (or
- * opening a different file via openFile()) doesn't restart the client
- * — a documented v1 gap, see docs/adr/0029. */
+ * session, not a guess at which server is installed. Called from both
+ * the constructor and openFile() (which stops any previous client
+ * first — see its own call site) — so switching files always talks to
+ * a fresh server against the right document. Editing `lsp_command`
+ * itself mid-session and hot-reloading is still a documented v1 gap:
+ * that only takes effect on the next file open, see docs/adr/0029. */
 void EditorViewport::startLspClientIfConfigured() {
     QString suffix = QFileInfo(m_filePath).suffix().toLower();
     if (suffix != QLatin1String("c") && suffix != QLatin1String("h")) {
@@ -1958,7 +1960,15 @@ void EditorViewport::startLspClientIfConfigured() {
     }
 
     const char *argv[] = {lspCommand, nullptr};
-    m_lspUri = QUrl::fromLocalFile(m_filePath).toString();
+    /* QUrl::fromLocalFile on a *relative* path (e.g. the editor was
+     * launched as `ase_gui file.c` from a shell, not `ase_gui
+     * /abs/path/file.c`) produces a malformed URI — real servers
+     * (clangd included) reject it outright ("unresolvable URI"),
+     * silently breaking every LSP feature. QFileInfo::absoluteFilePath
+     * resolves against the current working directory first, matching
+     * how the shell itself resolved the relative path at launch. See
+     * docs/adr/0032. */
+    m_lspUri = QUrl::fromLocalFile(QFileInfo(m_filePath).absoluteFilePath()).toString();
     m_lspClient = ase_lsp_client_start(argv, nullptr);
     if (m_lspClient == nullptr) {
         return;
