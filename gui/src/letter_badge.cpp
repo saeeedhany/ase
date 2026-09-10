@@ -17,6 +17,11 @@ void LetterBadge::setColors(const QColor &fill, const QColor &letterColor) {
     update();
 }
 
+void LetterBadge::setLetter(QChar letter) {
+    m_letter = letter;
+    update();
+}
+
 QSize LetterBadge::sizeHint() const {
     return QSize(kBadgeSize, kBadgeSize);
 }

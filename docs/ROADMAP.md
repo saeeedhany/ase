@@ -284,15 +284,24 @@ ADRs as each lands here going forward.
       Phase 14 starts. `main.cpp` reverted to its pre-Phase-13
       simplicity (`FindBar` is a child of `EditorViewport`, not a
       layout row). See [ADR 0022](adr/0022-floating-panel-design-system.md).
-- [ ] **Phase 14 — Editor chrome**: status bar (line/col, dirty
-      indicator — dirty tracking doesn't exist yet, ADR 0006 deferred
-      it), `Ctrl+O` open / `Ctrl+Shift+S` save-as dialogs. **Needs a
-      plan update before starting**: per
-      [ADR 0022](adr/0022-floating-panel-design-system.md), Open/
-      Save-As are now custom `FloatingPanel`-based file browsers, not
-      the native `QFileDialog` `~/.claude/plans/noble-herding-quokka.md`
-      originally sketched — real, unscoped work that plan doesn't
-      account for yet.
+- [x] **Phase 14 — Editor chrome**: status bar (`Ln %1, Col %2` + a
+      `*` when dirty), dirty tracking (`m_dirty`, set by every
+      mutating op including undo/redo, cleared by a successful save —
+      ADR 0006 had deferred this), and `Ctrl+O`/`Ctrl+Shift+S` via a
+      new `FileBrowserPanel` (`gui/src/file_browser_panel.{h,cpp}`) —
+      a second `FloatingPanel`, per [ADR 0022](adr/0022-floating-panel-design-system.md)'s
+      decision to use custom panels instead of native `QFileDialog`.
+      `EditorViewport` got its first `Q_OBJECT`/signal
+      (`statusChanged`), emitted from `ensureCursorVisible()` — the one
+      choke point every cursor move and every edit already passes
+      through. `Ctrl+S` with no path set now opens Save-As instead of
+      silently doing nothing. A real bug found and fixed during live
+      verification: both the file browser's path field and its list
+      needed `Return` consumed via `eventFilter` rather than left to
+      Qt's native `returnPressed`/`itemActivated` — a focus change
+      inside the handler was causing the same key press to be
+      redelivered to the freshly-focused editor afterward. See
+      [ADR 0023](adr/0023-editor-chrome.md).
 - [ ] **Phase 15 — Command line + `:compile` + output panel**: extracts
       a reusable `AseProcess` from the LSP client's process-spawning
       code; first real second panel.

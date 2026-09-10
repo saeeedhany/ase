@@ -1,5 +1,6 @@
 #include "editor_viewport.h"
 
+#include "file_browser_panel.h"
 #include "find_bar.h"
 
 #include <algorithm>
@@ -171,6 +172,9 @@ void EditorViewport::checkConfigReload() {
     applyConfig();
     if (m_findBar != nullptr) {
         m_findBar->refreshTheme();
+    }
+    if (m_fileBrowser != nullptr) {
+        m_fileBrowser->refreshTheme();
     }
     ensureCursorVisible();
     update();
@@ -674,7 +678,23 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
     default:
         if (event->modifiers() & Qt::ControlModifier) {
             if (event->key() == Qt::Key_S) {
-                save();
+                /* Ctrl+Shift+S always opens Save-As, even with a path
+                 * already set — "save as" means "let me pick a
+                 * different one," not "save.". Ctrl+S with no path set
+                 * falls through to save()'s own Save-As fallback. */
+                if (event->modifiers() & Qt::ShiftModifier) {
+                    if (m_fileBrowser != nullptr) {
+                        m_fileBrowser->openFor(FileBrowserPanel::Mode::SaveAs);
+                    }
+                } else {
+                    save();
+                }
+                return;
+            }
+            if (event->key() == Qt::Key_O) {
+                if (m_fileBrowser != nullptr) {
+                    m_fileBrowser->openFor(FileBrowserPanel::Mode::Open);
+                }
                 return;
             }
             if (event->key() == Qt::Key_Q) {
@@ -946,6 +966,7 @@ void EditorViewport::cutSelection() {
     }
     normalizeCursors();
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    m_dirty = true;
     refreshCache();
     ensureCursorVisible();
     snapAnimationToTarget();
@@ -1122,6 +1143,7 @@ void EditorViewport::replaceAllMatches(const QByteArray &replacement) {
     m_cursors = {0};
     m_selectionAnchors = {0};
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    m_dirty = true;
     refreshCache(); /* recomputes m_matches too */
     m_currentMatch = m_matches.isEmpty() ? -1 : 0;
     ensureCursorVisible();
@@ -1139,6 +1161,7 @@ void EditorViewport::insertText(const QByteArray &bytes) {
     }
     normalizeCursors();
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    m_dirty = true;
     refreshCache();
 }
 
@@ -1163,6 +1186,7 @@ void EditorViewport::deleteBackward() {
     }
     normalizeCursors();
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    m_dirty = true;
     refreshCache();
 }
 
@@ -1206,6 +1230,7 @@ void EditorViewport::deleteForward() {
     }
     normalizeCursors();
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    m_dirty = true;
     refreshCache();
 }
 
@@ -1392,13 +1417,76 @@ void EditorViewport::ensureCursorVisible() {
         m_scrollX = caretX + kCaretWidth - textAreaWidth;
     }
     m_scrollX = std::max(0, m_scrollX);
+
+    /* 1-based for display — every cursor move and every edit already
+     * ends up here, so this is the one place status needs wiring. See
+     * docs/adr/0023. */
+    emit statusChanged(line + 1, col + 1, m_dirty);
 }
 
+/* Empty m_filePath (launched with no file, or a fresh openFile that
+ * failed to read one) routes to the Save-As panel instead of silently
+ * doing nothing — the one gap ADR 0006 flagged as deferred. */
 void EditorViewport::save() {
     if (m_filePath.isEmpty()) {
+        if (m_fileBrowser != nullptr) {
+            m_fileBrowser->openFor(FileBrowserPanel::Mode::SaveAs);
+        }
         return;
     }
-    ase_buffer_save_to_file(m_buffer, m_filePath.toUtf8().constData());
+    if (ase_buffer_save_to_file(m_buffer, m_filePath.toUtf8().constData())) {
+        m_dirty = false;
+        ensureCursorVisible(); /* pushes the cleared dirty flag (and title) through statusChanged */
+    }
+}
+
+/* Destroys the current buffer/syntax/undo-history and loads `path`
+ * fresh, resetting every piece of per-buffer state — cursors, scroll,
+ * find query, dirty flag. Missing/unreadable files start empty with
+ * `path` kept as the save target, same tolerance
+ * ase_buffer_create_from_file's caller in main.cpp already had for the
+ * initial launch (docs/adr/0006) — opening a not-yet-existing file by
+ * name is a normal editor action, not an error. */
+void EditorViewport::openFile(const QString &path) {
+    ase_syntax_destroy(m_syntax);
+    m_syntax = nullptr;
+    ase_undo_destroy(m_undo);
+    ase_buffer_destroy(m_buffer);
+
+    AseBuffer *buffer = ase_buffer_create_from_file(path.toUtf8().constData());
+    if (buffer == nullptr) {
+        buffer = ase_buffer_create();
+    }
+    m_buffer = buffer;
+    m_undo = ase_undo_create();
+    m_filePath = path;
+
+    QString suffix = QFileInfo(path).suffix().toLower();
+    if (suffix == QLatin1String("c") || suffix == QLatin1String("h")) {
+        m_syntax = ase_syntax_create_c();
+    }
+
+    m_cursors = {0};
+    m_selectionAnchors = {0};
+    m_scrollLine = 0;
+    m_scrollX = 0;
+    m_desiredColumn = -1;
+    clearFindQuery();
+    m_dirty = false;
+
+    refreshCache();
+    ensureCursorVisible();
+    resetCaretBlink();
+    snapAnimationToTarget();
+    update();
+}
+
+/* Sets the save target then defers to save() itself, so dirty-clearing
+ * and the statusChanged emit (title included, via filePath()) happen
+ * in exactly one place rather than being duplicated here. */
+void EditorViewport::saveAs(const QString &path) {
+    m_filePath = path;
+    save();
 }
 
 /* Shared by undo()/redo(): apply the cursor snapshot the undo stack
@@ -1423,6 +1511,11 @@ void EditorViewport::applyUndoResult(size_t *cursors, size_t count) {
         m_selectionAnchors.push_back(0);
     }
 
+    /* Any undo/redo marks dirty — simpler than tracking the exact saved
+     * stack position, an acceptable v1 gap (docs/adr/0023) since the
+     * common case (undo back to a saved state, still see the dirty
+     * marker) is a minor cosmetic paper cut, not a data-loss risk. */
+    m_dirty = true;
     refreshCache();
     ensureCursorVisible();
     resetCaretBlink();

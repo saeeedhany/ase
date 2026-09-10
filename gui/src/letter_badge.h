@@ -17,6 +17,10 @@ public:
     explicit LetterBadge(QChar letter, QWidget *parent = nullptr);
 
     void setColors(const QColor &fill, const QColor &letterColor);
+    /* Lets one badge instance switch label — e.g. a single Open/Save-As
+     * panel reusing one badge for "O" vs "S" instead of two badges
+     * shown/hidden by mode. */
+    void setLetter(QChar letter);
     QSize sizeHint() const override;
 
 protected:

@@ -21,6 +21,7 @@ extern "C" {
 class QTimer;
 class QPainter;
 class FindBar;
+class FileBrowserPanel;
 
 /*
  * Custom-painted text viewport: fills the whole window, no chrome of its
@@ -32,17 +33,36 @@ class FindBar;
  * The keyboard/mouse selection model is documented in docs/adr/0019.
  * The find/replace bar (gui/src/find_bar.h) is documented in
  * docs/adr/0021 — this class owns the actual search/replace logic,
- * FindBar is just the input widget calling into it.
+ * FindBar is just the input widget calling into it. Status bar, dirty
+ * tracking, and Open/Save-As (gui/src/file_browser_panel.h) are
+ * documented in docs/adr/0023 — same "this class owns the logic, the
+ * FloatingPanel is just the input widget" split.
  */
 class EditorViewport : public QWidget {
+    Q_OBJECT
+
 public:
     EditorViewport(AseBuffer *buffer, QString filePath, QWidget *parent = nullptr);
     ~EditorViewport() override;
 
-    /* Wires this viewport to the FindBar instance floating over it (see
-     * main.cpp) — a plain pointer, not a signal/slot connection, since
-     * neither class declares Qt signals. */
+    /* Wires this viewport to the FindBar/FileBrowserPanel instances
+     * floating over it (see main.cpp) — plain pointers, not signal/slot
+     * connections (neither declares its own Qt signals; they call back
+     * into this class's public methods directly). */
     void setFindBar(FindBar *bar) { m_findBar = bar; }
+    void setFileBrowser(FileBrowserPanel *panel) { m_fileBrowser = panel; }
+
+    QString filePath() const { return m_filePath; }
+    /* Destroys the current buffer/syntax/undo-history and loads `path`
+     * fresh — same "missing/unreadable file starts empty, path becomes
+     * the save target" tolerance ase_buffer_create_from_file's caller
+     * in main.cpp already had (docs/adr/0006), not a new behavior.
+     * Called by FileBrowserPanel on Ctrl+O. */
+    void openFile(const QString &path);
+    /* Sets m_filePath then goes through the normal save() path (so
+     * dirty-clearing and the statusChanged emit happen exactly once,
+     * not duplicated here). Called by FileBrowserPanel on Ctrl+Shift+S. */
+    void saveAs(const QString &path);
 
     /* Theme accessors for FloatingPanel-based chrome (FindBar today,
      * more later) — see docs/adr/0022. That chrome has no AseConfig
@@ -76,6 +96,13 @@ public:
     void findPrevious();
     void replaceCurrentMatch(const QByteArray &replacement);
     void replaceAllMatches(const QByteArray &replacement);
+
+signals:
+    /* Emitted from ensureCursorVisible() — every call site that already
+     * calls it (every cursor move and every edit) gets this for free,
+     * rather than annotating each one individually. 1-based line/column
+     * for display. See docs/adr/0023. */
+    void statusChanged(int line, int column, bool dirty);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -230,6 +257,10 @@ private:
     AseBuffer *m_buffer;
     QString m_filePath;
     AseUndoStack *m_undo;
+    /* Set true by every mutating op (including undo/redo — a v1
+     * simplification, not tracking the exact saved stack position, see
+     * docs/adr/0023), cleared by a successful save(). */
+    bool m_dirty = false;
 
     AseConfig *m_config = nullptr;
     QString m_configPath;
@@ -264,6 +295,7 @@ private:
     QVector<size_t> m_matches;
     int m_currentMatch = -1;
     FindBar *m_findBar = nullptr;
+    FileBrowserPanel *m_fileBrowser = nullptr;
 
     int m_scrollLine = 0;
     int m_scrollX = 0; /* leftmost visible pixel, not column — see docs/adr/0014 */
