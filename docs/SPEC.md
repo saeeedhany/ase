@@ -125,7 +125,7 @@ code comments/docs wherever a shortcut was taken for this reason:
 
 ## 9. Open Source Logistics
 
-- License: TBD — deliberate choice between permissive (MIT/Apache-2.0) and
-  copyleft (GPL/LGPL), based on desired plugin ecosystem dynamics.
+- License: Apache License 2.0 — see
+  [ADR 0033](adr/0033-license-apache-2.0-and-first-alpha-release.md).
 - Public repository with issue templates and a clear roadmap doc.
 - Versioning scheme and changelog discipline defined before v1.0.

@@ -2,7 +2,8 @@
 
 ## Status
 
-Proposed (open — blocks making the repository public)
+Superseded by [ADR 0033](0033-license-apache-2.0-and-first-alpha-release.md)
+— the license is now decided (Apache License 2.0).
 
 ## Context
 

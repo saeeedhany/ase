@@ -10,6 +10,10 @@
 #include <QPixmap>
 #include <QVBoxLayout>
 
+#ifndef ASE_VERSION_STRING
+#define ASE_VERSION_STRING "0.0.0-dev" /* fallback if CMake didn't define it — see gui/CMakeLists.txt */
+#endif
+
 namespace {
 /* No explicit colors in the markup (besides the links, which need
  * *some* color to read as clickable — reusing the app's single text
@@ -17,17 +21,18 @@ namespace {
  * inherits the QLabel's own palette, same reasoning as HelpPanel. */
 const char kAboutHtmlTemplate[] =
     "<p align=\"center\"><b>Absolute Simple Editor</b><br>"
-    "Version %1 &mdash; in development, not yet publicly released</p>"
+    "Version %1 &mdash; first alpha release</p>"
     "<p align=\"center\">A minimal, robust, blazingly fast, and "
     "aesthetically deliberate GUI text editor.</p>"
     "<p align=\"center\">Developed by <b>Saeed</b><br>"
-    "<a href=\"%2\" style=\"color:%4;\">%2</a><br>"
-    "<a href=\"%3\" style=\"color:%4;\">%3</a></p>"
-    "<p align=\"center\">All phases of the \"complete normal editor\" "
-    "pass are done — undo/redo, selection, clipboard, find/replace, "
-    "editor chrome, and a command line with :compile. Full modal Vim "
-    "emulation is planned next. The license is still an open decision, "
-    "so this isn't published publicly yet.</p>";
+    "<a href=\"%2\" style=\"color:%5;\">%2</a><br>"
+    "<a href=\"%3\" style=\"color:%5;\">%3</a><br>"
+    "<a href=\"%4\" style=\"color:%5;\">Discord</a></p>"
+    "<p align=\"center\">The \"complete normal editor\" pass (undo/"
+    "redo, selection, clipboard, find/replace, editor chrome, a "
+    "command line with :compile) and an LSP client (diagnostics, "
+    "completion, hover) are done. Full modal Vim emulation is planned "
+    "next. Licensed under the Apache License 2.0.</p>";
 }
 
 AboutPanel::AboutPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport(viewport) {
@@ -103,8 +108,9 @@ void AboutPanel::refreshTheme() {
     m_body->setPalette(pal);
 
     m_body->setText(QString::fromUtf8(kAboutHtmlTemplate)
-                         .arg(QStringLiteral("0.0.0"), QStringLiteral("https://github.com/saeeedhany"),
-                              QStringLiteral("https://saeedz.vercel.app"), m_viewport->textColor().name()));
+                         .arg(QStringLiteral(ASE_VERSION_STRING), QStringLiteral("https://github.com/saeeedhany"),
+                              QStringLiteral("https://saeedz.vercel.app"),
+                              QStringLiteral("https://discord.gg/sBkH45DzHc"), m_viewport->textColor().name()));
 }
 
 bool AboutPanel::eventFilter(QObject *watched, QEvent *event) {

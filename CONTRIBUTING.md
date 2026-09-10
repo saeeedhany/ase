@@ -1,9 +1,9 @@
 # Contributing
 
-**Status:** the license decision is still open
-([ADR 0003](docs/adr/0003-license-decision-pending.md)), so this repo isn't
-accepting external contributions yet. This document exists so the process
-is ready once that's resolved.
+Licensed under the Apache License 2.0 (see
+[`LICENSE`](LICENSE)/[`NOTICE`](NOTICE),
+[ADR 0033](docs/adr/0033-license-apache-2.0-and-first-alpha-release.md))
+— contributions are welcome.
 
 ## Ground rules
 

@@ -482,8 +482,11 @@ ADRs as each lands here going forward.
 
 ## Open decisions blocking later phases
 
-- **License** — permissive vs. copyleft, deliberately deferred.
-  See [ADR 0003](adr/0003-license-decision-pending.md) (blocks going public).
+None currently open — the license decision (the last one tracked
+here) was resolved by
+[ADR 0033](adr/0033-license-apache-2.0-and-first-alpha-release.md)
+(Apache License 2.0), alongside the project's first alpha release,
+`v0.1.0-alpha`.
 
 ## Follow-ups noted but not yet scheduled
 

@@ -10,18 +10,18 @@ Why things are built the way they are: [`docs/adr/`](docs/adr/).
 
 ## Status
 
-**All seven spec phases done** (see [`docs/ROADMAP.md`](docs/ROADMAP.md)):
-a piece-table buffer engine, a minimal Qt shell with multi-cursor
-editing, Tree-sitter-backed syntax highlighting for C, a hot-reloadable
-config/theme system with one opt-in animation, a plugin host (Lua
-scripts + native `dlopen` plugins sharing one command registry), and an
-LSP client (process-isolated, diagnostics/completion/go-to-definition,
-POSIX only so far). The plugin host and LSP client both work standalone
-but aren't wired into the GUI yet — no keybinding/command-palette, no
-diagnostics/completion UI; see `docs/ROADMAP.md` for the full list of
-tracked follow-ups. Not published publicly — see
-[ADR 0003](docs/adr/0003-license-decision-pending.md), the license is
-still an open decision.
+**First alpha release (v0.1.0-alpha).** All seven original spec phases
+are done, plus the full "complete normal editor" pass on top: undo/
+redo, multi-cursor selection, clipboard, find/replace, viewport/scroll
+polish, a floating command line with `:compile`, and an LSP client
+(process-isolated, diagnostics + completion + hover, POSIX only so
+far) wired directly into the GUI — squiggle/gutter diagnostics, an
+automatic completion popup, and mouse-hover info, all driven by
+`lsp_command` in `config.ase`. See [`docs/ROADMAP.md`](docs/ROADMAP.md)
+for the full phase-by-phase history and what's still open (Vim mode is
+next). The plugin host (Lua + native `dlopen` plugins) still has no
+keybinding/command-palette wiring in the GUI — commands run
+programmatically only for now.
 
 ## Architecture
 
@@ -95,8 +95,14 @@ cmake --build build
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md). Note: external contributions
-aren't being accepted yet while the license decision is open (ADR 0003).
+See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## License
+
+Apache License 2.0 — see [`LICENSE`](LICENSE) and
+[`NOTICE`](NOTICE). See
+[ADR 0033](docs/adr/0033-license-apache-2.0-and-first-alpha-release.md)
+for why.
 
 ## Design pillars
 

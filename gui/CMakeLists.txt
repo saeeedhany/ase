@@ -37,3 +37,12 @@ target_link_libraries(ase_gui
         ase_syntax
         Qt6::Widgets
 )
+
+# Single source of truth for the version shown in the About panel —
+# the top-level project() VERSION, plus a release-stage suffix that
+# isn't part of the numeric CMake version. Bump PROJECT_VERSION (and
+# retag) for a real release; flip/drop "-alpha" here as the project
+# matures past it.
+target_compile_definitions(ase_gui PRIVATE
+    ASE_VERSION_STRING="${PROJECT_VERSION}-alpha"
+)
