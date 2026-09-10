@@ -251,8 +251,20 @@ ADRs as each lands here going forward.
       system clipboard via `xclip` (independent of the Qt process), a
       save-to-file round trip for paste, and a cut-then-`Ctrl+Z`
       round trip. See [ADR 0020](adr/0020-clipboard.md).
-- [ ] **Phase 13 — Find & replace**: `Ctrl+F`/`Ctrl+H`, plain substring
-      match (no regex in v1), replace/replace-all as undo groups.
+- [x] **Phase 13 — Find & replace**: `Ctrl+F`/`Ctrl+H` open a new
+      keyboard-only `FindBar` (`gui/src/find_bar.{h,cpp}`) docked above
+      the viewport — `main.cpp` now wraps both in a `QVBoxLayout` since
+      `setCentralWidget` only takes one widget. Plain substring,
+      ASCII-case-insensitive, no regex. The current match is just an
+      active selection (`jumpToMatch` sets `m_cursors`/
+      `m_selectionAnchors` to it), so `Enter`-to-replace reuses
+      Phase 11's selection-replace path unchanged; Replace All
+      (`Ctrl+Enter`) writes highest-offset-first as one undo group,
+      the same discipline every other multi-offset edit in this file
+      follows. Verified live via `xdotool` — pixel-level highlight
+      checks and save-to-file round trips for replace-one/replace-all,
+      each undoing as one action. See
+      [ADR 0021](adr/0021-find-replace.md).
 - [ ] **Phase 14 — Editor chrome**: status bar (line/col, dirty
       indicator — dirty tracking doesn't exist yet, ADR 0006 deferred
       it), `Ctrl+O` open / `Ctrl+Shift+S` save-as dialogs.

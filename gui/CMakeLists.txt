@@ -13,6 +13,7 @@ set(CMAKE_AUTOMOC ON)
 add_executable(ase_gui
     src/main.cpp
     src/editor_viewport.cpp
+    src/find_bar.cpp
 )
 
 target_link_libraries(ase_gui

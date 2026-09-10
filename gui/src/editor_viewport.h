@@ -20,6 +20,7 @@ extern "C" {
 
 class QTimer;
 class QPainter;
+class FindBar;
 
 /*
  * Custom-painted text viewport: fills the whole window, no chrome of its
@@ -29,11 +30,28 @@ class QPainter;
  * docs/adr/0006, not repeated here. Multi-cursor, the opt-in caret-fade
  * animation, and the accessibility pass are documented in docs/adr/0012.
  * The keyboard/mouse selection model is documented in docs/adr/0019.
+ * The find/replace bar (gui/src/find_bar.h) is documented in
+ * docs/adr/0021 — this class owns the actual search/replace logic,
+ * FindBar is just the input widget calling into it.
  */
 class EditorViewport : public QWidget {
 public:
     EditorViewport(AseBuffer *buffer, QString filePath, QWidget *parent = nullptr);
     ~EditorViewport() override;
+
+    /* Wires this viewport to the FindBar instance sitting above it in
+     * main.cpp's layout — a plain pointer, not a signal/slot connection,
+     * since neither class declares Qt signals. */
+    void setFindBar(FindBar *bar) { m_findBar = bar; }
+
+    /* Called by FindBar; see docs/adr/0021. */
+    QString primarySelectionText() const;
+    void setFindQuery(const QString &needle);
+    void clearFindQuery();
+    void findNext();
+    void findPrevious();
+    void replaceCurrentMatch(const QByteArray &replacement);
+    void replaceAllMatches(const QByteArray &replacement);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -151,6 +169,24 @@ private:
     void cutSelection();
     void pasteClipboard();
 
+    /* Fills the pixel rect(s) for [start, end) across visual lines
+     * [firstLine, lastLine), one rect per line — the same per-line
+     * splitting/xForColumn measurement the selection highlight used
+     * before this phase, now shared with the find/replace-match
+     * highlight too. See docs/adr/0019, docs/adr/0021. */
+    void highlightRange(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
+                         const QColor &color) const;
+
+    /* Find/replace — see docs/adr/0021. Plain substring, ASCII-
+     * case-insensitive (QByteArray::toLower() is ASCII-only; documented
+     * v1 simplification). */
+    void recomputeMatches();
+    /* Moves to m_matches[index] (wrapping either direction), selecting
+     * its range like any other selection — replaceCurrentMatch then
+     * just reuses insertText's existing selection-replace path. */
+    void jumpToMatch(int index);
+    int nearestMatchAtOrAfter(size_t offset) const;
+
     void ensureCursorVisible();
     void save();
 
@@ -178,6 +214,7 @@ private:
     QColor m_backgroundColor;
     QColor m_textColor;
     QColor m_selectionColor;
+    QColor m_findMatchColor; /* current find/replace match — see docs/adr/0021 */
     bool m_animationsEnabled = false;
 
     AseSyntax *m_syntax = nullptr; /* null for unsupported file types — see docs/adr/0007 */
@@ -191,6 +228,18 @@ private:
      * m_selectionAnchors[i] == m_cursors[i] means cursor i has no active
      * selection; otherwise the range is [min, max) of the pair. */
     QVector<size_t> m_selectionAnchors {0};
+
+    /* Find/replace state — see docs/adr/0021. m_findNeedle empty means
+     * no active search (the bar is closed, or its field is empty).
+     * Kept in the *original* case: comparison lower-cases fresh copies
+     * of both needle and haystack on every recompute, but the matched
+     * byte range's length always equals m_findNeedle's own length
+     * (ASCII-only case folding never changes a byte's length). */
+    QByteArray m_findNeedle;
+    QVector<size_t> m_matches;
+    int m_currentMatch = -1;
+    FindBar *m_findBar = nullptr;
+
     int m_scrollLine = 0;
     int m_scrollX = 0; /* leftmost visible pixel, not column — see docs/adr/0014 */
     int m_desiredColumn = -1; /* sticky column — single-cursor mode only, see docs/adr/0012 */
