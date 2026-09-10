@@ -383,6 +383,22 @@ ADRs as each lands here going forward.
       had no themed background, so the area around that marker
       rendered Qt's default light gray. See
       [ADR 0027](adr/0027-visual-polish-pass.md).
+- [x] **Phase 15.7 — Click precision fix, deletion glide, select-all,
+      About centering, synced input blink**: fixed a real, reported
+      bug — clicking to place the cursor rounded down to the nearest
+      column's left edge instead of the nearest column, so a click in
+      a character's right half needed the pointer to move almost a
+      full character further right than expected before the cursor
+      caught up; verified fixed via a systematic click sequence.
+      Backspace/Delete now glide like Enter does (ADR 0027) rather
+      than snapping. New `Ctrl+A` select-all. `AboutPanel`'s body text
+      now centers under its logo instead of reading left-aligned
+      beneath a centered image. `QApplication::setCursorFlashTime`
+      syncs every floating panel's native input-field caret to the
+      editor's own blink rate (a partial answer to "make the caret
+      animation global" — Qt's native caret can't do the smooth fade,
+      only match the rate). See
+      [ADR 0028](adr/0028-click-precision-select-all-deletion-glide.md).
 - [ ] **Phase 16 — LSP diagnostics wiring**: `textDocument/didChange`
       (never sent today — results go stale after the first edit),
       GUI poll + diagnostic markers. `publishDiagnostics` parsing

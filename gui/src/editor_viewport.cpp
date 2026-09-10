@@ -266,7 +266,13 @@ size_t EditorViewport::offsetForPoint(const QPoint &pos) const {
      * (docs/adr/0014) to land in the same local coordinate space
      * paintEvent's translate uses. */
     int localX = std::max(0, static_cast<int>(pos.x() - gutterWidth() + m_renderedScrollX));
-    int col = localX / std::max(1, m_charWidth);
+    /* Rounds to the *nearest* column instead of flooring to whichever
+     * one the click's left edge falls in — a real, reported bug: a
+     * plain floor meant a click in a character's right half still
+     * resolved to that character, so the cursor only advanced once the
+     * pointer had moved almost a full character further right than
+     * expected. See docs/adr/0028. */
+    int col = (localX + std::max(1, m_charWidth) / 2) / std::max(1, m_charWidth);
     size_t offset = offsetForLineColumn(line, col);
 
     /* Column counting is byte-based (see docs/adr/0012, decision 1) — a
@@ -667,13 +673,15 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         return;
     }
     m_desiredColumn = -1;
-    /* Set for the branches that actually mutate the buffer — see
-     * snapAnimationToTarget's doc comment (docs/adr/0017): typing/
-     * deleting always renders instantly, even with animations on,
-     * because gliding can't keep pace with fast repeated small jumps
-     * and the result reads as lag, not smoothness. Pure navigation
-     * (left/right/Home/End, and the click/Ctrl+D paths below and in
-     * mousePressEvent) keeps the glide. */
+    /* Set only for plain character insertion — see
+     * snapAnimationToTarget's doc comment (docs/adr/0017): typing
+     * always renders instantly, even with animations on, because
+     * gliding can't keep pace with fast repeated small jumps and the
+     * result reads as lag, not smoothness. Enter and Backspace/Delete
+     * are deliberately *not* in that bucket (see their own cases
+     * below, and docs/adr/0028) — each is a single, discrete cursor
+     * jump rather than a rapid sequence, so it doesn't have that
+     * problem and gets to glide like navigation does. */
     bool isEdit = false;
 
     switch (event->key()) {
@@ -690,23 +698,26 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         moveCursorEnd(extend);
         break;
     case Qt::Key_Backspace:
+        /* Not isEdit = true, matching Enter — see docs/adr/0028 and
+         * the comment on the Return/Enter case below. Deleting a
+         * newline (merging two lines) is the same kind of discrete
+         * jump Enter makes, worth gliding; deleting an ordinary
+         * character is a one-column move, animated or not. */
         deleteBackward();
-        isEdit = true;
         break;
     case Qt::Key_Delete:
         deleteForward();
-        isEdit = true;
         break;
     case Qt::Key_Return:
     case Qt::Key_Enter:
-        /* Deliberately *not* isEdit = true, unlike every other
-         * mutating case below — see docs/adr/0027. A newline is a
-         * single, discrete jump to a new line, closer in feel to
-         * navigation than to character-by-character typing, and it's
-         * the one edit the user specifically asked to see glide.
-         * Regular character insertion stays instant — ADR 0017's
-         * original reasoning (gliding can't keep pace with fast
-         * repeated small jumps) still holds for that case. */
+        /* Deliberately *not* isEdit = true — see docs/adr/0027 and
+         * docs/adr/0028. A newline is a single, discrete jump to a new
+         * line, closer in feel to navigation than to character-by-
+         * character typing, and it's the first edit the user asked to
+         * see glide (Backspace/Delete followed once deletion was
+         * asked for too). Regular character insertion stays instant —
+         * ADR 0017's original reasoning (gliding can't keep pace with
+         * fast repeated small jumps) still holds for that case. */
         insertText(QByteArrayLiteral("\n"));
         break;
     default:
@@ -768,6 +779,10 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
             }
             if (event->key() == Qt::Key_D) {
                 addCursorAtNextOccurrence();
+                return;
+            }
+            if (event->key() == Qt::Key_A) {
+                selectAll();
                 return;
             }
             if (event->key() == Qt::Key_C) {
@@ -966,6 +981,20 @@ void EditorViewport::addCursorAtNextOccurrence() {
         }
     }
     /* no further occurrence forward — no-op, see docs/adr/0012 */
+}
+
+/* Collapses to one cursor with a selection spanning the whole buffer —
+ * anchor at the start, head at the end, so it composes with everything
+ * else that already treats "a selection" as just m_selectionAnchors[i]
+ * != m_cursors[i] (copy, delete, replace-over-selection, ...). See
+ * docs/adr/0028. */
+void EditorViewport::selectAll() {
+    m_cursors = {static_cast<size_t>(m_cache.size())};
+    m_selectionAnchors = {0};
+    m_desiredColumn = -1;
+    resetCaretBlink();
+    ensureCursorVisible();
+    update();
 }
 
 bool EditorViewport::hasSelectionAt(int i) const {

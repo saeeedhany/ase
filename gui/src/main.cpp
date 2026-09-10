@@ -52,6 +52,23 @@ int main(int argc, char *argv[]) {
      * and shown again inside the About panel. See docs/adr/0027. */
     app.setWindowIcon(QIcon(QStringLiteral(":/ase.png")));
 
+    /* Every native QLineEdit inside the floating panels (FindBar,
+     * FileBrowserPanel, CommandLine) otherwise blinks its own caret on
+     * Qt's platform-default cadence, independent of — and usually
+     * visibly out of sync with — EditorViewport's own custom-timed
+     * caret. QApplication::cursorFlashTime is the one global lever Qt
+     * exposes for every native text-input caret's blink cycle; set to
+     * match the editor's own hard-blink cadence (~360ms per on/off
+     * toggle, i.e. a 720ms full cycle — see the blink timer in
+     * EditorViewport's constructor) so the whole app blinks together.
+     * See docs/adr/0028. A real gap this doesn't close: Qt's native
+     * caret is always a hard on/off toggle, never the smooth fade
+     * EditorViewport itself can do with `animations = true` — matching
+     * *that* would mean replacing every QLineEdit's own cursor
+     * painting, real work saved for if the rate match alone isn't
+     * enough. */
+    app.setCursorFlashTime(720);
+
     QString filePath;
     AseBuffer *buffer;
 

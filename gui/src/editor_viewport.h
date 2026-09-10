@@ -209,6 +209,9 @@ private:
     void moveCursorHome(bool extend);
     void moveCursorEnd(bool extend);
     void addCursorAtNextOccurrence();
+    /* Ctrl+A — collapses to a single cursor selecting the whole
+     * buffer. See docs/adr/0028. */
+    void selectAll();
     void collapseToOneCursor();
     /* Sorts m_cursors and its index-aligned m_selectionAnchors together,
      * dedupes by cursor position (keeping the first anchor seen at each

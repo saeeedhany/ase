@@ -30,6 +30,7 @@ const char kHelpHtml[] =
     "<tr><td>Backspace / Delete</td><td>Delete char or selection</td></tr>"
     "<tr><td>Ctrl+Z / Ctrl+Shift+Z</td><td>Undo / redo</td></tr>"
     "<tr><td>Ctrl+C / Ctrl+X / Ctrl+V</td><td>Copy / cut / paste</td></tr>"
+    "<tr><td>Ctrl+A</td><td>Select all</td></tr>"
     "<tr><td colspan=\"2\">&nbsp;</td></tr>"
 
     "<tr><td colspan=\"2\"><b>Find &amp; replace</b></td></tr>"
