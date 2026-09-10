@@ -12,8 +12,9 @@
  * error was just fixed," so a test can prove didChange actually
  * refreshes diagnostics rather than leaving the didOpen-time snapshot
  * stale — see docs/adr/0029), textDocument/completion,
- * textDocument/definition, shutdown, exit. Anything else is silently
- * ignored, matching how a real server tolerates unknown methods.
+ * textDocument/definition, textDocument/hover, shutdown, exit.
+ * Anything else is silently ignored, matching how a real server
+ * tolerates unknown methods.
  */
 
 #include <stdio.h>
@@ -115,6 +116,14 @@ int main(void) {
                      "{\"jsonrpc\":\"2.0\",\"id\":%ld,\"result\":{\"uri\":\"file:///fake.txt\","
                      "\"range\":{\"start\":{\"line\":2,\"character\":4},"
                      "\"end\":{\"line\":2,\"character\":10}}}}",
+                     id);
+            send_message(response);
+        } else if (has_method(body, "textDocument/hover")) {
+            long id = extract_id(body);
+            char response[512];
+            snprintf(response, sizeof(response),
+                     "{\"jsonrpc\":\"2.0\",\"id\":%ld,\"result\":{\"contents\":"
+                     "{\"kind\":\"plaintext\",\"value\":\"fake hover text\"}}}",
                      id);
             send_message(response);
         } else if (has_method(body, "shutdown")) {

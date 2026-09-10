@@ -82,6 +82,13 @@ bool ase_lsp_client_request_completion(AseLspClient *client, const char *uri, As
                                         AseLspResultCallback callback, void *user_data);
 bool ase_lsp_client_request_definition(AseLspClient *client, const char *uri, AseLspPosition position,
                                         AseLspResultCallback callback, void *user_data);
+/* textDocument/hover — result's shape varies by server (a plain
+ * string, a MarkedString, a MarkedString[], or MarkupContent), so it's
+ * handed back as raw JSON like completion/definition rather than
+ * parsed here; the caller picks apart whichever shape shows up. See
+ * docs/adr/0030. */
+bool ase_lsp_client_request_hover(AseLspClient *client, const char *uri, AseLspPosition position,
+                                   AseLspResultCallback callback, void *user_data);
 
 /* Non-blocking: drains whatever the server has written so far and
  * dispatches any complete messages (diagnostics notifications, pending

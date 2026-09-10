@@ -51,6 +51,12 @@ const char kHelpHtml[] =
     "<tr><td>Ctrl+Shift+O</td><td>Toggle output panel</td></tr>"
     "<tr><td colspan=\"2\">&nbsp;</td></tr>"
 
+    "<tr><td colspan=\"2\"><b>Language server (lsp_command, .c/.h)</b></td></tr>"
+    "<tr><td>(automatic)</td><td>Completion popup while typing</td></tr>"
+    "<tr><td>&uarr; &darr; / Enter or Tab / Esc</td><td>Navigate / accept / dismiss</td></tr>"
+    "<tr><td>(automatic)</td><td>Hover info on pausing over a symbol</td></tr>"
+    "<tr><td colspan=\"2\">&nbsp;</td></tr>"
+
     "<tr><td colspan=\"2\"><b>Command line</b></td></tr>"
     "<tr><td>Ctrl+;</td><td>Open command line</td></tr>"
     "<tr><td>:w  :q  :compile  :output</td><td>Commands</td></tr>"

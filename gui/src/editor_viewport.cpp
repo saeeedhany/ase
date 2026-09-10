@@ -2,9 +2,11 @@
 
 #include "about_panel.h"
 #include "command_line.h"
+#include "completion_popup.h"
 #include "file_browser_panel.h"
 #include "find_bar.h"
 #include "help_panel.h"
+#include "hover_panel.h"
 #include "output_panel.h"
 
 #include <algorithm>
@@ -52,6 +54,48 @@ bool isWordChar(char c) {
 void collectHighlightSpan(void *user_data, AseHighlightSpan span) {
     static_cast<QVector<AseHighlightSpan> *>(user_data)->push_back(span);
 }
+
+/* One piece of a hover response's `contents`: either a plain string, or
+ * an object carrying a "value" string (covers both MarkupContent
+ * {kind, value} and the legacy single-MarkedString {language, value}
+ * shape) — see docs/adr/0030. Anything else yields an empty piece,
+ * silently dropped by extractHoverText below. */
+QString extractHoverPiece(const AseJsonValue *value) {
+    if (value == nullptr) {
+        return QString();
+    }
+    if (ase_json_type(value) == ASE_JSON_STRING) {
+        const char *s = ase_json_get_string(value);
+        return (s != nullptr) ? QString::fromUtf8(s) : QString();
+    }
+    if (ase_json_type(value) == ASE_JSON_OBJECT) {
+        const char *v = ase_json_get_string(ase_json_object_get(value, "value"));
+        return (v != nullptr) ? QString::fromUtf8(v) : QString();
+    }
+    return QString();
+}
+
+/* `contents` may be a single piece or (legacy MarkedString[]) an array
+ * of them — joined with a blank line between, same as most editors
+ * render multi-part hover. No markdown rendering (v1 simplification,
+ * see docs/adr/0030) — shown as plain wrapped text either way. */
+QString extractHoverText(const AseJsonValue *contents) {
+    if (contents == nullptr) {
+        return QString();
+    }
+    if (ase_json_type(contents) == ASE_JSON_ARRAY) {
+        QStringList parts;
+        size_t count = ase_json_array_size(contents);
+        for (size_t i = 0; i < count; ++i) {
+            QString piece = extractHoverPiece(ase_json_array_get(contents, i));
+            if (!piece.isEmpty()) {
+                parts << piece;
+            }
+        }
+        return parts.join(QStringLiteral("\n\n"));
+    }
+    return extractHoverPiece(contents);
+}
 } // namespace
 
 EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *parent)
@@ -96,6 +140,14 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     connect(m_lspPollTimer, &QTimer::timeout, this, [this]() { pollLsp(); });
     m_lspPollTimer->start(200); /* non-blocking poll, same shape as config-reload/compile-output polling */
     startLspClientIfConfigured();
+
+    /* Needed for mouseMoveEvent to fire with no button held — hover
+     * (docs/adr/0030) has to track the pointer passively, not just
+     * during a drag. */
+    setMouseTracking(true);
+    m_hoverTimer = new QTimer(this);
+    m_hoverTimer->setSingleShot(true);
+    connect(m_hoverTimer, &QTimer::timeout, this, [this]() { requestHoverNow(); });
 }
 
 EditorViewport::~EditorViewport() {
@@ -218,6 +270,12 @@ void EditorViewport::checkConfigReload() {
     if (m_aboutPanel != nullptr) {
         m_aboutPanel->refreshTheme();
     }
+    if (m_completionPopup != nullptr) {
+        m_completionPopup->refreshTheme();
+    }
+    if (m_hoverPanel != nullptr) {
+        m_hoverPanel->refreshTheme();
+    }
     ensureCursorVisible();
     update();
 }
@@ -245,6 +303,7 @@ void EditorViewport::refreshCache() {
 
     recomputeMatches();
     sendLspDidChange();
+    requestCompletionIfAppropriate();
 }
 
 int EditorViewport::lineForOffset(size_t offset) const {
@@ -751,6 +810,34 @@ QColor EditorViewport::colorForCapture(AseHighlightCapture capture) const {
 
 void EditorViewport::keyPressEvent(QKeyEvent *event) {
     resetCaretBlink();
+    dismissHover();
+
+    /* Completion popup interception — see docs/adr/0030. Takes priority
+     * over the Up/Down/Escape handling below and over Key_Return's
+     * normal "insert a newline" case further down; any other key
+     * (including plain typing) falls through to the normal handling,
+     * which itself retriggers a fresh completion request via
+     * refreshCache(). */
+    if (m_completionPopup != nullptr && m_completionPopup->isShowingPopup()) {
+        switch (event->key()) {
+        case Qt::Key_Up:
+            m_completionPopup->moveSelection(-1);
+            return;
+        case Qt::Key_Down:
+            m_completionPopup->moveSelection(1);
+            return;
+        case Qt::Key_Escape:
+            dismissCompletion();
+            return;
+        case Qt::Key_Return:
+        case Qt::Key_Enter:
+        case Qt::Key_Tab:
+            acceptCompletion();
+            return;
+        default:
+            break;
+        }
+    }
 
     bool extend = event->modifiers() & Qt::ShiftModifier;
 
@@ -940,6 +1027,12 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
 }
 
 void EditorViewport::wheelEvent(QWheelEvent *event) {
+    /* Scrolling moves the caret's on-screen position without moving the
+     * cursor itself — both popups anchor to a screen point computed at
+     * request time, so neither would track the new scroll offset. See
+     * docs/adr/0030. */
+    dismissCompletion();
+    dismissHover();
     int lines = event->angleDelta().y() / 40;
     int maxScroll = std::max(0, static_cast<int>(m_lineStarts.size()) - 1);
     m_scrollLine = std::clamp(m_scrollLine - lines, 0, maxScroll);
@@ -947,6 +1040,9 @@ void EditorViewport::wheelEvent(QWheelEvent *event) {
 }
 
 void EditorViewport::mousePressEvent(QMouseEvent *event) {
+    dismissCompletion();
+    dismissHover();
+
     if (event->button() != Qt::LeftButton) {
         QWidget::mousePressEvent(event);
         return;
@@ -987,15 +1083,34 @@ void EditorViewport::mousePressEvent(QMouseEvent *event) {
  * collapsed to one cursor, so a drag starting from a multi-cursor state
  * can't happen. See docs/adr/0019. */
 void EditorViewport::mouseMoveEvent(QMouseEvent *event) {
-    if (!(event->buttons() & Qt::LeftButton) || m_cursors.size() != 1) {
+    if (!(event->buttons() & Qt::LeftButton)) {
+        /* No button held — passive movement, i.e. hover tracking (see
+         * docs/adr/0030), not a drag. */
+        scheduleHoverRequest(event->position().toPoint());
+        QWidget::mouseMoveEvent(event);
+        return;
+    }
+    if (m_cursors.size() != 1) {
         QWidget::mouseMoveEvent(event);
         return;
     }
 
+    dismissHover();
     m_cursors[0] = offsetForPoint(event->position().toPoint());
     resetCaretBlink();
     ensureCursorVisible();
     update();
+}
+
+void EditorViewport::leaveEvent(QEvent *event) {
+    dismissHover();
+    QWidget::leaveEvent(event);
+}
+
+void EditorViewport::focusOutEvent(QFocusEvent *event) {
+    dismissCompletion();
+    dismissHover();
+    QWidget::focusOutEvent(event);
 }
 
 void EditorViewport::normalizeCursors() {
@@ -1794,6 +1909,12 @@ namespace {
 void lspDiagnosticsTrampoline(void *user_data, const char *uri, const AseLspDiagnostic *diagnostics, size_t count) {
     static_cast<EditorViewport *>(user_data)->applyLspDiagnostics(uri, diagnostics, count);
 }
+void lspCompletionTrampoline(void *user_data, const AseJsonValue *result, const char *error_message) {
+    static_cast<EditorViewport *>(user_data)->applyLspCompletion(result, error_message);
+}
+void lspHoverTrampoline(void *user_data, const AseJsonValue *result, const char *error_message) {
+    static_cast<EditorViewport *>(user_data)->applyLspHover(result, error_message);
+}
 } // namespace
 
 /* Gated the same way Tree-sitter syntax highlighting already is
@@ -1887,6 +2008,230 @@ QColor EditorViewport::colorForSeverity(int severity) const {
     QColor c = m_textColor;
     c.setAlpha(140);
     return c;
+}
+
+/* -------------------------------------------------------------- completion */
+
+size_t EditorViewport::completionPrefixStart(size_t offset) const {
+    size_t start = offset;
+    while (start > 0 && isWordChar(m_cache[static_cast<int>(start) - 1])) {
+        start--;
+    }
+    return start;
+}
+
+void EditorViewport::requestCompletionIfAppropriate() {
+    if (m_completionPopup == nullptr) {
+        return;
+    }
+    if (m_suppressNextCompletionTrigger) {
+        m_suppressNextCompletionTrigger = false;
+        dismissCompletion();
+        return;
+    }
+    if (m_lspClient == nullptr || m_cursors.size() != 1 || hasSelectionAt(0)) {
+        dismissCompletion();
+        return;
+    }
+
+    size_t cursor = m_cursors[0];
+    bool afterWordChar = cursor > 0 && isWordChar(m_cache[static_cast<int>(cursor) - 1]);
+    /* Member-access triggers: '.' or the '>' of "->" (C has no "::").
+     * Anything else is treated as "nothing worth completing here" —
+     * without this gate, a request (and likely a long list of global
+     * symbols) would fire after every space and newline too. */
+    bool afterTrigger =
+        cursor > 0 && (m_cache[static_cast<int>(cursor) - 1] == '.' ||
+                       (cursor > 1 && m_cache[static_cast<int>(cursor) - 1] == '>' &&
+                        m_cache[static_cast<int>(cursor) - 2] == '-'));
+    if (!afterWordChar && !afterTrigger) {
+        dismissCompletion();
+        return;
+    }
+
+    m_completionPrefixStart = completionPrefixStart(cursor);
+
+    int line = lineForOffset(cursor);
+    AseLspPosition pos;
+    pos.line = line;
+    pos.character = columnForOffset(cursor, line);
+    ase_lsp_client_request_completion(m_lspClient, m_lspUri.toUtf8().constData(), pos, lspCompletionTrampoline,
+                                       this);
+}
+
+void EditorViewport::applyLspCompletion(const AseJsonValue *result, const char *error_message) {
+    if (m_completionPopup == nullptr) {
+        return;
+    }
+    if (error_message != nullptr || result == nullptr) {
+        dismissCompletion();
+        return;
+    }
+    applyCompletionResult(result);
+}
+
+/* `result` is either a bare CompletionItem[] or a CompletionList
+ * {isIncomplete, items: [...]}  — both shapes are valid per the LSP
+ * spec, servers differ on which they send. No request-sequence
+ * tracking — see m_completionPrefixStart's doc comment in the header. */
+void EditorViewport::applyCompletionResult(const AseJsonValue *result) {
+    const AseJsonValue *itemsArray = result;
+    if (ase_json_type(result) == ASE_JSON_OBJECT) {
+        const AseJsonValue *items = ase_json_object_get(result, "items");
+        if (items != nullptr) {
+            itemsArray = items;
+        }
+    }
+    if (ase_json_type(itemsArray) != ASE_JSON_ARRAY || m_cursors.size() != 1) {
+        dismissCompletion();
+        return;
+    }
+
+    QVector<CompletionPopup::Item> popupItems;
+    size_t count = ase_json_array_size(itemsArray);
+    for (size_t i = 0; i < count && popupItems.size() < 50; ++i) {
+        const AseJsonValue *item = ase_json_array_get(itemsArray, i);
+        if (item == nullptr || ase_json_type(item) != ASE_JSON_OBJECT) {
+            continue;
+        }
+        const char *label = ase_json_get_string(ase_json_object_get(item, "label"));
+        if (label == nullptr) {
+            continue;
+        }
+        GuiCompletionItem gi;
+        gi.label = QString::fromUtf8(label);
+        const char *insertText = ase_json_get_string(ase_json_object_get(item, "insertText"));
+        gi.insertText = (insertText != nullptr) ? QString::fromUtf8(insertText) : gi.label;
+        const char *detail = ase_json_get_string(ase_json_object_get(item, "detail"));
+        gi.detail = (detail != nullptr) ? QString::fromUtf8(detail) : QString();
+        popupItems.push_back({gi.label, gi.insertText, gi.detail});
+    }
+
+    if (popupItems.isEmpty()) {
+        dismissCompletion();
+        return;
+    }
+
+    QPointF caret = caretTargetFor(m_cursors[0]);
+    QPoint anchor(static_cast<int>(caret.x()), static_cast<int>(caret.y() + m_lineHeight));
+    m_completionPopup->showItems(popupItems, anchor);
+}
+
+/* Replaces [m_completionPrefixStart, cursor) with the selected item's
+ * insertText by giving insertText() a temporary single-cursor selection
+ * over that range — it already knows how to replace an active
+ * selection (docs/adr/0019), so this just reuses that path instead of
+ * duplicating it. */
+void EditorViewport::acceptCompletion() {
+    if (m_completionPopup == nullptr || !m_completionPopup->isShowingPopup() || m_cursors.size() != 1) {
+        return;
+    }
+    const CompletionPopup::Item *item = m_completionPopup->selectedItem();
+    if (item == nullptr) {
+        return;
+    }
+
+    m_selectionAnchors[0] = std::min(m_completionPrefixStart, m_cursors[0]);
+    m_suppressNextCompletionTrigger = true;
+    insertText(item->insertText.toUtf8());
+    dismissCompletion();
+    ensureCursorVisible();
+    snapAnimationToTarget(); /* an edit, like typing — see docs/adr/0017 */
+    update();
+}
+
+void EditorViewport::dismissCompletion() {
+    if (m_completionPopup != nullptr) {
+        m_completionPopup->dismiss();
+    }
+}
+
+/* ------------------------------------------------------------------ hover */
+
+void EditorViewport::scheduleHoverRequest(const QPoint &viewportPos) {
+    if (m_hoverPanel == nullptr) {
+        return;
+    }
+    size_t offset = offsetForPoint(viewportPos);
+
+    if (m_hoverPanel->isShowingHover() && offset >= m_hoverShownRangeStart && offset < m_hoverShownRangeEnd) {
+        return; /* still hovering the word the open tooltip covers — leave it alone */
+    }
+    if (m_hoverPanel->isShowingHover()) {
+        dismissHover();
+    }
+
+    m_hoverPendingPos = viewportPos;
+    m_hoverPendingOffset = offset;
+    m_hoverTimer->start(500); /* restarts if already running — the pause-before-request delay */
+}
+
+void EditorViewport::requestHoverNow() {
+    if (m_lspClient == nullptr || m_hoverPanel == nullptr) {
+        return;
+    }
+    int line = lineForOffset(m_hoverPendingOffset);
+    AseLspPosition pos;
+    pos.line = line;
+    pos.character = columnForOffset(m_hoverPendingOffset, line);
+    ase_lsp_client_request_hover(m_lspClient, m_lspUri.toUtf8().constData(), pos, lspHoverTrampoline, this);
+}
+
+void EditorViewport::applyLspHover(const AseJsonValue *result, const char *error_message) {
+    if (m_hoverPanel == nullptr || error_message != nullptr || result == nullptr ||
+        ase_json_type(result) != ASE_JSON_OBJECT) {
+        /* Doesn't dismiss an already-open tooltip: with no request-
+         * sequence tracking (see applyCompletionResult's doc comment),
+         * an empty/failed response could belong to an earlier, already-
+         * superseded request — silently contributing nothing is safer
+         * than possibly clobbering a newer, good tooltip. */
+        return;
+    }
+    applyHoverResult(result);
+}
+
+void EditorViewport::applyHoverResult(const AseJsonValue *result) {
+    QString text = extractHoverText(ase_json_object_get(result, "contents"));
+    if (text.isEmpty()) {
+        return;
+    }
+
+    /* The response's own `range` (if present) is exactly the word/
+     * token the tooltip covers — used to tell "still hovering the same
+     * thing" from "moved to something else" next time the mouse moves.
+     * Without one, fall back to scanning the identifier run around the
+     * requested offset client-side. */
+    size_t rangeStart = m_hoverPendingOffset;
+    size_t rangeEnd = m_hoverPendingOffset + 1;
+    const AseJsonValue *range = ase_json_object_get(result, "range");
+    const AseJsonValue *start = (range != nullptr) ? ase_json_object_get(range, "start") : nullptr;
+    const AseJsonValue *end = (range != nullptr) ? ase_json_object_get(range, "end") : nullptr;
+    if (start != nullptr && end != nullptr) {
+        int startLine = static_cast<int>(ase_json_get_number(ase_json_object_get(start, "line"), 0));
+        int startChar = static_cast<int>(ase_json_get_number(ase_json_object_get(start, "character"), 0));
+        int endLine = static_cast<int>(ase_json_get_number(ase_json_object_get(end, "line"), 0));
+        int endChar = static_cast<int>(ase_json_get_number(ase_json_object_get(end, "character"), 0));
+        rangeStart = offsetForLineColumn(startLine, startChar);
+        rangeEnd = std::max(rangeStart + 1, offsetForLineColumn(endLine, endChar));
+    } else {
+        rangeStart = completionPrefixStart(m_hoverPendingOffset);
+        size_t end2 = m_hoverPendingOffset;
+        while (end2 < static_cast<size_t>(m_cache.size()) && isWordChar(m_cache[static_cast<int>(end2)])) {
+            end2++;
+        }
+        rangeEnd = std::max(rangeStart + 1, end2);
+    }
+    m_hoverShownRangeStart = rangeStart;
+    m_hoverShownRangeEnd = rangeEnd;
+
+    m_hoverPanel->showText(text, m_hoverPendingPos);
+}
+
+void EditorViewport::dismissHover() {
+    m_hoverTimer->stop();
+    if (m_hoverPanel != nullptr) {
+        m_hoverPanel->dismiss();
+    }
 }
 
 /* Shared by undo()/redo(): apply the cursor snapshot the undo stack

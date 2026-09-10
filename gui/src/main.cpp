@@ -11,10 +11,12 @@
 
 #include "about_panel.h"
 #include "command_line.h"
+#include "completion_popup.h"
 #include "editor_viewport.h"
 #include "file_browser_panel.h"
 #include "find_bar.h"
 #include "help_panel.h"
+#include "hover_panel.h"
 #include "output_panel.h"
 
 extern "C" {
@@ -125,6 +127,16 @@ int main(int argc, char *argv[]) {
 
     auto *aboutPanel = new AboutPanel(viewport);
     viewport->setAboutPanel(aboutPanel);
+
+    /* Not FloatingPanels either — see completion_popup.h/hover_panel.h.
+     * Both track the caret/pointer and refresh far more often than a
+     * glance-act-dismiss chrome window, so neither uses the host-
+     * centering/scale-pop machinery the panels above do. */
+    auto *completionPopup = new CompletionPopup(viewport);
+    viewport->setCompletionPopup(completionPopup);
+
+    auto *hoverPanel = new HoverPanel(viewport);
+    viewport->setHoverPanel(hoverPanel);
 
     outputPanel->refreshTheme();
 

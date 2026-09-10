@@ -32,6 +32,17 @@ struct GuiDiagnostic {
     QString message;
 };
 
+/* GUI-side, decoupled from CompletionPopup::Item the same way
+ * GuiDiagnostic is decoupled from AseLspDiagnostic — parsed straight
+ * out of the raw completion JSON in applyCompletionResult(), then
+ * converted to CompletionPopup::Item right before handing them to the
+ * popup. See docs/adr/0030. */
+struct GuiCompletionItem {
+    QString label;
+    QString insertText;
+    QString detail;
+};
+
 class QTimer;
 class QPainter;
 class FindBar;
@@ -40,6 +51,8 @@ class CommandLine;
 class OutputPanel;
 class HelpPanel;
 class AboutPanel;
+class CompletionPopup;
+class HoverPanel;
 
 /*
  * Custom-painted text viewport: fills the whole window, no chrome of its
@@ -80,6 +93,8 @@ public:
     void setOutputPanel(OutputPanel *panel) { m_outputPanel = panel; }
     void setHelpPanel(HelpPanel *panel) { m_helpPanel = panel; }
     void setAboutPanel(AboutPanel *panel) { m_aboutPanel = panel; }
+    void setCompletionPopup(CompletionPopup *popup) { m_completionPopup = popup; }
+    void setHoverPanel(HoverPanel *panel) { m_hoverPanel = panel; }
 
     /* Called by CommandLine on Enter — see docs/adr/0025. `:w`/`:q`/
      * `:compile`/`:output` (toggles the output panel); anything else is
@@ -140,6 +155,10 @@ public:
      * Copies the borrowed AseLspDiagnostic array into m_diagnostics and
      * repaints. See docs/adr/0029. */
     void applyLspDiagnostics(const char *uri, const AseLspDiagnostic *diagnostics, size_t count);
+    /* Same "public only for the trampoline" reasoning as
+     * applyLspDiagnostics above — see docs/adr/0030. */
+    void applyLspCompletion(const AseJsonValue *result, const char *error_message);
+    void applyLspHover(const AseJsonValue *result, const char *error_message);
 
 signals:
     /* Emitted from ensureCursorVisible() — every call site that already
@@ -154,6 +173,8 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
+    void leaveEvent(QEvent *event) override;
+    void focusOutEvent(QFocusEvent *event) override;
 
 private:
     void loadConfig();
@@ -324,6 +345,43 @@ private:
     void sendLspDidChange();
     QColor colorForSeverity(int severity) const;
 
+    /* Automatic completion — see docs/adr/0030. Called at the end of
+     * refreshCache(), the same choke point sendLspDidChange() uses, so
+     * it re-evaluates after every edit. Shows/refreshes/dismisses the
+     * popup based on whether the byte immediately before the single,
+     * non-selecting cursor looks like something worth completing
+     * (an identifier character, or a member-access trigger — '.' or
+     * the '>' of "->"); any other context dismisses whatever's open
+     * instead of firing a request, so the popup doesn't appear after
+     * every space or newline. */
+    void requestCompletionIfAppropriate();
+    void applyCompletionResult(const AseJsonValue *result);
+    /* Replaces [m_completionPrefixStart, cursor) with the popup's
+     * selected item's insertText, reusing insertText()'s own "replace
+     * the active selection" path via a temporary single-cursor
+     * selection — then dismisses. Only meaningful while the popup is
+     * showing (Enter/Tab call this; both are checked against
+     * m_completionPopup->isShowingPopup() first). */
+    void acceptCompletion();
+    void dismissCompletion();
+    /* Scans backward from `offset` while bytes are ASCII identifier
+     * characters — the same byte-level "ASCII v1 simplification" this
+     * codebase already applies to LSP character offsets (docs/adr/0029),
+     * used here to find where a completion replacement should start. */
+    size_t completionPrefixStart(size_t offset) const;
+
+    /* Mouse-hover info (textDocument/hover) — see docs/adr/0030. */
+    /* Called from mouseMoveEvent whenever the pointer moves with no
+     * button held. Leaves an already-shown tooltip alone if the mouse
+     * is still within the word range it covers; otherwise dismisses it
+     * and (re)starts m_hoverTimer's pause-before-request delay. */
+    void scheduleHoverRequest(const QPoint &viewportPos);
+    /* m_hoverTimer's single-shot slot: fires the actual request once
+     * the pointer has paused for the delay. */
+    void requestHoverNow();
+    void applyHoverResult(const AseJsonValue *result);
+    void dismissHover();
+
     /* Ctrl+Z / Ctrl+Shift+Z — see docs/adr/0018. Both restore m_cursors
      * from the undo stack's recorded snapshot rather than deriving a
      * position, refreshCache(), and snapAnimationToTarget() so the edit
@@ -396,6 +454,37 @@ private:
     QVector<GuiDiagnostic> m_diagnostics;
     QColor m_diagnosticErrorColor;
     QColor m_diagnosticWarningColor;
+
+    /* Completion — see docs/adr/0030. m_completionPopup null means no
+     * popup wired up (shouldn't happen once main.cpp runs, but every
+     * call site checks anyway, same defensiveness as the other panel
+     * pointers). No request-sequence tracking: a request is fast and
+     * local, so an out-of-order response is rare and, since nothing is
+     * ever auto-inserted, at worst shows a one-keystroke-stale list
+     * that the very next response corrects — documented v1
+     * simplification. */
+    CompletionPopup *m_completionPopup = nullptr;
+    size_t m_completionPrefixStart = 0;
+    /* Set by acceptCompletion() right before its insertText() call,
+     * which (via refreshCache()) would otherwise immediately retrigger
+     * requestCompletionIfAppropriate() and reopen a popup showing the
+     * very item just accepted — real editors don't reopen the list the
+     * instant you've accepted from it. Consumed (and cleared) by the
+     * very next requestCompletionIfAppropriate() call, so it only ever
+     * suppresses that one, immediately-following request. */
+    bool m_suppressNextCompletionTrigger = false;
+
+    /* Hover — see docs/adr/0030. */
+    HoverPanel *m_hoverPanel = nullptr;
+    QTimer *m_hoverTimer;
+    QPoint m_hoverPendingPos;     /* viewport-local pixel pos the pending/last request was for */
+    size_t m_hoverPendingOffset = 0;
+    /* The buffer range the *currently shown* tooltip covers — lets
+     * scheduleHoverRequest tell "still hovering the same word, leave it
+     * alone" from "moved to a new word, restart the delay" without
+     * needing the server's own range until a response actually arrives. */
+    size_t m_hoverShownRangeStart = 0;
+    size_t m_hoverShownRangeEnd = 0;
 
     int m_scrollLine = 0;
     int m_scrollX = 0; /* leftmost visible pixel, not column — see docs/adr/0014 */

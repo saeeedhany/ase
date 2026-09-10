@@ -124,6 +124,14 @@ static void test_full_lifecycle(void) {
     assert(!definition_capture.had_error);
     assert(strstr(definition_capture.result_text, "file:///fake.txt") != NULL);
 
+    ResultCapture hover_capture;
+    memset(&hover_capture, 0, sizeof(hover_capture));
+    assert(ase_lsp_client_request_hover(client, "file:///fake.txt", pos, on_result, &hover_capture));
+    poll_until(client, &hover_capture.called, 1000000);
+    assert(hover_capture.called);
+    assert(!hover_capture.had_error);
+    assert(strstr(hover_capture.result_text, "fake hover text") != NULL);
+
     assert(ase_lsp_client_is_alive(client));
     ase_lsp_client_stop(client);
 #endif

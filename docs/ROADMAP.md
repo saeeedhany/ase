@@ -418,10 +418,23 @@ ADRs as each lands here going forward.
       semicolon error produced a visible squiggle + gutter dot, and
       retyping the fix cleared both without restarting the editor. See
       [ADR 0029](adr/0029-lsp-diagnostics-wiring.md).
-- [ ] **Phase 17 — LSP completion + hover**: completion response
-      parsing (currently handed back raw/unparsed) plus a popup;
-      hover doesn't exist in the client at all yet, needs a new
-      request/response pair added first.
+- [x] **Phase 17 — LSP completion + hover**: new
+      `ase_lsp_client_request_hover` in core (didn't exist before this
+      phase); GUI-side completion is automatic while typing (gated to
+      "right after an identifier char or a member-access trigger," not
+      every keystroke) via a new custom-painted `CompletionPopup`,
+      accepted with Enter/Tab by replacing the typed prefix in place;
+      hover is automatic on a ~500ms mouse pause via a new `HoverPanel`,
+      dismissed on move-away/click/scroll/key/focus-loss. Both are
+      deliberately not `FloatingPanel`s — they track a moving point and
+      refresh far more often than a glance-act-dismiss chrome window,
+      so each only fades (no scale-pop) and only on first appearance,
+      not on every in-place content refresh. Verified live against real
+      `clangd`: a completion popup with real macro suggestions,
+      correct prefix-replace on accept with no reopen-loop; a hover
+      tooltip showing clangd's real type/value/declaration info,
+      dismissing correctly on mouse-away. See
+      [ADR 0030](adr/0030-lsp-completion-hover.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's

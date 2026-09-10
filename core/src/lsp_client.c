@@ -567,6 +567,15 @@ bool ase_lsp_client_request_definition(AseLspClient *client, const char *uri, As
     return send_request(client, "textDocument/definition", params, callback, user_data, NULL);
 }
 
+bool ase_lsp_client_request_hover(AseLspClient *client, const char *uri, AseLspPosition position,
+                                   AseLspResultCallback callback, void *user_data) {
+    if (client == NULL || !client->alive) {
+        return false;
+    }
+    AseJsonValue *params = make_text_document_position_params(uri, position);
+    return send_request(client, "textDocument/hover", params, callback, user_data, NULL);
+}
+
 bool ase_lsp_client_is_alive(const AseLspClient *client) {
     return client != NULL && client->alive;
 }
