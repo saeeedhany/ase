@@ -330,9 +330,9 @@ ADRs as each lands here going forward.
       `core/src/process.c`) extracted from the LSP client's process-
       spawning code — `lsp_client.c` is now a consumer of it, verified
       by its existing test suite still passing unchanged; new
-      `core/tests/test_process.c` covers the module directly. `:` opens
-      a `CommandLine` `FloatingPanel` (`gui/src/command_line.{h,cpp}`,
-      smallest of the family — one `":"` badge, one field); `:w`/`:q`/
+      `core/tests/test_process.c` covers the module directly. A key
+      opens a `CommandLine` `FloatingPanel` (`gui/src/command_line.{h,cpp}`,
+      smallest of the family — one badge, one field); `:w`/`:q`/
       `:compile`/`:output` dispatched by
       `EditorViewport::runCommand`, unrecognized input a silent no-op.
       `:compile` reads `build_command` from config (no default),
@@ -344,7 +344,27 @@ ADRs as each lands here going forward.
       looking at your code, which a centered overlay would fight.
       Verified live via `xdotool`: a real `build_command` streams its
       output and exit code correctly. See
-      [ADR 0025](adr/0025-command-system.md).
+      [ADR 0025](adr/0025-command-system.md). **The trigger key
+      changed immediately after** — see Phase 15.5 below; it's
+      `Ctrl+;` now, not a bare `:`.
+- [x] **Phase 15.5 — Keybinding fix, Help/About panels, find bar
+      repositioned**: a real bug — the bare `:` binding meant `:` could
+      never be typed as a literal character — fixed by moving the
+      command line to `Ctrl+;` (`:` is a Vim ex-command-line
+      convention this non-modal editor shouldn't have claimed).
+      `Ctrl+B` compiles directly, `Ctrl+Shift+O` toggles the output
+      panel directly, both alongside (not replacing) their `:compile`/
+      `:output` command-line equivalents. New `HelpPanel` (`Ctrl+/`,
+      `gui/src/help_panel.{h,cpp}`) and `AboutPanel` (`Ctrl+I`,
+      `gui/src/about_panel.{h,cpp}`), both centered `FloatingPanel`s —
+      Help is the family's first panel with no input field (a
+      scrollable keybinding reference instead), About shows app
+      name/version/author and clickable GitHub/website links. New
+      `FloatingPanel::Anchor` (`Center`/`TopRight`) lets one panel
+      override its position — `FindBar` is the only one that does,
+      moved top-right per direct feedback that a centered find bar
+      sits on top of the text you're actively searching. See
+      [ADR 0026](adr/0026-keybinding-scheme-help-about.md).
 - [ ] **Phase 16 — LSP diagnostics wiring**: `textDocument/didChange`
       (never sent today — results go stale after the first edit),
       GUI poll + diagnostic markers. `publishDiagnostics` parsing

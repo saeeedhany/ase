@@ -10,6 +10,12 @@
 #include <QVBoxLayout>
 
 FindBar::FindBar(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport(viewport) {
+    /* Top-right, not centered like every other panel — user feedback:
+     * a centered find bar sits on top of the text you're actively
+     * searching, which reads worse here than for a glance-act-dismiss
+     * panel like Open/Save-As. See docs/adr/0026. */
+    setAnchor(Anchor::TopRight);
+
     QWidget *content = contentWidget();
     auto *layout = new QVBoxLayout(content);
     layout->setContentsMargins(10, 8, 10, 8);

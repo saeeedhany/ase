@@ -1,8 +1,10 @@
 #include "editor_viewport.h"
 
+#include "about_panel.h"
 #include "command_line.h"
 #include "file_browser_panel.h"
 #include "find_bar.h"
+#include "help_panel.h"
 #include "output_panel.h"
 
 #include <algorithm>
@@ -191,6 +193,12 @@ void EditorViewport::checkConfigReload() {
     }
     if (m_outputPanel != nullptr) {
         m_outputPanel->refreshTheme();
+    }
+    if (m_helpPanel != nullptr) {
+        m_helpPanel->refreshTheme();
+    }
+    if (m_aboutPanel != nullptr) {
+        m_aboutPanel->refreshTheme();
     }
     ensureCursorVisible();
     update();
@@ -654,15 +662,6 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         update();
         return;
     }
-    /* `:` opens the command line — checked via the produced character,
-     * not a keycode, since ':' is a shifted key on most layouts (Qt has
-     * no dedicated "colon" key that's layout-independent). See
-     * docs/adr/0025. */
-    if (event->text() == QLatin1String(":") && m_commandLine != nullptr) {
-        m_commandLine->openCommandLine();
-        return;
-    }
-
     m_desiredColumn = -1;
     /* Set for the branches that actually mutate the buffer — see
      * snapAnimationToTarget's doc comment (docs/adr/0017): typing/
@@ -716,13 +715,44 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
                 return;
             }
             if (event->key() == Qt::Key_O) {
-                if (m_fileBrowser != nullptr) {
+                /* Ctrl+Shift+O toggles the output panel directly,
+                 * without going through :output — Ctrl+O (no Shift)
+                 * keeps its existing meaning, Open. */
+                if (event->modifiers() & Qt::ShiftModifier) {
+                    toggleOutputPanel();
+                } else if (m_fileBrowser != nullptr) {
                     m_fileBrowser->openFor(FileBrowserPanel::Mode::Open);
                 }
                 return;
             }
+            if (event->key() == Qt::Key_Semicolon) {
+                /* Command-line trigger — Ctrl+; here, not a bare `:`
+                 * (that's the ex-command-line convention Vim mode will
+                 * use later; in normal mode a bare `:` has to stay a
+                 * literal, typeable character). See docs/adr/0025. */
+                if (m_commandLine != nullptr) {
+                    m_commandLine->openCommandLine();
+                }
+                return;
+            }
+            if (event->key() == Qt::Key_B) {
+                compile();
+                return;
+            }
             if (event->key() == Qt::Key_Q) {
                 window()->close();
+                return;
+            }
+            if (event->key() == Qt::Key_Slash) {
+                if (m_helpPanel != nullptr) {
+                    m_helpPanel->openHelp();
+                }
+                return;
+            }
+            if (event->key() == Qt::Key_I) {
+                if (m_aboutPanel != nullptr) {
+                    m_aboutPanel->openAbout();
+                }
                 return;
             }
             if (event->key() == Qt::Key_D) {
@@ -1528,11 +1558,15 @@ void EditorViewport::runCommand(const QString &command) {
     } else if (trimmed == QLatin1String("compile")) {
         compile();
     } else if (trimmed == QLatin1String("output")) {
-        if (m_outputPanel != nullptr) {
-            m_outputPanel->setVisible(!m_outputPanel->isVisible());
-        }
+        toggleOutputPanel();
     }
     /* Anything else: silent no-op — see docs/adr/0025. */
+}
+
+void EditorViewport::toggleOutputPanel() {
+    if (m_outputPanel != nullptr) {
+        m_outputPanel->setVisible(!m_outputPanel->isVisible());
+    }
 }
 
 /* Reads build_command fresh from config on every call (not cached) so

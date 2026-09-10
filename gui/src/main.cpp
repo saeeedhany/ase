@@ -8,10 +8,12 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "about_panel.h"
 #include "command_line.h"
 #include "editor_viewport.h"
 #include "file_browser_panel.h"
 #include "find_bar.h"
+#include "help_panel.h"
 #include "output_panel.h"
 
 extern "C" {
@@ -95,6 +97,12 @@ int main(int argc, char *argv[]) {
 
     auto *commandLine = new CommandLine(viewport);
     viewport->setCommandLine(commandLine);
+
+    auto *helpPanel = new HelpPanel(viewport);
+    viewport->setHelpPanel(helpPanel);
+
+    auto *aboutPanel = new AboutPanel(viewport);
+    viewport->setAboutPanel(aboutPanel);
 
     outputPanel->refreshTheme();
 

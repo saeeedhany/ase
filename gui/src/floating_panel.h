@@ -34,10 +34,23 @@ class QParallelAnimationGroup;
  */
 class FloatingPanel : public QWidget {
 public:
+    /* Where targetGeometry() places the panel over its host. Center is
+     * the default and what every panel used before user feedback asked
+     * find/replace specifically to move — see docs/adr/0026: a
+     * centered find bar sits on top of the text you're searching,
+     * which reads worse for a panel you keep open while scanning
+     * matches than for a glance-act-dismiss one like Open/Save-As. */
+    enum class Anchor { Center, TopRight };
+
     explicit FloatingPanel(QWidget *host);
 
     /* Subclasses lay out their real UI on this widget, not on `this`. */
     QWidget *contentWidget() const { return m_content; }
+
+    /* Set once, typically right after construction — not re-checked
+     * per open the way colors/animation are, since a panel's screen
+     * position isn't config-driven. */
+    void setAnchor(Anchor anchor) { m_anchor = anchor; }
 
     /* Makes contentWidget() visible and correctly, finally sized — call
      * this, populate any data-dependent child view (e.g. a
@@ -108,6 +121,7 @@ private:
     QColor m_panelBackground;
     QColor m_borderColor;
     bool m_animated = true;
+    Anchor m_anchor = Anchor::Center;
     QGraphicsOpacityEffect *m_opacityEffect;
     QPropertyAnimation *m_opacityAnimation;
     QPropertyAnimation *m_geometryAnimation;

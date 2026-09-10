@@ -83,8 +83,16 @@ QRect FloatingPanel::targetGeometry() const {
     QSize size = m_content->sizeHint();
     size.setWidth(std::min(size.width(), std::max(1, hostRect.width() - 2 * kHostMargin)));
     size.setHeight(std::min(size.height(), std::max(1, hostRect.height() - 2 * kHostMargin)));
-    int x = hostRect.x() + (hostRect.width() - size.width()) / 2;
-    int y = hostRect.y() + (hostRect.height() - size.height()) / 2;
+
+    int x;
+    int y;
+    if (m_anchor == Anchor::TopRight) {
+        x = hostRect.x() + hostRect.width() - size.width() - kHostMargin;
+        y = hostRect.y() + kHostMargin;
+    } else {
+        x = hostRect.x() + (hostRect.width() - size.width()) / 2;
+        y = hostRect.y() + (hostRect.height() - size.height()) / 2;
+    }
     return QRect(x, y, size.width(), size.height());
 }
 

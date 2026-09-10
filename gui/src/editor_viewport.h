@@ -25,6 +25,8 @@ class FindBar;
 class FileBrowserPanel;
 class CommandLine;
 class OutputPanel;
+class HelpPanel;
+class AboutPanel;
 
 /*
  * Custom-painted text viewport: fills the whole window, no chrome of its
@@ -63,6 +65,8 @@ public:
     /* Not a FloatingPanel (see the class comment) — still wired the
      * same plain-pointer way. */
     void setOutputPanel(OutputPanel *panel) { m_outputPanel = panel; }
+    void setHelpPanel(HelpPanel *panel) { m_helpPanel = panel; }
+    void setAboutPanel(AboutPanel *panel) { m_aboutPanel = panel; }
 
     /* Called by CommandLine on Enter — see docs/adr/0025. `:w`/`:q`/
      * `:compile`/`:output` (toggles the output panel); anything else is
@@ -273,6 +277,8 @@ private:
      * available into the output panel, and stops itself once the
      * process has exited. */
     void pollCompile();
+    /* Shared by Ctrl+Shift+O and `:output` — see docs/adr/0025. */
+    void toggleOutputPanel();
 
     /* Ctrl+Z / Ctrl+Shift+Z — see docs/adr/0018. Both restore m_cursors
      * from the undo stack's recorded snapshot rather than deriving a
@@ -331,6 +337,8 @@ private:
     FileBrowserPanel *m_fileBrowser = nullptr;
     CommandLine *m_commandLine = nullptr;
     OutputPanel *m_outputPanel = nullptr;
+    HelpPanel *m_helpPanel = nullptr;
+    AboutPanel *m_aboutPanel = nullptr;
     AseProcess *m_compileProcess = nullptr;
     QTimer *m_compilePollTimer;
 
