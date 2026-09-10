@@ -14,6 +14,7 @@
 extern "C" {
 #include "ase/buffer.h"
 #include "ase/config.h"
+#include "ase/process.h"
 #include "ase/syntax.h"
 #include "ase/undo.h"
 }
@@ -22,6 +23,8 @@ class QTimer;
 class QPainter;
 class FindBar;
 class FileBrowserPanel;
+class CommandLine;
+class OutputPanel;
 
 /*
  * Custom-painted text viewport: fills the whole window, no chrome of its
@@ -36,7 +39,12 @@ class FileBrowserPanel;
  * FindBar is just the input widget calling into it. Status bar, dirty
  * tracking, and Open/Save-As (gui/src/file_browser_panel.h) are
  * documented in docs/adr/0023 — same "this class owns the logic, the
- * FloatingPanel is just the input widget" split.
+ * FloatingPanel is just the input widget" split. The command line and
+ * :compile (gui/src/command_line.h, gui/src/output_panel.h) are
+ * documented in docs/adr/0025, same split again — OutputPanel is the
+ * one exception to "FloatingPanel": it's a docked panel, not a
+ * centered overlay, since you want to watch it stream while still
+ * looking at your code, not glance-act-dismiss it.
  */
 class EditorViewport : public QWidget {
     Q_OBJECT
@@ -51,6 +59,17 @@ public:
      * into this class's public methods directly). */
     void setFindBar(FindBar *bar) { m_findBar = bar; }
     void setFileBrowser(FileBrowserPanel *panel) { m_fileBrowser = panel; }
+    void setCommandLine(CommandLine *panel) { m_commandLine = panel; }
+    /* Not a FloatingPanel (see the class comment) — still wired the
+     * same plain-pointer way. */
+    void setOutputPanel(OutputPanel *panel) { m_outputPanel = panel; }
+
+    /* Called by CommandLine on Enter — see docs/adr/0025. `:w`/`:q`/
+     * `:compile`/`:output` (toggles the output panel); anything else is
+     * a silent no-op, matching the plugin host's existing "skip, don't
+     * crash" tolerance (ADR 0009) rather than an error message for a
+     * typo. */
+    void runCommand(const QString &command);
 
     QString filePath() const { return m_filePath; }
     /* Destroys the current buffer/syntax/undo-history and loads `path`
@@ -242,6 +261,19 @@ private:
     void ensureCursorVisible();
     void save();
 
+    /* :compile — see docs/adr/0025. Reads `build_command` from config
+     * (no default; unconfigured is reported in the output panel, not
+     * guessed), substitutes %f for the current file's path, spawns it
+     * via a shell (so config values can use shell syntax like `&&`)
+     * with the file's directory as cwd, and starts m_compilePollTimer
+     * streaming its output. A no-op (reports why) if no file is open,
+     * no build_command is configured, or a build is already running. */
+    void compile();
+    /* m_compilePollTimer's slot: drains whatever output is currently
+     * available into the output panel, and stops itself once the
+     * process has exited. */
+    void pollCompile();
+
     /* Ctrl+Z / Ctrl+Shift+Z — see docs/adr/0018. Both restore m_cursors
      * from the undo stack's recorded snapshot rather than deriving a
      * position, refreshCache(), and snapAnimationToTarget() so the edit
@@ -297,6 +329,10 @@ private:
     int m_currentMatch = -1;
     FindBar *m_findBar = nullptr;
     FileBrowserPanel *m_fileBrowser = nullptr;
+    CommandLine *m_commandLine = nullptr;
+    OutputPanel *m_outputPanel = nullptr;
+    AseProcess *m_compileProcess = nullptr;
+    QTimer *m_compilePollTimer;
 
     int m_scrollLine = 0;
     int m_scrollX = 0; /* leftmost visible pixel, not column — see docs/adr/0014 */

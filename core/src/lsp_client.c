@@ -1,16 +1,14 @@
 #include "ase/lsp_client.h"
 
+#include "ase/process.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #if !defined(_WIN32)
 #include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <sys/wait.h>
 #include <time.h>
-#include <unistd.h>
 #endif
 
 typedef struct {
@@ -20,9 +18,7 @@ typedef struct {
 } PendingRequest;
 
 struct AseLspClient {
-    long child_pid;
-    int read_fd;
-    int write_fd;
+    AseProcess *process;
     bool alive;
     int next_id;
 
@@ -38,142 +34,19 @@ struct AseLspClient {
     void *diagnostics_user_data;
 };
 
-/* -------------------------------------------- platform process/pipe primitives */
+/* -------------------------------------------------------- wait/backoff helper */
 
+/* The only platform-specific bit left in this file — everything else
+ * process/pipe-related now lives in ase/process.h (docs/adr/0025),
+ * shared with :compile. Not part of that module's own API since
+ * nothing there needs a plain sleep. */
 #if defined(_WIN32)
-
-/* Not implemented: async child-process I/O on Windows needs overlapped
- * I/O or a reader thread, neither of which this phase attempts — see
- * docs/adr/0011-lsp-client.md. ase_lsp_client_start() returns NULL
- * cleanly instead of spawning anything; every function below this
- * point is consequently unreachable on Windows (every public entry
- * point checks for a NULL/dead client first) but must still exist to
- * link. */
-
-static bool platform_spawn(const char *const *command, long *out_pid, int *out_read_fd, int *out_write_fd) {
-    (void)command;
-    (void)out_pid;
-    (void)out_read_fd;
-    (void)out_write_fd;
-    return false;
-}
-
-static long platform_read_nonblocking(int fd, char *buf, size_t cap) {
-    (void)fd;
-    (void)buf;
-    (void)cap;
-    return -1;
-}
-
-static bool platform_write_all(int fd, const char *data, size_t len) {
-    (void)fd;
-    (void)data;
-    (void)len;
-    return false;
-}
-
-static void platform_terminate(long pid, int read_fd, int write_fd) {
-    (void)pid;
-    (void)read_fd;
-    (void)write_fd;
-}
 
 static void sleep_ms(int ms) {
     (void)ms;
 }
 
 #else /* POSIX */
-
-static bool platform_spawn(const char *const *command, long *out_pid, int *out_read_fd, int *out_write_fd) {
-    int stdin_pipe[2];
-    int stdout_pipe[2];
-
-    if (pipe(stdin_pipe) != 0) {
-        return false;
-    }
-    if (pipe(stdout_pipe) != 0) {
-        close(stdin_pipe[0]);
-        close(stdin_pipe[1]);
-        return false;
-    }
-
-    pid_t pid = fork();
-    if (pid < 0) {
-        close(stdin_pipe[0]);
-        close(stdin_pipe[1]);
-        close(stdout_pipe[0]);
-        close(stdout_pipe[1]);
-        return false;
-    }
-
-    if (pid == 0) {
-        /* child */
-        dup2(stdin_pipe[0], STDIN_FILENO);
-        dup2(stdout_pipe[1], STDOUT_FILENO);
-        close(stdin_pipe[0]);
-        close(stdin_pipe[1]);
-        close(stdout_pipe[0]);
-        close(stdout_pipe[1]);
-        execvp(command[0], (char *const *)command);
-        _exit(127); /* execvp failed */
-    }
-
-    /* parent */
-    close(stdin_pipe[0]);
-    close(stdout_pipe[1]);
-
-    int flags = fcntl(stdout_pipe[0], F_GETFL, 0);
-    fcntl(stdout_pipe[0], F_SETFL, flags | O_NONBLOCK);
-
-    *out_pid = (long)pid;
-    *out_write_fd = stdin_pipe[1];
-    *out_read_fd = stdout_pipe[0];
-    return true;
-}
-
-static long platform_read_nonblocking(int fd, char *buf, size_t cap) {
-    return (long)read(fd, buf, cap);
-}
-
-static bool platform_write_all(int fd, const char *data, size_t len) {
-    size_t written = 0;
-    while (written < len) {
-        ssize_t n = write(fd, data + written, len - written);
-        if (n > 0) {
-            written += (size_t)n;
-            continue;
-        }
-        if (n < 0 && errno == EINTR) {
-            continue;
-        }
-        return false; /* EPIPE (server died) or any other error */
-    }
-    return true;
-}
-
-static void platform_terminate(long pid, int read_fd, int write_fd) {
-    if (write_fd >= 0) {
-        close(write_fd);
-    }
-    if (read_fd >= 0) {
-        close(read_fd);
-    }
-
-    if (pid > 0) {
-        pid_t p = (pid_t)pid;
-        int status;
-        if (waitpid(p, &status, WNOHANG) == 0) {
-            struct timespec ts;
-            ts.tv_sec = 0;
-            ts.tv_nsec = 200L * 1000000L;
-            nanosleep(&ts, NULL);
-            if (waitpid(p, &status, WNOHANG) == 0) {
-                kill(p, SIGKILL);
-                waitpid(p, &status, 0);
-            }
-        }
-    }
-}
 
 static void sleep_ms(int ms) {
     struct timespec ts;
@@ -398,7 +271,7 @@ void ase_lsp_client_poll(AseLspClient *client) {
 
     for (;;) {
         char chunk[4096];
-        long n = platform_read_nonblocking(client->read_fd, chunk, sizeof(chunk));
+        long n = ase_process_read(client->process, chunk, sizeof(chunk));
 
         if (n > 0) {
             if (!append_to_read_buffer(client, chunk, (size_t)n)) {
@@ -458,8 +331,8 @@ static bool send_message(AseLspClient *client, AseJsonValue *message) {
     int header_len = snprintf(header, sizeof(header), "Content-Length: %zu\r\n\r\n", strlen(body));
 
     bool ok = header_len > 0 && (size_t)header_len < sizeof(header) &&
-              platform_write_all(client->write_fd, header, (size_t)header_len) &&
-              platform_write_all(client->write_fd, body, strlen(body));
+              ase_process_write(client->process, header, (size_t)header_len) &&
+              ase_process_write(client->process, body, strlen(body));
     free(body);
 
     if (!ok) {
@@ -559,26 +432,20 @@ AseLspClient *ase_lsp_client_start(const char *const *command, const char *root_
         return NULL;
     }
 
-#if !defined(_WIN32)
-    signal(SIGPIPE, SIG_IGN); /* see docs/adr/0011 */
-#endif
-
-    long pid;
-    int read_fd;
-    int write_fd;
-    if (!platform_spawn(command, &pid, &read_fd, &write_fd)) {
+    /* LSP servers run in the caller's own working directory — no cwd
+     * override needed (unlike :compile, which sets one explicitly). */
+    AseProcess *process = ase_process_spawn(command, NULL);
+    if (process == NULL) {
         return NULL;
     }
 
     AseLspClient *client = (AseLspClient *)calloc(1, sizeof(AseLspClient));
     if (client == NULL) {
-        platform_terminate(pid, read_fd, write_fd);
+        ase_process_destroy(process);
         return NULL;
     }
 
-    client->child_pid = pid;
-    client->read_fd = read_fd;
-    client->write_fd = write_fd;
+    client->process = process;
     client->alive = true;
     client->next_id = 1;
 
@@ -590,7 +457,7 @@ AseLspClient *ase_lsp_client_start(const char *const *command, const char *root_
 
     WaitState state = {false, false};
     if (!send_request(client, "initialize", params, wait_state_callback, &state, NULL)) {
-        platform_terminate(client->child_pid, client->read_fd, client->write_fd);
+        ase_process_destroy(client->process);
         free(client->pending);
         free(client->read_buffer);
         free(client);
@@ -623,7 +490,7 @@ void ase_lsp_client_stop(AseLspClient *client) {
         }
     }
 
-    platform_terminate(client->child_pid, client->read_fd, client->write_fd);
+    ase_process_destroy(client->process);
 
     free(client->read_buffer);
     free(client->pending);

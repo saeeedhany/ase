@@ -5,10 +5,14 @@
 #include <QPalette>
 #include <QStatusBar>
 #include <QString>
+#include <QVBoxLayout>
+#include <QWidget>
 
+#include "command_line.h"
 #include "editor_viewport.h"
 #include "file_browser_panel.h"
 #include "find_bar.h"
+#include "output_panel.h"
 
 extern "C" {
 #include "ase/buffer.h"
@@ -66,16 +70,33 @@ int main(int argc, char *argv[]) {
     window.setWindowTitle(windowTitleFor(filePath, false));
 
     auto *viewport = new EditorViewport(buffer, filePath);
-    window.setCentralWidget(viewport);
 
-    /* FindBar and FileBrowserPanel are both FloatingPanels: children of
-     * viewport, not layout rows — each centers itself over viewport and
-     * floats above it, starting hidden. See docs/adr/0022. */
+    /* OutputPanel is the one docked (non-floating) panel — a real
+     * QVBoxLayout row below viewport, not a child of it. See
+     * docs/adr/0025. */
+    auto *central = new QWidget(&window);
+    auto *centralLayout = new QVBoxLayout(central);
+    centralLayout->setContentsMargins(0, 0, 0, 0);
+    centralLayout->setSpacing(0);
+    centralLayout->addWidget(viewport, 1);
+    auto *outputPanel = new OutputPanel(viewport, central);
+    centralLayout->addWidget(outputPanel);
+    window.setCentralWidget(central);
+    viewport->setOutputPanel(outputPanel);
+
+    /* FindBar, FileBrowserPanel, and CommandLine are all FloatingPanels:
+     * children of viewport, not layout rows — each centers itself over
+     * viewport and floats above it, starting hidden. See docs/adr/0022. */
     auto *findBar = new FindBar(viewport);
     viewport->setFindBar(findBar);
 
     auto *fileBrowser = new FileBrowserPanel(viewport);
     viewport->setFileBrowser(fileBrowser);
+
+    auto *commandLine = new CommandLine(viewport);
+    viewport->setCommandLine(commandLine);
+
+    outputPanel->refreshTheme();
 
     window.statusBar()->setSizeGripEnabled(false);
     auto *statusLabel = new QLabel(QStringLiteral("Ln 1, Col 1"));

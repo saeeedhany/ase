@@ -1,7 +1,9 @@
 #include "editor_viewport.h"
 
+#include "command_line.h"
 #include "file_browser_panel.h"
 #include "find_bar.h"
+#include "output_panel.h"
 
 #include <algorithm>
 #include <cmath>
@@ -78,9 +80,13 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     m_configTimer = new QTimer(this);
     connect(m_configTimer, &QTimer::timeout, this, [this]() { checkConfigReload(); });
     m_configTimer->start(750); /* see docs/adr/0008, decision 4 */
+
+    m_compilePollTimer = new QTimer(this);
+    connect(m_compilePollTimer, &QTimer::timeout, this, [this]() { pollCompile(); });
 }
 
 EditorViewport::~EditorViewport() {
+    ase_process_destroy(m_compileProcess);
     ase_syntax_destroy(m_syntax);
     ase_config_destroy(m_config);
     ase_undo_destroy(m_undo);
@@ -179,6 +185,12 @@ void EditorViewport::checkConfigReload() {
     }
     if (m_fileBrowser != nullptr) {
         m_fileBrowser->refreshTheme();
+    }
+    if (m_commandLine != nullptr) {
+        m_commandLine->refreshTheme();
+    }
+    if (m_outputPanel != nullptr) {
+        m_outputPanel->refreshTheme();
     }
     ensureCursorVisible();
     update();
@@ -640,6 +652,14 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         collapseToOneCursor();
         ensureCursorVisible();
         update();
+        return;
+    }
+    /* `:` opens the command line — checked via the produced character,
+     * not a keycode, since ':' is a shifted key on most layouts (Qt has
+     * no dedicated "colon" key that's layout-independent). See
+     * docs/adr/0025. */
+    if (event->text() == QLatin1String(":") && m_commandLine != nullptr) {
+        m_commandLine->openCommandLine();
         return;
     }
 
@@ -1497,6 +1517,92 @@ void EditorViewport::openFile(const QString &path) {
 void EditorViewport::saveAs(const QString &path) {
     m_filePath = path;
     save();
+}
+
+void EditorViewport::runCommand(const QString &command) {
+    QString trimmed = command.trimmed();
+    if (trimmed == QLatin1String("w")) {
+        save();
+    } else if (trimmed == QLatin1String("q")) {
+        window()->close();
+    } else if (trimmed == QLatin1String("compile")) {
+        compile();
+    } else if (trimmed == QLatin1String("output")) {
+        if (m_outputPanel != nullptr) {
+            m_outputPanel->setVisible(!m_outputPanel->isVisible());
+        }
+    }
+    /* Anything else: silent no-op — see docs/adr/0025. */
+}
+
+/* Reads build_command fresh from config on every call (not cached) so
+ * an edited config.ase takes effect on the next :compile without a
+ * restart, same hot-reload spirit as everything else config-driven in
+ * this class. */
+void EditorViewport::compile() {
+    if (m_outputPanel == nullptr) {
+        return;
+    }
+    if (m_compileProcess != nullptr) {
+        m_outputPanel->appendLine(QStringLiteral("A build is already running."));
+        m_outputPanel->show();
+        return;
+    }
+
+    const char *buildCommand = ase_config_get_string(m_config, "build_command");
+    if (buildCommand == nullptr) {
+        m_outputPanel->appendLine(QStringLiteral("No build_command configured — see config.ase."));
+        m_outputPanel->show();
+        return;
+    }
+    if (m_filePath.isEmpty()) {
+        m_outputPanel->appendLine(QStringLiteral("No file to compile — save it first."));
+        m_outputPanel->show();
+        return;
+    }
+
+    QString substituted = QString::fromUtf8(buildCommand).replace(QLatin1String("%f"), m_filePath);
+    QByteArray substitutedUtf8 = substituted.toUtf8();
+    QByteArray cwdUtf8 = QFileInfo(m_filePath).absolutePath().toUtf8();
+
+    /* Run through a shell, not execvp'd directly — build_command is
+     * documented (config.c's starter template) as a shell command, so
+     * it can use `&&`/pipes/etc., the same way :compile's config-key
+     * comment shows. */
+    const char *argv[] = {"/bin/sh", "-c", substitutedUtf8.constData(), nullptr};
+    m_compileProcess = ase_process_spawn(argv, cwdUtf8.constData());
+
+    m_outputPanel->clear();
+    m_outputPanel->show();
+    if (m_compileProcess == nullptr) {
+        m_outputPanel->appendLine(QStringLiteral("Failed to start build_command."));
+        return;
+    }
+    m_outputPanel->appendLine(QStringLiteral("$ ") + substituted);
+    m_compilePollTimer->start(100); /* same non-blocking-poll shape as ase_lsp_client_poll */
+}
+
+void EditorViewport::pollCompile() {
+    if (m_compileProcess == nullptr) {
+        m_compilePollTimer->stop();
+        return;
+    }
+
+    char buf[4096];
+    for (;;) {
+        long n = ase_process_read(m_compileProcess, buf, sizeof(buf));
+        if (n <= 0) {
+            break;
+        }
+        m_outputPanel->appendText(QString::fromUtf8(buf, static_cast<int>(n)));
+    }
+
+    if (ase_process_has_exited(m_compileProcess)) {
+        m_outputPanel->appendLine(QStringLiteral("[exit code %1]").arg(ase_process_exit_code(m_compileProcess)));
+        ase_process_destroy(m_compileProcess);
+        m_compileProcess = nullptr;
+        m_compilePollTimer->stop();
+    }
 }
 
 /* Shared by undo()/redo(): apply the cursor snapshot the undo stack

@@ -325,9 +325,26 @@ ADRs as each lands here going forward.
       Status bar themed to match the app (`QPalette`, re-applied on
       every `statusChanged`). See
       [ADR 0024](adr/0024-panel-polish-and-scroll-margin.md).
-- [ ] **Phase 15 — Command line + `:compile` + output panel**: extracts
-      a reusable `AseProcess` from the LSP client's process-spawning
-      code; first real second panel.
+- [x] **Phase 15 — Command line + `:compile` + output panel**: new
+      `AseProcess` (`core/include/ase/process.h`,
+      `core/src/process.c`) extracted from the LSP client's process-
+      spawning code — `lsp_client.c` is now a consumer of it, verified
+      by its existing test suite still passing unchanged; new
+      `core/tests/test_process.c` covers the module directly. `:` opens
+      a `CommandLine` `FloatingPanel` (`gui/src/command_line.{h,cpp}`,
+      smallest of the family — one `":"` badge, one field); `:w`/`:q`/
+      `:compile`/`:output` dispatched by
+      `EditorViewport::runCommand`, unrecognized input a silent no-op.
+      `:compile` reads `build_command` from config (no default),
+      substitutes `%f`, runs it through a shell with the file's
+      directory as `cwd`, and streams output into a new `OutputPanel`
+      (`gui/src/output_panel.{h,cpp}`) — this app's first *docked*
+      panel rather than a floating one, a deliberate choice confirmed
+      with the user: you want to watch a build stream while still
+      looking at your code, which a centered overlay would fight.
+      Verified live via `xdotool`: a real `build_command` streams its
+      output and exit code correctly. See
+      [ADR 0025](adr/0025-command-system.md).
 - [ ] **Phase 16 — LSP diagnostics wiring**: `textDocument/didChange`
       (never sent today — results go stale after the first edit),
       GUI poll + diagnostic markers. `publishDiagnostics` parsing

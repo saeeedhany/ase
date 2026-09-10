@@ -35,6 +35,7 @@ add_library(ase_core
     src/config.c
     src/plugin_host.c
     src/json.c
+    src/process.c
     src/lsp_client.c
     src/undo.c
 )

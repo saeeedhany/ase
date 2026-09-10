@@ -287,7 +287,12 @@ static const char kDefaultConfigTemplate[] =
     "\n"
     "# off / absolute / relative (relative shows distance from the current\n"
     "# line, Vim-style, except the current line itself which stays absolute).\n"
-    "line_numbers = absolute\n";
+    "line_numbers = absolute\n"
+    "\n"
+    "# :compile's shell command — %f is replaced with the current file's\n"
+    "# path, run with the file's directory as cwd. No default: an\n"
+    "# unconfigured build_command is reported as such, not guessed.\n"
+    "# build_command = gcc %f -o /tmp/a.out && /tmp/a.out\n";
 
 /* Creates only the immediate parent directory, not any missing
  * grandparent — see docs/adr/0008, decision 5. */

@@ -15,6 +15,8 @@ add_executable(ase_gui
     src/editor_viewport.cpp
     src/find_bar.cpp
     src/file_browser_panel.cpp
+    src/command_line.cpp
+    src/output_panel.cpp
     src/floating_panel.cpp
     src/letter_badge.cpp
 )
