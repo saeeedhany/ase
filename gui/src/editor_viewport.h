@@ -142,6 +142,15 @@ private:
      * be called when hasSelectionAt(i). */
     void deleteSelectionAt(int i);
 
+    /* Ctrl+C/X/V — see docs/adr/0020. Every selected cursor's text is
+     * read straight out of m_cache (already a full buffer mirror, per
+     * ADR 0006) and joined with '\n' for a multi-cursor copy. Returns
+     * false (a no-op, clipboard untouched) when no cursor has an active
+     * selection. */
+    bool copySelection();
+    void cutSelection();
+    void pasteClipboard();
+
     void ensureCursorVisible();
     void save();
 

@@ -4,12 +4,15 @@
 #include <cmath>
 #include <cstdlib>
 
+#include <QClipboard>
 #include <QFileInfo>
 #include <QFontDatabase>
 #include <QFontMetrics>
+#include <QGuiApplication>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QStringList>
 #include <QTimer>
 #include <QWheelEvent>
 
@@ -642,6 +645,18 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
                 addCursorAtNextOccurrence();
                 return;
             }
+            if (event->key() == Qt::Key_C) {
+                copySelection();
+                return;
+            }
+            if (event->key() == Qt::Key_X) {
+                cutSelection();
+                return;
+            }
+            if (event->key() == Qt::Key_V) {
+                pasteClipboard();
+                return;
+            }
             if (event->key() == Qt::Key_Z) {
                 if (event->modifiers() & Qt::ShiftModifier) {
                     redo();
@@ -840,6 +855,64 @@ void EditorViewport::deleteSelectionAt(int i) {
     }
     m_cursors[i] = start;
     m_selectionAnchors[i] = start;
+}
+
+/* Reads straight out of m_cache rather than ase_buffer_get_text — it's
+ * already a full, current mirror of the buffer (ADR 0006). Multiple
+ * selections join with '\n', the standard multi-cursor copy convention.
+ * See docs/adr/0020. */
+bool EditorViewport::copySelection() {
+    QStringList parts;
+    for (int i = 0; i < m_cursors.size(); ++i) {
+        if (!hasSelectionAt(i)) {
+            continue;
+        }
+        size_t start = selectionMinAt(i);
+        size_t end = selectionMaxAt(i);
+        parts.push_back(
+            QString::fromUtf8(m_cache.constData() + static_cast<int>(start), static_cast<int>(end - start)));
+    }
+    if (parts.isEmpty()) {
+        return false;
+    }
+    QGuiApplication::clipboard()->setText(parts.join(QLatin1Char('\n')));
+    return true;
+}
+
+/* Copy, then delete every selection as one undo group — reuses the
+ * selection-delete path Phase 11 added. A no-op (clipboard untouched)
+ * when nothing is selected anywhere. */
+void EditorViewport::cutSelection() {
+    if (!copySelection()) {
+        return;
+    }
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    for (int i = m_cursors.size() - 1; i >= 0; --i) {
+        if (hasSelectionAt(i)) {
+            deleteSelectionAt(i);
+        }
+    }
+    normalizeCursors();
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    refreshCache();
+    ensureCursorVisible();
+    snapAnimationToTarget();
+    update();
+}
+
+/* Inserts the same clipboard text at every cursor (reusing insertText's
+ * existing multi-cursor broadcast and selection-replace semantics) rather
+ * than distributing clipboard lines one-per-cursor — a real feature some
+ * editors have, but not worth the added complexity for v1. */
+void EditorViewport::pasteClipboard() {
+    QString text = QGuiApplication::clipboard()->text();
+    if (text.isEmpty()) {
+        return;
+    }
+    insertText(text.toUtf8());
+    ensureCursorVisible();
+    snapAnimationToTarget();
+    update();
 }
 
 void EditorViewport::insertText(const QByteArray &bytes) {

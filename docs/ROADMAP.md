@@ -240,8 +240,17 @@ ADRs as each lands here going forward.
       screenshots (keyboard extend/collapse) and a save-to-file round
       trip (type-over-selection, undo). See
       [ADR 0019](adr/0019-selection-model.md).
-- [ ] **Phase 12 — Clipboard**: cut/copy/paste via `QClipboard`,
-      built on Phase 11's selection.
+- [x] **Phase 12 — Clipboard**: cut/copy/paste via `QClipboard`, built
+      on Phase 11's selection. `Ctrl+C` reads every selected cursor's
+      text out of `m_cache` and joins multiple selections with `\n`;
+      `Ctrl+X` does the same then deletes them as one undo group;
+      `Ctrl+V` inserts the clipboard text at every cursor, reusing
+      `insertText`'s existing selection-replace and multi-cursor
+      broadcast. No `CMakeLists.txt` change needed — `Qt6::Widgets`
+      already pulls in `Qt6::Gui`. Verified live against the real
+      system clipboard via `xclip` (independent of the Qt process), a
+      save-to-file round trip for paste, and a cut-then-`Ctrl+Z`
+      round trip. See [ADR 0020](adr/0020-clipboard.md).
 - [ ] **Phase 13 — Find & replace**: `Ctrl+F`/`Ctrl+H`, plain substring
       match (no regex in v1), replace/replace-all as undo groups.
 - [ ] **Phase 14 — Editor chrome**: status bar (line/col, dirty
