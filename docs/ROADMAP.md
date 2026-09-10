@@ -252,11 +252,9 @@ ADRs as each lands here going forward.
       save-to-file round trip for paste, and a cut-then-`Ctrl+Z`
       round trip. See [ADR 0020](adr/0020-clipboard.md).
 - [x] **Phase 13 — Find & replace**: `Ctrl+F`/`Ctrl+H` open a new
-      keyboard-only `FindBar` (`gui/src/find_bar.{h,cpp}`) docked above
-      the viewport — `main.cpp` now wraps both in a `QVBoxLayout` since
-      `setCentralWidget` only takes one widget. Plain substring,
-      ASCII-case-insensitive, no regex. The current match is just an
-      active selection (`jumpToMatch` sets `m_cursors`/
+      keyboard-only `FindBar` (`gui/src/find_bar.{h,cpp}`). Plain
+      substring, ASCII-case-insensitive, no regex. The current match is
+      just an active selection (`jumpToMatch` sets `m_cursors`/
       `m_selectionAnchors` to it), so `Enter`-to-replace reuses
       Phase 11's selection-replace path unchanged; Replace All
       (`Ctrl+Enter`) writes highest-offset-first as one undo group,
@@ -264,10 +262,37 @@ ADRs as each lands here going forward.
       follows. Verified live via `xdotool` — pixel-level highlight
       checks and save-to-file round trips for replace-one/replace-all,
       each undoing as one action. See
-      [ADR 0021](adr/0021-find-replace.md).
+      [ADR 0021](adr/0021-find-replace.md). **Restyled immediately
+      after** — see Phase 13.5 below; `FindBar` now floats on a
+      `FloatingPanel` base rather than the docked bar this phase
+      originally shipped.
+- [x] **Phase 13.5 — Floating-panel design system**: direct feedback
+      that the docked find bar "looks so basic," plus the knowledge
+      that Open/Save-As panels are coming next, prompted a real reusable
+      system instead of another one-off shape. New
+      `FloatingPanel` (`gui/src/floating_panel.{h,cpp}`) — a
+      self-centering, flat, translucent, fade-in/out child widget any
+      future chrome (Open/Save-As, etc.) can build on — and
+      `LetterBadge` (`gui/src/letter_badge.{h,cpp}`) — a small
+      single-letter chip replacing text labels ("F"/"R" today). Two
+      decisions taken to the user rather than guessed: panels are
+      **true-centered** on the window (not top-anchored), and future
+      Open/Save-As will be **custom floating panels**, not native
+      `QFileDialog` — overriding what
+      `~/.claude/plans/noble-herding-quokka.md`'s Phase 14 section
+      originally sketched; that plan needs a matching update before
+      Phase 14 starts. `main.cpp` reverted to its pre-Phase-13
+      simplicity (`FindBar` is a child of `EditorViewport`, not a
+      layout row). See [ADR 0022](adr/0022-floating-panel-design-system.md).
 - [ ] **Phase 14 — Editor chrome**: status bar (line/col, dirty
       indicator — dirty tracking doesn't exist yet, ADR 0006 deferred
-      it), `Ctrl+O` open / `Ctrl+Shift+S` save-as dialogs.
+      it), `Ctrl+O` open / `Ctrl+Shift+S` save-as dialogs. **Needs a
+      plan update before starting**: per
+      [ADR 0022](adr/0022-floating-panel-design-system.md), Open/
+      Save-As are now custom `FloatingPanel`-based file browsers, not
+      the native `QFileDialog` `~/.claude/plans/noble-herding-quokka.md`
+      originally sketched — real, unscoped work that plan doesn't
+      account for yet.
 - [ ] **Phase 15 — Command line + `:compile` + output panel**: extracts
       a reusable `AseProcess` from the LSP client's process-spawning
       code; first real second panel.

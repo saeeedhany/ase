@@ -1,8 +1,6 @@
 #include <QApplication>
 #include <QMainWindow>
 #include <QString>
-#include <QVBoxLayout>
-#include <QWidget>
 
 #include "editor_viewport.h"
 #include "find_bar.h"
@@ -39,20 +37,13 @@ int main(int argc, char *argv[]) {
     window.setWindowTitle(filePath.isEmpty() ? QStringLiteral("Absolute Simple Editor") : filePath);
 
     auto *viewport = new EditorViewport(buffer, filePath);
+    window.setCentralWidget(viewport);
+
+    /* FindBar is a FloatingPanel: a child of viewport, not a layout row
+     * — it centers itself over viewport and floats above it, starting
+     * hidden. See docs/adr/0022. */
     auto *findBar = new FindBar(viewport);
     viewport->setFindBar(findBar);
-
-    /* QMainWindow::setCentralWidget only takes one widget, so the find
-     * bar and viewport share a plain wrapper — see docs/adr/0021. The
-     * bar starts hidden (FindBar's own constructor) and takes no space
-     * until Ctrl+F/Ctrl+H opens it. */
-    auto *central = new QWidget(&window);
-    auto *layout = new QVBoxLayout(central);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(0);
-    layout->addWidget(findBar);
-    layout->addWidget(viewport, 1);
-    window.setCentralWidget(central);
 
     window.resize(900, 650);
     window.show();

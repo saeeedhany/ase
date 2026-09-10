@@ -93,6 +93,7 @@ AseConfig *ase_config_create_default(void) {
     config_set(config, "text", "#F5E6C8");
     config_set(config, "selection", "#45403866");
     config_set(config, "find_match", "#45403899");
+    config_set(config, "panel_background", "#282828E6");
     config_set(config, "font_family", "monospace");
     config_set(config, "font_size", "12");
 
@@ -270,6 +271,11 @@ static const char kDefaultConfigTemplate[] =
     "text = #F5E6C8\n"
     "selection = #45403866\n"
     "find_match = #45403899\n"
+    "\n"
+    "# Floating chrome (find/replace and future panels) — background-\n"
+    "# tinted with a small transparency; the text/badges inside always\n"
+    "# render at full contrast, unaffected by this alpha.\n"
+    "panel_background = #282828E6\n"
     "\n"
     "font_family = monospace\n"
     "font_size = 12\n"

@@ -112,6 +112,9 @@ void EditorViewport::applyConfig() {
     if (ase_config_get_color(m_config, "find_match", &r, &g, &b, &a)) {
         m_findMatchColor = QColor(r, g, b, a);
     }
+    if (ase_config_get_color(m_config, "panel_background", &r, &g, &b, &a)) {
+        m_panelBackgroundColor = QColor(r, g, b, a);
+    }
 
     const char *familyStr = ase_config_get_string(m_config, "font_family");
     QString family = familyStr != nullptr ? QString::fromUtf8(familyStr) : QStringLiteral("monospace");
@@ -166,6 +169,9 @@ void EditorViewport::checkConfigReload() {
     ase_config_destroy(m_config);
     m_config = ase_config_load(m_configPath.toUtf8().constData());
     applyConfig();
+    if (m_findBar != nullptr) {
+        m_findBar->refreshTheme();
+    }
     ensureCursorVisible();
     update();
 }

@@ -39,10 +39,34 @@ public:
     EditorViewport(AseBuffer *buffer, QString filePath, QWidget *parent = nullptr);
     ~EditorViewport() override;
 
-    /* Wires this viewport to the FindBar instance sitting above it in
-     * main.cpp's layout — a plain pointer, not a signal/slot connection,
-     * since neither class declares Qt signals. */
+    /* Wires this viewport to the FindBar instance floating over it (see
+     * main.cpp) — a plain pointer, not a signal/slot connection, since
+     * neither class declares Qt signals. */
     void setFindBar(FindBar *bar) { m_findBar = bar; }
+
+    /* Theme accessors for FloatingPanel-based chrome (FindBar today,
+     * more later) — see docs/adr/0022. That chrome has no AseConfig
+     * access of its own, so it always reaches colors/settings through
+     * these rather than duplicating config parsing. */
+    QColor backgroundColor() const { return m_backgroundColor; }
+    QColor textColor() const { return m_textColor; }
+    QColor panelBackgroundColor() const { return m_panelBackgroundColor; }
+    /* Derived, not configured — a low-alpha tint of the text color, so
+     * a floating panel's border never needs its own config key. */
+    QColor panelBorderColor() const {
+        QColor c = m_textColor;
+        c.setAlpha(60);
+        return c;
+    }
+    /* Derived: a lightened, fully opaque variant of the background —
+     * lets an input field inside a floating panel read as a distinct
+     * control without introducing a new hue. */
+    QColor panelFieldColor() const {
+        QColor c = m_backgroundColor;
+        c.setAlpha(255);
+        return c.lighter(130);
+    }
+    bool animationsEnabled() const { return m_animationsEnabled; }
 
     /* Called by FindBar; see docs/adr/0021. */
     QString primarySelectionText() const;
@@ -214,7 +238,8 @@ private:
     QColor m_backgroundColor;
     QColor m_textColor;
     QColor m_selectionColor;
-    QColor m_findMatchColor; /* current find/replace match — see docs/adr/0021 */
+    QColor m_findMatchColor;      /* current find/replace match — see docs/adr/0021 */
+    QColor m_panelBackgroundColor; /* floating chrome (FindBar, ...) — see docs/adr/0022 */
     bool m_animationsEnabled = false;
 
     AseSyntax *m_syntax = nullptr; /* null for unsupported file types — see docs/adr/0007 */

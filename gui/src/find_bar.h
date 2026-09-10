@@ -1,32 +1,34 @@
 #ifndef ASE_FIND_BAR_H
 #define ASE_FIND_BAR_H
 
-#include <QWidget>
+#include "floating_panel.h"
 
 class QLineEdit;
 class EditorViewport;
+class LetterBadge;
 
 /*
- * Thin, keyboard-only bar docked above the editor viewport (see
- * gui/src/main.cpp's central-widget layout) — Ctrl+F/Ctrl+H open it,
- * Escape closes it. Owns only the input widgets; all search/replace
+ * Find/replace as a centered floating panel — see docs/adr/0022. Owns
+ * only the input widgets and their key handling; all search/replace
  * logic (matching, highlighting, undo-grouped replace) lives on
- * EditorViewport, reached through the plain pointer set by
- * EditorViewport::setFindBar. See docs/adr/0021.
+ * EditorViewport, reached through the plain pointer set at
+ * construction. Ctrl+F/Ctrl+H open it, Escape closes it. No buttons —
+ * every action is a keybinding (see find_bar.cpp's eventFilter).
  */
-class FindBar : public QWidget {
+class FindBar : public FloatingPanel {
 public:
     enum class Mode { Find, Replace };
 
-    explicit FindBar(EditorViewport *viewport, QWidget *parent = nullptr);
+    /* `viewport` is both the logic owner and the host FloatingPanel
+     * centers over. */
+    explicit FindBar(EditorViewport *viewport);
 
-    /* Shows the bar (revealing the replace field too, in Replace mode),
-     * pre-fills the find field from the current single-line selection
-     * (if any — common editor convention), focuses it, and re-runs the
-     * query against the viewport so reopening after an edit shows
-     * fresh matches. */
     void openFor(Mode mode);
     void hideBar();
+    /* Re-pulls colors from EditorViewport — called on every config
+     * hot-reload (see EditorViewport::checkConfigReload) so an edited
+     * config.ase takes effect on this panel even while it's open. */
+    void refreshTheme();
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -36,6 +38,8 @@ private:
     QLineEdit *m_findEdit;
     QLineEdit *m_replaceEdit;
     QWidget *m_replaceRow;
+    LetterBadge *m_findBadge;
+    LetterBadge *m_replaceBadge;
 };
 
 #endif /* ASE_FIND_BAR_H */
