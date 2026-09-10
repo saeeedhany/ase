@@ -128,11 +128,28 @@ same as ADR 0021). Config hot-reload path code-reviewed (calls through
 identically to the editor's own background/text hot-reload) but not
 independently re-screenshotted this phase.
 
-Not built: the fade animation's actual frame-by-frame motion wasn't
-captured mid-flight (140ms is faster than this project's screenshot
-tooling can reliably catch a partial-opacity frame at) — verified by
-code inspection only, standard `QGraphicsOpacityEffect`/
-`QPropertyAnimation` usage. Phase 14 (editor chrome: status bar, dirty
+Not built: the animation's actual frame-by-frame motion wasn't captured
+mid-flight (150ms is faster than this project's screenshot tooling can
+reliably catch a partial frame at, confirmed again after the addendum
+below) — verified by code inspection only, standard
+`QGraphicsOpacityEffect`/`QPropertyAnimation` usage. Phase 14
+
+## Addendum: scale-in polish
+
+Immediate follow-up, before Phase 14 started: direct feedback wanted
+the open/close motion itself more "clean, fast, and aesthetic," not
+just present. Pure opacity fade read as flat; added a synchronized
+scale from 96% of full size up to 100% (`QParallelAnimationGroup`
+pairing the existing opacity `QPropertyAnimation` with a new one
+animating `geometry`, both 150ms/`OutCubic`), so the panel now pops
+gently into place rather than just materializing. `targetGeometry()`
+was factored out of `recenter()` so both the animated open/close path
+and the non-animated live-resize-repositioning path (which
+deliberately does *not* replay the pop — a host resize isn't a user
+open/close action) compute the same centered rect from one place.
+Still gated by the same `animations` config key and `setAnimated`
+per-open check as before — this only changes *how* the motion looks
+when it's on, not when it runs. (editor chrome: status bar, dirty
 tracking, Open/Save-As) needs its own plan update before it starts:
 `~/.claude/plans/noble-herding-quokka.md`'s existing Phase 14 section
 still describes native `QFileDialog` for Open/Save-As, superseded by

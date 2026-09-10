@@ -2,10 +2,12 @@
 #define ASE_FLOATING_PANEL_H
 
 #include <QColor>
+#include <QRect>
 #include <QWidget>
 
 class QGraphicsOpacityEffect;
 class QPropertyAnimation;
+class QParallelAnimationGroup;
 
 /*
  * Base for every centered, floating chrome window in this app — find/
@@ -16,7 +18,13 @@ class QPropertyAnimation;
  * installed on the host — no signal from the host is needed). Paints a
  * flat, translucent background plus a thin low-alpha border — no
  * shadows, no gradients, no rounded corners. Subclasses own their own
- * content/layout entirely; this class only owns show/hide/center/fade.
+ * content/layout entirely; this class only owns show/hide/center/animate.
+ *
+ * Open/close animates opacity and a small scale-from-96% together (see
+ * docs/adr/0022's animation-polish addendum) — fast (150ms) and
+ * one-shot, not the continuous text-motion the `animations` config key
+ * otherwise gates (caret fade, smooth scroll), but wired to the same
+ * key anyway: one lever for "does this app move," not a second knob.
  */
 class FloatingPanel : public QWidget {
 public:
@@ -32,10 +40,11 @@ public:
      * a hot-reloaded config change takes effect immediately. */
     void setAnimated(bool enabled) { m_animated = enabled; }
 
-    /* Centers over the host, raises above it, and fades in (or snaps
-     * visible if not animated). */
+    /* Centers over the host (host size queried fresh, so a resize since
+     * the last open is picked up), raises above it, and animates in (or
+     * snaps visible if not animated). */
     void openPanel();
-    /* Fades out, then hides (or snaps hidden if not animated). */
+    /* Animates out, then hides (or snaps hidden if not animated). */
     void closePanel();
 
 protected:
@@ -43,6 +52,13 @@ protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
+    /* The host-centered, full-size rect this panel should occupy right
+     * now — recomputed on every call, never cached, so it's always
+     * correct even if the host was resized since the last open. */
+    QRect targetGeometry() const;
+    /* Non-animated snap to targetGeometry() — used for live re-centering
+     * while already open (a host resize isn't a user open/close action,
+     * so it shouldn't replay the pop-in). */
     void recenter();
 
     QWidget *m_host;
@@ -50,7 +66,9 @@ private:
     QColor m_borderColor;
     bool m_animated = true;
     QGraphicsOpacityEffect *m_opacityEffect;
-    QPropertyAnimation *m_fadeAnimation;
+    QPropertyAnimation *m_opacityAnimation;
+    QPropertyAnimation *m_geometryAnimation;
+    QParallelAnimationGroup *m_animGroup;
 };
 
 #endif /* ASE_FLOATING_PANEL_H */

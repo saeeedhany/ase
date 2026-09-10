@@ -5,12 +5,20 @@
 #include <QEvent>
 #include <QGraphicsOpacityEffect>
 #include <QPainter>
+#include <QParallelAnimationGroup>
 #include <QPropertyAnimation>
 
 namespace {
-constexpr int kFadeDurationMs = 140; /* fast and clean — see docs/adr/0022 */
+constexpr int kAnimDurationMs = 150; /* fast and clean — see docs/adr/0022 */
 constexpr int kHostMargin = 16;      /* never touch the host's edges, even on a small window */
+constexpr double kPopScale = 0.96;   /* opens/closes scaling from/to this fraction of full size */
+
+QRect shrunkAround(const QRect &target, double factor) {
+    QSize size = target.size() * factor;
+    QPoint topLeft(target.center().x() - size.width() / 2, target.center().y() - size.height() / 2);
+    return QRect(topLeft, size);
 }
+} // namespace
 
 FloatingPanel::FloatingPanel(QWidget *host) : QWidget(host), m_host(host) {
     setAutoFillBackground(false);
@@ -19,14 +27,20 @@ FloatingPanel::FloatingPanel(QWidget *host) : QWidget(host), m_host(host) {
     m_opacityEffect->setOpacity(0.0);
     setGraphicsEffect(m_opacityEffect);
 
-    m_fadeAnimation = new QPropertyAnimation(m_opacityEffect, "opacity", this);
-    m_fadeAnimation->setDuration(kFadeDurationMs);
-    m_fadeAnimation->setEasingCurve(QEasingCurve::OutCubic);
+    m_opacityAnimation = new QPropertyAnimation(m_opacityEffect, "opacity", this);
+    m_geometryAnimation = new QPropertyAnimation(this, "geometry", this);
+    m_animGroup = new QParallelAnimationGroup(this);
+    m_animGroup->addAnimation(m_opacityAnimation);
+    m_animGroup->addAnimation(m_geometryAnimation);
+    for (QPropertyAnimation *anim : {m_opacityAnimation, m_geometryAnimation}) {
+        anim->setDuration(kAnimDurationMs);
+        anim->setEasingCurve(QEasingCurve::OutCubic);
+    }
+
     /* One persistent connection rather than reconnecting per open/close
-     * — only actually hides when the fade that just finished was a
-     * fade-*out* (ended at opacity 0); a finished fade-in leaves the
-     * panel visible. */
-    connect(m_fadeAnimation, &QPropertyAnimation::finished, this, [this]() {
+     * — only actually hides when the animation that just finished was
+     * closing (ended at opacity 0); a finished open leaves it visible. */
+    connect(m_animGroup, &QParallelAnimationGroup::finished, this, [this]() {
         if (m_opacityEffect->opacity() <= 0.001) {
             hide();
         }
@@ -44,9 +58,9 @@ void FloatingPanel::setColors(const QColor &background, const QColor &border) {
     update();
 }
 
-void FloatingPanel::recenter() {
+QRect FloatingPanel::targetGeometry() const {
     if (m_host == nullptr) {
-        return;
+        return QRect();
     }
     QRect hostRect = m_host->rect();
     QSize size = sizeHint();
@@ -54,30 +68,43 @@ void FloatingPanel::recenter() {
     size.setHeight(std::min(size.height(), std::max(1, hostRect.height() - 2 * kHostMargin)));
     int x = hostRect.x() + (hostRect.width() - size.width()) / 2;
     int y = hostRect.y() + (hostRect.height() - size.height()) / 2;
-    setGeometry(x, y, size.width(), size.height());
+    return QRect(x, y, size.width(), size.height());
+}
+
+void FloatingPanel::recenter() {
+    setGeometry(targetGeometry());
 }
 
 void FloatingPanel::openPanel() {
-    recenter();
+    QRect target = targetGeometry();
+    m_animGroup->stop();
     raise();
     show();
-    m_fadeAnimation->stop();
+
     if (m_animated) {
+        QRect start = shrunkAround(target, kPopScale);
+        setGeometry(start);
         m_opacityEffect->setOpacity(0.0);
-        m_fadeAnimation->setStartValue(0.0);
-        m_fadeAnimation->setEndValue(1.0);
-        m_fadeAnimation->start();
+        m_geometryAnimation->setStartValue(start);
+        m_geometryAnimation->setEndValue(target);
+        m_opacityAnimation->setStartValue(0.0);
+        m_opacityAnimation->setEndValue(1.0);
+        m_animGroup->start();
     } else {
+        setGeometry(target);
         m_opacityEffect->setOpacity(1.0);
     }
 }
 
 void FloatingPanel::closePanel() {
-    m_fadeAnimation->stop();
+    QRect target = targetGeometry();
+    m_animGroup->stop();
     if (m_animated) {
-        m_fadeAnimation->setStartValue(m_opacityEffect->opacity());
-        m_fadeAnimation->setEndValue(0.0);
-        m_fadeAnimation->start();
+        m_geometryAnimation->setStartValue(geometry());
+        m_geometryAnimation->setEndValue(shrunkAround(target, kPopScale));
+        m_opacityAnimation->setStartValue(m_opacityEffect->opacity());
+        m_opacityAnimation->setEndValue(0.0);
+        m_animGroup->start();
     } else {
         m_opacityEffect->setOpacity(0.0);
         hide();
