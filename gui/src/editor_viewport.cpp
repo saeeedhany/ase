@@ -101,6 +101,9 @@ void EditorViewport::applyConfig() {
     if (ase_config_get_color(m_config, "text", &r, &g, &b, &a)) {
         m_textColor = QColor(r, g, b, a);
     }
+    if (ase_config_get_color(m_config, "selection", &r, &g, &b, &a)) {
+        m_selectionColor = QColor(r, g, b, a);
+    }
 
     const char *familyStr = ase_config_get_string(m_config, "font_family");
     QString family = familyStr != nullptr ? QString::fromUtf8(familyStr) : QStringLiteral("monospace");
@@ -256,6 +259,34 @@ void EditorViewport::paintEvent(QPaintEvent *) {
     painter.translate(gutter - m_renderedScrollX, -fracLine * m_lineHeight);
     painter.setClipRect(QRectF(m_renderedScrollX, -static_cast<double>(m_lineHeight), textAreaWidth,
                                 height() + 2.0 * m_lineHeight));
+
+    /* Selection highlight, drawn behind the glyphs (this loop runs before
+     * the text-drawing loop below, same translate/clip) so text stays
+     * crisp on top of the translucent overlay — see docs/adr/0019. */
+    for (int i = 0; i < m_cursors.size(); ++i) {
+        if (!hasSelectionAt(i)) {
+            continue;
+        }
+        size_t selStart = selectionMinAt(i);
+        size_t selEnd = selectionMaxAt(i);
+        int startLine = lineForOffset(selStart);
+        int endLine = lineForOffset(selEnd);
+        for (int line = std::max(firstLine, startLine); line <= std::min(lastLine - 1, endLine); ++line) {
+            int lineStart = m_lineStarts[line];
+            int lineEnd =
+                (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
+            int rangeStartCol = (line == startLine) ? static_cast<int>(selStart) - lineStart : 0;
+            int rangeEndCol = (line == endLine) ? static_cast<int>(selEnd) - lineStart : lineEnd - lineStart;
+            int x0 = xForColumn(lineStart, lineEnd, rangeStartCol);
+            int x1 = xForColumn(lineStart, lineEnd, rangeEndCol);
+            int y = (line - firstLine) * m_lineHeight;
+            int rectWidth = x1 - x0;
+            if (line < endLine) {
+                rectWidth += m_charWidth / 2; /* hints the selected line break continues */
+            }
+            painter.fillRect(QRectF(x0, y, std::max(1, rectWidth), m_lineHeight), m_selectionColor);
+        }
+    }
 
     for (int line = firstLine; line < lastLine; ++line) {
         int start = m_lineStarts[line];
@@ -540,14 +571,16 @@ QColor EditorViewport::colorForCapture(AseHighlightCapture capture) const {
 void EditorViewport::keyPressEvent(QKeyEvent *event) {
     resetCaretBlink();
 
+    bool extend = event->modifiers() & Qt::ShiftModifier;
+
     if (event->key() == Qt::Key_Up) {
-        moveCursorVertically(-1);
+        moveCursorVertically(-1, extend);
         ensureCursorVisible();
         update();
         return;
     }
     if (event->key() == Qt::Key_Down) {
-        moveCursorVertically(1);
+        moveCursorVertically(1, extend);
         ensureCursorVisible();
         update();
         return;
@@ -571,16 +604,16 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
 
     switch (event->key()) {
     case Qt::Key_Left:
-        moveCursorLeft();
+        moveCursorLeft(extend);
         break;
     case Qt::Key_Right:
-        moveCursorRight();
+        moveCursorRight(extend);
         break;
     case Qt::Key_Home:
-        moveCursorHome();
+        moveCursorHome(extend);
         break;
     case Qt::Key_End:
-        moveCursorEnd();
+        moveCursorEnd(extend);
         break;
     case Qt::Key_Backspace:
         deleteBackward();
@@ -654,12 +687,25 @@ void EditorViewport::mousePressEvent(QMouseEvent *event) {
 
     size_t offset = offsetForPoint(event->position().toPoint());
 
-    if (event->modifiers() & Qt::AltModifier) {
+    if (event->modifiers() & Qt::ShiftModifier) {
+        /* Extends the primary (last) cursor's selection to the click
+         * point instead of clearing — its anchor is left untouched, so a
+         * fresh Shift+click after a plain click anchors at the old
+         * cursor position. Multi-cursor + Shift+click isn't a scoped
+         * combination (drag-selection is single-cursor-only too, see
+         * mouseMoveEvent) — only the last cursor is affected. */
+        if (!m_cursors.isEmpty()) {
+            m_cursors.last() = offset;
+        }
+    } else if (event->modifiers() & Qt::AltModifier) {
         m_cursors.push_back(offset);
+        m_selectionAnchors.push_back(offset);
         normalizeCursors();
     } else {
         m_cursors.clear();
+        m_selectionAnchors.clear();
         m_cursors.push_back(offset);
+        m_selectionAnchors.push_back(offset);
     }
 
     m_desiredColumn = -1;
@@ -668,21 +714,62 @@ void EditorViewport::mousePressEvent(QMouseEvent *event) {
     update();
 }
 
+/* While the left button is held, Qt keeps delivering move events to this
+ * widget (implicit press-grab) regardless of setMouseTracking — no extra
+ * grab needed. Only extends the single-cursor case: a plain press already
+ * collapsed to one cursor, so a drag starting from a multi-cursor state
+ * can't happen. See docs/adr/0019. */
+void EditorViewport::mouseMoveEvent(QMouseEvent *event) {
+    if (!(event->buttons() & Qt::LeftButton) || m_cursors.size() != 1) {
+        QWidget::mouseMoveEvent(event);
+        return;
+    }
+
+    m_cursors[0] = offsetForPoint(event->position().toPoint());
+    resetCaretBlink();
+    ensureCursorVisible();
+    update();
+}
+
 void EditorViewport::normalizeCursors() {
-    std::sort(m_cursors.begin(), m_cursors.end());
-    m_cursors.erase(std::unique(m_cursors.begin(), m_cursors.end()), m_cursors.end());
+    QVector<size_t> anchors = m_selectionAnchors;
+    QVector<int> order(m_cursors.size());
+    for (int i = 0; i < order.size(); ++i) {
+        order[i] = i;
+    }
+    std::sort(order.begin(), order.end(),
+              [this](int a, int b) { return m_cursors[a] < m_cursors[b]; });
+
+    QVector<size_t> sortedCursors;
+    QVector<size_t> sortedAnchors;
+    sortedCursors.reserve(order.size());
+    sortedAnchors.reserve(order.size());
+    for (int idx : order) {
+        if (!sortedCursors.isEmpty() && sortedCursors.last() == m_cursors[idx]) {
+            continue; /* de-dupe by cursor position; keep the first anchor seen */
+        }
+        sortedCursors.push_back(m_cursors[idx]);
+        sortedAnchors.push_back(anchors[idx]);
+    }
+
+    m_cursors = std::move(sortedCursors);
+    m_selectionAnchors = std::move(sortedAnchors);
     if (m_cursors.isEmpty()) {
         m_cursors.push_back(0);
+        m_selectionAnchors.push_back(0);
     }
 }
 
 void EditorViewport::collapseToOneCursor() {
     if (m_cursors.size() <= 1) {
+        m_selectionAnchors[0] = m_cursors[0]; /* Escape also clears an active selection */
         return;
     }
     size_t keep = m_cursors.last();
     m_cursors.clear();
+    m_selectionAnchors.clear();
     m_cursors.push_back(keep);
+    m_selectionAnchors.push_back(keep);
 }
 
 /* "Select next occurrence" (Ctrl+D, Sublime/VS Code convention) without a
@@ -717,7 +804,9 @@ void EditorViewport::addCursorAtNextOccurrence() {
         bool boundaryBefore = (searchStart == 0) || !isWordChar(m_cache[searchStart - 1]);
         bool boundaryAfter = (searchStart + wordLen == len) || !isWordChar(m_cache[searchStart + wordLen]);
         if (boundaryBefore && boundaryAfter) {
-            m_cursors.push_back(static_cast<size_t>(searchStart + wordLen));
+            size_t newCursor = static_cast<size_t>(searchStart + wordLen);
+            m_cursors.push_back(newCursor);
+            m_selectionAnchors.push_back(newCursor);
             normalizeCursors();
             ensureCursorVisible();
             update();
@@ -727,30 +816,63 @@ void EditorViewport::addCursorAtNextOccurrence() {
     /* no further occurrence forward — no-op, see docs/adr/0012 */
 }
 
+bool EditorViewport::hasSelectionAt(int i) const {
+    return m_selectionAnchors[i] != m_cursors[i];
+}
+
+size_t EditorViewport::selectionMinAt(int i) const {
+    return std::min(m_cursors[i], m_selectionAnchors[i]);
+}
+
+size_t EditorViewport::selectionMaxAt(int i) const {
+    return std::max(m_cursors[i], m_selectionAnchors[i]);
+}
+
+/* Reads the about-to-be-deleted range out of m_cache before deleting, same
+ * reasoning as deleteBackwardAt/deleteForwardAt below (see docs/adr/0018)
+ * — safe under the batch's highest-offset-first processing order. */
+void EditorViewport::deleteSelectionAt(int i) {
+    size_t start = selectionMinAt(i);
+    size_t end = selectionMaxAt(i);
+    QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
+    if (ase_buffer_delete(m_buffer, start, end - start)) {
+        ase_undo_record_delete(m_undo, start, removed.constData(), static_cast<size_t>(removed.size()));
+    }
+    m_cursors[i] = start;
+    m_selectionAnchors[i] = start;
+}
+
 void EditorViewport::insertText(const QByteArray &bytes) {
     if (bytes.isEmpty()) {
         return;
     }
     ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     for (int i = m_cursors.size() - 1; i >= 0; --i) {
-        insertTextAt(m_cursors[i], bytes);
+        insertTextAt(i, bytes);
     }
     normalizeCursors();
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     refreshCache();
 }
 
-void EditorViewport::insertTextAt(size_t &cursor, const QByteArray &bytes) {
+/* An active selection is replaced: delete it first (as part of the same
+ * undo group), then insert at the collapse point — see docs/adr/0019. */
+void EditorViewport::insertTextAt(int i, const QByteArray &bytes) {
+    if (hasSelectionAt(i)) {
+        deleteSelectionAt(i);
+    }
+    size_t &cursor = m_cursors[i];
     if (ase_buffer_insert(m_buffer, cursor, bytes.constData(), static_cast<size_t>(bytes.size()))) {
         ase_undo_record_insert(m_undo, cursor, bytes.constData(), static_cast<size_t>(bytes.size()));
         cursor += static_cast<size_t>(bytes.size());
     }
+    m_selectionAnchors[i] = cursor;
 }
 
 void EditorViewport::deleteBackward() {
     ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     for (int i = m_cursors.size() - 1; i >= 0; --i) {
-        deleteBackwardAt(m_cursors[i]);
+        deleteBackwardAt(i);
     }
     normalizeCursors();
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
@@ -767,8 +889,14 @@ void EditorViewport::deleteBackward() {
  * invariant that already lets deleteBackwardAt skip cross-cursor
  * bookkeeping — see docs/adr/0012). See docs/adr/0018 for why the undo
  * stack needs this snapshot at all: ase_buffer_delete doesn't hand back
- * what it removed. */
-void EditorViewport::deleteBackwardAt(size_t &cursor) {
+ * what it removed. An active selection is the whole operation — no extra
+ * character is removed beyond it — see docs/adr/0019. */
+void EditorViewport::deleteBackwardAt(int i) {
+    if (hasSelectionAt(i)) {
+        deleteSelectionAt(i);
+        return;
+    }
+    size_t &cursor = m_cursors[i];
     if (cursor == 0) {
         return;
     }
@@ -781,19 +909,25 @@ void EditorViewport::deleteBackwardAt(size_t &cursor) {
         ase_undo_record_delete(m_undo, start, removed.constData(), static_cast<size_t>(removed.size()));
         cursor = start;
     }
+    m_selectionAnchors[i] = cursor;
 }
 
 void EditorViewport::deleteForward() {
     ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     for (int i = m_cursors.size() - 1; i >= 0; --i) {
-        deleteForwardAt(m_cursors[i]);
+        deleteForwardAt(i);
     }
     normalizeCursors();
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     refreshCache();
 }
 
-void EditorViewport::deleteForwardAt(size_t &cursor) {
+void EditorViewport::deleteForwardAt(int i) {
+    if (hasSelectionAt(i)) {
+        deleteSelectionAt(i);
+        return;
+    }
+    size_t &cursor = m_cursors[i];
     size_t len = static_cast<size_t>(m_cache.size());
     if (cursor >= len) {
         return;
@@ -806,99 +940,145 @@ void EditorViewport::deleteForwardAt(size_t &cursor) {
     if (ase_buffer_delete(m_buffer, cursor, end - cursor)) {
         ase_undo_record_delete(m_undo, cursor, removed.constData(), static_cast<size_t>(removed.size()));
     }
+    m_selectionAnchors[i] = cursor;
 }
 
-void EditorViewport::moveCursorLeft() {
-    for (size_t &cursor : m_cursors) {
-        moveCursorLeftAt(cursor);
+void EditorViewport::moveCursorLeft(bool extend) {
+    for (int i = 0; i < m_cursors.size(); ++i) {
+        moveCursorLeftAt(i, extend);
     }
     normalizeCursors();
 }
 
-void EditorViewport::moveCursorLeftAt(size_t &cursor) {
-    if (cursor == 0) {
-        return;
+void EditorViewport::moveCursorLeftAt(int i, bool extend) {
+    size_t &cursor = m_cursors[i];
+    if (!extend && hasSelectionAt(i)) {
+        cursor = selectionMinAt(i);
+    } else if (cursor > 0) {
+        size_t pos = cursor - 1;
+        while (pos > 0 && isUtf8ContinuationByte(m_cache[static_cast<int>(pos)])) {
+            pos--;
+        }
+        cursor = pos;
     }
-    size_t pos = cursor - 1;
-    while (pos > 0 && isUtf8ContinuationByte(m_cache[static_cast<int>(pos)])) {
-        pos--;
+    if (!extend) {
+        m_selectionAnchors[i] = cursor;
     }
-    cursor = pos;
 }
 
-void EditorViewport::moveCursorRight() {
-    for (size_t &cursor : m_cursors) {
-        moveCursorRightAt(cursor);
+void EditorViewport::moveCursorRight(bool extend) {
+    for (int i = 0; i < m_cursors.size(); ++i) {
+        moveCursorRightAt(i, extend);
     }
     normalizeCursors();
 }
 
-void EditorViewport::moveCursorRightAt(size_t &cursor) {
-    size_t len = static_cast<size_t>(m_cache.size());
-    if (cursor >= len) {
-        return;
+void EditorViewport::moveCursorRightAt(int i, bool extend) {
+    size_t &cursor = m_cursors[i];
+    if (!extend && hasSelectionAt(i)) {
+        cursor = selectionMaxAt(i);
+    } else {
+        size_t len = static_cast<size_t>(m_cache.size());
+        if (cursor < len) {
+            size_t pos = cursor + 1;
+            while (pos < len && isUtf8ContinuationByte(m_cache[static_cast<int>(pos)])) {
+                pos++;
+            }
+            cursor = pos;
+        }
     }
-    size_t pos = cursor + 1;
-    while (pos < len && isUtf8ContinuationByte(m_cache[static_cast<int>(pos)])) {
-        pos++;
+    if (!extend) {
+        m_selectionAnchors[i] = cursor;
     }
-    cursor = pos;
 }
 
-void EditorViewport::moveCursorVertically(int lineDelta) {
+void EditorViewport::moveCursorVertically(int lineDelta, bool extend) {
     if (m_cursors.size() == 1) {
         /* sticky column — see docs/adr/0012, decision 1 */
-        size_t cursor = m_cursors[0];
+        size_t &cursor = m_cursors[0];
+        if (!extend && hasSelectionAt(0)) {
+            cursor = (lineDelta < 0) ? selectionMinAt(0) : selectionMaxAt(0);
+            m_selectionAnchors[0] = cursor;
+            m_desiredColumn = -1;
+            return;
+        }
+
         int line = lineForOffset(cursor);
         int column = (m_desiredColumn >= 0) ? m_desiredColumn : columnForOffset(cursor, line);
         m_desiredColumn = column;
 
         int newLine = line + lineDelta;
         if (newLine >= 0 && newLine < m_lineStarts.size()) {
-            m_cursors[0] = offsetForLineColumn(newLine, column);
+            cursor = offsetForLineColumn(newLine, column);
+        }
+        if (!extend) {
+            m_selectionAnchors[0] = cursor;
         }
         return;
     }
 
-    for (size_t &cursor : m_cursors) {
-        moveCursorVerticallyAt(cursor, lineDelta);
+    for (int i = 0; i < m_cursors.size(); ++i) {
+        moveCursorVerticallyAt(i, lineDelta, extend);
     }
     normalizeCursors();
 }
 
-void EditorViewport::moveCursorVerticallyAt(size_t &cursor, int lineDelta) {
-    int line = lineForOffset(cursor);
-    int column = columnForOffset(cursor, line);
-    int newLine = line + lineDelta;
-    if (newLine < 0 || newLine >= m_lineStarts.size()) {
-        return;
+void EditorViewport::moveCursorVerticallyAt(int i, int lineDelta, bool extend) {
+    size_t &cursor = m_cursors[i];
+    if (!extend && hasSelectionAt(i)) {
+        cursor = (lineDelta < 0) ? selectionMinAt(i) : selectionMaxAt(i);
+    } else {
+        int line = lineForOffset(cursor);
+        int column = columnForOffset(cursor, line);
+        int newLine = line + lineDelta;
+        if (newLine >= 0 && newLine < m_lineStarts.size()) {
+            cursor = offsetForLineColumn(newLine, column);
+        }
     }
-    cursor = offsetForLineColumn(newLine, column);
-}
-
-void EditorViewport::moveCursorHome() {
-    for (size_t &cursor : m_cursors) {
-        moveCursorHomeAt(cursor);
+    if (!extend) {
+        m_selectionAnchors[i] = cursor;
     }
-    normalizeCursors();
 }
 
-void EditorViewport::moveCursorHomeAt(size_t &cursor) {
-    int line = lineForOffset(cursor);
-    cursor = static_cast<size_t>(m_lineStarts[line]);
-}
-
-void EditorViewport::moveCursorEnd() {
-    for (size_t &cursor : m_cursors) {
-        moveCursorEndAt(cursor);
+void EditorViewport::moveCursorHome(bool extend) {
+    for (int i = 0; i < m_cursors.size(); ++i) {
+        moveCursorHomeAt(i, extend);
     }
     normalizeCursors();
 }
 
-void EditorViewport::moveCursorEndAt(size_t &cursor) {
-    int line = lineForOffset(cursor);
-    int end = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
-    cursor = static_cast<size_t>(end);
+void EditorViewport::moveCursorHomeAt(int i, bool extend) {
+    size_t &cursor = m_cursors[i];
+    if (!extend && hasSelectionAt(i)) {
+        cursor = selectionMinAt(i);
+    } else {
+        int line = lineForOffset(cursor);
+        cursor = static_cast<size_t>(m_lineStarts[line]);
+    }
+    if (!extend) {
+        m_selectionAnchors[i] = cursor;
+    }
+}
+
+void EditorViewport::moveCursorEnd(bool extend) {
+    for (int i = 0; i < m_cursors.size(); ++i) {
+        moveCursorEndAt(i, extend);
+    }
+    normalizeCursors();
+}
+
+void EditorViewport::moveCursorEndAt(int i, bool extend) {
+    size_t &cursor = m_cursors[i];
+    if (!extend && hasSelectionAt(i)) {
+        cursor = selectionMaxAt(i);
+    } else {
+        int line = lineForOffset(cursor);
+        int end = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
+        cursor = static_cast<size_t>(end);
+    }
+    if (!extend) {
+        m_selectionAnchors[i] = cursor;
+    }
 }
 
 void EditorViewport::ensureCursorVisible() {
@@ -939,14 +1119,21 @@ void EditorViewport::save() {
  * render instantly (like any other edit — see snapAnimationToTarget's
  * doc comment) rather than gliding. */
 void EditorViewport::applyUndoResult(size_t *cursors, size_t count) {
+    /* The undo stack only snapshots point offsets (docs/adr/0018), so
+     * restoring here always lands with no active selection — matches
+     * how typing over a selection collapses it too. */
     m_cursors.clear();
+    m_selectionAnchors.clear();
     m_cursors.reserve(static_cast<int>(count));
+    m_selectionAnchors.reserve(static_cast<int>(count));
     for (size_t i = 0; i < count; ++i) {
         m_cursors.push_back(cursors[i]);
+        m_selectionAnchors.push_back(cursors[i]);
     }
     free(cursors);
     if (m_cursors.isEmpty()) {
         m_cursors.push_back(0);
+        m_selectionAnchors.push_back(0);
     }
 
     refreshCache();

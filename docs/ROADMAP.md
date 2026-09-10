@@ -224,9 +224,22 @@ ADRs as each lands here going forward.
       coalescing of consecutive keystrokes (each is its own group) —
       deliberate v1 simplicity. See
       [ADR 0018](adr/0018-undo-redo.md).
-- [ ] **Phase 11 — Selection model**: keyboard (Shift+arrows/Home/End)
-      and mouse (click-drag, Shift+click) selection; currently there is
-      no selection/anchor concept at all, only point cursors.
+- [x] **Phase 11 — Selection model**: keyboard (Shift+arrows/Home/End)
+      and mouse (click-drag, Shift+click) selection. New
+      `m_selectionAnchors`, index-aligned with `m_cursors`
+      (`m_selectionAnchors[i] == m_cursors[i]` means no active
+      selection) — same pattern `m_renderedCaretPos` already used.
+      Every move op takes an `extend` flag (Shift held): extending
+      moves the head and leaves the anchor fixed; a plain move with an
+      active selection collapses to the near/far edge instead of
+      stepping, matching standard editor convention. Typing/Backspace/
+      Delete over a selection replace/remove exactly that range, as
+      part of the same undo group (Phase 10). New translucent
+      `selection` config color, painted in its own pass ahead of the
+      text so glyphs stay crisp on top. Verified live via `xdotool` +
+      screenshots (keyboard extend/collapse) and a save-to-file round
+      trip (type-over-selection, undo). See
+      [ADR 0019](adr/0019-selection-model.md).
 - [ ] **Phase 12 — Clipboard**: cut/copy/paste via `QClipboard`,
       built on Phase 11's selection.
 - [ ] **Phase 13 — Find & replace**: `Ctrl+F`/`Ctrl+H`, plain substring

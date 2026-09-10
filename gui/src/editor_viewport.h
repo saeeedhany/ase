@@ -28,6 +28,7 @@ class QPainter;
  * buffer mirroring, byte-level cursor, no IME) are documented in
  * docs/adr/0006, not repeated here. Multi-cursor, the opt-in caret-fade
  * animation, and the accessibility pass are documented in docs/adr/0012.
+ * The keyboard/mouse selection model is documented in docs/adr/0019.
  */
 class EditorViewport : public QWidget {
 public:
@@ -39,6 +40,7 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
 
 private:
     void loadConfig();
@@ -98,28 +100,47 @@ private:
      * just the size-1 case) — see docs/adr/0012, decision 1, for why
      * processing highest-offset-first needs no cross-cursor bookkeeping.
      * Each loops over m_cursors calling the matching *At single-cursor
-     * primitive below. */
+     * primitive below, passing that cursor's index (not a reference) so
+     * the primitive can reach both m_cursors[i] and its index-aligned
+     * m_selectionAnchors[i] — see docs/adr/0019. `extend` is only
+     * meaningful for the move ops: true (Shift held) moves the head and
+     * leaves the anchor fixed; false collapses an active selection to
+     * its near/far edge instead of stepping from the head, matching
+     * standard editor convention. */
     void insertText(const QByteArray &bytes);
     void deleteBackward();
     void deleteForward();
-    void moveCursorLeft();
-    void moveCursorRight();
-    void moveCursorVertically(int lineDelta);
-    void moveCursorHome();
-    void moveCursorEnd();
+    void moveCursorLeft(bool extend);
+    void moveCursorRight(bool extend);
+    void moveCursorVertically(int lineDelta, bool extend);
+    void moveCursorHome(bool extend);
+    void moveCursorEnd(bool extend);
     void addCursorAtNextOccurrence();
     void collapseToOneCursor();
+    /* Sorts m_cursors and its index-aligned m_selectionAnchors together,
+     * dedupes by cursor position (keeping the first anchor seen at each
+     * position — same tie-break the pre-selection code implicitly had). */
     void normalizeCursors();
 
-    /* Single-cursor primitives — operate on one cursor's position. */
-    void insertTextAt(size_t &cursor, const QByteArray &bytes);
-    void deleteBackwardAt(size_t &cursor);
-    void deleteForwardAt(size_t &cursor);
-    void moveCursorLeftAt(size_t &cursor);
-    void moveCursorRightAt(size_t &cursor);
-    void moveCursorVerticallyAt(size_t &cursor, int lineDelta);
-    void moveCursorHomeAt(size_t &cursor);
-    void moveCursorEndAt(size_t &cursor);
+    /* Single-cursor primitives — operate on m_cursors[i]/m_selectionAnchors[i]. */
+    void insertTextAt(int i, const QByteArray &bytes);
+    void deleteBackwardAt(int i);
+    void deleteForwardAt(int i);
+    void moveCursorLeftAt(int i, bool extend);
+    void moveCursorRightAt(int i, bool extend);
+    void moveCursorVerticallyAt(int i, int lineDelta, bool extend);
+    void moveCursorHomeAt(int i, bool extend);
+    void moveCursorEndAt(int i, bool extend);
+
+    /* Selection helpers — see docs/adr/0019. m_selectionAnchors[i] ==
+     * m_cursors[i] means cursor i has no active selection. */
+    bool hasSelectionAt(int i) const;
+    size_t selectionMinAt(int i) const;
+    size_t selectionMaxAt(int i) const;
+    /* Deletes cursor i's active selection range as one undo entry and
+     * collapses both cursor and anchor to the range's start. Must only
+     * be called when hasSelectionAt(i). */
+    void deleteSelectionAt(int i);
 
     void ensureCursorVisible();
     void save();
@@ -147,6 +168,7 @@ private:
     QTimer *m_configTimer;
     QColor m_backgroundColor;
     QColor m_textColor;
+    QColor m_selectionColor;
     bool m_animationsEnabled = false;
 
     AseSyntax *m_syntax = nullptr; /* null for unsupported file types — see docs/adr/0007 */
@@ -156,6 +178,10 @@ private:
     QVector<int> m_lineStarts;
 
     QVector<size_t> m_cursors {0}; /* always non-empty, sorted ascending, de-duplicated */
+    /* Index-aligned with m_cursors, same size always — see docs/adr/0019.
+     * m_selectionAnchors[i] == m_cursors[i] means cursor i has no active
+     * selection; otherwise the range is [min, max) of the pair. */
+    QVector<size_t> m_selectionAnchors {0};
     int m_scrollLine = 0;
     int m_scrollX = 0; /* leftmost visible pixel, not column — see docs/adr/0014 */
     int m_desiredColumn = -1; /* sticky column — single-cursor mode only, see docs/adr/0012 */

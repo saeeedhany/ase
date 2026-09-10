@@ -91,6 +91,7 @@ AseConfig *ase_config_create_default(void) {
 
     config_set(config, "background", "#282828");
     config_set(config, "text", "#F5E6C8");
+    config_set(config, "selection", "#45403866");
     config_set(config, "font_family", "monospace");
     config_set(config, "font_size", "12");
 
@@ -266,6 +267,7 @@ static const char kDefaultConfigTemplate[] =
     "# Colors are #RRGGBB or #RRGGBBAA hex.\n"
     "background = #282828\n"
     "text = #F5E6C8\n"
+    "selection = #45403866\n"
     "\n"
     "font_family = monospace\n"
     "font_size = 12\n"
