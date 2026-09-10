@@ -24,11 +24,15 @@
 #include <QWheelEvent>
 
 namespace {
-constexpr int kCaretAnimationTicks = 34; /* ~1020ms period at the 30ms tick below */
+/* ~720ms period at the 30ms tick below — was 34 (~1020ms); sped up
+ * along with every other animation in the app, see docs/adr/0027. */
+constexpr int kCaretAnimationTicks = 24;
 constexpr double kTwoPi = 6.283185307179586;
 constexpr int kCaretWidth = 2;
 constexpr int kGutterPadding = 8; /* on each side of the line-number text */
-constexpr double kEaseFactor = 0.35; /* per paint — see docs/adr/0015 */
+/* Per paint — see docs/adr/0015. Was 0.35; raised (converges faster
+ * per frame) for a snappier glide, see docs/adr/0027. */
+constexpr double kEaseFactor = 0.5;
 /* "scrolloff"-style context margin, in lines/characters, kept visible
  * around the cursor before the view scrolls — see docs/adr/0024. */
 constexpr int kVerticalScrollMargin = 3;
@@ -72,7 +76,7 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
         m_idleTicks++;
         if (m_animationsEnabled) {
             update(); /* the fade's phase is also idle-tick-driven — see docs/adr/0017 */
-        } else if (m_idleTicks % 17 == 0) { /* ~500ms idle at this 30ms tick — see docs/adr/0016 */
+        } else if (m_idleTicks % 12 == 0) { /* ~360ms at this 30ms tick — was 17 (~500ms), see docs/adr/0016, docs/adr/0027 */
             m_caretVisible = !m_caretVisible;
             update();
         }
@@ -695,8 +699,15 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         break;
     case Qt::Key_Return:
     case Qt::Key_Enter:
+        /* Deliberately *not* isEdit = true, unlike every other
+         * mutating case below — see docs/adr/0027. A newline is a
+         * single, discrete jump to a new line, closer in feel to
+         * navigation than to character-by-character typing, and it's
+         * the one edit the user specifically asked to see glide.
+         * Regular character insertion stays instant — ADR 0017's
+         * original reasoning (gliding can't keep pace with fast
+         * repeated small jumps) still holds for that case. */
         insertText(QByteArrayLiteral("\n"));
-        isEdit = true;
         break;
     default:
         if (event->modifiers() & Qt::ControlModifier) {

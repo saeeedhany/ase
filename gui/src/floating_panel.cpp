@@ -11,7 +11,7 @@
 #include <QPropertyAnimation>
 
 namespace {
-constexpr int kAnimDurationMs = 150; /* fast and clean — see docs/adr/0022 */
+constexpr int kAnimDurationMs = 110; /* fast and clean — see docs/adr/0022; was 150, sped up per docs/adr/0027 */
 constexpr int kHostMargin = 16;      /* never touch the host's edges, even on a small window */
 constexpr double kPopScale = 0.96;   /* opens/closes scaling from/to this fraction of full size */
 

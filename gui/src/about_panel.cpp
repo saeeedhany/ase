@@ -7,6 +7,7 @@
 #include <QKeyEvent>
 #include <QLabel>
 #include <QPalette>
+#include <QPixmap>
 #include <QVBoxLayout>
 
 namespace {
@@ -39,13 +40,21 @@ AboutPanel::AboutPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_vi
     headerRow->setSpacing(8);
     m_badge = new LetterBadge(QLatin1Char('i'), content);
     headerRow->addWidget(m_badge);
-    auto *title = new QLabel(QStringLiteral("About"), content);
-    QFont titleFont = title->font();
+    m_title = new QLabel(QStringLiteral("About"), content);
+    QFont titleFont = m_title->font();
     titleFont.setBold(true);
-    title->setFont(titleFont);
-    headerRow->addWidget(title);
+    m_title->setFont(titleFont);
+    headerRow->addWidget(m_title);
     headerRow->addStretch(1);
     layout->addLayout(headerRow);
+
+    m_logo = new QLabel(content);
+    QPixmap logo(QStringLiteral(":/ase.png"));
+    if (!logo.isNull()) {
+        m_logo->setPixmap(logo.scaledToWidth(180, Qt::SmoothTransformation));
+    }
+    m_logo->setAlignment(Qt::AlignHCenter);
+    layout->addWidget(m_logo);
 
     m_body = new QLabel(content);
     m_body->setTextFormat(Qt::RichText);
@@ -78,8 +87,14 @@ void AboutPanel::refreshTheme() {
     badgeFill.setAlpha(220);
     m_badge->setColors(badgeFill, m_viewport->backgroundColor());
 
-    QPalette pal = m_body->palette();
+    /* QLabel's default palette text color doesn't follow this app's
+     * custom dark theme at all — it rendered black regardless of
+     * background, a real bug found by actually looking at a
+     * screenshot. Every QLabel in this panel needs its palette set
+     * explicitly; m_title was the one missed the first time around. */
+    QPalette pal = m_title->palette();
     pal.setColor(QPalette::WindowText, m_viewport->textColor());
+    m_title->setPalette(pal);
     m_body->setPalette(pal);
 
     m_body->setText(QString::fromUtf8(kAboutHtmlTemplate)

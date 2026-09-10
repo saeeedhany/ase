@@ -9,11 +9,13 @@ class LetterBadge;
 
 /*
  * App info as a centered floating panel, same family as the rest —
- * see docs/adr/0022 (the design system) and docs/adr/0026 (this
- * panel). "i" badge, `Ctrl+I` opens it. Pure display: name, version,
- * author, a couple of current-state notes, and the author's GitHub/
- * website links (clickable — QLabel's rich-text links, opened via the
- * system browser). Escape closes it.
+ * see docs/adr/0022 (the design system), docs/adr/0026 (this panel),
+ * and docs/adr/0027 (the logo). "i" badge, `Ctrl+I` opens it. Pure
+ * display: the app's logo (gui/resources/ase.png, bundled via Qt
+ * resources — see gui/resources/resources.qrc), name, version, author,
+ * a couple of current-state notes, and the author's GitHub/website
+ * links (clickable — QLabel's rich-text links, opened via the system
+ * browser). Escape closes it.
  */
 class AboutPanel : public FloatingPanel {
 public:
@@ -30,6 +32,8 @@ private:
 
     EditorViewport *m_viewport;
     LetterBadge *m_badge;
+    QLabel *m_title;
+    QLabel *m_logo;
     QLabel *m_body;
 };
 

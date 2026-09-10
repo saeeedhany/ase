@@ -365,6 +365,24 @@ ADRs as each lands here going forward.
       moved top-right per direct feedback that a centered find bar
       sits on top of the text you're actively searching. See
       [ADR 0026](adr/0026-keybinding-scheme-help-about.md).
+- [x] **Phase 15.6 — Logo, title-color bug, thin scrollbars, faster
+      animation, output divider**: the app's logo
+      (`gui/resources/ase.png`, bundled via Qt resources/`.qrc`) is now
+      the window icon and appears in the About panel. Fixed a real
+      bug: Help/About panel titles rendered black, not themed — the
+      one `QLabel` each panel's `refreshTheme()` had missed. New
+      shared `thinScrollBarStyleSheet` (`gui/src/scrollbar_style.{h,cpp}`)
+      — thin, thickens on hover — applied to Help, the output panel,
+      and the file browser's list. Enter now glides the caret to the
+      new line (previously snapped like any other edit); every
+      animation duration (caret glide/fade, blink, panel pop, row
+      highlight) sped up. `TranslucentBar` extracted to its own file
+      (`gui/src/translucent_bar.{h,cpp}`) and reused for a small,
+      centered seam marker at the output panel's top edge — found and
+      fixed a second real bug along the way: the output panel itself
+      had no themed background, so the area around that marker
+      rendered Qt's default light gray. See
+      [ADR 0027](adr/0027-visual-polish-pass.md).
 - [ ] **Phase 16 — LSP diagnostics wiring**: `textDocument/didChange`
       (never sent today — results go stale after the first edit),
       GUI poll + diagnostic markers. `publishDiagnostics` parsing

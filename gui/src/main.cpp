@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QFileInfo>
+#include <QIcon>
 #include <QLabel>
 #include <QMainWindow>
 #include <QPalette>
@@ -46,6 +47,10 @@ void applyStatusBarTheme(QMainWindow &window, QLabel *statusLabel, EditorViewpor
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
+    /* The app's logo (gui/resources/ase.png, bundled via Qt resources
+     * — see gui/resources/resources.qrc) as the window/taskbar icon,
+     * and shown again inside the About panel. See docs/adr/0027. */
+    app.setWindowIcon(QIcon(QStringLiteral(":/ase.png")));
 
     QString filePath;
     AseBuffer *buffer;

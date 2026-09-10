@@ -2,10 +2,9 @@
 #define ASE_FILE_BROWSER_PANEL_H
 
 #include "floating_panel.h"
+#include "translucent_bar.h"
 
-#include <QColor>
 #include <QString>
-#include <QWidget>
 
 class QLineEdit;
 class QListWidget;
@@ -13,23 +12,6 @@ class QListWidgetItem;
 class QPropertyAnimation;
 class EditorViewport;
 class LetterBadge;
-
-/* A plain rect filled via QPainter::fillRect, not QPalette/
- * setAutoFillBackground — the latter was a real bug here: it silently
- * ignores a QColor's alpha channel and paints fully opaque, which hid
- * whatever row text sat underneath instead of tinting it. See
- * docs/adr/0024. */
-class TranslucentBar : public QWidget {
-public:
-    explicit TranslucentBar(QWidget *parent);
-    void setColor(const QColor &color);
-
-protected:
-    void paintEvent(QPaintEvent *event) override;
-
-private:
-    QColor m_color;
-};
 
 /*
  * Open/Save-As as a centered floating panel, same family as FindBar —

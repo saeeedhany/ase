@@ -35,6 +35,7 @@ private:
 
     EditorViewport *m_viewport;
     LetterBadge *m_badge;
+    QLabel *m_title;
     QLabel *m_body;
     QScrollArea *m_scrollArea;
 };

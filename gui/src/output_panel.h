@@ -5,6 +5,7 @@
 
 class QPlainTextEdit;
 class EditorViewport;
+class TranslucentBar;
 
 /*
  * :compile's output — see docs/adr/0025. Deliberately *not* a
@@ -15,6 +16,14 @@ class EditorViewport;
  * it. A plain docked panel instead — a real layout row below
  * EditorViewport in main.cpp, not a child of it. Starts hidden until
  * the first :compile; toggleable after via `:output`.
+ *
+ * A small seam marker (m_divider, a short TranslucentBar — not a
+ * full-width rule) sits at this panel's own top edge, so it shows and
+ * hides together with the panel itself with no extra wiring — see
+ * docs/adr/0027. It's deliberately tiny: the user's own words were
+ * "not even half a line," a quiet mark that this is a distinct panel,
+ * not a heavy divider that would undercut the "reads as part of the
+ * editor" simplicity they said they still want to keep.
  */
 class OutputPanel : public QWidget {
 public:
@@ -29,6 +38,7 @@ public:
 
 private:
     EditorViewport *m_viewport;
+    TranslucentBar *m_divider;
     QPlainTextEdit *m_text;
 };
 

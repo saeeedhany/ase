@@ -2,6 +2,7 @@
 
 #include "editor_viewport.h"
 #include "letter_badge.h"
+#include "scrollbar_style.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -15,21 +16,7 @@
 #include <QVBoxLayout>
 
 namespace {
-constexpr int kRowHighlightAnimMs = 110; /* fast — see docs/adr/0024 */
-}
-
-TranslucentBar::TranslucentBar(QWidget *parent) : QWidget(parent) {
-    setAttribute(Qt::WA_TransparentForMouseEvents);
-}
-
-void TranslucentBar::setColor(const QColor &color) {
-    m_color = color;
-    update();
-}
-
-void TranslucentBar::paintEvent(QPaintEvent *) {
-    QPainter painter(this);
-    painter.fillRect(rect(), m_color);
+constexpr int kRowHighlightAnimMs = 85; /* fast — see docs/adr/0024, docs/adr/0027 */
 }
 
 FileBrowserPanel::FileBrowserPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport(viewport) {
@@ -132,6 +119,12 @@ void FileBrowserPanel::refreshTheme() {
      * the editor itself — one consistent "this is highlighted" color
      * across the whole app, not a new one invented for this list. */
     m_rowHighlight->setColor(m_viewport->selectionColor());
+
+    QColor handle = m_viewport->textColor();
+    handle.setAlpha(90);
+    QColor handleHover = m_viewport->textColor();
+    handleHover.setAlpha(170);
+    m_listWidget->setStyleSheet(thinScrollBarStyleSheet(handle, handleHover));
 }
 
 /* Dotfiles excluded (no QDir::Hidden in the filter) and no toggle to

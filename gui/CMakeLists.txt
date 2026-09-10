@@ -9,6 +9,7 @@ if(NOT Qt6_FOUND)
 endif()
 
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 add_executable(ase_gui
     src/main.cpp
@@ -21,6 +22,9 @@ add_executable(ase_gui
     src/about_panel.cpp
     src/floating_panel.cpp
     src/letter_badge.cpp
+    src/translucent_bar.cpp
+    src/scrollbar_style.cpp
+    resources/resources.qrc
 )
 
 target_link_libraries(ase_gui
