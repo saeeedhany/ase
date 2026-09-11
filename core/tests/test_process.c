@@ -1,6 +1,8 @@
 #include <assert.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -62,10 +64,17 @@ static void test_cwd(void) {
     long n = ase_process_read(process, buf, sizeof(buf) - 1);
     assert(n > 0);
     buf[n] = '\0';
-    /* /tmp is a symlink to /private/tmp on some platforms, and pwd
-     * without -P may or may not resolve it — assert the literal /tmp
-     * prefix, which holds on this project's supported Linux target. */
-    assert(strncmp(buf, "/tmp", 4) == 0);
+    /* /tmp is a symlink to /private/tmp on macOS, and plain /bin/pwd
+     * (invoked directly, no shell, so no logical $PWD to fall back to)
+     * calls getcwd(), which always returns the symlink-resolved
+     * physical path — so asserting the literal string "/tmp" is
+     * platform-dependent and was failing CI's macos-latest job.
+     * realpath() resolves the same way pwd's getcwd() does, so
+     * comparing against that instead holds on every platform. */
+    char resolved_tmp[PATH_MAX];
+    assert(realpath("/tmp", resolved_tmp) != NULL);
+    size_t resolved_len = strlen(resolved_tmp);
+    assert(strncmp(buf, resolved_tmp, resolved_len) == 0);
 
     ase_process_destroy(process);
 }
