@@ -500,7 +500,8 @@ void EditorViewport::paintEvent(QPaintEvent *) {
                 painter.restore();
             }
 
-            painter.drawText(QRect(0, y, gutter - kGutterPadding, m_lineHeight), Qt::AlignRight | Qt::AlignVCenter,
+            painter.drawText(QRect(0, y, gutter - kGutterPadding, m_lineHeight),
+                              Qt::AlignRight | Qt::AlignVCenter | Qt::TextDontClip,
                               gutterLabelForLine(line, cursorLine));
         }
         painter.restore();
@@ -632,7 +633,19 @@ void EditorViewport::drawLine(QPainter &painter, int start, int end, int y) {
         int runWidth = metricsForCapture(capture).horizontalAdvance(text);
         painter.setFont(fontForCapture(capture));
         painter.setPen(colorForCapture(capture));
-        painter.drawText(QRect(x, y, runWidth, m_lineHeight), Qt::AlignLeft | Qt::AlignVCenter, text);
+        /* Qt::TextDontClip: m_lineHeight is measured once from the plain
+         * (non-bold, non-italic) font (see applyConfig()), but italic —
+         * and to a lesser extent bold — variants of the same font can
+         * report a taller ascent for QFontMetrics::height(). Without this
+         * flag, QPainter::drawText(QRect, ...) clips glyphs to that exact
+         * box, so an italic run's ascender got its top sheared off (a
+         * real reported bug — badly enough that italic "void" was
+         * visibly misreadable as "voia"). The outer paintEvent() clip
+         * (docs/adr/0014) already keeps painting inside the viewport;
+         * this per-run rect was never meant to also clip glyphs, only to
+         * position/align them. */
+        painter.drawText(QRect(x, y, runWidth, m_lineHeight), Qt::AlignLeft | Qt::AlignVCenter | Qt::TextDontClip,
+                          text);
         x += runWidth;
         runStart = i;
     }

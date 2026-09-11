@@ -535,6 +535,13 @@ ADRs as each lands here going forward.
       confirming a mouse click and a keyboard-placed caret at the same
       pixel now resolve to the same character, deep into a styled
       line. See [ADR 0039](adr/0039-mouse-hit-test-drift-fix.md).
+- [x] **Italic glyph clipping fix**: user-reported bug — italic `void`
+      was visibly misreadable as `voia`, the ascender of the italic
+      `d` sheared off. `drawText`'s implicit per-run clip rect was
+      sized from the plain font's metrics, too tight for an italic
+      variant's taller ascent. Fixed with `Qt::TextDontClip`; verified
+      live with a zoomed screenshot. See
+      [ADR 0040](adr/0040-italic-glyph-clipping-fix.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's
