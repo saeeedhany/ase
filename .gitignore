@@ -48,3 +48,15 @@ ui_*.h
 *.log
 crash-*
 *.profraw
+
+# Packaging outputs — packaging/README.md documents how to (re)build
+# each of these; none of the generated artifacts belong in git.
+packaging/appimage/.tools/
+packaging/appimage/AppDir/
+packaging/appimage/*.AppImage
+packaging/debian/pkgroot/
+packaging/debian/*.deb
+packaging/arch/pkg/
+packaging/arch/src/
+packaging/arch/*.pkg.tar.zst
+packaging/arch/*.tar.gz

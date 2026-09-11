@@ -467,6 +467,24 @@ ADRs as each lands here going forward.
       identically to every other panel — nothing was actually broken
       there. See
       [ADR 0031](adr/0031-draggable-panels-smooth-scroll-tracking-glide.md).
+- [x] **License & first alpha release**: Apache License 2.0
+      (`LICENSE`/`NOTICE`), version bumped to `0.1.0-alpha`
+      (`ASE_VERSION_STRING`, a single source of truth read by the About
+      panel), tagged `v0.1.0-alpha`, pushed to
+      [github.com/saeeedhany/ase](https://github.com/saeeedhany/ase).
+      See [ADR 0033](adr/0033-license-apache-2.0-and-first-alpha-release.md).
+- [x] **Linux packaging**: `install()` rules (`gui/CMakeLists.txt`) as
+      the one foundation every format below builds on — a `.desktop`
+      file and a new padded-square icon alongside the existing wordmark
+      logo. AppImage (`packaging/appimage/`, via linuxdeploy — two real
+      bugs found and fixed while actually building one: wrong Qt
+      version auto-detected, and linuxdeploy's bundled `strip` choking
+      on a newer ELF section), an Arch `PKGBUILD` (`packaging/arch/`,
+      building from the real GitHub release tag — verified with a real
+      `makepkg -f` run, not just written), and a dependency-scanned
+      `.deb` (`packaging/debian/`, built and its payload run standalone
+      to confirm it actually works, not just that `dpkg-deb` didn't
+      error). See [ADR 0034](adr/0034-linux-packaging.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's

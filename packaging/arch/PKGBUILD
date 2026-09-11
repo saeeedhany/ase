@@ -1,0 +1,46 @@
+# Maintainer: Saeed <alsaeedalbasi0ny@gmail.com>
+pkgname=ase
+pkgver=0.1.0_alpha
+pkgrel=1
+pkgdesc="A minimal, robust, blazingly fast, and aesthetically deliberate GUI text editor"
+arch=('x86_64')
+url="https://github.com/saeeedhany/ase"
+license=('Apache-2.0')
+depends=('qt6-base')
+makedepends=('cmake' 'git')
+
+# pacman's pkgver may not contain a hyphen, but the git tag does
+# ("v0.1.0-alpha") — _tag is the real tag name; pkgver above is the
+# pacman-safe rendering of it (hyphen -> underscore). GitHub's tag
+# tarball extracts to "ase-<tag without the leading v>", not
+# "$pkgname-$pkgver" (they differ by that same hyphen/underscore), so
+# _srcdir spells that out explicitly rather than assuming makepkg's
+# default source-dir guess is right.
+_tag=v0.1.0-alpha
+_srcdir="ase-${_tag#v}"
+
+source=("$pkgname-$pkgver.tar.gz::https://github.com/saeeedhany/ase/archive/refs/tags/${_tag}.tar.gz")
+sha256sums=('8682eaf1a5ff3757cdfdfea44e9bef3069df0b7e2e94182415b417ff6ebdc6f8')
+
+# NOTE: the build needs network access, not just the source fetch —
+# core/CMakeLists.txt (Lua) and modules/syntax/CMakeLists.txt
+# (Tree-sitter + its C grammar) both pull dependencies via CMake
+# FetchContent at *configure* time, not vendored into this tarball.
+# That means this PKGBUILD won't build inside a network-isolated
+# clean chroot (e.g. `extra-x86_64-build`) yet — run plain `makepkg`
+# for now. Tracked as a real limitation, not something this PKGBUILD
+# can work around on its own.
+
+build() {
+    cd "$_srcdir"
+    cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DASE_BUILD_TESTS=OFF
+    cmake --build build
+}
+
+package() {
+    cd "$_srcdir"
+    DESTDIR="$pkgdir" cmake --install build
+}

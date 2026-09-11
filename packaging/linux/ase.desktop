@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Absolute Simple Editor
+GenericName=Text Editor
+Comment=A minimal, robust, blazingly fast, and aesthetically deliberate GUI text editor
+Exec=ase_gui %F
+Icon=ase
+Terminal=false
+Categories=Utility;TextEditor;Development;
+MimeType=text/plain;text/x-csrc;text/x-chdr;
+StartupWMClass=ase_gui

@@ -46,3 +46,17 @@ target_link_libraries(ase_gui
 target_compile_definitions(ase_gui PRIVATE
     ASE_VERSION_STRING="${PROJECT_VERSION}-alpha"
 )
+
+# Standard freedesktop install layout — what every packaging format in
+# packaging/ (AppImage's AppDir, the Arch PKGBUILD, the .deb) actually
+# runs `cmake --install` against, rather than each reimplementing its
+# own copy step. See packaging/README.md.
+include(GNUInstallDirs)
+install(TARGETS ase_gui RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES ${CMAKE_SOURCE_DIR}/packaging/linux/ase.desktop
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+)
+install(FILES ${CMAKE_SOURCE_DIR}/packaging/linux/ase-icon-512.png
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps
+    RENAME ase.png
+)
