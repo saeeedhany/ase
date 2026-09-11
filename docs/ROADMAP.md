@@ -584,6 +584,20 @@ ADRs as each lands here going forward.
       confirmation, styled to match the app's own dark theme instead
       of the native OS dialog look. See
       [ADR 0044](adr/0044-panel-isolation-drag-bar-unsaved-quit-confirm.md).
+- [x] **v0.2.0-alpha**: the batch above was real new functionality, not
+      just fixes — worth a real version bump. Also finally fixed the
+      two open packaging bugs from `docs/feedback/0001` (deferred there
+      until "a batch of useful additions," which this is): the `.deb`
+      and AppImage are now built inside pinned old container bases
+      (`debian:bookworm`, `ubuntu:22.04`) instead of natively on this
+      rolling-release dev machine, which was baking in an unrealistic
+      Qt/glibc floor. Found and fixed two more real bugs along the way
+      (a `dpkg -S`/usrmerge symlink mismatch that silently dropped Qt6
+      from the `.deb`'s dependencies; a missing `linuxdeploy-plugin-qt`
+      env var for FUSE-less containers) — both verified by actually
+      installing/running the rebuilt packages, not just inspecting
+      them. See
+      [ADR 0045](adr/0045-v0.2.0-alpha-and-containerized-packaging.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's

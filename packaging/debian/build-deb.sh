@@ -36,10 +36,21 @@ mkdir -p "$PKGROOT/DEBIAN"
 # project is developed on Arch, whose dpkg has no package database at
 # all) every lookup fails and dpkg -S exits non-zero — without it,
 # `set -o pipefail` above would abort the whole script right here.
+#
+# readlink -f before dpkg -S matters too — a real bug found building
+# this inside debian:bookworm: ldd reports paths through /lib, which on
+# a usrmerge system (Debian/Ubuntu today) is a symlink to /usr/lib, but
+# dpkg's own file database records the canonical /usr/lib path. dpkg -S
+# does a literal path match, so every Qt6 library silently failed to
+# resolve to its owning package and got dropped from Depends entirely
+# — the .deb built "successfully" but declared no Qt6 dependency at
+# all. Canonicalizing first fixes it regardless of which prefix ldd
+# happens to report.
 DEPENDS="$(
     { ldd "$PKGROOT/usr/bin/ase_gui" |
         awk '{print $3}' |
         grep '^/' |
+        xargs -r -I{} readlink -f {} |
         sort -u |
         xargs -r dpkg -S 2>/dev/null || true; } |
         cut -d: -f1 |

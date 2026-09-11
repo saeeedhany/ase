@@ -88,6 +88,16 @@ export NO_STRIP=1
 # flag makes them extract-and-run instead, which works identically but
 # doesn't depend on FUSE being available/permitted in the environment
 # actually running this script (e.g. some CI containers).
+#
+# The flag alone isn't enough, though — a real bug found running this
+# inside a FUSE-less container (see docs/adr/0045): linuxdeploy only
+# applies --appimage-extract-and-run to *itself*; when it shells out to
+# invoke linuxdeploy-plugin-qt (also an AppImage), it doesn't forward
+# the flag, so the plugin still tries to FUSE-mount and dies with an
+# opaque "exit code 127". APPIMAGE_EXTRACT_AND_RUN=1 is the same
+# behavior as an env var instead of a CLI flag, so it reaches that
+# child process too.
+export APPIMAGE_EXTRACT_AND_RUN=1
 "$TOOLS_DIR/linuxdeploy" --appimage-extract-and-run \
     --appdir "$APPDIR" \
     --executable "$APPDIR/usr/bin/ase_gui" \

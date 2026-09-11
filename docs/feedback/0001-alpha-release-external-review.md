@@ -17,30 +17,35 @@ message.
 
 > .deb requires Qt 6.11, while debian currently has Qt 6.10.2 → app doesn't start.
 
-**Status:** Open
+**Status:** Fixed
 
-Confirmed, and it's a packaging mistake rather than a code bug: the
+Confirmed, and it was a packaging mistake rather than a code bug: the
 `.deb`'s `Depends:` line was generated with `ldd` + `dpkg -S` on the
 machine that built it — a rolling-release Arch box with a newer Qt
-than Debian stable ships. That bakes in whatever happens to be newest
-on the build host instead of a real minimum version. Fix is to rebuild
-the `.deb` inside an older, pinned base image (Debian stable itself,
-or an equivalent Ubuntu LTS container) so the recorded dependency
-floor is actually achievable on the distributions the package targets.
+than Debian stable ships. Fixed by rebuilding inside a `debian:bookworm`
+container. That also surfaced a second, previously-invisible bug in
+the script itself: `dpkg -S` does a literal path match, but `ldd`
+reports paths through `/lib`, a symlink to `/usr/lib` on usrmerge
+systems — every Qt6 library silently failed to resolve and got
+dropped from `Depends` entirely. Fixed with `readlink -f` first.
+Verified by installing the rebuilt `.deb` via `apt-get install
+./ase_*.deb` in a *fresh* container and launching it successfully. See
+[ADR 0045](../adr/0045-v0.2.0-alpha-and-containerized-packaging.md).
 
 ### 2. AppImage requires GLIBC 2.43 — doesn't start on older glibc systems
 
 > AppImage requires GLIBC 2.43 → doesn't start on older glibc systems.
 
-**Status:** Open
+**Status:** Fixed
 
-Same root cause as #1, worse consequence for this format specifically:
-AppImages are conventionally built on an *old* base (Ubuntu
-20.04/22.04-class) precisely so the glibc floor stays low — that's the
-entire point of bundling an AppImage rather than just shipping a
-binary. Building it on rolling-release Arch defeats that. Fix is the
-same as #1: rebuild on an old, pinned base via `linuxdeploy` there
-instead of on the dev machine.
+Same root cause as #1: AppImages are conventionally built on an *old*
+base (Ubuntu 22.04-class) precisely so the glibc floor stays low —
+building on rolling-release Arch defeats that. Fixed by rebuilding
+inside an `ubuntu:22.04` container; the bundled binary's glibc ceiling
+dropped from `2.43` to `2.34`. Verified by actually running the
+rebuilt AppImage on a real X11 display, not just inspecting its
+symbols. See
+[ADR 0045](../adr/0045-v0.2.0-alpha-and-containerized-packaging.md).
 
 ### 3. CMake can finish successfully while silently skipping the GUI when Qt6 dev files are missing
 

@@ -22,6 +22,29 @@ Builds Release, stages an AppDir, runs `linuxdeploy` +
 two tools (cached under `packaging/appimage/.tools/` after that).
 Output lands in `packaging/appimage/`.
 
+**Run this inside a pinned old base, not natively** — the resulting
+binary's glibc dependency floor is whatever the *build* machine has,
+not something `linuxdeploy` can lower after the fact. Building on a
+rolling-release host (this project's own dev machine) produced an
+AppImage requiring a glibc newer than most real systems have — a real
+bug reported and fixed this way, see docs/adr/0045. Ubuntu 22.04 is
+the standard choice for Qt6 AppImages: old enough for a low glibc
+floor, new enough to have Qt6 as a native package.
+
+```sh
+docker run --rm -v "$PWD":/src -w /src ubuntu:22.04 bash -c '
+    apt-get update -qq
+    apt-get install -y -qq --no-install-recommends \
+        cmake g++ qt6-base-dev libgl-dev git ca-certificates curl file build-essential
+    bash packaging/appimage/build-appimage.sh
+'
+```
+
+`libgl-dev` matters even though nothing in this project uses OpenGL
+directly — `--no-install-recommends` drops it, and some of Qt6's own
+CMake package-config files transitively depend on finding it; without
+it, `find_package(Qt6 COMPONENTS Widgets)` fails outright.
+
 ## Arch Linux (`makepkg` / AUR)
 
 ```sh
@@ -50,6 +73,20 @@ resolved via `ldd` + `dpkg -S` on the actual linked binary, falling
 back to a generic `libqt6widgets6` dependency if `dpkg -S` can't
 resolve anything, e.g. built on a non-Debian host), and calls
 `dpkg-deb --build` directly. Output lands in `packaging/debian/`.
+
+**Run this inside `debian:bookworm` (current stable), not natively** —
+same reasoning as the AppImage above: a `.deb` built on a
+rolling-release host declares a `Depends:` floor newer than Debian
+stable actually ships, unusable there. See docs/adr/0045.
+
+```sh
+docker run --rm -v "$PWD":/src -w /src debian:bookworm bash -c '
+    apt-get update -qq
+    apt-get install -y -qq --no-install-recommends \
+        cmake g++ qt6-base-dev git ca-certificates dpkg-dev
+    bash packaging/debian/build-deb.sh
+'
+```
 
 ## Verifying a build without installing it
 
