@@ -834,6 +834,8 @@
       
         
       
+        
+      
     
     
     
@@ -2120,6 +2122,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0045-v0.2.0-alpha-and-containerized-packaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0045: v0.2.0-alpha, and packaging finally built on pinned old bases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2848,6 +2878,20 @@ ADRs as each lands here going forward.</p>
       confirmation, styled to match the app's own dark theme instead
       of the native OS dialog look. See
       <a href="../adr/0044-panel-isolation-drag-bar-unsaved-quit-confirm/">ADR 0044</a>.</li>
+<li>[x] <strong>v0.2.0-alpha</strong>: the batch above was real new functionality, not
+      just fixes — worth a real version bump. Also finally fixed the
+      two open packaging bugs from <code>docs/feedback/0001</code> (deferred there
+      until "a batch of useful additions," which this is): the <code>.deb</code>
+      and AppImage are now built inside pinned old container bases
+      (<code>debian:bookworm</code>, <code>ubuntu:22.04</code>) instead of natively on this
+      rolling-release dev machine, which was baking in an unrealistic
+      Qt/glibc floor. Found and fixed two more real bugs along the way
+      (a <code>dpkg -S</code>/usrmerge symlink mismatch that silently dropped Qt6
+      from the <code>.deb</code>'s dependencies; a missing <code>linuxdeploy-plugin-qt</code>
+      env var for FUSE-less containers) — both verified by actually
+      installing/running the rebuilt packages, not just inspecting
+      them. See
+      <a href="../adr/0045-v0.2.0-alpha-and-containerized-packaging/">ADR 0045</a>.</li>
 <li>[ ] <strong>Vim mode</strong> (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's
