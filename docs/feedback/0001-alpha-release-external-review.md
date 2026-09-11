@@ -46,15 +46,15 @@ instead of on the dev machine.
 
 > CMake can successfully finish while silently skipping the GUI when Qt6 development files are missing.
 
-**Status:** Open
+**Status:** Fixed
 
-Confirmed at `gui/CMakeLists.txt:3-9`: a missing Qt6 produces
-`message(WARNING ...)` and `return()`, not a build failure — so it's
-not literally silent, but a warning that scrolls by in a long
-configure log is easy to miss, and the result is a green build with no
-GUI binary. Since `ASE_BUILD_GUI` defaults to `ON` and is something a
-user can also pass explicitly, a missing Qt6 in that case should be a
-hard `FATAL_ERROR` instead of a warning.
+`gui/CMakeLists.txt` now raises `FATAL_ERROR` instead of `message(WARNING ...)` + `return()`
+when Qt6 isn't found, telling the user to either install Qt6 or pass
+`-DASE_BUILD_GUI=OFF` for the (unchanged, still-supported) headless
+build. Verified: a forced-missing-Qt6 configure now fails with that
+message, a normal configure still builds and passes 9/9 tests, and
+`-DASE_BUILD_GUI=OFF` still configures and builds cleanly. README's
+Building section updated to match.
 
 ### 4. README has an outdated/inconsistent statement about undo/redo
 
@@ -77,9 +77,11 @@ specific stale line turns up, reopen this with the exact quote.
 
 Confirmed at `gui/src/help_panel.cpp:101`: the panel is a fixed
 480×420 single-column scroll area, which forces a nested scrollbar
-once the shortcut list is long enough. Straightforward fix: widen the
-panel and/or lay the shortcuts out in two columns so the full list
-fits without an inner scrollbar.
+once the shortcut list is long enough. A two-column split was tried
+and verified to remove the inner scrollbar entirely, but the
+maintainer didn't like the resulting look, so it was reverted — the
+panel is unchanged for now. Left open pending a different layout
+approach.
 
 ### 6. Window control buttons look unfinished/placeholder-like
 
@@ -98,11 +100,10 @@ other button (e.g. inside a panel) rather than minimize/maximize/close.
 
 > Build emits a tmpnam() security warning.
 
-**Status:** Open
+**Status:** Fixed
 
-Confirmed — it comes from vendored Lua (`_deps/lua-src/loslib.c`), not
-ase's own code. `FetchContent` builds Lua without defining
-`LUA_USE_POSIX`/`LUA_USE_LINUX`, so Lua falls back to its unsafe ISO
-`tmpnam()` path instead of its own `mkstemp()`-based POSIX path. Since
-the project is already POSIX-only for Lua, adding that compile
-definition to the fetched target is a one-line fix with no downside.
+Added `target_compile_definitions(lua_runtime PRIVATE LUA_USE_POSIX)`
+in `core/CMakeLists.txt` (POSIX-only build, matching how the rest of
+the project already treats Lua). Verified: a full clean rebuild
+produces zero occurrences of `tmpnam` in the build log, and all 9/9
+tests still pass.

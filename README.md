@@ -63,8 +63,9 @@ core through a stable C ABI. See
 ## Building
 
 Requires CMake ≥ 3.20 and a C11/C++20 compiler. Qt6 (Widgets) is required
-only for the GUI target — if it isn't found, the GUI target is skipped and
-the core still builds and tests cleanly. `core/` itself fetches Lua at
+for the GUI target, which is built by default — configure with
+`-DASE_BUILD_GUI=OFF` for a headless build with no Qt dependency at all
+(see below). `core/` itself fetches Lua at
 configure time (needs network access on a clean build), and the syntax
 module (`-DASE_BUILD_SYNTAX=ON`, default) likewise fetches Tree-sitter
 and its C grammar — both cached after the first configure.

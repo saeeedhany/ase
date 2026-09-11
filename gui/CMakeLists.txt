@@ -1,11 +1,20 @@
 find_package(Qt6 COMPONENTS Widgets QUIET)
 
+# ASE_BUILD_GUI defaults to ON, so reaching this file at all means the
+# GUI was requested (explicitly or by that default) — a missing Qt6
+# here used to be a message(WARNING) + return(), which let a plain
+# `cmake -B build && cmake --build build` finish "successfully" with
+# no ase_gui binary and only a warning easy to miss in the configure
+# log (see docs/feedback/0001, item 3). Anyone who actually wants a
+# headless build already passes -DASE_BUILD_GUI=OFF explicitly (see
+# README's "Headless core-only build"), so there's no legitimate case
+# left where silently dropping the GUI target is the right behavior.
 if(NOT Qt6_FOUND)
-    message(WARNING
-        "Qt6 not found — skipping the GUI shell target. "
-        "The core engine build is unaffected; see docs/adr/0002-headless-core-separation.md."
+    message(FATAL_ERROR
+        "Qt6 (Widgets) not found, but ASE_BUILD_GUI is ON. "
+        "Install Qt6, or configure with -DASE_BUILD_GUI=OFF for a "
+        "headless core-only build; see docs/adr/0002-headless-core-separation.md."
     )
-    return()
 endif()
 
 set(CMAKE_AUTOMOC ON)

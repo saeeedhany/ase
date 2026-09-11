@@ -27,6 +27,14 @@ set_target_properties(lua_runtime PROPERTIES
 )
 if(NOT WIN32)
     target_link_libraries(lua_runtime PUBLIC m)
+    # Without this, loslib.c's os.tmpname() falls back to Lua's generic
+    # ISO C path (tmpnam()), which every compiler warns on as unsafe.
+    # Lua's own POSIX path (mkstemp()-based) is available and safe, but
+    # opt-in — it's off by default in a bare FetchContent source pull
+    # with no Makefile driving it. The project is already POSIX-only
+    # for Lua (see docs/feedback/0001, item 7), so there's no
+    # portability tradeoff to weigh here.
+    target_compile_definitions(lua_runtime PRIVATE LUA_USE_POSIX)
 endif()
 
 add_library(ase_core

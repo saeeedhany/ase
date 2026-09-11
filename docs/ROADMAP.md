@@ -512,11 +512,12 @@ ADRs as each lands here going forward.
       the source, distinct from the live conversation on Discord/
       GitHub issues where a report first lands. First batch: seven
       comments from the alpha release's first external review
-      (`@TOTO-sys28` on Discord) — two real packaging version-floor
-      bugs, a CMake robustness gap, a vendored-Lua compiler warning,
-      and a cramped Help panel, all still open; two items checked and
-      found not to be current bugs. See
-      [ADR 0037](adr/0037-feedback-triage-log.md).
+      (`@TOTO-sys28` on Discord) — a CMake robustness gap and a
+      vendored-Lua compiler warning are fixed; two real packaging
+      version-floor bugs (`.deb`/AppImage built on a rolling-release
+      dev machine instead of an old, pinned base) and a cramped Help
+      panel remain open; two items checked and found not to be current
+      bugs. See [ADR 0037](adr/0037-feedback-triage-log.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's
