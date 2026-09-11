@@ -28,11 +28,22 @@ add_executable(ase_undo_tests
 target_link_libraries(ase_undo_tests PRIVATE ase_core)
 add_test(NAME ase_undo_tests COMMAND ase_undo_tests)
 
-add_executable(ase_process_tests
-    test_process.c
-)
-target_link_libraries(ase_process_tests PRIVATE ase_core)
-add_test(NAME ase_process_tests COMMAND ase_process_tests)
+# POSIX-only, by the test's own design, not just ase/process.h's: it
+# spawns /bin/echo, /bin/pwd, /bin/cat, /bin/sh directly and includes
+# <unistd.h> for usleep() — none of which exist on Windows, where
+# ase_process_spawn() is unconditionally a no-op stub anyway (see
+# docs/adr/0011, decision 6, and ase/process.h's own Windows branch).
+# Skipped entirely rather than stubbed like test_lsp_client.c's
+# internal #ifdef _WIN32 branch does, since there'd be nothing left to
+# assert on a platform where every command path it exercises is
+# invalid on its face.
+if(NOT WIN32)
+    add_executable(ase_process_tests
+        test_process.c
+    )
+    target_link_libraries(ase_process_tests PRIVATE ase_core)
+    add_test(NAME ase_process_tests COMMAND ase_process_tests)
+endif()
 
 # Native plugin test fixture: built as a loadable module (dlopen'd by
 # the test at runtime, never linked directly) into a build-dir copy of
