@@ -173,6 +173,30 @@
          <lastmod>2026-09-11</lastmod>
     </url>
     <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0039-mouse-hit-test-drift-fix/</loc>
+         <lastmod>2026-09-11</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0040-italic-glyph-clipping-fix/</loc>
+         <lastmod>2026-09-11</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0041-diagnostic-underline-and-dot-focus/</loc>
+         <lastmod>2026-09-11</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0042-empty-buffer-welcome-overlay/</loc>
+         <lastmod>2026-09-11</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0043-faster-global-easing-and-welcome-overlay-layout/</loc>
+         <lastmod>2026-09-11</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0044-panel-isolation-drag-bar-unsaved-quit-confirm/</loc>
+         <lastmod>2026-09-11</lastmod>
+    </url>
+    <url>
          <loc>https://saeeedhany.github.io/ase/feedback/</loc>
          <lastmod>2026-09-11</lastmod>
     </url>

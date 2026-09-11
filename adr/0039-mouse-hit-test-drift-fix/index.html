@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0035-mkdocs-documentation-site/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0039-mouse-hit-test-drift-fix/">
       
       
-        <link rel="prev" href="../0034-linux-packaging/">
+        <link rel="prev" href="../0038-feedback-triage-criteria-and-deferred-status/">
       
       
-        <link rel="next" href="../0036-docs-site-theme-and-plugins-page/">
+        <link rel="next" href="../0040-italic-glyph-clipping-fix/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0035: MkDocs documentation site - Absolute Simple Editor</title>
+        <title>ADR 0039: Fix mouse click/hover drift on styled lines - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0035-mkdocs-documentation-site" class="md-skip">
+        <a href="#adr-0039-fix-mouse-clickhover-drift-on-styled-lines" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0035: MkDocs documentation site
+              ADR 0039: Fix mouse click/hover drift on styled lines
             
           </span>
         </div>
@@ -1714,37 +1714,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0035: MkDocs documentation site
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0035-mkdocs-documentation-site/" class="md-nav__link">
         
   
   
@@ -1760,120 +1733,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#docs-stays-the-source-nothing-moved" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        docs/ stays the source — nothing moved
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#every-adr-gets-an-explicit-nav-entry-not-directory-auto-discovery" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Every ADR gets an explicit nav entry, not directory auto-discovery
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#two-real-rendering-bugs-found-by-actually-looking-at-the-page" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Two real rendering bugs found by actually looking at the page
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#reproducibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reproducibility
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1967,10 +1826,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0039-mouse-hit-test-drift-fix/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0039: Fix mouse click/hover drift on styled lines
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1986,6 +1872,87 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#verified-live-not-just-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verified live, not just built
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2199,43 +2166,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#docs-stays-the-source-nothing-moved" class="md-nav__link">
+  <a href="#verified-live-not-just-built" class="md-nav__link">
     <span class="md-ellipsis">
       
-        docs/ stays the source — nothing moved
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#every-adr-gets-an-explicit-nav-entry-not-directory-auto-discovery" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Every ADR gets an explicit nav entry, not directory auto-discovery
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#two-real-rendering-bugs-found-by-actually-looking-at-the-page" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Two real rendering bugs found by actually looking at the page
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#reproducibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reproducibility
+        Verified live, not just built
       
     </span>
   </a>
@@ -2275,7 +2209,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0035-mkdocs-documentation-site.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0039-mouse-hit-test-drift-fix.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2283,94 +2217,69 @@
   
 
 
-<h1 id="adr-0035-mkdocs-documentation-site">ADR 0035: MkDocs documentation site<a class="headerlink" href="#adr-0035-mkdocs-documentation-site" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0039-fix-mouse-clickhover-drift-on-styled-lines">ADR 0039: Fix mouse click/hover drift on styled lines<a class="headerlink" href="#adr-0039-fix-mouse-clickhover-drift-on-styled-lines" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Documentation (<code>docs/SPEC.md</code>, <code>docs/ROADMAP.md</code>, 34 ADRs at this
-point) had accumulated as plain markdown, browsable only by reading
-files directly on GitHub — no search, no cross-linking beyond manual
-<code>[text](path.md)</code> links, no single browsable "here is the project's
-whole history" view. User asked for a proper documentation website,
-specifically calling out showing "the history of everything."</p>
+<p>User-reported bug: clicking (or hovering) further right on a line
+increasingly missed the character actually under the pointer, on
+lines with mixed syntax-highlight styling (e.g. bold keywords next to
+plain identifiers). This is the same class of bug ADR 0013 already
+fixed for the <em>caret</em> — assuming a fixed per-character pixel width
+instead of measuring what was actually rendered — just never fixed on
+the mouse-hit-testing side.</p>
+<p><code>EditorViewport::offsetForPoint()</code> (used by both <code>mousePressEvent</code> and
+the no-button branch of <code>mouseMoveEvent</code>, i.e. click, drag-select, and
+hover) computed the target column as <code>localX / m_charWidth</code>, a single
+project-wide average character width. Meanwhile <code>drawLine</code> and
+<code>xForColumn</code> — used for actually painting text and positioning the
+caret — measure each syntax-highlight run's real advance with
+<code>QFontMetrics::horizontalAdvance</code> on that run's actual text and font
+(<code>fontForCapture</code>/<code>metricsForCapture</code>), because bold/italic variants of
+even a "monospace" font don't reliably share the exact same advance as
+the regular weight. Any line with more than one highlight capture
+accumulates a small error per run boundary; far enough right on a long
+styled line, that error becomes visible as exactly what was reported —
+the pointer needing to move noticeably further than a character-width
+to advance the cursor by one character, or landing on the wrong one
+entirely.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p><strong>MkDocs + Material for MkDocs</strong>, deployed to GitHub Pages. Chosen
-over mdBook or Docusaurus: the project's docs were already plain
-markdown with no non-standard syntax, so there was nothing to migrate;
-Material's theme is mature and needed zero custom CSS to look right;
-and <code>mkdocs gh-deploy</code> is a single command that builds and pushes to
-the <code>gh-pages</code> branch, which GitHub auto-detected and enabled as a
-Pages source with no manual settings-page step.</p>
-<h3 id="docs-stays-the-source-nothing-moved"><code>docs/</code> stays the source — nothing moved<a class="headerlink" href="#docs-stays-the-source-nothing-moved" title="Permanent link">&para;</a></h3>
-<p>MkDocs defaults to reading from a <code>docs_dir</code> of <code>docs/</code>, which this
-project already had. Rather than restructure anything, <code>mkdocs.yml</code>
-just points at it as-is: <code>docs/SPEC.md</code>, <code>docs/ROADMAP.md</code>, and
-<code>docs/adr/*.md</code> are the site's source files, unchanged, still the
-same files a contributor reads directly on GitHub. Two new files
-support the site itself: <code>docs/index.md</code> (the site's home page — the
-repository's own <code>README.md</code> is a different, GitHub-facing document
-with build instructions the docs site doesn't need) and
-<code>docs/adr/index.md</code> (a generated table of every ADR number and title,
-in order — this <em>is</em> the "history of everything" view the request
-asked for, and the thing this whole change was really for).</p>
-<h3 id="every-adr-gets-an-explicit-nav-entry-not-directory-auto-discovery">Every ADR gets an explicit nav entry, not directory auto-discovery<a class="headerlink" href="#every-adr-gets-an-explicit-nav-entry-not-directory-auto-discovery" title="Permanent link">&para;</a></h3>
-<p><code>mkdocs-awesome-pages-plugin</code> was tried first, for directory-shorthand
-nav (<code>Decisions: adr</code>) so 34+ files wouldn't need listing individually
-in <code>mkdocs.yml</code>. It doesn't support that shorthand — <code>mkdocs build</code>
-rejected it outright ("a reference to 'adr' is included in the nav
-configuration, which is not found in the documentation files").
-Rather than debug the plugin's actual directory-nav mechanism further,
-switched to an explicit nested list (<code>adr/index.md</code> plus all 34
-<code>adr/NNNN-*.md</code> entries) and dropped the plugin — one more dependency
-than necessary for what MkDocs's own explicit <code>nav</code> already does
-natively. The tradeoff, accepted deliberately: adding ADR 0036 later
-means adding one line to <code>mkdocs.yml</code>'s nav, not something that
-updates itself. <code>docs/adr/template.md</code> (not a real decision, just the
-boilerplate for writing new ones) is excluded from the build entirely
-via <code>exclude_docs</code> rather than included and awkwardly worked around.</p>
-<h3 id="two-real-rendering-bugs-found-by-actually-looking-at-the-page">Two real rendering bugs found by actually looking at the page<a class="headerlink" href="#two-real-rendering-bugs-found-by-actually-looking-at-the-page" title="Permanent link">&para;</a></h3>
-<ul>
-<li>The home page's button links
-  (<code>[:octicons-mark-github-16: Source on GitHub](...){ .md-button }</code>)
-  rendered as literal text — icon shortcode and all — instead of
-  styled buttons, because the <code>attr_list</code> (for <code>{ .md-button }</code>) and
-  <code>pymdownx.emoji</code> (for the icon shortcode, using Material's own
-  <code>twemoji</code>/<code>to_svg</code> extension config) markdown extensions weren't
-  enabled. Material's button/icon syntax needs both explicitly listed
-  in <code>mkdocs.yml</code>; it doesn't enable them on its own.</li>
-<li><code>mkdocs serve</code>'s dev server serves under a <code>/ase/</code> path prefix
-  (derived from <code>site_url</code>, matching the real GitHub Pages project-site
-  URL) — every manual verification request against a bare
-  <code>127.0.0.1:8765/...</code> path 404'd until that prefix was added, which
-  looked like a broken nav at first before checking the server's own
-  log.</li>
-</ul>
-<p>Both were caught by actually loading the built site in a browser
-(Firefox via the existing X11 display, screenshotted) rather than
-trusting a clean <code>mkdocs build --strict</code> run alone — a strict build
-catches broken links and missing nav targets, not markdown extensions
-silently failing to activate a feature.</p>
-<h3 id="reproducibility">Reproducibility<a class="headerlink" href="#reproducibility" title="Permanent link">&para;</a></h3>
-<p><code>docs/requirements.txt</code> pins <code>mkdocs</code>/<code>mkdocs-material</code> to the exact
-versions used here. Docs tooling lives in a project-local virtualenv
-(<code>.venv-docs/</code>, gitignored) rather than installed system-wide — this
-machine's <code>pip</code> refuses unmanaged global installs (PEP 668), and a
-project-local venv is the right answer regardless of that: it keeps
-docs-build dependencies from leaking into (or colliding with) anything
-else on a contributor's machine.</p>
+<p>Added <code>EditorViewport::columnForX(lineStart, lineEnd, localX)</code>, the
+direct inverse of <code>xForColumn</code>: it walks the same per-run segmentation
+<code>xForColumn</code>/<code>drawLine</code> use, measuring each run's actual rendered
+width, and finds which column's glyph <code>localX</code> falls nearest to —
+rounding to the <em>nearest</em> codepoint boundary rather than flooring
+(same reasoning as ADR 0028's click-precision fix), and stepping by
+codepoint (using the existing <code>isUtf8ContinuationByte</code> helper) rather
+than by raw byte, so a multi-byte UTF-8 character is never measured as
+a partial, invalid byte sequence.</p>
+<p><code>offsetForPoint()</code> now calls <code>columnForX()</code> instead of dividing by
+<code>m_charWidth</code>. This also <em>removes</em> code, not just adds it: the
+separate post-hoc "snap forward past any continuation byte" loop
+<code>offsetForPoint()</code> used to need is now redundant — <code>columnForX()</code>
+already only ever returns a codepoint boundary.</p>
+<p><code>m_charWidth</code> itself is unchanged and still used elsewhere (horizontal
+scroll margin, the line-wrap continuation hint) — those are approximate
+by nature already, unlike hit-testing where the pointer needs to track
+a specific glyph.</p>
+<h3 id="verified-live-not-just-built">Verified live, not just built<a class="headerlink" href="#verified-live-not-just-built" title="Permanent link">&para;</a></h3>
+<p>Launched the real GUI against a <code>.c</code> file with a long line mixing bold
+keyword highlights and plain identifiers. Placed the caret at a known
+column via keyboard navigation (<code>End</code>, then <code>Left</code> N times),
+screenshotted its exact pixel position, then clicked at that exact
+pixel and confirmed the reported column matched — both near column 80
+on a ~100-column styled line and again near the line's end. Before
+this fix, <code>offsetForPoint</code>'s fixed-pitch math and <code>xForColumn</code>'s
+per-run measurement could only coincidentally agree; after, a mouse
+click and the caret's own rendered position resolve to the same
+character by construction, however far right on the line.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Live at <a href="https://saeeedhany.github.io/ase/">https://saeeedhany.github.io/ase/</a>, verified by loading it
-over the real network (not just the local dev server) and confirming
-both the home page and a sample ADR page (<code>/adr/0034-linux-packaging/</code>)
-return <code>200</code> with correct content. <code>README.md</code> now points at the site
-as the primary way to browse docs, keeping the raw markdown links as a
-fallback for anyone reading directly on GitHub.</p>
-<p>Not attempted: versioned docs (<code>mike</code>) — this project has no released
-versions with diverging docs yet, so it's not earning its complexity
-budget; a CI job to auto-deploy on every push to <code>main</code> (today's
-deploy was a manual <code>mkdocs gh-deploy</code> run — a real gap if docs and
-code drift out of sync before the next manual deploy, tracked as a
-follow-up, not solved here).</p>
+<p>Click, drag-select, and hover (LSP hover popup, completion popup
+positioning) all route through <code>offsetForPoint</code>, so all three are
+fixed together, not just the plain click case reported. No new O(line
+length) cost class was introduced beyond what already existed:
+<code>xForColumn</code> was already a linear scan over the line's runs for the
+caret's own position, and <code>columnForX</code> is the same shape.</p>
 
 
 
