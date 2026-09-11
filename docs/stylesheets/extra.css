@@ -70,3 +70,15 @@
 [data-md-color-scheme="slate"] .md-typeset table:not([class]) th {
   background-color: #333029;
 }
+
+/* .md-button's default (non-hover) color is --md-primary-fg-color,
+ * which above is deliberately the same as the page background (so the
+ * header reads as the editor's own chrome) — that made every plain
+ * .md-button invisible until :hover swapped in the accent color.
+ * :not(:hover):not(:focus) scopes this to just that default state, so
+ * it can never apply during hover/focus regardless of stylesheet load
+ * order — Material's own :hover/:focus rule (which already sets the
+ * correct contrasting text color for its green fill) is left alone. */
+[data-md-color-scheme="slate"] .md-typeset .md-button:not(:hover):not(:focus) {
+  color: var(--ase-accent);
+}
