@@ -13,6 +13,10 @@
          <lastmod>2026-09-11</lastmod>
     </url>
     <url>
+         <loc>https://saeeedhany.github.io/ase/plugins/</loc>
+         <lastmod>2026-09-11</lastmod>
+    </url>
+    <url>
          <loc>https://saeeedhany.github.io/ase/adr/</loc>
          <lastmod>2026-09-11</lastmod>
     </url>
@@ -154,6 +158,10 @@
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0035-mkdocs-documentation-site/</loc>
+         <lastmod>2026-09-11</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0036-docs-site-theme-and-plugins-page/</loc>
          <lastmod>2026-09-11</lastmod>
     </url>
 </urlset>

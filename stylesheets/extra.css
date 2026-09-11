@@ -1,0 +1,72 @@
+/*
+ * Reskins Material for MkDocs to the editor's own three colors — see
+ * docs/adr/0035 and ADR 0036 (docs site theme). This isn't a Material
+ * built-in named palette (those are a fixed list of Material Design
+ * hues), so mkdocs.yml sets primary/accent to "custom" and these
+ * [data-md-color-*="custom"] blocks fill in the real hex values, per
+ * Material's own documented method for full custom-color theming.
+ *
+ *   background #282828  — editor's own background (config.ase default)
+ *   text       #F5E6C8  — editor's own text color (config.ase default)
+ *   accent     #689d6a  — new, docs-site-only: links/highlights/buttons
+ */
+
+:root {
+  --ase-bg: #282828;
+  --ase-text: #F5E6C8;
+  --ase-accent: #689d6a;
+}
+
+/* Primary: header bar, nav tabs, site title — always the editor's own
+ * dark chrome color, in both light and dark mode, so the header reads
+ * as "the editor" regardless of which body scheme is active. */
+[data-md-color-primary="custom"] {
+  --md-primary-fg-color: var(--ase-bg);
+  --md-primary-fg-color--light: var(--ase-bg);
+  --md-primary-fg-color--dark: var(--ase-bg);
+  --md-primary-bg-color: var(--ase-text);
+  --md-primary-bg-color--light: var(--ase-text);
+}
+
+/* Accent: links, search highlights, buttons, the active nav-tab
+ * underline. */
+[data-md-color-accent="custom"] {
+  --md-accent-fg-color: var(--ase-accent);
+  --md-accent-fg-color--transparent: #689d6a1a;
+  --md-accent-bg-color: var(--ase-bg);
+  --md-accent-bg-color--light: var(--ase-text);
+}
+
+/* Dark mode body = the editor's exact colors, not Material's default
+ * slate. Light mode is left as Material's own default (better
+ * accessibility/contrast for anyone who prefers it) but still picks
+ * up the custom primary/accent above, so it never shows Material's
+ * stock indigo/blue. */
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: var(--ase-bg);
+  --md-default-fg-color: var(--ase-text);
+  --md-default-fg-color--light: #F5E6C8CC;
+  --md-default-fg-color--lighter: #F5E6C866;
+  --md-default-fg-color--lightest: #F5E6C81A;
+
+  --md-typeset-color: var(--ase-text);
+  --md-typeset-a-color: var(--ase-accent);
+
+  --md-code-bg-color: #333029;
+  --md-code-fg-color: var(--ase-text);
+
+  --md-footer-bg-color: var(--ase-bg);
+  --md-footer-bg-color--dark: #1e1e1e;
+  --md-footer-fg-color: var(--ase-text);
+  --md-footer-fg-color--light: #F5E6C8CC;
+}
+
+/* Table/admonition borders read as pure black on the editor's own
+ * background otherwise (Material derives them from --md-default-fg-color
+ * at a fixed low opacity that assumes a lighter default background). */
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) {
+  border-color: #F5E6C833;
+}
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) th {
+  background-color: #333029;
+}
