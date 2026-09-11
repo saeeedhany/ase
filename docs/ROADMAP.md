@@ -550,6 +550,15 @@ ADRs as each lands here going forward.
       live against real clangd diagnostics, including catching the
       wipe and its reverse mid-animation. See
       [ADR 0041](adr/0041-diagnostic-underline-and-dot-focus.md).
+- [x] **Empty-buffer welcome overlay**: the "ase" wordmark plus four
+      essential shortcuts (open, save, shortcuts reference, about),
+      centered over an empty buffer, fading out on the first keystroke
+      and back in if the buffer is emptied again — regardless of
+      whether that got saved. Purely content-driven (no persisted
+      "first launch" flag): also shows any time a file's contents get
+      cleared, not just at initial launch. Verified live, including
+      catching the fade-out and fade-back-in mid-animation. See
+      [ADR 0042](adr/0042-empty-buffer-welcome-overlay.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's

@@ -319,6 +319,22 @@ private:
     void drawDiagnosticUnderline(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
                                   const QColor &color) const;
 
+    /* Centered logo + a few essential shortcuts, shown over an empty
+     * buffer — see docs/adr/0042. Painted last (on top of everything
+     * else, though there's nothing else to paint when the buffer is
+     * actually empty) in absolute widget coordinates, independent of
+     * scroll/gutter, at m_welcomeOverlayOpacity. */
+    void drawWelcomeOverlay(QPainter &painter) const;
+    /* Called every frame from updateAnimation(), unconditionally — same
+     * "always live, transition smoothness is opt-in" convention
+     * updateDiagnosticLineHighlights() already uses. Eases (or snaps)
+     * m_welcomeOverlayOpacity toward 1 while m_cache is empty, else
+     * toward 0 — so it fades in on an empty buffer (including at
+     * launch) and fades back out the moment there's anything typed,
+     * reappearing if it's all deleted again, regardless of whether
+     * that got saved in between. */
+    void updateWelcomeOverlayOpacity();
+
     /* Find/replace — see docs/adr/0021. Plain substring, ASCII-
      * case-insensitive (QByteArray::toLower() is ASCII-only; documented
      * v1 simplification). */
@@ -535,6 +551,8 @@ private:
     double m_renderedScrollLine = 0.0;
     double m_renderedScrollX = 0.0;
     QVector<QPointF> m_renderedCaretPos;
+    /* Eased 0..1 — see docs/adr/0042. */
+    double m_welcomeOverlayOpacity = 0.0;
 
     QFont m_font;
     int m_lineHeight = 0;

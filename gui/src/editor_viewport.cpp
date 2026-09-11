@@ -22,6 +22,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPixmap>
 #include <QStringList>
 #include <QTimer>
 #include <QUrl>
@@ -52,7 +53,11 @@ constexpr int kDiagnosticUnderlineDimAlpha = 110;
 constexpr int kDiagnosticUnderlineFocusAlpha = 255;
 constexpr int kDiagnosticDotDimAlpha = 150;
 constexpr int kDiagnosticDotFocusAlpha = 255;
-constexpr double kDiagnosticRevealSnapThreshold = 0.01;
+/* Shared by any eased-opacity/reveal value in this file (diagnostic
+ * focus, the empty-buffer welcome overlay — docs/adr/0042) below which
+ * it snaps straight to its target instead of asymptotically crawling
+ * forever. */
+constexpr double kOpacitySnapThreshold = 0.01;
 
 bool isUtf8ContinuationByte(char byte) {
     return (static_cast<unsigned char>(byte) & 0xC0) == 0x80;
@@ -518,12 +523,15 @@ void EditorViewport::paintEvent(QPaintEvent *) {
         }
         painter.restore();
     }
+
+    drawWelcomeOverlay(painter);
 }
 
 /* Advances the rendered scroll/caret state one step toward its logical
  * target. Called from the top of paintEvent — see docs/adr/0015. */
 void EditorViewport::updateAnimation() {
     updateDiagnosticLineHighlights();
+    updateWelcomeOverlayOpacity();
 
     if (!m_animationsEnabled) {
         /* Snap every rendered value to its exact target — NOT clear
@@ -832,6 +840,59 @@ void EditorViewport::drawDiagnosticUnderline(QPainter &painter, size_t start, si
             painter.drawLine(QPointF(x0, baseY), QPointF(revealX1, baseY));
         }
     }
+    painter.restore();
+}
+
+/* See docs/adr/0042. The logo is the hand-drawn "ase" wordmark already
+ * used for the app icon and About panel (docs/adr/0027, docs/adr/0034)
+ * — it already spells out the name, so no redundant text title is
+ * drawn under it here. Absolute widget coordinates (not the
+ * gutter/scroll-translated space drawLine et al. use) since this is
+ * centered on the viewport itself, independent of the (always-empty,
+ * at scroll position zero) document underneath it. */
+void EditorViewport::drawWelcomeOverlay(QPainter &painter) const {
+    if (m_welcomeOverlayOpacity <= 0.0) {
+        return;
+    }
+
+    painter.save();
+    painter.setOpacity(m_welcomeOverlayOpacity);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+
+    QPixmap logo(QStringLiteral(":/ase.png"));
+    QPixmap scaledLogo;
+    if (!logo.isNull()) {
+        scaledLogo = logo.scaledToWidth(140, Qt::SmoothTransformation);
+    }
+
+    static const QStringList kInstructions = {
+        QStringLiteral("Ctrl+O — Open a file"),
+        QStringLiteral("Ctrl+S — Save"),
+        QStringLiteral("Ctrl+/ — Keyboard shortcuts"),
+        QStringLiteral("Ctrl+I — About"),
+    };
+    QFontMetrics metrics(m_font);
+    int lineSpacing = metrics.height() + 4;
+    constexpr int kLogoTextGap = 22;
+
+    int totalHeight = scaledLogo.height() + (scaledLogo.isNull() ? 0 : kLogoTextGap) +
+                       kInstructions.size() * lineSpacing;
+    int top = (height() - totalHeight) / 2;
+
+    if (!scaledLogo.isNull()) {
+        painter.drawPixmap((width() - scaledLogo.width()) / 2, top, scaledLogo);
+    }
+
+    QColor textColor = m_textColor;
+    textColor.setAlpha(160);
+    painter.setPen(textColor);
+    painter.setFont(m_font);
+    int textTop = top + scaledLogo.height() + (scaledLogo.isNull() ? 0 : kLogoTextGap);
+    for (const QString &line : kInstructions) {
+        painter.drawText(QRect(0, textTop, width(), lineSpacing), Qt::AlignHCenter | Qt::AlignVCenter, line);
+        textTop += lineSpacing;
+    }
+
     painter.restore();
 }
 
@@ -2174,7 +2235,7 @@ void EditorViewport::updateDiagnosticLineHighlights() {
     for (int i = m_diagnosticLineHighlights.size() - 1; i >= 0; --i) {
         DiagnosticLineHighlight &h = m_diagnosticLineHighlights[i];
         double delta = h.target - h.reveal;
-        if (!m_animationsEnabled || std::abs(delta) < kDiagnosticRevealSnapThreshold) {
+        if (!m_animationsEnabled || std::abs(delta) < kOpacitySnapThreshold) {
             h.reveal = h.target;
         } else {
             h.reveal += delta * kEaseFactor;
@@ -2182,6 +2243,16 @@ void EditorViewport::updateDiagnosticLineHighlights() {
         if (h.reveal <= 0.0 && h.target == 0.0) {
             m_diagnosticLineHighlights.removeAt(i);
         }
+    }
+}
+
+void EditorViewport::updateWelcomeOverlayOpacity() {
+    double target = m_cache.isEmpty() ? 1.0 : 0.0;
+    double delta = target - m_welcomeOverlayOpacity;
+    if (!m_animationsEnabled || std::abs(delta) < kOpacitySnapThreshold) {
+        m_welcomeOverlayOpacity = target;
+    } else {
+        m_welcomeOverlayOpacity += delta * kEaseFactor;
     }
 }
 
