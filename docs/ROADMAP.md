@@ -542,6 +542,14 @@ ADRs as each lands here going forward.
       variant's taller ascent. Fixed with `Qt::TextDontClip`; verified
       live with a zoomed screenshot. See
       [ADR 0040](adr/0040-italic-glyph-clipping-fix.md).
+- [x] **Diagnostic underline redesign**: the wavy zigzag underline is
+      now a plain thin line, dim by default and brightening to full
+      opacity with a fast, smooth left-to-right wipe on the line the
+      cursor is on (reversing when it leaves) — the gutter dot gets the
+      same dim/focus distinction as a plain fade, no wipe. Verified
+      live against real clangd diagnostics, including catching the
+      wipe and its reverse mid-animation. See
+      [ADR 0041](adr/0041-diagnostic-underline-and-dot-focus.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's

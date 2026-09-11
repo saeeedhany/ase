@@ -32,6 +32,17 @@ struct GuiDiagnostic {
     QString message;
 };
 
+/* Animated focus state for one diagnostic line — see docs/adr/0041.
+ * `reveal` is the current eased 0..1 value (wipe fraction across the
+ * diagnostic underline's own span, brightness fraction for the gutter
+ * dot); `target` is 1 while the cursor sits on `line`, else 0. Entries
+ * are removed once settled at target 0 — see updateDiagnosticLineHighlights(). */
+struct DiagnosticLineHighlight {
+    int line = -1;
+    double reveal = 0.0;
+    double target = 0.0;
+};
+
 /* GUI-side, decoupled from CompletionPopup::Item the same way
  * GuiDiagnostic is decoupled from AseLspDiagnostic — parsed straight
  * out of the raw completion JSON in applyCompletionResult(), then
@@ -300,12 +311,13 @@ private:
      * highlight too. See docs/adr/0019, docs/adr/0021. */
     void highlightRange(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
                          const QColor &color) const;
-    /* A wavy underline (small zigzag QPainterPath) across [start, end),
-     * one per visual line spanned — same per-line splitting as
-     * highlightRange, but a stroked path instead of a filled rect. Used
-     * for diagnostic squiggles. See docs/adr/0029. */
-    void drawSquiggle(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
-                       const QColor &color) const;
+    /* A thin straight underline across [start, end), one per visual line
+     * spanned — same per-line splitting as highlightRange, but a stroked
+     * line instead of a filled rect. Was a wavy zigzag (docs/adr/0029);
+     * now dim by default, brightening with a left-to-right wipe while
+     * the cursor sits on that line — see docs/adr/0041. */
+    void drawDiagnosticUnderline(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
+                                  const QColor &color) const;
 
     /* Find/replace — see docs/adr/0021. Plain substring, ASCII-
      * case-insensitive (QByteArray::toLower() is ASCII-only; documented
@@ -349,6 +361,23 @@ private:
      * LSP client is running. */
     void sendLspDidChange();
     QColor colorForSeverity(int severity) const;
+    /* Worst (lowest-numbered) severity among any diagnostic spanning
+     * `line`, or 0 if none — shared by the line-highlight and gutter-dot
+     * passes so the O(lines * diagnostics) scan (see docs/adr/0029) only
+     * has one implementation. */
+    int worstSeverityForLine(int line) const;
+    /* Current eased 0..1 focus value for `line`'s highlight, or 0 if it
+     * has no entry in m_diagnosticLineHighlights (never focused, or
+     * fully settled back to unfocused). See docs/adr/0041. */
+    double diagnosticRevealForLine(int line) const;
+    /* Called every frame from updateAnimation(), unconditionally (even
+     * with animations off, where it just snaps reveal to target
+     * instantly — same convention paintEvent's gutter current-line-
+     * number brightness already uses). Sets target = 1 for whichever
+     * line the primary cursor is on, if that line has a diagnostic, and
+     * 0 for every other tracked line; eases (or snaps) each entry's
+     * reveal toward its target; drops entries once settled at 0. */
+    void updateDiagnosticLineHighlights();
 
     /* Automatic completion — see docs/adr/0030. Called at the end of
      * refreshCache(), the same choke point sendLspDidChange() uses, so
@@ -459,6 +488,10 @@ private:
     QVector<GuiDiagnostic> m_diagnostics;
     QColor m_diagnosticErrorColor;
     QColor m_diagnosticWarningColor;
+    /* At most a couple of entries alive at once in practice — one
+     * wiping in on the newly-focused line, one wiping back out on the
+     * line that just lost focus. See docs/adr/0041. */
+    QVector<DiagnosticLineHighlight> m_diagnosticLineHighlights;
 
     /* Completion — see docs/adr/0030. m_completionPopup null means no
      * popup wired up (shouldn't happen once main.cpp runs, but every

@@ -42,6 +42,18 @@ constexpr double kEaseFactor = 0.5;
 constexpr int kVerticalScrollMargin = 3;
 constexpr int kHorizontalScrollMarginChars = 4;
 
+/* Diagnostic underline + gutter dot focus states — see docs/adr/0041.
+ * The dot's own range starts higher (it was already fully opaque
+ * before this feature existed) so diagnostics stay easy to spot in the
+ * gutter at a glance even unfocused. Reuses kEaseFactor for the reveal
+ * animation itself, for the same snappy convergence as caret
+ * glide/scroll (docs/adr/0027). */
+constexpr int kDiagnosticUnderlineDimAlpha = 110;
+constexpr int kDiagnosticUnderlineFocusAlpha = 255;
+constexpr int kDiagnosticDotDimAlpha = 150;
+constexpr int kDiagnosticDotFocusAlpha = 255;
+constexpr double kDiagnosticRevealSnapThreshold = 0.01;
+
 bool isUtf8ContinuationByte(char byte) {
     return (static_cast<unsigned char>(byte) & 0xC0) == 0x80;
 }
@@ -415,7 +427,7 @@ void EditorViewport::paintEvent(QPaintEvent *) {
         drawLine(painter, start, end, y);
     }
 
-    /* LSP diagnostic squiggles — drawn on top of the glyphs, same
+    /* LSP diagnostic underlines — drawn on top of the glyphs, same
      * translate/clip as the text loop above. `character` is treated as a
      * direct byte offset within the line (ASCII-only v1 simplification,
      * consistent with this codebase's existing byte-level cursor
@@ -428,7 +440,7 @@ void EditorViewport::paintEvent(QPaintEvent *) {
         if (end <= start) {
             end = start + 1;
         }
-        drawSquiggle(painter, start, end, firstLine, lastLine, colorForSeverity(d.severity));
+        drawDiagnosticUnderline(painter, start, end, firstLine, lastLine, colorForSeverity(d.severity));
     }
     painter.restore();
 
@@ -481,19 +493,19 @@ void EditorViewport::paintEvent(QPaintEvent *) {
 
             /* Diagnostic gutter dot — drawn in the left padding the
              * right-aligned line number text never reaches (see
-             * docs/adr/0029). Worst (lowest-numbered) severity among any
-             * diagnostic spanning this line wins; a small O(lines *
-             * diagnostics) scan is fine at realistic diagnostic counts. */
-            int worstSeverity = 0;
-            for (const GuiDiagnostic &d : m_diagnostics) {
-                if (line >= d.startLine && line <= d.endLine && (worstSeverity == 0 || d.severity < worstSeverity)) {
-                    worstSeverity = d.severity;
-                }
-            }
+             * docs/adr/0029). Dim at rest, fully vivid while its line is
+             * focused — "just to be focused," no wipe, unlike the line
+             * highlight below (see docs/adr/0041) — sharing the same
+             * reveal value so both animate in lockstep. */
+            int worstSeverity = worstSeverityForLine(line);
             if (worstSeverity != 0) {
+                double reveal = diagnosticRevealForLine(line);
+                QColor dotColor = colorForSeverity(worstSeverity);
+                dotColor.setAlpha(static_cast<int>(kDiagnosticDotDimAlpha +
+                                                    (kDiagnosticDotFocusAlpha - kDiagnosticDotDimAlpha) * reveal));
                 painter.save();
                 painter.setPen(Qt::NoPen);
-                painter.setBrush(colorForSeverity(worstSeverity));
+                painter.setBrush(dotColor);
                 painter.setRenderHint(QPainter::Antialiasing, true);
                 constexpr double kDotSize = 4.0;
                 painter.drawEllipse(QRectF(2.0, y + (m_lineHeight - kDotSize) / 2.0, kDotSize, kDotSize));
@@ -511,6 +523,8 @@ void EditorViewport::paintEvent(QPaintEvent *) {
 /* Advances the rendered scroll/caret state one step toward its logical
  * target. Called from the top of paintEvent — see docs/adr/0015. */
 void EditorViewport::updateAnimation() {
+    updateDiagnosticLineHighlights();
+
     if (!m_animationsEnabled) {
         /* Snap every rendered value to its exact target — NOT clear
          * m_renderedCaretPos. paintEvent only draws carets when that
@@ -768,24 +782,21 @@ void EditorViewport::highlightRange(QPainter &painter, size_t start, size_t end,
     }
 }
 
-/* A wavy underline across [start, end) — same per-line splitting as
- * highlightRange, but strokes a small zigzag QPainterPath sitting just
- * under the text baseline instead of filling the whole line height.
- * See docs/adr/0029. */
-void EditorViewport::drawSquiggle(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
-                                   const QColor &color) const {
+/* A thin straight underline across [start, end) — same per-line
+ * splitting as highlightRange, sitting just under the text baseline
+ * instead of filling the whole line height. Was a wavy zigzag
+ * (docs/adr/0029); replaced with a plain line, dim by default and
+ * brightening to full opacity — wiped in/out left-to-right across just
+ * this diagnostic's own span, not the whole line — while the cursor
+ * sits on that line. See docs/adr/0041. */
+void EditorViewport::drawDiagnosticUnderline(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
+                                              const QColor &color) const {
     if (start >= end) {
         return;
     }
-    constexpr double kAmplitude = 2.0;
-    constexpr double kPeriod = 4.0; /* pixels per half-wave */
-
     int startLine = lineForOffset(start);
     int endLine = lineForOffset(end);
     painter.save();
-    QPen pen(color);
-    pen.setWidthF(1.2);
-    painter.setPen(pen);
     painter.setBrush(Qt::NoBrush);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
@@ -802,15 +813,22 @@ void EditorViewport::drawSquiggle(QPainter &painter, size_t start, size_t end, i
         x1 = std::max(x0 + 1, x1);
         double baseY = (line - firstLine) * m_lineHeight + m_lineHeight - 3.0;
 
-        QPainterPath path;
-        path.moveTo(x0, baseY);
-        bool up = false;
-        for (double x = x0; x < x1; x += kPeriod) {
-            double nextX = std::min(x + kPeriod, static_cast<double>(x1));
-            path.lineTo(nextX, baseY + (up ? -kAmplitude : kAmplitude));
-            up = !up;
+        QColor dim = color;
+        dim.setAlpha(kDiagnosticUnderlineDimAlpha);
+        QPen pen(dim);
+        pen.setWidthF(1.2);
+        painter.setPen(pen);
+        painter.drawLine(QPointF(x0, baseY), QPointF(x1, baseY));
+
+        double reveal = diagnosticRevealForLine(line);
+        if (reveal > 0.0) {
+            QColor focused = color;
+            focused.setAlpha(kDiagnosticUnderlineFocusAlpha);
+            pen.setColor(focused);
+            painter.setPen(pen);
+            double revealX1 = x0 + (x1 - x0) * reveal;
+            painter.drawLine(QPointF(x0, baseY), QPointF(revealX1, baseY));
         }
-        painter.drawPath(path);
     }
     painter.restore();
 }
@@ -2108,6 +2126,61 @@ QColor EditorViewport::colorForSeverity(int severity) const {
     QColor c = m_textColor;
     c.setAlpha(140);
     return c;
+}
+
+int EditorViewport::worstSeverityForLine(int line) const {
+    int worstSeverity = 0;
+    for (const GuiDiagnostic &d : m_diagnostics) {
+        if (line >= d.startLine && line <= d.endLine && (worstSeverity == 0 || d.severity < worstSeverity)) {
+            worstSeverity = d.severity;
+        }
+    }
+    return worstSeverity;
+}
+
+double EditorViewport::diagnosticRevealForLine(int line) const {
+    for (const DiagnosticLineHighlight &h : m_diagnosticLineHighlights) {
+        if (h.line == line) {
+            return h.reveal;
+        }
+    }
+    return 0.0;
+}
+
+/* See docs/adr/0041. Called every frame, unconditionally — with
+ * animations off this still runs, it just snaps reveal straight to
+ * target (the same "state is always live, only the transition's
+ * smoothness is opt-in" convention paintEvent's gutter current-line-
+ * number brightness already uses). */
+void EditorViewport::updateDiagnosticLineHighlights() {
+    int cursorLine = m_cursors.isEmpty() ? -1 : lineForOffset(m_cursors.last());
+    int focusedLine = (cursorLine >= 0 && worstSeverityForLine(cursorLine) != 0) ? cursorLine : -1;
+
+    bool focusedLineTracked = false;
+    for (DiagnosticLineHighlight &h : m_diagnosticLineHighlights) {
+        if (h.line == focusedLine) {
+            h.target = 1.0;
+            focusedLineTracked = true;
+        } else {
+            h.target = 0.0;
+        }
+    }
+    if (focusedLine != -1 && !focusedLineTracked) {
+        m_diagnosticLineHighlights.push_back({focusedLine, 0.0, 1.0});
+    }
+
+    for (int i = m_diagnosticLineHighlights.size() - 1; i >= 0; --i) {
+        DiagnosticLineHighlight &h = m_diagnosticLineHighlights[i];
+        double delta = h.target - h.reveal;
+        if (!m_animationsEnabled || std::abs(delta) < kDiagnosticRevealSnapThreshold) {
+            h.reveal = h.target;
+        } else {
+            h.reveal += delta * kEaseFactor;
+        }
+        if (h.reveal <= 0.0 && h.target == 0.0) {
+            m_diagnosticLineHighlights.removeAt(i);
+        }
+    }
 }
 
 /* -------------------------------------------------------------- completion */

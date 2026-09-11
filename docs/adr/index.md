@@ -48,3 +48,4 @@ what changed.
 | [0038](0038-feedback-triage-criteria-and-deferred-status.md) | Feedback triage criteria, and a "Deferred" status |
 | [0039](0039-mouse-hit-test-drift-fix.md) | Fix mouse click/hover drift on styled lines |
 | [0040](0040-italic-glyph-clipping-fix.md) | Fix italic glyphs clipped at the top |
+| [0041](0041-diagnostic-underline-and-dot-focus.md) | Diagnostic underline redesign — thin line, dim/focus states |
