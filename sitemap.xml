@@ -152,4 +152,8 @@
          <loc>https://saeeedhany.github.io/ase/adr/0034-linux-packaging/</loc>
          <lastmod>2026-09-11</lastmod>
     </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0035-mkdocs-documentation-site/</loc>
+         <lastmod>2026-09-11</lastmod>
+    </url>
 </urlset>

@@ -10,13 +10,11 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0030-lsp-completion-hover/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0035-mkdocs-documentation-site/">
       
       
-        <link rel="prev" href="../0029-lsp-diagnostics-wiring/">
+        <link rel="prev" href="../0034-linux-packaging/">
       
-      
-        <link rel="next" href="../0031-draggable-panels-smooth-scroll-tracking-glide/">
       
       
         
@@ -27,7 +25,7 @@
     
     
       
-        <title>ADR 0030: LSP completion + hover (Phase 17) - Absolute Simple Editor</title>
+        <title>ADR 0035: MkDocs documentation site - Absolute Simple Editor</title>
       
     
     
@@ -78,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0030-lsp-completion-hover-phase-17" class="md-skip">
+        <a href="#adr-0035-mkdocs-documentation-site" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0030: LSP completion + hover (Phase 17)
+              ADR 0035: MkDocs documentation site
             
           </span>
         </div>
@@ -1384,37 +1382,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0030: LSP completion + hover (Phase 17)
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0030-lsp-completion-hover/" class="md-nav__link">
         
   
   
@@ -1430,131 +1401,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#core-textdocumenthover" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Core: textDocument/hover
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#no-request-sequence-tracking-a-deliberate-v1-simplification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        No request-sequence tracking — a deliberate v1 simplification
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#completion-gated-automatic-trigger-not-after-every-keystroke" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Completion: gated automatic trigger, not "after every keystroke"
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#hover-pause-then-request-word-range-aware-dismissal" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Hover: pause-then-request, word-range aware dismissal
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#two-new-widgets-deliberately-not-floatingpanel" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Two new widgets, deliberately not FloatingPanel
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1676,10 +1522,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0035-mkdocs-documentation-site/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0035: MkDocs documentation site
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1695,6 +1568,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docs-stays-the-source-nothing-moved" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        docs/ stays the source — nothing moved
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#every-adr-gets-an-explicit-nav-entry-not-directory-auto-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Every ADR gets an explicit nav entry, not directory auto-discovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#two-real-rendering-bugs-found-by-actually-looking-at-the-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two real rendering bugs found by actually looking at the page
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reproducibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1768,10 +1755,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#core-textdocumenthover" class="md-nav__link">
+  <a href="#docs-stays-the-source-nothing-moved" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Core: textDocument/hover
+        docs/ stays the source — nothing moved
       
     </span>
   </a>
@@ -1779,10 +1766,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#no-request-sequence-tracking-a-deliberate-v1-simplification" class="md-nav__link">
+  <a href="#every-adr-gets-an-explicit-nav-entry-not-directory-auto-discovery" class="md-nav__link">
     <span class="md-ellipsis">
       
-        No request-sequence tracking — a deliberate v1 simplification
+        Every ADR gets an explicit nav entry, not directory auto-discovery
       
     </span>
   </a>
@@ -1790,10 +1777,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#completion-gated-automatic-trigger-not-after-every-keystroke" class="md-nav__link">
+  <a href="#two-real-rendering-bugs-found-by-actually-looking-at-the-page" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Completion: gated automatic trigger, not "after every keystroke"
+        Two real rendering bugs found by actually looking at the page
       
     </span>
   </a>
@@ -1801,21 +1788,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#hover-pause-then-request-word-range-aware-dismissal" class="md-nav__link">
+  <a href="#reproducibility" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Hover: pause-then-request, word-range aware dismissal
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#two-new-widgets-deliberately-not-floatingpanel" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Two new widgets, deliberately not FloatingPanel
+        Reproducibility
       
     </span>
   </a>
@@ -1855,7 +1831,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0030-lsp-completion-hover.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0035-mkdocs-documentation-site.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1863,152 +1839,94 @@
   
 
 
-<h1 id="adr-0030-lsp-completion-hover-phase-17">ADR 0030: LSP completion + hover (Phase 17)<a class="headerlink" href="#adr-0030-lsp-completion-hover-phase-17" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0035-mkdocs-documentation-site">ADR 0035: MkDocs documentation site<a class="headerlink" href="#adr-0035-mkdocs-documentation-site" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Phase 16 (ADR 0029) wired diagnostics end to end but left completion
-and hover as core-only stubs — <code>ase_lsp_client_request_completion</code>
-existed but nothing in the GUI ever called it, and hover didn't exist
-in the client at all. This phase closes both, with two deliberate,
-user-chosen departures from this project's usual "manual trigger"
-philosophy (<code>:compile</code>'s Ctrl+B, the command line's Ctrl+;): completion
-fires automatically while typing, and hover fires from the mouse
-pausing over a symbol, rather than either needing a keybinding. Both
-were an explicit choice — the alternative (manual triggers, e.g.
-Ctrl+Space and Ctrl+K) was offered and declined.</p>
+<p>Documentation (<code>docs/SPEC.md</code>, <code>docs/ROADMAP.md</code>, 34 ADRs at this
+point) had accumulated as plain markdown, browsable only by reading
+files directly on GitHub — no search, no cross-linking beyond manual
+<code>[text](path.md)</code> links, no single browsable "here is the project's
+whole history" view. User asked for a proper documentation website,
+specifically calling out showing "the history of everything."</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<h3 id="core-textdocumenthover">Core: <code>textDocument/hover</code><a class="headerlink" href="#core-textdocumenthover" title="Permanent link">&para;</a></h3>
-<p><code>ase_lsp_client_request_hover(client, uri, position, callback,
-user_data)</code> — same request/response shape as completion/definition,
-the raw JSON result handed back unparsed (a hover response's
-<code>contents</code> varies by server: a plain string, a MarkupContent
-<code>{kind, value}</code>, a single legacy MarkedString, or an array of them —
-parsing that variety belongs at the call site, not duplicated as a
-core-level union type). <code>fake_lsp_server.c</code> and <code>test_lsp_client.c</code>
-got a matching canned-response/assertion pair, following Phase 16's
-pattern exactly.</p>
-<h3 id="no-request-sequence-tracking-a-deliberate-v1-simplification">No request-sequence tracking — a deliberate v1 simplification<a class="headerlink" href="#no-request-sequence-tracking-a-deliberate-v1-simplification" title="Permanent link">&para;</a></h3>
-<p>Neither completion nor hover requests carry a sequence token to
-discard stale, out-of-order responses. <code>AseLspResultCallback</code>'s
-<code>user_data</code> is fixed at registration time (always <code>this</code>), so
-disambiguating would need a small heap-allocated context per request —
-and <code>ase_lsp_client_stop()</code> never fires a still-pending request's
-callback (the pending-request table is simply freed, not drained), so
-a request in flight when the client stops (e.g. <code>openFile()</code> switching
-documents) would leak that context. Avoiding the allocation entirely
-avoids the leak. In practice a request is local and fast (well under
-typing speed), nothing is ever auto-applied without the user pressing
-Enter/Tab, and a hover response never clobbers an already-good tooltip
-(see <code>applyLspHover</code>'s doc comment) — so the worst case is a one-
-keystroke-stale completion list that the very next response corrects,
-not a correctness bug.</p>
-<h3 id="completion-gated-automatic-trigger-not-after-every-keystroke">Completion: gated automatic trigger, not "after every keystroke"<a class="headerlink" href="#completion-gated-automatic-trigger-not-after-every-keystroke" title="Permanent link">&para;</a></h3>
-<p><code>requestCompletionIfAppropriate()</code> runs from the end of
-<code>refreshCache()</code> — the same choke point <code>sendLspDidChange()</code> already
-uses — but only actually sends a request when exactly one cursor with
-no active selection sits right after an identifier character or a
-member-access trigger (<code>.</code>, or the <code>&gt;</code> of <code>-&gt;</code>; C has no <code>::</code>).
-Anything else (a space, a newline, punctuation) dismisses whatever's
-open instead of firing a request. Without this gate, "automatic"
-would mean a wall of irrelevant global-symbol completions after every
-space — every real editor's automatic mode gates the same way client-
-side, LSP servers don't do it for you.</p>
-<p>Accepting (<code>acceptCompletion()</code>, wired to Enter and Tab while the
-popup is showing) replaces <code>[m_completionPrefixStart, cursor)</code> with
-the selected item's <code>insertText</code> by giving <code>insertText()</code> a temporary
-single-cursor selection over that range — it already knows how to
-replace an active selection (docs/adr/0019), so this reuses that path
-instead of duplicating replace-range logic. <code>m_completionPrefixStart</code>
-is recomputed on every request by scanning backward from the cursor
-while bytes are identifier characters (reusing the existing
-<code>isWordChar</code> predicate) — the same byte-level "ASCII v1
-simplification" this codebase already applies to LSP character offsets
-(docs/adr/0029).</p>
-<p>A real, fixed rough edge found during live verification: accepting
-inserts an identifier, which itself typically still ends in a word
-character, so the very insert that follows (<code>insertText()</code> calling
-<code>refreshCache()</code> calling <code>requestCompletionIfAppropriate()</code> again)
-would immediately reopen a fresh popup showing the item <em>just</em>
-accepted — not what any editor actually does. Fixed with
-<code>m_suppressNextCompletionTrigger</code>, a one-shot flag set right before
-<code>acceptCompletion()</code>'s <code>insertText()</code> call and consumed by the very
-next <code>requestCompletionIfAppropriate()</code>.</p>
-<h3 id="hover-pause-then-request-word-range-aware-dismissal">Hover: pause-then-request, word-range aware dismissal<a class="headerlink" href="#hover-pause-then-request-word-range-aware-dismissal" title="Permanent link">&para;</a></h3>
-<p><code>EditorViewport::mouseMoveEvent</code> now also runs with no mouse button
-held (<code>setMouseTracking(true)</code>, new in this phase — previously the
-widget only got move events during an active drag). A qualifying move
-calls <code>scheduleHoverRequest()</code>, which restarts a 500ms single-shot
-timer (<code>m_hoverTimer</code>) unless the pointer is still within the buffer
-range the <em>currently shown</em> tooltip covers — avoiding a flicker/re-
-request loop from ordinary small hand jitter while reading a tooltip.
-That range comes from the response's own <code>range</code> field when the
-server sends one (clangd does), falling back to a client-side
-identifier-run scan around the requested offset otherwise. The
-tooltip also dismisses on: any key press, a click, a wheel scroll (the
-screen point it was anchored to is now wrong), the mouse leaving the
-widget, and the widget losing focus (<code>leaveEvent</code>/<code>focusOutEvent</code>,
-both new overrides).</p>
-<p>No markdown rendering — <code>extractHoverText()</code> pulls plain text out of
-whichever <code>contents</code> shape the server sent (string / <code>{value}</code> object
-/ array of either, joined with blank lines) and shows it as-is in a
-word-wrapped label. clangd's plaintext hover (type, value, containing
-scope, the declaration line) reads perfectly well unstyled and matches
-this app's austere aesthetic; full markdown rendering was cut as
-scope not worth it for v1.</p>
-<h3 id="two-new-widgets-deliberately-not-floatingpanel">Two new widgets, deliberately not <code>FloatingPanel</code><a class="headerlink" href="#two-new-widgets-deliberately-not-floatingpanel" title="Permanent link">&para;</a></h3>
-<p><code>CompletionPopup</code> and <code>HoverPanel</code> (<code>gui/src/completion_popup.{h,cpp}</code>,
-<code>gui/src/hover_panel.{h,cpp}</code>) share <code>FloatingPanel</code>'s flat/translucent
-visual language (same <code>panelBackgroundColor()</code>/<code>panelBorderColor()</code>
-accessors) but don't derive from it and don't use its host-centered
-anchor system or snapshot-based scale+fade animation
-(docs/adr/0022, docs/adr/0024). Both track a moving point (the caret,
-the mouse) and refresh content far more often than a glance-act-
-dismiss chrome window like Find/Replace — replaying a scale-pop
-animation on every keystroke would read as busy, not smooth, so each
-only fades (faster, 90ms vs. FloatingPanel's 110ms) and only on the
-hidden→visible edge; an already-open widget just updates content and
-geometry instantly. Positioning is a plain <code>move()</code>/<code>setGeometry()</code>
-clamped to stay inside the viewport, flipping above the anchor point
-instead of below when there's no room.</p>
-<p><code>CompletionPopup</code> paints its own rows via <code>QPainter</code> rather than using
-<code>QListWidget</code> — this codebase already hit a real class of "geometry
-wrong until some later Qt-internal layout pass" bugs with
-<code>QListWidget</code> in <code>FileBrowserPanel</code> (docs/adr/0024), and this widget
-resizes on nearly every keystroke, far more often than that one ever
-did. <code>HoverPanel</code> sizes its wrapped text the same way, using
-<code>QFontMetrics::boundingRect(..., Qt::TextWordWrap, text)</code> directly
-instead of reading a size back from <code>QLabel</code> after the fact — the same
-"measure explicitly, don't trust a widget's own lazy layout pass"
-reasoning, echoing <code>xForColumn</code>'s approach to caret positioning
-(docs/adr/0013).</p>
-<p>Both are wired into <code>main.cpp</code> exactly like every other panel:
-constructed as children of <code>viewport</code>, handed back to it via a setter
-(<code>setCompletionPopup</code>/<code>setHoverPanel</code>), theme-refreshed on config
-hot-reload alongside the rest.</p>
+<p><strong>MkDocs + Material for MkDocs</strong>, deployed to GitHub Pages. Chosen
+over mdBook or Docusaurus: the project's docs were already plain
+markdown with no non-standard syntax, so there was nothing to migrate;
+Material's theme is mature and needed zero custom CSS to look right;
+and <code>mkdocs gh-deploy</code> is a single command that builds and pushes to
+the <code>gh-pages</code> branch, which GitHub auto-detected and enabled as a
+Pages source with no manual settings-page step.</p>
+<h3 id="docs-stays-the-source-nothing-moved"><code>docs/</code> stays the source — nothing moved<a class="headerlink" href="#docs-stays-the-source-nothing-moved" title="Permanent link">&para;</a></h3>
+<p>MkDocs defaults to reading from a <code>docs_dir</code> of <code>docs/</code>, which this
+project already had. Rather than restructure anything, <code>mkdocs.yml</code>
+just points at it as-is: <code>docs/SPEC.md</code>, <code>docs/ROADMAP.md</code>, and
+<code>docs/adr/*.md</code> are the site's source files, unchanged, still the
+same files a contributor reads directly on GitHub. Two new files
+support the site itself: <code>docs/index.md</code> (the site's home page — the
+repository's own <code>README.md</code> is a different, GitHub-facing document
+with build instructions the docs site doesn't need) and
+<code>docs/adr/index.md</code> (a generated table of every ADR number and title,
+in order — this <em>is</em> the "history of everything" view the request
+asked for, and the thing this whole change was really for).</p>
+<h3 id="every-adr-gets-an-explicit-nav-entry-not-directory-auto-discovery">Every ADR gets an explicit nav entry, not directory auto-discovery<a class="headerlink" href="#every-adr-gets-an-explicit-nav-entry-not-directory-auto-discovery" title="Permanent link">&para;</a></h3>
+<p><code>mkdocs-awesome-pages-plugin</code> was tried first, for directory-shorthand
+nav (<code>Decisions: adr</code>) so 34+ files wouldn't need listing individually
+in <code>mkdocs.yml</code>. It doesn't support that shorthand — <code>mkdocs build</code>
+rejected it outright ("a reference to 'adr' is included in the nav
+configuration, which is not found in the documentation files").
+Rather than debug the plugin's actual directory-nav mechanism further,
+switched to an explicit nested list (<code>adr/index.md</code> plus all 34
+<code>adr/NNNN-*.md</code> entries) and dropped the plugin — one more dependency
+than necessary for what MkDocs's own explicit <code>nav</code> already does
+natively. The tradeoff, accepted deliberately: adding ADR 0036 later
+means adding one line to <code>mkdocs.yml</code>'s nav, not something that
+updates itself. <code>docs/adr/template.md</code> (not a real decision, just the
+boilerplate for writing new ones) is excluded from the build entirely
+via <code>exclude_docs</code> rather than included and awkwardly worked around.</p>
+<h3 id="two-real-rendering-bugs-found-by-actually-looking-at-the-page">Two real rendering bugs found by actually looking at the page<a class="headerlink" href="#two-real-rendering-bugs-found-by-actually-looking-at-the-page" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The home page's button links
+  (<code>[:octicons-mark-github-16: Source on GitHub](...){ .md-button }</code>)
+  rendered as literal text — icon shortcode and all — instead of
+  styled buttons, because the <code>attr_list</code> (for <code>{ .md-button }</code>) and
+  <code>pymdownx.emoji</code> (for the icon shortcode, using Material's own
+  <code>twemoji</code>/<code>to_svg</code> extension config) markdown extensions weren't
+  enabled. Material's button/icon syntax needs both explicitly listed
+  in <code>mkdocs.yml</code>; it doesn't enable them on its own.</li>
+<li><code>mkdocs serve</code>'s dev server serves under a <code>/ase/</code> path prefix
+  (derived from <code>site_url</code>, matching the real GitHub Pages project-site
+  URL) — every manual verification request against a bare
+  <code>127.0.0.1:8765/...</code> path 404'd until that prefix was added, which
+  looked like a broken nav at first before checking the server's own
+  log.</li>
+</ul>
+<p>Both were caught by actually loading the built site in a browser
+(Firefox via the existing X11 display, screenshotted) rather than
+trusting a clean <code>mkdocs build --strict</code> run alone — a strict build
+catches broken links and missing nav targets, not markdown extensions
+silently failing to activate a feature.</p>
+<h3 id="reproducibility">Reproducibility<a class="headerlink" href="#reproducibility" title="Permanent link">&para;</a></h3>
+<p><code>docs/requirements.txt</code> pins <code>mkdocs</code>/<code>mkdocs-material</code> to the exact
+versions used here. Docs tooling lives in a project-local virtualenv
+(<code>.venv-docs/</code>, gitignored) rather than installed system-wide — this
+machine's <code>pip</code> refuses unmanaged global installs (PEP 668), and a
+project-local venv is the right answer regardless of that: it keeps
+docs-build dependencies from leaking into (or colliding with) anything
+else on a contributor's machine.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>All 9 ctest suites pass, including the new
-<code>ase_lsp_client_tests</code> hover round-trip. Verified live against real
-<code>clangd</code>: typing <code>pri</code> inside <code>main()</code> produced a live-updating,
-correctly-positioned completion popup with real macro completions
-from <code>&lt;stdio.h&gt;</code>'s preamble (clangd itself prefixes macro-kind labels
-with <code>•</code> — confirmed as the server's own convention, not a parsing
-bug, by inspecting the rendered rows at high zoom); navigating with
-arrow keys and accepting with Enter correctly replaced the typed
-prefix (<code>pri</code> → <code>PRId64</code>) with no leftover duplicate text and no
-immediate popup reopen; hovering over <code>value</code> after a ~500ms pause
-showed clangd's real hover payload (<code>variable value</code>, <code>Type: int</code>,
-<code>Value = 42 (0x2a)</code>, the declaration line) in a correctly word-wrapped
-panel; moving the mouse away dismissed it.</p>
-<p>Not attempted: markdown rendering of hover content (plain text only —
-see above); completion item <code>kind</code>-based icons/badges (label + detail
-only, no per-kind glyph); incremental/fuzzy client-side filtering of
-an already-fetched list as the user keeps typing past what the last
-response covers (every keystroke sends a fresh request instead,
-acceptable at local-clangd latency); go-to-definition
-(<code>ase_lsp_client_request_definition</code>) still has no GUI wiring — it
-remains, like completion was before this phase, implemented at the
-core layer only.</p>
+<p>Live at <a href="https://saeeedhany.github.io/ase/">https://saeeedhany.github.io/ase/</a>, verified by loading it
+over the real network (not just the local dev server) and confirming
+both the home page and a sample ADR page (<code>/adr/0034-linux-packaging/</code>)
+return <code>200</code> with correct content. <code>README.md</code> now points at the site
+as the primary way to browse docs, keeping the raw markdown links as a
+fallback for anyone reading directly on GitHub.</p>
+<p>Not attempted: versioned docs (<code>mike</code>) — this project has no released
+versions with diverging docs yet, so it's not earning its complexity
+budget; a CI job to auto-deploy on every push to <code>main</code> (today's
+deploy was a manual <code>mkdocs gh-deploy</code> run — a real gap if docs and
+code drift out of sync before the next manual deploy, tracked as a
+follow-up, not solved here).</p>
 
 
 

@@ -642,6 +642,8 @@
       
         
       
+        
+      
     
     
     
@@ -1648,6 +1650,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0035-mkdocs-documentation-site/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0035: MkDocs documentation site
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2277,6 +2307,18 @@ ADRs as each lands here going forward.</p>
       <code>.deb</code> (<code>packaging/debian/</code>, built and its payload run standalone
       to confirm it actually works, not just that <code>dpkg-deb</code> didn't
       error). See <a href="../adr/0034-linux-packaging/">ADR 0034</a>.</li>
+<li>[x] <strong>Documentation site</strong>: MkDocs + Material, deployed to GitHub
+      Pages at <a href="https://saeeedhany.github.io/ase/">saeeedhany.github.io/ase</a>
+      — the same <code>docs/SPEC.md</code>/<code>docs/ROADMAP.md</code>/<code>docs/adr/*.md</code> this
+      repo already had, now browsable with search and a real nav
+      instead of only readable file-by-file on GitHub. New
+      <code>docs/adr/index.md</code>, a generated table of every decision in
+      order, is the "project history" view this was built for. Two
+      real rendering bugs (missing markdown extensions for buttons/
+      icons; the dev server's <code>/ase/</code> path prefix) found by actually
+      loading the built site in a browser, not just a clean
+      <code>mkdocs build --strict</code>. See
+      <a href="../adr/0035-mkdocs-documentation-site/">ADR 0035</a>.</li>
 <li>[ ] <strong>Vim mode</strong> (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's
