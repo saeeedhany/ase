@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0029-lsp-diagnostics-wiring/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0037-feedback-triage-log/">
       
       
-        <link rel="prev" href="../0028-click-precision-select-all-deletion-glide/">
+        <link rel="prev" href="../0036-docs-site-theme-and-plugins-page/">
       
       
-        <link rel="next" href="../0030-lsp-completion-hover/">
+        <link rel="next" href="../0038-feedback-triage-criteria-and-deferred-status/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0029: LSP diagnostics wiring (Phase 16) - Absolute Simple Editor</title>
+        <title>ADR 0037: A feedback triage log, alongside ADRs - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0029-lsp-diagnostics-wiring-phase-16" class="md-skip">
+        <a href="#adr-0037-a-feedback-triage-log-alongside-adrs" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0029: LSP diagnostics wiring (Phase 16)
+              ADR 0037: A feedback triage log, alongside ADRs
             
           </span>
         </div>
@@ -1534,37 +1534,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0029: LSP diagnostics wiring (Phase 16)
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0029-lsp-diagnostics-wiring/" class="md-nav__link">
         
   
   
@@ -1580,131 +1553,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#textdocumentdidchange-full-document-sync" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        textDocument/didChange — full-document sync
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#new-config-lsp_command-diagnostic_error-diagnostic_warning" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        New config: lsp_command, diagnostic_error, diagnostic_warning
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#gui-lifecycle-tied-to-the-open-file-not-the-app" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GUI lifecycle: tied to the open file, not the app
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rendering-squiggle-gutter-dot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rendering: squiggle + gutter dot
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#real-bug-found-and-fixed-merged-stderr-corrupted-the-protocol-stream" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Real bug found and fixed: merged stderr corrupted the protocol stream
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1910,10 +1758,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0037-feedback-triage-log/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0037: A feedback triage log, alongside ADRs
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1929,6 +1804,70 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2026,67 +1965,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#textdocumentdidchange-full-document-sync" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        textDocument/didChange — full-document sync
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#new-config-lsp_command-diagnostic_error-diagnostic_warning" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        New config: lsp_command, diagnostic_error, diagnostic_warning
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#gui-lifecycle-tied-to-the-open-file-not-the-app" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GUI lifecycle: tied to the open file, not the app
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rendering-squiggle-gutter-dot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rendering: squiggle + gutter dot
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#real-bug-found-and-fixed-merged-stderr-corrupted-the-protocol-stream" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Real bug found and fixed: merged stderr corrupted the protocol stream
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2117,7 +1995,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0029-lsp-diagnostics-wiring.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0037-feedback-triage-log.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2125,117 +2003,56 @@
   
 
 
-<h1 id="adr-0029-lsp-diagnostics-wiring-phase-16">ADR 0029: LSP diagnostics wiring (Phase 16)<a class="headerlink" href="#adr-0029-lsp-diagnostics-wiring-phase-16" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0037-a-feedback-triage-log-alongside-adrs">ADR 0037: A feedback triage log, alongside ADRs<a class="headerlink" href="#adr-0037-a-feedback-triage-log-alongside-adrs" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The LSP client (ADR 0011) could start a server, send <code>didOpen</code>, and
-receive diagnostics once — but had no way to refresh them after an
-edit, and the GUI never rendered whatever diagnostics it got. Phase 16
-closes both gaps: a real "diagnostics as you type" loop, end to end.</p>
+<p>The first external review of the alpha release came in as seven
+freeform comments on Discord. They needed a real, considered response
+each (checked against the actual code, not just acknowledged), and the
+user wanted that response — and who raised each point — recorded
+formally rather than left to scroll off in a chat channel.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<h3 id="textdocumentdidchange-full-document-sync"><code>textDocument/didChange</code> — full-document sync<a class="headerlink" href="#textdocumentdidchange-full-document-sync" title="Permanent link">&para;</a></h3>
-<p><code>ase_lsp_client_did_change(client, uri, version, text)</code> sends a
-<code>textDocument/didChange</code> notification with one <code>contentChanges</code> entry
-containing the whole new <code>text</code> and no <code>range</code> field
-(<code>TextDocumentSyncKind.Full</code>), not an incremental diff — consistent
-with this project's existing full-buffer-mirroring approach elsewhere
-(ADR 0006) rather than tracking edit ranges. Called from
-<code>EditorViewport::refreshCache()</code>, the one choke point every edit
-already passes through, so diagnostics never go stale after the first
-keystroke — the gap this phase exists to close. <code>fake_lsp_server.c</code>
-was extended to reply to <code>didChange</code> with an <em>empty</em> diagnostics list
-(didOpen's canned reply has one), specifically so the new core test
-can prove the notification actually reached the server and produced a
-fresh callback, not just that some stale callback fired again.</p>
-<h3 id="new-config-lsp_command-diagnostic_error-diagnostic_warning">New config: <code>lsp_command</code>, <code>diagnostic_error</code>, <code>diagnostic_warning</code><a class="headerlink" href="#new-config-lsp_command-diagnostic_error-diagnostic_warning" title="Permanent link">&para;</a></h3>
-<p><code>lsp_command</code> follows <code>build_command</code>'s exact "no default, don't
-guess" pattern (ADR 0025) — unconfigured means the LSP feature is
-simply off, not a guess at which server the user has installed.</p>
-<p><code>diagnostic_error</code>/<code>diagnostic_warning</code> are new, real (non-empty)
-default colors — a deliberate, documented departure from the "one
-font color" pillar: error/warning color-coding is too strong and too
-widely expected a convention to fold into the opacity/weight variation
-syntax highlighting uses instead.</p>
-<h3 id="gui-lifecycle-tied-to-the-open-file-not-the-app">GUI lifecycle: tied to the open file, not the app<a class="headerlink" href="#gui-lifecycle-tied-to-the-open-file-not-the-app" title="Permanent link">&para;</a></h3>
-<p><code>EditorViewport::startLspClientIfConfigured()</code> reuses the same <code>.c</code>/
-<code>.h</code> suffix gate Tree-sitter highlighting already uses, and is called
-from both the constructor and <code>openFile()</code> (which first stops any
-previous client and clears <code>m_diagnostics</code>, mirroring the
-constructor's own startup order) — so switching files always talks to
-a fresh server against the right document, never a stale one. Polled
-non-blockingly every 200ms (<code>m_lspPollTimer</code>), faster than config-
-reload's 750ms and comparable to <code>:compile</code>'s 100ms output poll, as a
-reasonable balance for diagnostic responsiveness without busy-waiting.</p>
-<p><code>GuiDiagnostic</code> is a necessary GUI-side copy of <code>AseLspDiagnostic</code>:
-the core struct's <code>message</code> is a borrowed pointer, valid only during
-the synchronous callback, so it can't be stored as-is across frames.</p>
-<h3 id="rendering-squiggle-gutter-dot">Rendering: squiggle + gutter dot<a class="headerlink" href="#rendering-squiggle-gutter-dot" title="Permanent link">&para;</a></h3>
-<p><code>drawSquiggle()</code> (a small zigzag <code>QPainterPath</code>, same per-line
-splitting as the existing <code>highlightRange()</code>) draws a wavy underline
-under each diagnostic's range, colored by severity
-(<code>colorForSeverity()</code>: 1=error, 2=warning, anything else falls back to
-a dimmed text color). A small filled-circle "gutter dot" is drawn per
-line in the left padding the right-aligned line-number text never
-reaches — worst (lowest-numbered) severity among any diagnostic
-spanning that line wins.</p>
-<p>LSP <code>character</code> is treated as a direct byte offset within the line —
-an ASCII-only v1 simplification, consistent with this codebase's
-existing byte-level cursor shortcuts (ADR 0012). <code>offsetForLineColumn</code>
-clamps out-of-range lines, so a diagnostic that's gone stale mid-edit
-(referring to a line that no longer exists) degrades harmlessly rather
-than drawing garbage or crashing.</p>
-<p><code>applyLspDiagnostics</code> (the callback target) had to move from private
-to public, since the C-callback trampoline bridging <code>AseLspClient</code>'s
-function-pointer callback to the C++ object is a free function in an
-anonymous namespace, not a member function, and can't be made a
-friend of an unnamed-namespace function across the header/.cpp
-boundary cleanly. Documented in place as "public only for the
-trampoline."</p>
-<h3 id="real-bug-found-and-fixed-merged-stderr-corrupted-the-protocol-stream">Real bug found and fixed: merged stderr corrupted the protocol stream<a class="headerlink" href="#real-bug-found-and-fixed-merged-stderr-corrupted-the-protocol-stream" title="Permanent link">&para;</a></h3>
-<p><code>AseProcess</code> (ADR 0011/0025's shared process-spawn module) always
-merged a child's stderr into the same pipe as its stdout, on the
-assumption — true for <code>:compile</code> and for the black-box test fixture —
-that either the merge is desired (build output) or the child never
-writes to stderr at all. A <strong>real</strong> LSP server breaks that assumption:
-<code>clangd</code> logs routinely to stderr, and interleaving that into the
-Content-Length-framed JSON-RPC stdout stream corrupts the framing,
-silently breaking every response after the first stray log line. This
-was invisible against the test fixture (which never touches stderr)
-and only surfaced live against real <code>clangd</code> — <code>ase_lsp_client_start</code>
-was returning <code>NULL</code> with no diagnosable reason until traced with
-temporary debug logging.</p>
-<p>Fixed by splitting <code>ase_process_spawn</code> into a thin wrapper over a new
-<code>ase_process_spawn_ex(command, cwd, merge_stderr)</code>, which only <code>dup2</code>s
-the child's stderr onto the stdout pipe when <code>merge_stderr</code> is true.
-<code>:compile</code> keeps calling the original <code>ase_process_spawn</code> (merge
-still true, unchanged behavior). The LSP client now calls
-<code>ase_process_spawn_ex(command, NULL, false)</code> — the child's stderr is
-left inherited (not piped, not discarded), so server logging is still
-visible wherever the caller's own stderr goes, but never touches the
-protocol stream. A new core test, <code>test_stderr_merge_toggle</code>, spawns a
-shell that writes to both streams and asserts both directions: merged
-mode still contains both, separated mode contains only stdout.</p>
+<p>A new <code>docs/feedback/</code> tree, structured the same way <code>docs/adr/</code>
+already is: one file per batch (<code>docs/feedback/NNNN-slug.md</code>), a
+<code>template.md</code> excluded from the build via <code>exclude_docs</code> (same
+mechanism as <code>adr/template.md</code>), an <code>index.md</code> table of every batch,
+and an explicit nav entry per file in <code>mkdocs.yml</code> — no new plugin,
+consistent with ADR 0035's decision to keep the nav explicit rather
+than chase directory auto-discovery.</p>
+<p>Each batch file opens with reporter identity (name, GitHub handle) and
+source (a link to the originating Discord message, GitHub issue, etc.)
+and a date, then one subsection per comment: the comment quoted
+verbatim, a status (<code>Open</code> / <code>Fixed</code> / <code>Won't Fix</code> / <code>Not a Bug</code>), and
+a formal response explaining what was actually checked and why,
+linking forward to the resolving commit/PR once one exists.</p>
+<p>This complements issue tracking rather than replacing it: Discord,
+GitHub issues, or wherever a report first lands stays the live
+conversation venue (threading, back-and-forth, notifications); this
+log is the curated, versioned record of what was raised and what was
+decided, sitting next to the ADRs that record why the project itself
+is shaped the way it is. Status is intentionally not "resolved and
+forgotten" — an item stays <code>Open</code> in the doc itself until the actual
+fix lands, so the log can't drift ahead of reality by marking
+something done before it is.</p>
+<p>Batch 0001 records all seven comments from this first review: two real
+packaging bugs (<code>.deb</code>/AppImage version floors baked in from being
+built on a rolling-release dev machine instead of an old, pinned base
+— see the doc for the fix), a real CMake robustness gap (missing Qt6
+warns instead of failing when the GUI is explicitly requested), a real
+upstream compiler warning (vendored Lua's <code>tmpnam()</code> path, fixable via
+one missing compile definition), a real but small UI fix (the Help
+panel's fixed-size single-column layout forcing an inner scrollbar),
+and two items checked and found not to be current bugs (a README
+undo/redo inconsistency that no longer exists in the file, and
+"unfinished-looking" window buttons that turned out to be the
+reporter's own window manager chrome, not anything ase draws).</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>All 9 ctest suites pass, including the new <code>ase_process_tests</code>
-stderr-toggle case and the new <code>ase_lsp_client_tests</code> didChange
-round-trip. Verified live against the real <code>clangd</code> binary
-(<code>/usr/bin/clangd</code>), not just the fake fixture: opened a <code>.c</code> file
-with a missing semicolon, confirmed a red squiggle + gutter dot
-appeared on the affected line within about a second; retyped the file
-with the fix in place (via <code>xdotool</code>, simulating real keystrokes) and
-confirmed the squiggle and dot disappeared without restarting the
-editor — direct proof <code>didChange</code> refreshes diagnostics, the specific
-gap this phase exists to close.</p>
-<p>Not attempted: incremental (range-based) sync — full-document sync is
-simpler and this codebase already mirrors the whole buffer elsewhere,
-so the extra complexity isn't justified yet. Also not attempted:
-surfacing diagnostic <code>message</code> text anywhere (e.g. a hover/tooltip) —
-v1 is visual-only (squiggle + dot); <code>GuiDiagnostic.message</code> is stored
-and ready for that follow-up. Completion and go-to-definition
-(<code>ase_lsp_client_request_completion</code>/<code>_request_definition</code>) remain
-implemented at the core layer only, with no GUI wiring — flagged as
-the natural next LSP-related phase.</p>
+<p>Future external feedback — from any source — gets the same treatment:
+a new numbered batch file, checked against the code, answered formally,
+and left <code>Open</code> until actually fixed. The five real, open items from
+batch 0001 are tracked here rather than as an implicit to-do list, and
+each will get its own commit that flips its status once done.</p>
 
 
 

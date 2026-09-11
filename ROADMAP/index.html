@@ -306,6 +306,28 @@
     
     
       <li class="md-tabs__item">
+        <a href="../feedback/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Feedback
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
         <a href="../adr/" class="md-tabs__link">
           
   
@@ -622,6 +644,114 @@
       
         
       
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../feedback/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feedback
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Feedback
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feedback/0001-alpha-release-external-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feedback 0001: Alpha release external review (Discord)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -705,7 +835,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -727,14 +857,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1754,6 +1884,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0037-feedback-triage-log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0037: A feedback triage log, alongside ADRs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0038-feedback-triage-criteria-and-deferred-status/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0038: Feedback triage criteria, and a "Deferred" status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2403,6 +2589,25 @@ ADRs as each lands here going forward.</p>
       — see ADR 0007). A placeholder <code>docs/plugins.md</code> page was also
       added. See
       <a href="../adr/0036-docs-site-theme-and-plugins-page/">ADR 0036</a>.</li>
+<li>[x] <strong>Feedback triage log</strong>: <code>docs/feedback/</code>, structured the same
+      way as <code>docs/adr/</code> (numbered batch files, an index, an explicit
+      nav entry each) — a formal, versioned response to external
+      review comments, attributed to the reporter and linked back to
+      the source, distinct from the live conversation on Discord/
+      GitHub issues where a report first lands. First batch: seven
+      comments from the alpha release's first external review
+      (<code>@TOTO-sys28</code> on Discord) — a CMake robustness gap and a
+      vendored-Lua compiler warning are fixed; two real packaging
+      version-floor bugs (<code>.deb</code>/AppImage built on a rolling-release
+      dev machine instead of an old, pinned base) remain open, to be
+      done together with a future batch of fixes rather than as an
+      isolated rebuild; the cramped Help panel is deferred to a future
+      system-wide floating-panel design pass rather than an isolated
+      layout patch (see <a href="../adr/0038-feedback-triage-criteria-and-deferred-status/">ADR 0038</a>,
+      which also writes down the criteria for telling a real defect
+      apart from a design choice, and adds the <code>Deferred</code> status this
+      uses); two items checked and found not to be current bugs. See
+      <a href="../adr/0037-feedback-triage-log/">ADR 0037</a>.</li>
 <li>[ ] <strong>Vim mode</strong> (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's

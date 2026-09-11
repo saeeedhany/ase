@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0029-lsp-diagnostics-wiring/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/feedback/">
       
       
-        <link rel="prev" href="../0028-click-precision-select-all-deletion-glide/">
+        <link rel="prev" href="../plugins/">
       
       
-        <link rel="next" href="../0030-lsp-completion-hover/">
+        <link rel="next" href="0001-alpha-release-external-review/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/ase-logo.png">
+      <link rel="icon" href="../assets/ase-logo.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
-        <title>ADR 0029: LSP diagnostics wiring (Phase 16) - Absolute Simple Editor</title>
+        <title>Feedback - Absolute Simple Editor</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,9 +53,9 @@
       
     
     
-      <link rel="stylesheet" href="../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0029-lsp-diagnostics-wiring-phase-16" class="md-skip">
+        <a href="#feedback" class="md-skip">
           Skip to content
         </a>
       
@@ -94,9 +94,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Absolute Simple Editor" class="md-header__button md-logo" aria-label="Absolute Simple Editor" data-md-component="logo">
+    <a href=".." title="Absolute Simple Editor" class="md-header__button md-logo" aria-label="Absolute Simple Editor" data-md-component="logo">
       
-  <img src="../../assets/ase-logo.png" alt="logo">
+  <img src="../assets/ase-logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0029: LSP diagnostics wiring (Phase 16)
+              Feedback
             
           </span>
         </div>
@@ -226,7 +226,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href=".." class="md-tabs__link">
         
   
   
@@ -245,7 +245,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../SPEC/" class="md-tabs__link">
+      <a href="../SPEC/" class="md-tabs__link">
         
   
   
@@ -264,7 +264,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../ROADMAP/" class="md-tabs__link">
+      <a href="../ROADMAP/" class="md-tabs__link">
         
   
   
@@ -283,7 +283,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../plugins/" class="md-tabs__link">
+      <a href="../plugins/" class="md-tabs__link">
         
   
   
@@ -300,11 +300,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../feedback/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
           
   
   
@@ -322,13 +324,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../adr/" class="md-tabs__link">
           
   
   
@@ -364,9 +364,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Absolute Simple Editor" class="md-nav__button md-logo" aria-label="Absolute Simple Editor" data-md-component="logo">
+    <a href=".." title="Absolute Simple Editor" class="md-nav__button md-logo" aria-label="Absolute Simple Editor" data-md-component="logo">
       
-  <img src="../../assets/ase-logo.png" alt="logo">
+  <img src="../assets/ase-logo.png" alt="logo">
 
     </a>
     Absolute Simple Editor
@@ -393,7 +393,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -420,7 +420,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../SPEC/" class="md-nav__link">
+      <a href="../SPEC/" class="md-nav__link">
         
   
   
@@ -447,7 +447,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ROADMAP/" class="md-nav__link">
+      <a href="../ROADMAP/" class="md-nav__link">
         
   
   
@@ -474,7 +474,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../plugins/" class="md-nav__link">
+      <a href="../plugins/" class="md-nav__link">
         
   
   
@@ -498,6 +498,8 @@
       
   
   
+    
+  
   
   
     
@@ -513,20 +515,23 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../feedback/" class="md-nav__link ">
+            <a href="./" class="md-nav__link md-nav__link--active">
               
   
   
@@ -544,13 +549,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+              <label class="md-nav__link md-nav__link--active" for="__nav_5" id="__nav_5_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -570,7 +575,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../feedback/0001-alpha-release-external-review/" class="md-nav__link">
+      <a href="0001-alpha-release-external-review/" class="md-nav__link">
         
   
   
@@ -602,8 +607,6 @@
       
   
   
-    
-  
   
   
     
@@ -693,23 +696,20 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../adr/" class="md-nav__link ">
               
   
   
@@ -727,13 +727,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="">
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -753,7 +753,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0001-record-architecture-decisions/" class="md-nav__link">
+      <a href="../adr/0001-record-architecture-decisions/" class="md-nav__link">
         
   
   
@@ -781,7 +781,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0002-headless-core-separation/" class="md-nav__link">
+      <a href="../adr/0002-headless-core-separation/" class="md-nav__link">
         
   
   
@@ -809,7 +809,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0003-license-decision-pending/" class="md-nav__link">
+      <a href="../adr/0003-license-decision-pending/" class="md-nav__link">
         
   
   
@@ -837,7 +837,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0004-core-in-plain-c/" class="md-nav__link">
+      <a href="../adr/0004-core-in-plain-c/" class="md-nav__link">
         
   
   
@@ -865,7 +865,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0005-buffer-engine-piece-table/" class="md-nav__link">
+      <a href="../adr/0005-buffer-engine-piece-table/" class="md-nav__link">
         
   
   
@@ -893,7 +893,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0006-gui-shell-v1-shortcuts/" class="md-nav__link">
+      <a href="../adr/0006-gui-shell-v1-shortcuts/" class="md-nav__link">
         
   
   
@@ -921,7 +921,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0007-syntax-highlighting-tree-sitter/" class="md-nav__link">
+      <a href="../adr/0007-syntax-highlighting-tree-sitter/" class="md-nav__link">
         
   
   
@@ -949,7 +949,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0008-config-theme-format/" class="md-nav__link">
+      <a href="../adr/0008-config-theme-format/" class="md-nav__link">
         
   
   
@@ -977,7 +977,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0009-plugin-abi-and-lua-host/" class="md-nav__link">
+      <a href="../adr/0009-plugin-abi-and-lua-host/" class="md-nav__link">
         
   
   
@@ -1005,7 +1005,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0010-hand-rolled-json/" class="md-nav__link">
+      <a href="../adr/0010-hand-rolled-json/" class="md-nav__link">
         
   
   
@@ -1033,7 +1033,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0011-lsp-client/" class="md-nav__link">
+      <a href="../adr/0011-lsp-client/" class="md-nav__link">
         
   
   
@@ -1061,7 +1061,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0012-polish-phase-scope/" class="md-nav__link">
+      <a href="../adr/0012-polish-phase-scope/" class="md-nav__link">
         
   
   
@@ -1089,7 +1089,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0013-caret-drift-fix/" class="md-nav__link">
+      <a href="../adr/0013-caret-drift-fix/" class="md-nav__link">
         
   
   
@@ -1117,7 +1117,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0014-viewport-geometry/" class="md-nav__link">
+      <a href="../adr/0014-viewport-geometry/" class="md-nav__link">
         
   
   
@@ -1145,7 +1145,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0015-smooth-motion/" class="md-nav__link">
+      <a href="../adr/0015-smooth-motion/" class="md-nav__link">
         
   
   
@@ -1173,7 +1173,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0016-caret-visibility-fix/" class="md-nav__link">
+      <a href="../adr/0016-caret-visibility-fix/" class="md-nav__link">
         
   
   
@@ -1201,7 +1201,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0017-viewport-review-pass/" class="md-nav__link">
+      <a href="../adr/0017-viewport-review-pass/" class="md-nav__link">
         
   
   
@@ -1229,7 +1229,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0018-undo-redo/" class="md-nav__link">
+      <a href="../adr/0018-undo-redo/" class="md-nav__link">
         
   
   
@@ -1257,7 +1257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0019-selection-model/" class="md-nav__link">
+      <a href="../adr/0019-selection-model/" class="md-nav__link">
         
   
   
@@ -1285,7 +1285,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0020-clipboard/" class="md-nav__link">
+      <a href="../adr/0020-clipboard/" class="md-nav__link">
         
   
   
@@ -1313,7 +1313,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0021-find-replace/" class="md-nav__link">
+      <a href="../adr/0021-find-replace/" class="md-nav__link">
         
   
   
@@ -1341,7 +1341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0022-floating-panel-design-system/" class="md-nav__link">
+      <a href="../adr/0022-floating-panel-design-system/" class="md-nav__link">
         
   
   
@@ -1369,7 +1369,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0023-editor-chrome/" class="md-nav__link">
+      <a href="../adr/0023-editor-chrome/" class="md-nav__link">
         
   
   
@@ -1397,7 +1397,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0024-panel-polish-and-scroll-margin/" class="md-nav__link">
+      <a href="../adr/0024-panel-polish-and-scroll-margin/" class="md-nav__link">
         
   
   
@@ -1425,7 +1425,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0025-command-system/" class="md-nav__link">
+      <a href="../adr/0025-command-system/" class="md-nav__link">
         
   
   
@@ -1453,7 +1453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0026-keybinding-scheme-help-about/" class="md-nav__link">
+      <a href="../adr/0026-keybinding-scheme-help-about/" class="md-nav__link">
         
   
   
@@ -1481,7 +1481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0027-visual-polish-pass/" class="md-nav__link">
+      <a href="../adr/0027-visual-polish-pass/" class="md-nav__link">
         
   
   
@@ -1509,7 +1509,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0028-click-precision-select-all-deletion-glide/" class="md-nav__link">
+      <a href="../adr/0028-click-precision-select-all-deletion-glide/" class="md-nav__link">
         
   
   
@@ -1534,37 +1534,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0029: LSP diagnostics wiring (Phase 16)
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../adr/0029-lsp-diagnostics-wiring/" class="md-nav__link">
         
   
   
@@ -1580,131 +1553,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#textdocumentdidchange-full-document-sync" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        textDocument/didChange — full-document sync
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#new-config-lsp_command-diagnostic_error-diagnostic_warning" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        New config: lsp_command, diagnostic_error, diagnostic_warning
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#gui-lifecycle-tied-to-the-open-file-not-the-app" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GUI lifecycle: tied to the open file, not the app
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rendering-squiggle-gutter-dot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rendering: squiggle + gutter dot
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#real-bug-found-and-fixed-merged-stderr-corrupted-the-protocol-stream" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Real bug found and fixed: merged stderr corrupted the protocol stream
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1717,7 +1565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0030-lsp-completion-hover/" class="md-nav__link">
+      <a href="../adr/0030-lsp-completion-hover/" class="md-nav__link">
         
   
   
@@ -1745,7 +1593,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0031-draggable-panels-smooth-scroll-tracking-glide/" class="md-nav__link">
+      <a href="../adr/0031-draggable-panels-smooth-scroll-tracking-glide/" class="md-nav__link">
         
   
   
@@ -1773,7 +1621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0032-lsp-relative-path-uri-fix/" class="md-nav__link">
+      <a href="../adr/0032-lsp-relative-path-uri-fix/" class="md-nav__link">
         
   
   
@@ -1801,7 +1649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0033-license-apache-2.0-and-first-alpha-release/" class="md-nav__link">
+      <a href="../adr/0033-license-apache-2.0-and-first-alpha-release/" class="md-nav__link">
         
   
   
@@ -1829,7 +1677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0034-linux-packaging/" class="md-nav__link">
+      <a href="../adr/0034-linux-packaging/" class="md-nav__link">
         
   
   
@@ -1857,7 +1705,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0035-mkdocs-documentation-site/" class="md-nav__link">
+      <a href="../adr/0035-mkdocs-documentation-site/" class="md-nav__link">
         
   
   
@@ -1885,7 +1733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0036-docs-site-theme-and-plugins-page/" class="md-nav__link">
+      <a href="../adr/0036-docs-site-theme-and-plugins-page/" class="md-nav__link">
         
   
   
@@ -1913,7 +1761,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0037-feedback-triage-log/" class="md-nav__link">
+      <a href="../adr/0037-feedback-triage-log/" class="md-nav__link">
         
   
   
@@ -1941,7 +1789,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0038-feedback-triage-criteria-and-deferred-status/" class="md-nav__link">
+      <a href="../adr/0038-feedback-triage-criteria-and-deferred-status/" class="md-nav__link">
         
   
   
@@ -1996,104 +1844,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
+  <a href="#how-we-triage-feedback" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#textdocumentdidchange-full-document-sync" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        textDocument/didChange — full-document sync
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#new-config-lsp_command-diagnostic_error-diagnostic_warning" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        New config: lsp_command, diagnostic_error, diagnostic_warning
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#gui-lifecycle-tied-to-the-open-file-not-the-app" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GUI lifecycle: tied to the open file, not the app
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rendering-squiggle-gutter-dot" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rendering: squiggle + gutter dot
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#real-bug-found-and-fixed-merged-stderr-corrupted-the-protocol-stream" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Real bug found and fixed: merged stderr corrupted the protocol stream
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
+        How we triage feedback
       
     </span>
   </a>
@@ -2117,7 +1871,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0029-lsp-diagnostics-wiring.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/feedback/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2125,117 +1879,69 @@
   
 
 
-<h1 id="adr-0029-lsp-diagnostics-wiring-phase-16">ADR 0029: LSP diagnostics wiring (Phase 16)<a class="headerlink" href="#adr-0029-lsp-diagnostics-wiring-phase-16" title="Permanent link">&para;</a></h1>
-<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
-<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>The LSP client (ADR 0011) could start a server, send <code>didOpen</code>, and
-receive diagnostics once — but had no way to refresh them after an
-edit, and the GUI never rendered whatever diagnostics it got. Phase 16
-closes both gaps: a real "diagnostics as you type" loop, end to end.</p>
-<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<h3 id="textdocumentdidchange-full-document-sync"><code>textDocument/didChange</code> — full-document sync<a class="headerlink" href="#textdocumentdidchange-full-document-sync" title="Permanent link">&para;</a></h3>
-<p><code>ase_lsp_client_did_change(client, uri, version, text)</code> sends a
-<code>textDocument/didChange</code> notification with one <code>contentChanges</code> entry
-containing the whole new <code>text</code> and no <code>range</code> field
-(<code>TextDocumentSyncKind.Full</code>), not an incremental diff — consistent
-with this project's existing full-buffer-mirroring approach elsewhere
-(ADR 0006) rather than tracking edit ranges. Called from
-<code>EditorViewport::refreshCache()</code>, the one choke point every edit
-already passes through, so diagnostics never go stale after the first
-keystroke — the gap this phase exists to close. <code>fake_lsp_server.c</code>
-was extended to reply to <code>didChange</code> with an <em>empty</em> diagnostics list
-(didOpen's canned reply has one), specifically so the new core test
-can prove the notification actually reached the server and produced a
-fresh callback, not just that some stale callback fired again.</p>
-<h3 id="new-config-lsp_command-diagnostic_error-diagnostic_warning">New config: <code>lsp_command</code>, <code>diagnostic_error</code>, <code>diagnostic_warning</code><a class="headerlink" href="#new-config-lsp_command-diagnostic_error-diagnostic_warning" title="Permanent link">&para;</a></h3>
-<p><code>lsp_command</code> follows <code>build_command</code>'s exact "no default, don't
-guess" pattern (ADR 0025) — unconfigured means the LSP feature is
-simply off, not a guess at which server the user has installed.</p>
-<p><code>diagnostic_error</code>/<code>diagnostic_warning</code> are new, real (non-empty)
-default colors — a deliberate, documented departure from the "one
-font color" pillar: error/warning color-coding is too strong and too
-widely expected a convention to fold into the opacity/weight variation
-syntax highlighting uses instead.</p>
-<h3 id="gui-lifecycle-tied-to-the-open-file-not-the-app">GUI lifecycle: tied to the open file, not the app<a class="headerlink" href="#gui-lifecycle-tied-to-the-open-file-not-the-app" title="Permanent link">&para;</a></h3>
-<p><code>EditorViewport::startLspClientIfConfigured()</code> reuses the same <code>.c</code>/
-<code>.h</code> suffix gate Tree-sitter highlighting already uses, and is called
-from both the constructor and <code>openFile()</code> (which first stops any
-previous client and clears <code>m_diagnostics</code>, mirroring the
-constructor's own startup order) — so switching files always talks to
-a fresh server against the right document, never a stale one. Polled
-non-blockingly every 200ms (<code>m_lspPollTimer</code>), faster than config-
-reload's 750ms and comparable to <code>:compile</code>'s 100ms output poll, as a
-reasonable balance for diagnostic responsiveness without busy-waiting.</p>
-<p><code>GuiDiagnostic</code> is a necessary GUI-side copy of <code>AseLspDiagnostic</code>:
-the core struct's <code>message</code> is a borrowed pointer, valid only during
-the synchronous callback, so it can't be stored as-is across frames.</p>
-<h3 id="rendering-squiggle-gutter-dot">Rendering: squiggle + gutter dot<a class="headerlink" href="#rendering-squiggle-gutter-dot" title="Permanent link">&para;</a></h3>
-<p><code>drawSquiggle()</code> (a small zigzag <code>QPainterPath</code>, same per-line
-splitting as the existing <code>highlightRange()</code>) draws a wavy underline
-under each diagnostic's range, colored by severity
-(<code>colorForSeverity()</code>: 1=error, 2=warning, anything else falls back to
-a dimmed text color). A small filled-circle "gutter dot" is drawn per
-line in the left padding the right-aligned line-number text never
-reaches — worst (lowest-numbered) severity among any diagnostic
-spanning that line wins.</p>
-<p>LSP <code>character</code> is treated as a direct byte offset within the line —
-an ASCII-only v1 simplification, consistent with this codebase's
-existing byte-level cursor shortcuts (ADR 0012). <code>offsetForLineColumn</code>
-clamps out-of-range lines, so a diagnostic that's gone stale mid-edit
-(referring to a line that no longer exists) degrades harmlessly rather
-than drawing garbage or crashing.</p>
-<p><code>applyLspDiagnostics</code> (the callback target) had to move from private
-to public, since the C-callback trampoline bridging <code>AseLspClient</code>'s
-function-pointer callback to the C++ object is a free function in an
-anonymous namespace, not a member function, and can't be made a
-friend of an unnamed-namespace function across the header/.cpp
-boundary cleanly. Documented in place as "public only for the
-trampoline."</p>
-<h3 id="real-bug-found-and-fixed-merged-stderr-corrupted-the-protocol-stream">Real bug found and fixed: merged stderr corrupted the protocol stream<a class="headerlink" href="#real-bug-found-and-fixed-merged-stderr-corrupted-the-protocol-stream" title="Permanent link">&para;</a></h3>
-<p><code>AseProcess</code> (ADR 0011/0025's shared process-spawn module) always
-merged a child's stderr into the same pipe as its stdout, on the
-assumption — true for <code>:compile</code> and for the black-box test fixture —
-that either the merge is desired (build output) or the child never
-writes to stderr at all. A <strong>real</strong> LSP server breaks that assumption:
-<code>clangd</code> logs routinely to stderr, and interleaving that into the
-Content-Length-framed JSON-RPC stdout stream corrupts the framing,
-silently breaking every response after the first stray log line. This
-was invisible against the test fixture (which never touches stderr)
-and only surfaced live against real <code>clangd</code> — <code>ase_lsp_client_start</code>
-was returning <code>NULL</code> with no diagnosable reason until traced with
-temporary debug logging.</p>
-<p>Fixed by splitting <code>ase_process_spawn</code> into a thin wrapper over a new
-<code>ase_process_spawn_ex(command, cwd, merge_stderr)</code>, which only <code>dup2</code>s
-the child's stderr onto the stdout pipe when <code>merge_stderr</code> is true.
-<code>:compile</code> keeps calling the original <code>ase_process_spawn</code> (merge
-still true, unchanged behavior). The LSP client now calls
-<code>ase_process_spawn_ex(command, NULL, false)</code> — the child's stderr is
-left inherited (not piped, not discarded), so server logging is still
-visible wherever the caller's own stderr goes, but never touches the
-protocol stream. A new core test, <code>test_stderr_merge_toggle</code>, spawns a
-shell that writes to both streams and asserts both directions: merged
-mode still contains both, separated mode contains only stdout.</p>
-<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>All 9 ctest suites pass, including the new <code>ase_process_tests</code>
-stderr-toggle case and the new <code>ase_lsp_client_tests</code> didChange
-round-trip. Verified live against the real <code>clangd</code> binary
-(<code>/usr/bin/clangd</code>), not just the fake fixture: opened a <code>.c</code> file
-with a missing semicolon, confirmed a red squiggle + gutter dot
-appeared on the affected line within about a second; retyped the file
-with the fix in place (via <code>xdotool</code>, simulating real keystrokes) and
-confirmed the squiggle and dot disappeared without restarting the
-editor — direct proof <code>didChange</code> refreshes diagnostics, the specific
-gap this phase exists to close.</p>
-<p>Not attempted: incremental (range-based) sync — full-document sync is
-simpler and this codebase already mirrors the whole buffer elsewhere,
-so the extra complexity isn't justified yet. Also not attempted:
-surfacing diagnostic <code>message</code> text anywhere (e.g. a hover/tooltip) —
-v1 is visual-only (squiggle + dot); <code>GuiDiagnostic.message</code> is stored
-and ready for that follow-up. Completion and go-to-definition
-(<code>ase_lsp_client_request_completion</code>/<code>_request_definition</code>) remain
-implemented at the core layer only, with no GUI wiring — flagged as
-the natural next LSP-related phase.</p>
+<h1 id="feedback">Feedback<a class="headerlink" href="#feedback" title="Permanent link">&para;</a></h1>
+<p>External review comments — from testers, Discord, GitHub issues, or
+anywhere else — recorded one batch per source/date, with a formal
+response to each item. This complements <a href="https://github.com/saeeedhany/ase/issues">issue tracking</a>
+rather than replacing it: an issue or Discord thread is where a
+conversation happens live, this is the curated record of what was
+raised and what we decided.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Batch</th>
+<th>Reporter</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="0001-alpha-release-external-review/">0001</a></td>
+<td>Alpha release external review</td>
+<td>Ajeep (<a href="https://github.com/TOTO-sys28"><code>@TOTO-sys28</code></a>)</td>
+<td><a href="https://discord.com/channels/1547730271695282258/1547848976835936266">Discord</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="how-we-triage-feedback">How we triage feedback<a class="headerlink" href="#how-we-triage-feedback" title="Permanent link">&para;</a></h2>
+<p>Every item gets checked against the actual code before it gets a
+status, never just acknowledged:</p>
+<ul>
+<li><strong>Open</strong> — a real, confirmed defect, not yet fixed.</li>
+<li><strong>Fixed</strong> — a real, confirmed defect, resolved; the response says
+  what changed and how it was verified.</li>
+<li><strong>Not a Bug</strong> — checked against the code and it isn't a defect:
+  either already correct, or describing behavior the reporter's
+  environment produced (window manager theming, a stale local build)
+  rather than anything ase's own code does.</li>
+<li><strong>Deferred</strong> — a real, valid observation about something the editor
+  could do better, but the right fix is part of a broader, coordinated
+  design pass, not a one-off patch to the single thing that got
+  reported. Distinct from "Won't Fix": the concern stands and is
+  tracked, just not actioned in isolation.</li>
+<li><strong>Won't Fix</strong> — a deliberate design decision, kept as-is on purpose.</li>
+</ul>
+<p><strong>A comment being true doesn't automatically make it a bug.</strong> ase has
+a small number of explicit, documented design pillars and a shared
+visual language across its floating panels — see
+<a href="../SPEC/#2-design-pillars-non-negotiable"><code>docs/SPEC.md</code></a>,
+<a href="../adr/0007-syntax-highlighting-tree-sitter/">ADR 0007</a> (monochrome
+by design), and <a href="../adr/0022-floating-panel-design-system/">ADR 0022</a>
+(the shared panel system). A report that a specific screen "looks
+unfinished" or "feels cramped" compared to some other editor's
+convention is useful input, but it's evaluated against <em>what ase is
+actually trying to be</em> before it's treated as something broken. Where
+a comment does point at a real gap in that identity, the fix belongs
+in a real, coordinated design pass across the whole system — not a
+sequence of isolated patches that would leave panels looking like they
+were designed by different people at different times. That's what
+<strong>Deferred</strong> is for, and it's a genuine "yes, and" rather than a
+polite way of saying no.</p>
+<p>What always counts as an actionable bug regardless of taste: a crash,
+incorrect output, a build failure, a broken documented promise (e.g.
+"download this package and it runs"), or a concrete contradiction
+between what a doc says and what the code does.</p>
 
 
 
@@ -2318,10 +2024,10 @@ the natural next LSP-related phase.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
