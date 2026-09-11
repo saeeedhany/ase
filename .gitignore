@@ -60,3 +60,9 @@ packaging/arch/pkg/
 packaging/arch/src/
 packaging/arch/*.pkg.tar.zst
 packaging/arch/*.tar.gz
+
+# Docs site (see docs/requirements.txt + mkdocs.yml) — built/served
+# locally, deployed via `mkdocs gh-deploy` (pushes to the gh-pages
+# branch directly, nothing to commit here on main).
+.venv-docs/
+site/

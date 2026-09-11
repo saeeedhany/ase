@@ -4,9 +4,13 @@ A minimal, robust, blazingly fast, and aesthetically deliberate GUI text
 editor. Core/GUI are cleanly separated so the engine can build and run
 headless, with the GUI as a replaceable shell on top.
 
-Full product spec: [`docs/SPEC.md`](docs/SPEC.md).
-Current progress and open decisions: [`docs/ROADMAP.md`](docs/ROADMAP.md).
-Why things are built the way they are: [`docs/adr/`](docs/adr/).
+**[Browse the docs site](https://saeeedhany.github.io/ase/)** — spec, roadmap,
+and the full architecture-decision history, or read the source directly:
+[`docs/SPEC.md`](docs/SPEC.md), [`docs/ROADMAP.md`](docs/ROADMAP.md),
+[`docs/adr/`](docs/adr/). The site is built with MkDocs
+(`docs/requirements.txt` + `mkdocs.yml`) — `mkdocs serve` for a local
+preview, `mkdocs gh-deploy` to publish; see
+[ADR 0035](docs/adr/0035-mkdocs-documentation-site.md) for why.
 
 ## Status
 

@@ -1,0 +1,108 @@
+site_name: Absolute Simple Editor
+site_description: A minimal, robust, blazingly fast, and aesthetically deliberate GUI text editor.
+site_url: https://saeeedhany.github.io/ase/
+repo_url: https://github.com/saeeedhany/ase
+repo_name: saeeedhany/ase
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+exclude_docs: |
+  adr/template.md
+
+nav:
+  - Home: index.md
+  - Spec: SPEC.md
+  - Roadmap: ROADMAP.md
+  - Decisions:
+    - adr/index.md
+    - adr/0001-record-architecture-decisions.md
+    - adr/0002-headless-core-separation.md
+    - adr/0003-license-decision-pending.md
+    - adr/0004-core-in-plain-c.md
+    - adr/0005-buffer-engine-piece-table.md
+    - adr/0006-gui-shell-v1-shortcuts.md
+    - adr/0007-syntax-highlighting-tree-sitter.md
+    - adr/0008-config-theme-format.md
+    - adr/0009-plugin-abi-and-lua-host.md
+    - adr/0010-hand-rolled-json.md
+    - adr/0011-lsp-client.md
+    - adr/0012-polish-phase-scope.md
+    - adr/0013-caret-drift-fix.md
+    - adr/0014-viewport-geometry.md
+    - adr/0015-smooth-motion.md
+    - adr/0016-caret-visibility-fix.md
+    - adr/0017-viewport-review-pass.md
+    - adr/0018-undo-redo.md
+    - adr/0019-selection-model.md
+    - adr/0020-clipboard.md
+    - adr/0021-find-replace.md
+    - adr/0022-floating-panel-design-system.md
+    - adr/0023-editor-chrome.md
+    - adr/0024-panel-polish-and-scroll-margin.md
+    - adr/0025-command-system.md
+    - adr/0026-keybinding-scheme-help-about.md
+    - adr/0027-visual-polish-pass.md
+    - adr/0028-click-precision-select-all-deletion-glide.md
+    - adr/0029-lsp-diagnostics-wiring.md
+    - adr/0030-lsp-completion-hover.md
+    - adr/0031-draggable-panels-smooth-scroll-tracking-glide.md
+    - adr/0032-lsp-relative-path-uri-fix.md
+    - adr/0033-license-apache-2.0-and-first-alpha-release.md
+    - adr/0034-linux-packaging.md
+    - adr/0035-mkdocs-documentation-site.md
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - attr_list
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - tables
+  - footnotes
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/saeeedhany
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/sBkH45DzHc

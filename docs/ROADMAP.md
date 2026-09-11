@@ -485,6 +485,18 @@ ADRs as each lands here going forward.
       `.deb` (`packaging/debian/`, built and its payload run standalone
       to confirm it actually works, not just that `dpkg-deb` didn't
       error). See [ADR 0034](adr/0034-linux-packaging.md).
+- [x] **Documentation site**: MkDocs + Material, deployed to GitHub
+      Pages at [saeeedhany.github.io/ase](https://saeeedhany.github.io/ase/)
+      — the same `docs/SPEC.md`/`docs/ROADMAP.md`/`docs/adr/*.md` this
+      repo already had, now browsable with search and a real nav
+      instead of only readable file-by-file on GitHub. New
+      `docs/adr/index.md`, a generated table of every decision in
+      order, is the "project history" view this was built for. Two
+      real rendering bugs (missing markdown extensions for buttons/
+      icons; the dev server's `/ase/` path prefix) found by actually
+      loading the built site in a browser, not just a clean
+      `mkdocs build --strict`. See
+      [ADR 0035](adr/0035-mkdocs-documentation-site.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's
