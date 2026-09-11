@@ -811,7 +811,9 @@ void EditorViewport::drawDiagnosticUnderline(QPainter &painter, size_t start, si
             x1 += m_charWidth / 2;
         }
         x1 = std::max(x0 + 1, x1);
-        double baseY = (line - firstLine) * m_lineHeight + m_lineHeight - 3.0;
+        /* 1.0, not the old squiggle's 3.0 — shifted down slightly for
+         * clearance from low-hanging descenders like an underscore. */
+        double baseY = (line - firstLine) * m_lineHeight + m_lineHeight - 1.0;
 
         QColor dim = color;
         dim.setAlpha(kDiagnosticUnderlineDimAlpha);
