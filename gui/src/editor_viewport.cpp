@@ -35,9 +35,15 @@ constexpr int kCaretAnimationTicks = 24;
 constexpr double kTwoPi = 6.283185307179586;
 constexpr int kCaretWidth = 2;
 constexpr int kGutterPadding = 8; /* on each side of the line-number text */
-/* Per paint — see docs/adr/0015. Was 0.35; raised (converges faster
- * per frame) for a snappier glide, see docs/adr/0027. */
-constexpr double kEaseFactor = 0.5;
+/* Per paint — see docs/adr/0015. The single global speed knob for
+ * every eased value in this file (caret glide, scroll, diagnostic
+ * focus reveal, the welcome overlay's fade — docs/adr/0041,
+ * docs/adr/0042): raising it here speeds up all of them together, by
+ * construction, since they all multiply their remaining distance by
+ * this each frame. Was 0.35, then 0.5 (docs/adr/0027); raised again
+ * — caret/scroll glide still read as sluggish on Enter/Delete and
+ * general navigation. See docs/adr/0043. */
+constexpr double kEaseFactor = 0.68;
 /* "scrolloff"-style context margin, in lines/characters, kept visible
  * around the cursor before the view scrolls — see docs/adr/0024. */
 constexpr int kVerticalScrollMargin = 3;
@@ -865,15 +871,37 @@ void EditorViewport::drawWelcomeOverlay(QPainter &painter) const {
         scaledLogo = logo.scaledToWidth(140, Qt::SmoothTransformation);
     }
 
-    static const QStringList kInstructions = {
-        QStringLiteral("Ctrl+O — Open a file"),
-        QStringLiteral("Ctrl+S — Save"),
-        QStringLiteral("Ctrl+/ — Keyboard shortcuts"),
-        QStringLiteral("Ctrl+I — About"),
+    /* {description, key} — description reads left-to-right like a
+     * legend ("what it does"), key answers "how" on the right, a small
+     * bullet marks each row on the left. A flat centered line per
+     * shortcut (the first version of this) read as visually
+     * disorganized once there was more than one; this two-column,
+     * dot-led layout is the aesthetic fix, still just the essentials,
+     * not the Help panel's full reference. */
+    struct WelcomeInstruction {
+        QString description;
+        QString key;
+    };
+    static const QVector<WelcomeInstruction> kInstructions = {
+        {QStringLiteral("Open a file"), QStringLiteral("Ctrl+O")},
+        {QStringLiteral("Save"), QStringLiteral("Ctrl+S")},
+        {QStringLiteral("Keyboard shortcuts"), QStringLiteral("Ctrl+/")},
+        {QStringLiteral("About"), QStringLiteral("Ctrl+I")},
     };
     QFontMetrics metrics(m_font);
     int lineSpacing = metrics.height() + 4;
     constexpr int kLogoTextGap = 22;
+    constexpr double kDotSize = 5.0;
+    constexpr int kDotTextGap = 12;
+    constexpr int kColumnGap = 32;
+
+    int maxDescWidth = 0;
+    int maxKeyWidth = 0;
+    for (const WelcomeInstruction &instr : kInstructions) {
+        maxDescWidth = std::max(maxDescWidth, metrics.horizontalAdvance(instr.description));
+        maxKeyWidth = std::max(maxKeyWidth, metrics.horizontalAdvance(instr.key));
+    }
+    int rowWidth = static_cast<int>(kDotSize) + kDotTextGap + maxDescWidth + kColumnGap + maxKeyWidth;
 
     int totalHeight = scaledLogo.height() + (scaledLogo.isNull() ? 0 : kLogoTextGap) +
                        kInstructions.size() * lineSpacing;
@@ -885,11 +913,22 @@ void EditorViewport::drawWelcomeOverlay(QPainter &painter) const {
 
     QColor textColor = m_textColor;
     textColor.setAlpha(160);
-    painter.setPen(textColor);
     painter.setFont(m_font);
+    int rowLeft = (width() - rowWidth) / 2;
+    int descLeft = rowLeft + static_cast<int>(kDotSize) + kDotTextGap;
+    int keyLeft = rowLeft + rowWidth - maxKeyWidth;
     int textTop = top + scaledLogo.height() + (scaledLogo.isNull() ? 0 : kLogoTextGap);
-    for (const QString &line : kInstructions) {
-        painter.drawText(QRect(0, textTop, width(), lineSpacing), Qt::AlignHCenter | Qt::AlignVCenter, line);
+    for (const WelcomeInstruction &instr : kInstructions) {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(textColor);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.drawEllipse(QRectF(rowLeft, textTop + (lineSpacing - kDotSize) / 2.0, kDotSize, kDotSize));
+
+        painter.setPen(textColor);
+        painter.drawText(QRect(descLeft, textTop, maxDescWidth, lineSpacing), Qt::AlignLeft | Qt::AlignVCenter,
+                          instr.description);
+        painter.drawText(QRect(keyLeft, textTop, maxKeyWidth, lineSpacing), Qt::AlignRight | Qt::AlignVCenter,
+                          instr.key);
         textTop += lineSpacing;
     }
 

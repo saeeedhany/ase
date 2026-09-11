@@ -559,6 +559,14 @@ ADRs as each lands here going forward.
       cleared, not just at initial launch. Verified live, including
       catching the fade-out and fade-back-in mid-animation. See
       [ADR 0042](adr/0042-empty-buffer-welcome-overlay.md).
+- [x] **UI polish pass**: `kEaseFactor` (the single constant every
+      eased value in `editor_viewport.cpp` shares — caret glide,
+      scroll, diagnostic focus, the welcome overlay's fade) raised
+      0.5 → 0.68 for snappier navigation, per direct feedback that
+      Enter/Delete/general movement felt slow. Welcome overlay's
+      shortcut list redesigned from flat centered lines to a
+      two-column, dot-led layout (description left, key right). See
+      [ADR 0043](adr/0043-faster-global-easing-and-welcome-overlay-layout.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's
