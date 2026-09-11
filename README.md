@@ -1,8 +1,15 @@
-# Absolute Simple Editor
+<div align="center">
 
-A minimal, robust, blazingly fast, and aesthetically deliberate GUI text
-editor. Core/GUI are cleanly separated so the engine can build and run
-headless, with the GUI as a replaceable shell on top.
+<img src="assets/readme-banner.png" alt="Absolute Simple Editor" width="720">
+
+A minimal, robust, blazingly fast, and aesthetically deliberate GUI text editor.
+
+[![Release](https://img.shields.io/github/v/release/saeeedhany/ase?include_prereleases&style=flat-square&color=689d6a)](https://github.com/saeeedhany/ase/releases/latest) [![CI](https://img.shields.io/github/actions/workflow/status/saeeedhany/ase/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/saeeedhany/ase/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/saeeedhany/ase?style=flat-square&color=689d6a)](LICENSE) [![Docs](https://img.shields.io/badge/docs-mkdocs-689d6a?style=flat-square)](https://saeeedhany.github.io/ase/) [![Discord](https://img.shields.io/badge/chat-discord-689d6a?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/sBkH45DzHc)
+
+</div>
+
+Core/GUI are cleanly separated so the engine can build and run headless,
+with the GUI as a replaceable shell on top.
 
 **[Browse the docs site](https://saeeedhany.github.io/ase/)** — spec, roadmap,
 and the full architecture-decision history, or read the source directly:
@@ -86,16 +93,21 @@ cmake -B build -DASE_ENABLE_SANITIZERS=ON -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 
+Prebuilt packages (AppImage, Arch `PKGBUILD`, `.deb`) are documented in
+[`packaging/README.md`](packaging/README.md); the alpha's own build of
+each is attached to the
+[latest release](https://github.com/saeeedhany/ase/releases/latest).
+
 ## Layout
 
-- `core/` — the engine: buffer, config/theme parsing, plugin ABI + Lua
-  host, JSON + LSP client. Builds and runs headless. (Undo/redo is
-  spec'd for this layer but not implemented yet — see `docs/ROADMAP.md`.)
+- `core/` — the engine: buffer, config/theme parsing, undo/redo, plugin
+  ABI + Lua host, JSON + LSP client. Builds and runs headless.
 - `gui/` — Qt6 shell: native chrome + custom-painted, multi-cursor viewport.
 - `modules/syntax/` — Tree-sitter syntax highlighting (the only feature
   module built so far — LSP and the plugin host both ended up living in
   `core/` instead; see `modules/README.md`).
-- `docs/` — spec, roadmap, and ADRs.
+- `packaging/` — AppImage, Arch `PKGBUILD`, and `.deb` build scripts.
+- `docs/` — spec, roadmap, ADRs, and the MkDocs site source.
 
 ## Contributing
 
