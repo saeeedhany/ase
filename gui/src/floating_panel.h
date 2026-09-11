@@ -105,6 +105,16 @@ protected:
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
+    /* Called once a drag finishes (mouse released on the drag handle).
+     * A real bug this exists to fix: releasing the drag left Qt's
+     * keyboard focus on the host (EditorViewport) rather than back on
+     * whatever this panel's own designated input/focus widget is, so
+     * Escape — the only way to close a panel, see docs/adr/0044 — could
+     * silently do nothing right after a drag. Each subclass overrides
+     * this to reclaim focus the same way it already does at open time
+     * (e.g. HelpPanel re-focuses its scroll area); the base no-op
+     * default is fine for a panel with nothing sensible to focus. */
+    virtual void restoreFocusAfterDrag() {}
 
 private:
     /* The host-centered, full-size rect this panel should occupy right

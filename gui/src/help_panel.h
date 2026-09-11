@@ -29,6 +29,7 @@ public:
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
+    void restoreFocusAfterDrag() override;
 
 private:
     void hideBar();

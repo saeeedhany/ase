@@ -63,6 +63,7 @@ nav:
     - adr/0041-diagnostic-underline-and-dot-focus.md
     - adr/0042-empty-buffer-welcome-overlay.md
     - adr/0043-faster-global-easing-and-welcome-overlay-layout.md
+    - adr/0044-panel-isolation-drag-bar-unsaved-quit-confirm.md
 
 theme:
   name: material

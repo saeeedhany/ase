@@ -51,3 +51,4 @@ what changed.
 | [0041](0041-diagnostic-underline-and-dot-focus.md) | Diagnostic underline redesign — thin line, dim/focus states |
 | [0042](0042-empty-buffer-welcome-overlay.md) | Empty-buffer welcome overlay |
 | [0043](0043-faster-global-easing-and-welcome-overlay-layout.md) | Faster global easing; welcome overlay two-column layout |
+| [0044](0044-panel-isolation-drag-bar-unsaved-quit-confirm.md) | Panel isolation, full drag bar, unsaved-quit confirmation |

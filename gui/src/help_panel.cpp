@@ -77,18 +77,28 @@ HelpPanel::HelpPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_view
     layout->setContentsMargins(10, 8, 10, 8);
     layout->setSpacing(6);
 
-    auto *headerRow = new QHBoxLayout();
+    /* A real QWidget, not just a QHBoxLayout added directly to `layout`
+     * — installEventFilter (setDragHandle's mechanism) needs an actual
+     * widget to watch. The badge and title are marked transparent to
+     * mouse events so a press anywhere across the bar reaches this
+     * widget and starts a drag, not just a press on the badge itself
+     * (docs/adr/0031's original, narrower handle) — see docs/adr/0044. */
+    auto *headerBar = new QWidget(content);
+    auto *headerRow = new QHBoxLayout(headerBar);
+    headerRow->setContentsMargins(0, 0, 0, 0);
     headerRow->setSpacing(8);
-    m_badge = new LetterBadge(QLatin1Char('?'), content);
+    m_badge = new LetterBadge(QLatin1Char('?'), headerBar);
+    m_badge->setAttribute(Qt::WA_TransparentForMouseEvents);
     headerRow->addWidget(m_badge);
-    setDragHandle(m_badge); /* see docs/adr/0031 */
-    m_title = new QLabel(QStringLiteral("Keyboard shortcuts"), content);
+    m_title = new QLabel(QStringLiteral("Keyboard shortcuts"), headerBar);
+    m_title->setAttribute(Qt::WA_TransparentForMouseEvents);
     QFont titleFont = m_title->font();
     titleFont.setBold(true);
     m_title->setFont(titleFont);
     headerRow->addWidget(m_title);
     headerRow->addStretch(1);
-    layout->addLayout(headerRow);
+    layout->addWidget(headerBar);
+    setDragHandle(headerBar);
 
     m_body = new QLabel(QString::fromUtf8(kHelpHtml), content);
     m_body->setTextFormat(Qt::RichText);
@@ -117,6 +127,10 @@ void HelpPanel::hideBar() {
     setAnimated(m_viewport->animationsEnabled());
     closePanel();
     m_viewport->setFocus();
+}
+
+void HelpPanel::restoreFocusAfterDrag() {
+    m_scrollArea->setFocus();
 }
 
 void HelpPanel::refreshTheme() {

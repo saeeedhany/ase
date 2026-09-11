@@ -41,18 +41,26 @@ AboutPanel::AboutPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_vi
     layout->setContentsMargins(10, 8, 10, 8);
     layout->setSpacing(6);
 
-    auto *headerRow = new QHBoxLayout();
+    /* See docs/adr/0044 — a real QWidget so the whole bar (not just the
+     * badge, docs/adr/0031's original handle) can be the drag handle;
+     * badge/title marked transparent to mouse events so a press
+     * anywhere across the bar still reaches it. */
+    auto *headerBar = new QWidget(content);
+    auto *headerRow = new QHBoxLayout(headerBar);
+    headerRow->setContentsMargins(0, 0, 0, 0);
     headerRow->setSpacing(8);
-    m_badge = new LetterBadge(QLatin1Char('i'), content);
+    m_badge = new LetterBadge(QLatin1Char('i'), headerBar);
+    m_badge->setAttribute(Qt::WA_TransparentForMouseEvents);
     headerRow->addWidget(m_badge);
-    setDragHandle(m_badge); /* see docs/adr/0031 */
-    m_title = new QLabel(QStringLiteral("About"), content);
+    m_title = new QLabel(QStringLiteral("About"), headerBar);
+    m_title->setAttribute(Qt::WA_TransparentForMouseEvents);
     QFont titleFont = m_title->font();
     titleFont.setBold(true);
     m_title->setFont(titleFont);
     headerRow->addWidget(m_title);
     headerRow->addStretch(1);
-    layout->addLayout(headerRow);
+    layout->addWidget(headerBar);
+    setDragHandle(headerBar);
 
     m_logo = new QLabel(content);
     QPixmap logo(QStringLiteral(":/ase.png"));
@@ -88,6 +96,10 @@ void AboutPanel::hideBar() {
     setAnimated(m_viewport->animationsEnabled());
     closePanel();
     m_viewport->setFocus();
+}
+
+void AboutPanel::restoreFocusAfterDrag() {
+    m_body->setFocus();
 }
 
 void AboutPanel::refreshTheme() {

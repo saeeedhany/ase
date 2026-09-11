@@ -567,6 +567,23 @@ ADRs as each lands here going forward.
       shortcut list redesigned from flat centered lines to a
       two-column, dot-led layout (description left, key right). See
       [ADR 0043](adr/0043-faster-global-easing-and-welcome-overlay-layout.md).
+- [x] **Panel isolation, full drag bar, unsaved-quit confirmation**:
+      the five floating-panel popups (Find, File browser, Command
+      line, Help, About) now fully isolate the document underneath —
+      no typing, clicking, scrolling, or hover-popups through while
+      one's open; closing is Escape-only (an early click-outside-
+      closes design was rejected — double-clicks and clicks inside a
+      panel bubbled the same way and closed it too, so it just blocks
+      instead). Found and fixed two real, previously-latent bugs along
+      the way: drag events on a panel's handle were never actually
+      consumed, leaking through to the document; and releasing a drag
+      stranded keyboard focus off the panel, so Escape could silently
+      fail right after dragging. Help/About panels are now draggable
+      from their whole header bar (no special hover cursor), not just
+      the badge. Quitting with unsaved changes now asks for
+      confirmation, styled to match the app's own dark theme instead
+      of the native OS dialog look. See
+      [ADR 0044](adr/0044-panel-isolation-drag-bar-unsaved-quit-confirm.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's

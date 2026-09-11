@@ -1,9 +1,12 @@
 #include <QApplication>
+#include <QCloseEvent>
 #include <QFileInfo>
 #include <QIcon>
 #include <QLabel>
 #include <QMainWindow>
+#include <QMessageBox>
 #include <QPalette>
+#include <QPushButton>
 #include <QStatusBar>
 #include <QString>
 #include <QVBoxLayout>
@@ -45,6 +48,61 @@ void applyStatusBarTheme(QMainWindow &window, QLabel *statusLabel, EditorViewpor
     window.statusBar()->setAutoFillBackground(true);
     statusLabel->setPalette(pal);
 }
+
+/* No Q_OBJECT, no signals/slots of its own — just one virtual override,
+ * so a plain subclass defined right here needs no moc pass. See
+ * docs/adr/0044: quitting (the window's own close button, Alt+F4, or
+ * Ctrl+Q via EditorViewport's window()->close()) with unsaved changes
+ * now asks for confirmation instead of silently discarding them. */
+class MainWindow : public QMainWindow {
+public:
+    explicit MainWindow(EditorViewport *viewport) : m_viewport(viewport) {}
+
+protected:
+    void closeEvent(QCloseEvent *event) override {
+        if (!m_viewport->isDirty()) {
+            event->accept();
+            return;
+        }
+
+        /* A plain QMessageBox::warning() renders with the native OS
+         * palette and a colored warning icon — jarring against this
+         * app's flat, dark, single-accent-color chrome everywhere
+         * else (docs/adr/0022's floating-panel system, the re-themed
+         * QStatusBar in applyStatusBarTheme above). Built manually
+         * instead of via the static convenience function so a
+         * stylesheet can be applied before showing it; NoIcon drops
+         * the colored triangle, consistent with the "one font color"
+         * pillar (docs/adr/0007). */
+        QColor bg = m_viewport->panelBackgroundColor();
+        QColor border = m_viewport->panelBorderColor();
+        QColor text = m_viewport->textColor();
+
+        QMessageBox box(this);
+        box.setIcon(QMessageBox::NoIcon);
+        box.setWindowTitle(QStringLiteral("Unsaved changes"));
+        box.setText(QStringLiteral("This file has unsaved changes. Quit without saving?"));
+        QPushButton *discardButton = box.addButton(QStringLiteral("Discard"), QMessageBox::DestructiveRole);
+        QPushButton *cancelButton = box.addButton(QStringLiteral("Cancel"), QMessageBox::RejectRole);
+        box.setDefaultButton(cancelButton);
+        box.setStyleSheet(QStringLiteral("QMessageBox { background-color: %1; }"
+                                          "QMessageBox QLabel { color: %2; }"
+                                          "QPushButton { background-color: %1; color: %2; border: 1px solid %3; "
+                                          "padding: 4px 14px; min-width: 60px; }"
+                                          "QPushButton:hover, QPushButton:default { border-color: %2; }")
+                               .arg(bg.name(), text.name(), border.name()));
+        box.exec();
+
+        if (box.clickedButton() == discardButton) {
+            event->accept();
+        } else {
+            event->ignore();
+        }
+    }
+
+private:
+    EditorViewport *m_viewport;
+};
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -92,10 +150,10 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    QMainWindow window;
-    window.setWindowTitle(windowTitleFor(filePath, false));
-
     auto *viewport = new EditorViewport(buffer, filePath);
+
+    MainWindow window(viewport);
+    window.setWindowTitle(windowTitleFor(filePath, false));
 
     /* OutputPanel is the one docked (non-floating) panel — a real
      * QVBoxLayout row below viewport, not a child of it. See

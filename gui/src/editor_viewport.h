@@ -115,6 +115,9 @@ public:
     void runCommand(const QString &command);
 
     QString filePath() const { return m_filePath; }
+    /* For the quit-with-unsaved-changes confirmation — see main.cpp's
+     * MainWindow::closeEvent and docs/adr/0044. */
+    bool isDirty() const { return m_dirty; }
     /* Destroys the current buffer/syntax/undo-history and loads `path`
      * fresh — same "missing/unreadable file starts empty, path becomes
      * the save target" tolerance ase_buffer_create_from_file's caller
@@ -431,6 +434,15 @@ private:
     void requestHoverNow();
     void applyHoverResult(const AseJsonValue *result);
     void dismissHover();
+
+    /* True while any of the five FloatingPanel-derived modal popups
+     * (Find, File browser, Command line, Help, About — the design
+     * system ADR 0022 describes; the Output panel is deliberately not
+     * one of these, see setOutputPanel's comment) is open. Guards
+     * keyPressEvent/mousePressEvent/mouseMoveEvent/wheelEvent so the
+     * document underneath is fully inert while one is up. See
+     * docs/adr/0044. */
+    bool isModalPanelOpen() const;
 
     /* Ctrl+Z / Ctrl+Shift+Z — see docs/adr/0018. Both restore m_cursors
      * from the undo stack's recorded snapshot rather than deriving a

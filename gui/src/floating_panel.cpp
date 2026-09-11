@@ -112,7 +112,6 @@ void FloatingPanel::setDragHandle(QWidget *handle) {
     m_dragHandle = handle;
     if (m_dragHandle != nullptr) {
         m_dragHandle->installEventFilter(this);
-        m_dragHandle->setCursor(Qt::SizeAllCursor);
     }
 }
 
@@ -233,6 +232,21 @@ bool FloatingPanel::eventFilter(QObject *watched, QEvent *event) {
                 m_dragging = true;
                 m_dragStartMouse = mouseEvent->globalPosition().toPoint();
                 m_dragStartPanelPos = pos();
+                /* Consumed, not just handled: a plain QWidget drag
+                 * handle (docs/adr/0044 made the whole header bar one,
+                 * not just the badge) has no mousePressEvent override
+                 * of its own, so Qt's default "ignored event
+                 * propagates to the parent" rule would otherwise walk
+                 * this press straight up through content -> this panel
+                 * -> m_host (EditorViewport), which started
+                 * misinterpreting it as a click on the document the
+                 * moment EditorViewport gained its own "click outside
+                 * a modal panel closes it" logic. Returning true here
+                 * stops that walk at the source. Was a latent bug even
+                 * before that — a badge press without any drag motion
+                 * would have silently moved the document cursor
+                 * underneath the panel the same way. */
+                return true;
             }
         } else if (event->type() == QEvent::MouseMove && m_dragging) {
             auto *mouseEvent = static_cast<QMouseEvent *>(event);
@@ -245,8 +259,11 @@ bool FloatingPanel::eventFilter(QObject *watched, QEvent *event) {
                 newPos.setY(std::clamp(newPos.y(), 0, maxY));
             }
             move(newPos);
-        } else if (event->type() == QEvent::MouseButtonRelease) {
+            return true;
+        } else if (event->type() == QEvent::MouseButtonRelease && m_dragging) {
             m_dragging = false;
+            restoreFocusAfterDrag();
+            return true;
         }
     }
 

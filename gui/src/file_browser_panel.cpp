@@ -94,6 +94,10 @@ void FileBrowserPanel::hideBar() {
     m_viewport->setFocus();
 }
 
+void FileBrowserPanel::restoreFocusAfterDrag() {
+    m_filterEdit->setFocus();
+}
+
 void FileBrowserPanel::refreshTheme() {
     setColors(m_viewport->panelBackgroundColor(), m_viewport->panelBorderColor());
 

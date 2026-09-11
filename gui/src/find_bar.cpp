@@ -78,6 +78,11 @@ void FindBar::hideBar() {
     m_viewport->setFocus();
 }
 
+/* Whichever field is actually showing — see docs/adr/0044. */
+void FindBar::restoreFocusAfterDrag() {
+    (m_replaceRow->isVisible() ? m_replaceEdit : m_findEdit)->setFocus();
+}
+
 /* Badge/panel colors are all derived from EditorViewport's existing
  * config-driven theme (docs/adr/0022) — re-pulled every open, and also
  * on every config hot-reload (see EditorViewport::checkConfigReload),

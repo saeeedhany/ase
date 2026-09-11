@@ -39,6 +39,10 @@ void CommandLine::hideBar() {
     m_viewport->setFocus();
 }
 
+void CommandLine::restoreFocusAfterDrag() {
+    m_edit->setFocus();
+}
+
 void CommandLine::refreshTheme() {
     setColors(m_viewport->panelBackgroundColor(), m_viewport->panelBorderColor());
 

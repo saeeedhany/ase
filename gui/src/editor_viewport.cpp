@@ -997,6 +997,16 @@ QColor EditorViewport::colorForCapture(AseHighlightCapture capture) const {
 }
 
 void EditorViewport::keyPressEvent(QKeyEvent *event) {
+    /* A modal panel already has keyboard focus in the normal case, so
+     * this doesn't usually even get reached while one is open — this
+     * is the defense-in-depth half of docs/adr/0044's isolation fix,
+     * guaranteeing no keystroke edits the document underneath
+     * regardless of any focus-routing edge case. */
+    if (isModalPanelOpen()) {
+        QWidget::keyPressEvent(event);
+        return;
+    }
+
     resetCaretBlink();
     dismissHover();
 
@@ -1237,6 +1247,14 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
 }
 
 void EditorViewport::wheelEvent(QWheelEvent *event) {
+    /* See docs/adr/0044 — a modal panel doesn't cover the whole
+     * viewport, so without this the document visible around/behind it
+     * could still be scrolled while it's open. */
+    if (isModalPanelOpen()) {
+        QWidget::wheelEvent(event);
+        return;
+    }
+
     /* Scrolling moves the caret's on-screen position without moving the
      * cursor itself — both popups anchor to a screen point computed at
      * request time, so neither would track the new scroll offset. See
@@ -1250,6 +1268,20 @@ void EditorViewport::wheelEvent(QWheelEvent *event) {
 }
 
 void EditorViewport::mousePressEvent(QMouseEvent *event) {
+    /* Blocks the click outright rather than also treating it as
+     * "clicked away, so close the panel" — a non-interactive widget
+     * inside an open panel (a QLabel, empty layout space) ignores a
+     * press and Qt bubbles it up to here exactly the same way a
+     * genuine outside click would arrive, so the two aren't reliably
+     * distinguishable at this level; a real double-click inside a
+     * panel bubbles the same way too. Rather than chase every such
+     * case, closing is Escape-only (each panel's own eventFilter
+     * handles that directly) — a click while a panel is open just does
+     * nothing. See docs/adr/0044. */
+    if (isModalPanelOpen()) {
+        return;
+    }
+
     dismissCompletion();
     dismissHover();
 
@@ -1293,6 +1325,13 @@ void EditorViewport::mousePressEvent(QMouseEvent *event) {
  * collapsed to one cursor, so a drag starting from a multi-cursor state
  * can't happen. See docs/adr/0019. */
 void EditorViewport::mouseMoveEvent(QMouseEvent *event) {
+    /* See docs/adr/0044 — skips both the passive-hover-popup branch and
+     * drag-select below while a modal panel is open, same reasoning as
+     * the wheelEvent guard above. */
+    if (isModalPanelOpen()) {
+        QWidget::mouseMoveEvent(event);
+        return;
+    }
     if (!(event->buttons() & Qt::LeftButton)) {
         /* No button held — passive movement, i.e. hover tracking (see
          * docs/adr/0030), not a drag. */
@@ -2524,6 +2563,14 @@ void EditorViewport::dismissHover() {
     if (m_hoverPanel != nullptr) {
         m_hoverPanel->dismiss();
     }
+}
+
+bool EditorViewport::isModalPanelOpen() const {
+    return (m_findBar != nullptr && m_findBar->isVisible()) ||
+           (m_fileBrowser != nullptr && m_fileBrowser->isVisible()) ||
+           (m_commandLine != nullptr && m_commandLine->isVisible()) ||
+           (m_helpPanel != nullptr && m_helpPanel->isVisible()) ||
+           (m_aboutPanel != nullptr && m_aboutPanel->isVisible());
 }
 
 /* Shared by undo()/redo(): apply the cursor snapshot the undo stack
