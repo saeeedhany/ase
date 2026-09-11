@@ -515,9 +515,15 @@ ADRs as each lands here going forward.
       (`@TOTO-sys28` on Discord) — a CMake robustness gap and a
       vendored-Lua compiler warning are fixed; two real packaging
       version-floor bugs (`.deb`/AppImage built on a rolling-release
-      dev machine instead of an old, pinned base) and a cramped Help
-      panel remain open; two items checked and found not to be current
-      bugs. See [ADR 0037](adr/0037-feedback-triage-log.md).
+      dev machine instead of an old, pinned base) remain open, to be
+      done together with a future batch of fixes rather than as an
+      isolated rebuild; the cramped Help panel is deferred to a future
+      system-wide floating-panel design pass rather than an isolated
+      layout patch (see [ADR 0038](adr/0038-feedback-triage-criteria-and-deferred-status.md),
+      which also writes down the criteria for telling a real defect
+      apart from a design choice, and adds the `Deferred` status this
+      uses); two items checked and found not to be current bugs. See
+      [ADR 0037](adr/0037-feedback-triage-log.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's

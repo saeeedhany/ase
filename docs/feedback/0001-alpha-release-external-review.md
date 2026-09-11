@@ -67,21 +67,29 @@ undo/redo (Status section, architecture diagram, Layout section) are
 consistent and describe it as implemented, with nothing hedged or
 contradictory. This looks like it was true of an earlier version of
 the README and has since been resolved as part of other edits. If a
-specific stale line turns up, reopen this with the exact quote.
+specific stale line turns up, reopen this with the exact quote — a
+concrete "the doc says X, the code does Y" is exactly the shape of
+report this log exists for.
 
 ### 5. Keyboard shortcuts panel is cramped and requires internal scrolling; nested scrollbar feels awkward
 
 > Keyboard shortcuts panel is cramped and requires internal scrolling; nested scrollbar feels awkward.
 
-**Status:** Open
+**Status:** Deferred
 
 Confirmed at `gui/src/help_panel.cpp:101`: the panel is a fixed
 480×420 single-column scroll area, which forces a nested scrollbar
 once the shortcut list is long enough. A two-column split was tried
-and verified to remove the inner scrollbar entirely, but the
-maintainer didn't like the resulting look, so it was reverted — the
-panel is unchanged for now. Left open pending a different layout
-approach.
+and actually verified to remove the inner scrollbar entirely, but it
+was reverted — not because the underlying observation is wrong, but
+because a single panel shouldn't get its own one-off layout redesign
+ahead of the rest of the editor's chrome. This is current visual
+identity, not a defect: every floating panel in the editor
+(`docs/adr/0022`) deliberately shares one compact, narrow-column
+language, and the Help panel matches it today. It's a real candidate
+for the next system-wide pass over that shared design (see
+[the triage note](index.md#how-we-triage-feedback)), not an isolated
+patch to one panel — tracked, not forgotten.
 
 ### 6. Window control buttons look unfinished/placeholder-like
 
@@ -93,8 +101,9 @@ Checked `gui/src/main.cpp`: ase doesn't draw its own title bar or
 window control buttons at all — it's a plain `QMainWindow` with native
 OS window decorations, and `FramelessWindowHint` doesn't appear
 anywhere in the codebase. Whatever was seen is the reporter's own
-window manager's theme, not ase's UI. Reopen if this refers to some
-other button (e.g. inside a panel) rather than minimize/maximize/close.
+window manager's theme, not ase's UI — nothing here for us to change.
+Reopen if this refers to some other button (e.g. inside a panel)
+rather than minimize/maximize/close.
 
 ### 7. Build emits a `tmpnam()` security warning
 

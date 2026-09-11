@@ -57,6 +57,7 @@ nav:
     - adr/0035-mkdocs-documentation-site.md
     - adr/0036-docs-site-theme-and-plugins-page.md
     - adr/0037-feedback-triage-log.md
+    - adr/0038-feedback-triage-criteria-and-deferred-status.md
 
 theme:
   name: material

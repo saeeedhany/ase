@@ -13,7 +13,7 @@
 
 > Quoted comment text, verbatim.
 
-**Status:** Open | Fixed | Won't Fix | Not a Bug
+**Status:** Open | Fixed | Won't Fix | Not a Bug | Deferred
 
 Our formal response: what we found when we checked, what we're doing
 about it (or why not), and a link to the commit/PR/ADR that resolved
