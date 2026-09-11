@@ -505,6 +505,18 @@ ADRs as each lands here going forward.
       — see ADR 0007). A placeholder `docs/plugins.md` page was also
       added. See
       [ADR 0036](adr/0036-docs-site-theme-and-plugins-page.md).
+- [x] **Feedback triage log**: `docs/feedback/`, structured the same
+      way as `docs/adr/` (numbered batch files, an index, an explicit
+      nav entry each) — a formal, versioned response to external
+      review comments, attributed to the reporter and linked back to
+      the source, distinct from the live conversation on Discord/
+      GitHub issues where a report first lands. First batch: seven
+      comments from the alpha release's first external review
+      (`@TOTO-sys28` on Discord) — two real packaging version-floor
+      bugs, a CMake robustness gap, a vendored-Lua compiler warning,
+      and a cramped Help panel, all still open; two items checked and
+      found not to be current bugs. See
+      [ADR 0037](adr/0037-feedback-triage-log.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's

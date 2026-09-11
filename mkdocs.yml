@@ -8,12 +8,16 @@ edit_uri: edit/main/docs/
 docs_dir: docs
 exclude_docs: |
   adr/template.md
+  feedback/template.md
 
 nav:
   - Home: index.md
   - Spec: SPEC.md
   - Roadmap: ROADMAP.md
   - Plugins: plugins.md
+  - Feedback:
+    - feedback/index.md
+    - feedback/0001-alpha-release-external-review.md
   - Decisions:
     - adr/index.md
     - adr/0001-record-architecture-decisions.md
@@ -52,6 +56,7 @@ nav:
     - adr/0034-linux-packaging.md
     - adr/0035-mkdocs-documentation-site.md
     - adr/0036-docs-site-theme-and-plugins-page.md
+    - adr/0037-feedback-triage-log.md
 
 theme:
   name: material

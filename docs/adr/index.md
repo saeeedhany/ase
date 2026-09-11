@@ -44,3 +44,4 @@ what changed.
 | [0034](0034-linux-packaging.md) | Linux packaging (AppImage, Arch PKGBUILD, .deb) |
 | [0035](0035-mkdocs-documentation-site.md) | MkDocs documentation site |
 | [0036](0036-docs-site-theme-and-plugins-page.md) | Docs site branding (logo, editor colors) and a Plugins page |
+| [0037](0037-feedback-triage-log.md) | A feedback triage log, alongside ADRs |
