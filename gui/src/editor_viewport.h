@@ -195,6 +195,11 @@ private:
      * font) rather than assumed via column * m_charWidth — see
      * docs/adr/0013's caret-drift fix. */
     int xForColumn(int lineStart, int lineEnd, int column) const;
+    /* Inverse of xForColumn: which column's rendered glyph a local x
+     * coordinate falls nearest to, measured the same per-run way — see
+     * docs/adr/0039's fix for the mouse-side counterpart of the
+     * docs/adr/0013 caret-drift bug. */
+    int columnForX(int lineStart, int lineEnd, int localX) const;
 
     /* 0 when line numbers are off; otherwise measured (not assumed —
      * see docs/adr/0014) from the widest line-number string actually

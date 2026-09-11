@@ -524,6 +524,17 @@ ADRs as each lands here going forward.
       apart from a design choice, and adds the `Deferred` status this
       uses); two items checked and found not to be current bugs. See
       [ADR 0037](adr/0037-feedback-triage-log.md).
+- [x] **Mouse hit-test drift fix**: user-reported bug — clicking or
+      hovering further right on a line with mixed syntax-highlight
+      styling (e.g. bold keywords next to plain identifiers)
+      increasingly missed the character under the pointer. Same root
+      cause as ADR 0013's caret-drift bug (a fixed per-character pixel
+      width instead of measuring what was actually rendered), just
+      never fixed on the mouse side. New `columnForX()` mirrors
+      `xForColumn()`'s real per-run measurement; verified live by
+      confirming a mouse click and a keyboard-placed caret at the same
+      pixel now resolve to the same character, deep into a styled
+      line. See [ADR 0039](adr/0039-mouse-hit-test-drift-fix.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's

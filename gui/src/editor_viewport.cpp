@@ -333,31 +333,23 @@ size_t EditorViewport::offsetForPoint(const QPoint &pos) const {
      * philosophy. */
     int line = static_cast<int>(std::floor(m_renderedScrollLine)) + pos.y() / std::max(1, m_lineHeight);
     line = std::clamp(line, 0, static_cast<int>(m_lineStarts.size()) - 1);
-    /* Approximate on purpose: unlike the caret (docs/adr/0013), a click a
-     * character off on a long or styled line is a minor miss, not a
-     * growing visible bug — not worth an O(line length) exact-measurement
-     * search on every click. Shifted by the gutter and horizontal scroll
-     * (docs/adr/0014) to land in the same local coordinate space
-     * paintEvent's translate uses. */
+    /* Shifted by the gutter and horizontal scroll (docs/adr/0014) to land
+     * in the same local coordinate space paintEvent's translate uses. */
     int localX = std::max(0, static_cast<int>(pos.x() - gutterWidth() + m_renderedScrollX));
-    /* Rounds to the *nearest* column instead of flooring to whichever
-     * one the click's left edge falls in — a real, reported bug: a
-     * plain floor meant a click in a character's right half still
-     * resolved to that character, so the cursor only advanced once the
-     * pointer had moved almost a full character further right than
-     * expected. See docs/adr/0028. */
-    int col = (localX + std::max(1, m_charWidth) / 2) / std::max(1, m_charWidth);
-    size_t offset = offsetForLineColumn(line, col);
-
-    /* Column counting is byte-based (see docs/adr/0012, decision 1) — a
-     * pixel click can land mid-codepoint; snap forward to the next
-     * lead-byte boundary so every cursor position stays one that the
-     * multi-cursor edit operations' invariant assumes. */
-    while (offset > 0 && offset < static_cast<size_t>(m_cache.size()) &&
-           isUtf8ContinuationByte(m_cache[static_cast<int>(offset)])) {
-        offset++;
-    }
-    return offset;
+    /* columnForX measures each run's actual rendered width the same way
+     * drawLine paints it, rather than assuming column * m_charWidth. That
+     * fixed-pitch assumption used to live here directly and drifted
+     * further from the real character the further right a click/hover
+     * landed on a line — the mouse-side counterpart of the caret-drift
+     * bug docs/adr/0013 already fixed for the caret itself. See
+     * docs/adr/0039. columnForX already rounds to the nearest column
+     * (docs/adr/0028) and already snaps to a codepoint boundary, so no
+     * separate continuation-byte fixup is needed here anymore. */
+    int lineStart = m_lineStarts[line];
+    int lineEnd =
+        (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
+    int col = columnForX(lineStart, lineEnd, localX);
+    return offsetForLineColumn(line, col);
 }
 
 void EditorViewport::paintEvent(QPaintEvent *) {
@@ -671,6 +663,69 @@ int EditorViewport::xForColumn(int lineStart, int lineEnd, int column) const {
         runStart = i;
     }
     return x;
+}
+
+/* Inverse of xForColumn, for mouse hit-testing: which column's rendered
+ * glyph localX falls nearest to. Walks the same per-run segmentation
+ * xForColumn/drawLine use, measuring each run's *actual* advance
+ * (QFontMetrics::horizontalAdvance) rather than assuming column *
+ * m_charWidth. That fixed-pitch assumption is exactly the bug
+ * docs/adr/0013 already fixed for the caret — it was still present here,
+ * for the mouse: on a non-monospace-average line (bold/italic captures
+ * measure differently than the base font — see fontForCapture), the
+ * click/hover column drifted further from the actual character the
+ * further right it landed on a line, a real reported bug. See
+ * docs/adr/0039.
+ *
+ * Once inside the run that contains localX, steps by codepoint (not
+ * byte) so a multi-byte UTF-8 character is never measured as a partial,
+ * invalid byte sequence — isUtf8ContinuationByte is the same helper
+ * offsetForPoint's own snap-forward and the cursor-movement code already
+ * use elsewhere in this file. Rounds to the *nearest* codepoint boundary,
+ * not floor — same reasoning as docs/adr/0028's click-precision fix. */
+int EditorViewport::columnForX(int lineStart, int lineEnd, int localX) const {
+    int lineLen = lineEnd - lineStart;
+    if (lineLen <= 0 || localX <= 0) {
+        return 0;
+    }
+
+    QVector<AseHighlightCapture> captures = capturesForLine(lineStart, lineEnd);
+
+    int x = 0;
+    int runStart = 0;
+    for (int i = 1; i <= lineLen; ++i) {
+        if (i < lineLen && captures[i] == captures[runStart]) {
+            continue;
+        }
+        int runLen = i - runStart;
+        const QFontMetrics &metrics = metricsForCapture(captures[runStart]);
+        QString runText = QString::fromUtf8(m_cache.constData() + lineStart + runStart, runLen);
+        int runWidth = metrics.horizontalAdvance(runText);
+
+        if (x + runWidth >= localX) {
+            int prevAdvance = 0;
+            int prevBoundary = 0;
+            int b = 1;
+            while (b <= runLen) {
+                while (b < runLen && isUtf8ContinuationByte(m_cache[lineStart + runStart + b])) {
+                    b++;
+                }
+                QString prefix = QString::fromUtf8(m_cache.constData() + lineStart + runStart, b);
+                int advance = metrics.horizontalAdvance(prefix);
+                if (x + advance >= localX) {
+                    int mid = x + (prevAdvance + advance) / 2;
+                    return runStart + ((localX <= mid) ? prevBoundary : b);
+                }
+                prevAdvance = advance;
+                prevBoundary = b;
+                b++;
+            }
+            return runStart + runLen;
+        }
+        x += runWidth;
+        runStart = i;
+    }
+    return lineLen;
 }
 
 /* Shared by the selection pass and the find/replace-match pass — one

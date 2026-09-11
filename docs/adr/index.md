@@ -46,3 +46,4 @@ what changed.
 | [0036](0036-docs-site-theme-and-plugins-page.md) | Docs site branding (logo, editor colors) and a Plugins page |
 | [0037](0037-feedback-triage-log.md) | A feedback triage log, alongside ADRs |
 | [0038](0038-feedback-triage-criteria-and-deferred-status.md) | Feedback triage criteria, and a "Deferred" status |
+| [0039](0039-mouse-hit-test-drift-fix.md) | Fix mouse click/hover drift on styled lines |
