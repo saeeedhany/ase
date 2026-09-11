@@ -496,7 +496,15 @@ ADRs as each lands here going forward.
       icons; the dev server's `/ase/` path prefix) found by actually
       loading the built site in a browser, not just a clean
       `mkdocs build --strict`. See
-      [ADR 0035](adr/0035-mkdocs-documentation-site.md).
+      [ADR 0035](adr/0035-mkdocs-documentation-site.md). Rebranded
+      right after (user-reported: it still showed Material's default
+      logo and indigo color scheme) — the actual "ase" wordmark as
+      logo/favicon, and a custom palette matching the editor's own
+      `#282828`/`#F5E6C8`, plus a new docs-only accent `#689d6a` (the
+      editor has no general-purpose accent color of its own to reuse
+      — see ADR 0007). A placeholder `docs/plugins.md` page was also
+      added. See
+      [ADR 0036](adr/0036-docs-site-theme-and-plugins-page.md).
 - [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
       emulation, not a lighter subset. Hard prerequisite (undo/redo)
       now satisfied by Phase 10; also benefits from Phase 11's

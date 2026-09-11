@@ -43,3 +43,4 @@ what changed.
 | [0033](0033-license-apache-2.0-and-first-alpha-release.md) | License chosen (Apache 2.0) — first alpha release |
 | [0034](0034-linux-packaging.md) | Linux packaging (AppImage, Arch PKGBUILD, .deb) |
 | [0035](0035-mkdocs-documentation-site.md) | MkDocs documentation site |
+| [0036](0036-docs-site-theme-and-plugins-page.md) | Docs site branding (logo, editor colors) and a Plugins page |

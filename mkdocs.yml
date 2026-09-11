@@ -13,6 +13,7 @@ nav:
   - Home: index.md
   - Spec: SPEC.md
   - Roadmap: ROADMAP.md
+  - Plugins: plugins.md
   - Decisions:
     - adr/index.md
     - adr/0001-record-architecture-decisions.md
@@ -50,21 +51,24 @@ nav:
     - adr/0033-license-apache-2.0-and-first-alpha-release.md
     - adr/0034-linux-packaging.md
     - adr/0035-mkdocs-documentation-site.md
+    - adr/0036-docs-site-theme-and-plugins-page.md
 
 theme:
   name: material
+  logo: assets/ase-logo.png
+  favicon: assets/ase-logo.png
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: black
-      accent: amber
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: black
-      accent: amber
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
@@ -84,6 +88,9 @@ theme:
 
 plugins:
   - search
+
+extra_css:
+  - stylesheets/extra.css
 
 markdown_extensions:
   - toc:
