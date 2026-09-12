@@ -133,7 +133,12 @@ void EditorViewport::refreshCache() {
      * CPU at complete idle on an 8400-line file. Same "mirror the whole
      * buffer once, index it cheaply after" shape m_cache and
      * m_lineStarts already use (docs/adr/0006). See docs/adr/0053. */
-    m_captureAt.assign(m_cache.size(), static_cast<uint8_t>(ASE_HL_NONE));
+    /* fill(), not assign(): QList::assign arrived in Qt 6.6, and the
+     * oldest base this project packages against is Qt 6.4
+     * (debian:bookworm, see packaging/README.md). Building natively on a
+     * rolling-release machine hid that for three releases — exactly the
+     * class of bug ADR 0045 introduced the pinned containers to catch. */
+    m_captureAt.fill(static_cast<uint8_t>(ASE_HL_NONE), m_cache.size());
     for (const AseHighlightSpan &span : m_highlights) {
         int spanStart = std::clamp(static_cast<int>(span.start), 0, static_cast<int>(m_captureAt.size()));
         int spanEnd = std::clamp(static_cast<int>(span.end), 0, static_cast<int>(m_captureAt.size()));

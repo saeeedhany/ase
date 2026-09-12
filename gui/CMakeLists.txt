@@ -1,4 +1,11 @@
-find_package(Qt6 COMPONENTS Widgets QUIET)
+# 6.2 is the floor, and it is not arbitrary: it is what ubuntu:22.04
+# ships, which is the oldest base packaging/ builds against (see
+# packaging/README.md and docs/adr/0045). Stating it here makes a build
+# on something older fail at *configure* time with a version number,
+# rather than deep in a compile with a missing-member error — which is
+# exactly how a Qt 6.6-only QList::assign() slipped through three
+# releases of native builds on a rolling-release dev machine.
+find_package(Qt6 6.2 COMPONENTS Widgets QUIET)
 
 # ASE_BUILD_GUI defaults to ON, so reaching this file at all means the
 # GUI was requested (explicitly or by that default) — a missing Qt6
