@@ -287,7 +287,7 @@ private:
     void normalizeCursors();
 
     /* Single-cursor primitives — operate on m_cursors[i]/m_selectionAnchors[i]. */
-    void insertTextAt(int i, const QByteArray &bytes);
+    void insertTextAt(int i, const QByteArray &bytes, bool animate);
     void deleteBackwardAt(int i);
     void deleteForwardAt(int i);
     void moveCursorLeftAt(int i, bool extend);
@@ -667,6 +667,19 @@ private:
     double m_renderedScrollLine = 0.0;
     double m_renderedScrollX = 0.0;
     QVector<QPointF> m_renderedCaretPos;
+
+    /* Typing pop-in — see docs/adr/0049. A short-lived visual-only
+     * record: [start, start+length) just got inserted and should render
+     * scaling/fading in from elapsedTicks == 0 instead of appearing at
+     * full size immediately. Only ever populated when animations are
+     * enabled (see insertText()); ages out (and is defensively dropped
+     * if it no longer fits inside m_cache) in updateAnimation(). */
+    struct TypingAnimation {
+        size_t start;
+        size_t length;
+        int elapsedTicks;
+    };
+    QVector<TypingAnimation> m_typingAnimations;
     /* Eased 0..1 — see docs/adr/0042. */
     double m_welcomeOverlayOpacity = 0.0;
 

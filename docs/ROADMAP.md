@@ -639,6 +639,15 @@ ADRs as each lands here going forward.
       animation — was deliberately deferred pending a design decision
       rather than guessed at. See
       [ADR 0048](adr/0048-syntax-accent-colors-caret-inset-status-init.md).
+- [x] **Typing pop-in animation**: the deferred fourth item from the
+      same feedback. Each newly typed character (plain typing, Tab —
+      not paste, not multi-line insertions, not Enter's own newline)
+      fades and scales in from 85% to full size/opacity over ~120ms,
+      gated on `animations = true` like every other animation in this
+      editor. Hooks into `insertText`/`insertTextAt` (the one funnel
+      every typing-shaped insertion already goes through) rather than
+      adding a new call site. See
+      [ADR 0049](adr/0049-typing-pop-in-animation.md).
 
 ## Explicit non-goals for v1
 

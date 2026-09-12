@@ -34,6 +34,21 @@ namespace {
 constexpr int kCaretAnimationTicks = 24;
 constexpr double kTwoPi = 6.283185307179586;
 constexpr int kCaretWidth = 2;
+/* Typing pop-in — see docs/adr/0049. 4 ticks at the 30ms blink-timer
+ * cadence above (~120ms) — short enough to read as a snappy "just
+ * landed" pop, not a sluggish delay before text looks finished. Only
+ * insertions this short (and never crossing a line, hence the '\n'
+ * check at the call site) get animated at all: a real paste or
+ * multi-line block popping in as one giant scaled unit would look
+ * wrong, not good — this is only meant to fire for genuine
+ * just-typed-a-character cases. */
+constexpr int kTypingAnimationTicks = 4;
+constexpr qsizetype kTypingAnimationMaxBytes = 8;
+/* Eased 0..1 progress -> scale, i.e. a typed character starts at 85%
+ * size and grows to 100% as it fades in — paired with kEaseFactor-style
+ * quick convergence (ease-out, not linear) for the same snappy feel
+ * every other animation in this file already has. */
+constexpr double kTypingAnimationStartScale = 0.85;
 /* The Normal-mode block cursor's fill, capped well under fully opaque —
  * even at the breathing cycle's brightest instant (see caretAlpha
  * below), a solid 100%-opaque block would flash harder than every
@@ -463,6 +478,53 @@ void EditorViewport::paintEvent(QPaintEvent *) {
         drawLine(painter, start, end, y);
     }
 
+    /* Typing pop-in — see docs/adr/0049. drawLine above already painted
+     * these bytes at full size/opacity; re-paint over just that rect
+     * (background fill, then the scaled/faded glyph on top) rather than
+     * teaching drawLine's run segmentation about a third, transient
+     * state. Only ever non-empty when animations are enabled. */
+    for (const TypingAnimation &anim : m_typingAnimations) {
+        if (anim.start + anim.length > static_cast<size_t>(m_cache.size())) {
+            continue; /* stale — updateAnimation() drops it next tick */
+        }
+        int line = lineForOffset(anim.start);
+        if (line < firstLine || line >= lastLine) {
+            continue; /* off-screen right now; still ticking, just not drawn */
+        }
+        int lineStart = m_lineStarts[line];
+        int lineEnd = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
+        int startCol = static_cast<int>(anim.start) - lineStart;
+        int endCol = static_cast<int>(anim.start + anim.length) - lineStart;
+        if (endCol > lineEnd - lineStart) {
+            continue; /* defensive — shouldn't happen, the '\n' guard at the call site keeps insertions single-line */
+        }
+
+        double progress = std::clamp(static_cast<double>(anim.elapsedTicks) / kTypingAnimationTicks, 0.0, 1.0);
+        double t = 1.0 - (1.0 - progress) * (1.0 - progress); /* ease-out, same shape as kEaseFactor elsewhere */
+        double scale = kTypingAnimationStartScale + (1.0 - kTypingAnimationStartScale) * t;
+
+        int x0 = xForColumn(lineStart, lineEnd, startCol);
+        int x1 = xForColumn(lineStart, lineEnd, endCol);
+        int y = (line - firstLine) * m_lineHeight;
+        QRectF rect(x0, y, x1 - x0, m_lineHeight);
+
+        QVector<AseHighlightCapture> captures = capturesForLine(lineStart, lineEnd);
+        AseHighlightCapture capture = captures[startCol];
+        QString text = QString::fromUtf8(m_cache.constData() + lineStart + startCol, endCol - startCol);
+        QColor color = colorForCapture(capture);
+        color.setAlpha(static_cast<int>(color.alpha() * t));
+
+        painter.fillRect(rect, m_backgroundColor);
+        painter.save();
+        painter.translate(rect.center());
+        painter.scale(scale, scale);
+        painter.translate(-rect.center());
+        painter.setFont(fontForCapture(capture));
+        painter.setPen(color);
+        painter.drawText(rect, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextDontClip, text);
+        painter.restore();
+    }
+
     /* LSP diagnostic underlines — drawn on top of the glyphs, same
      * translate/clip as the text loop above. `character` is treated as a
      * direct byte offset within the line (ASCII-only v1 simplification,
@@ -642,6 +704,22 @@ void EditorViewport::updateAnimation() {
             rendered += delta * kEaseFactor;
         }
     }
+
+    /* Typing pop-in — see docs/adr/0049. Ages every entry by one tick and
+     * drops it once its animation window has elapsed, or defensively if
+     * an edit elsewhere has since made its byte range invalid (out of
+     * bounds) — paintEvent's own bounds check covers the "still in
+     * bounds but now different content" case by construction (it always
+     * reads m_cache fresh), this one just prevents the list from
+     * growing forever. */
+    for (int i = m_typingAnimations.size() - 1; i >= 0; --i) {
+        TypingAnimation &anim = m_typingAnimations[i];
+        anim.elapsedTicks++;
+        if (anim.elapsedTicks >= kTypingAnimationTicks ||
+            anim.start + anim.length > static_cast<size_t>(m_cache.size())) {
+            m_typingAnimations.remove(i);
+        }
+    }
 }
 
 QPointF EditorViewport::caretTargetFor(size_t cursor) const {
@@ -666,6 +744,11 @@ void EditorViewport::snapAnimationToTarget() {
     for (int i = 0; i < m_cursors.size(); ++i) {
         m_renderedCaretPos[i] = caretTargetFor(m_cursors[i]);
     }
+    /* Everything else snaps to "already settled" here, so a typed
+     * character still mid-pop when e.g. an undo/redo or a Vim command
+     * fires should too, rather than finishing its animation over text
+     * that's no longer the reason it started. */
+    m_typingAnimations.clear();
 }
 
 /* One entry per byte in [start, end), naming which capture (if any) that
@@ -2521,9 +2604,16 @@ void EditorViewport::insertText(const QByteArray &bytes) {
     if (bytes.isEmpty()) {
         return;
     }
+    /* See the kTypingAnimationMaxBytes/kTypingAnimationTicks comment —
+     * restricted to short, single-line insertions, which in practice
+     * means "an actual keystroke" (a plain character, or a handful of
+     * bytes for a multi-byte UTF-8 one), not a paste or a completion
+     * accept dumping in a whole block at once. */
+    bool animate =
+        m_animationsEnabled && bytes.size() <= kTypingAnimationMaxBytes && !bytes.contains('\n');
     ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     for (int i = m_cursors.size() - 1; i >= 0; --i) {
-        insertTextAt(i, bytes);
+        insertTextAt(i, bytes, animate);
     }
     normalizeCursors();
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
@@ -2533,13 +2623,21 @@ void EditorViewport::insertText(const QByteArray &bytes) {
 
 /* An active selection is replaced: delete it first (as part of the same
  * undo group), then insert at the collapse point — see docs/adr/0019. */
-void EditorViewport::insertTextAt(int i, const QByteArray &bytes) {
+void EditorViewport::insertTextAt(int i, const QByteArray &bytes, bool animate) {
     if (hasSelectionAt(i)) {
         deleteSelectionAt(i);
     }
     size_t &cursor = m_cursors[i];
     if (ase_buffer_insert(m_buffer, cursor, bytes.constData(), static_cast<size_t>(bytes.size()))) {
         ase_undo_record_insert(m_undo, cursor, bytes.constData(), static_cast<size_t>(bytes.size()));
+        if (animate) {
+            /* Cursors are processed highest-offset-first (the loop in
+             * insertText() above), so an earlier iteration in this same
+             * call can never have written before `cursor` here — this
+             * offset is stable for the rest of the current call. See
+             * docs/adr/0012 for the same invariant used elsewhere. */
+            m_typingAnimations.push_back({cursor, static_cast<size_t>(bytes.size()), 0});
+        }
         cursor += static_cast<size_t>(bytes.size());
     }
     m_selectionAnchors[i] = cursor;
