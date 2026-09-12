@@ -678,6 +678,60 @@ ADRs as each lands here going forward.
       extracting a real subsystem later now starts from a file that
       already holds exactly that subsystem. See
       [ADR 0052](adr/0052-editor-viewport-split-into-translation-units.md).
+- [x] **The render hot path, and one motion language**: `capturesForLine()`
+      scanned every highlight span for every visible line on every frame
+      — measured **22% idle CPU** on an 8402-line file with the caret
+      blinking. Flattened to a per-byte capture array built once per
+      reparse, taking idle back to **0.0%**. Separately, six files had
+      each independently picked their own animation duration; they now
+      share `gui/src/motion.h`, which names the tiers and states the
+      rule that new chrome picks one rather than inventing a seventh. See
+      [ADR 0053](adr/0053-render-hot-path-and-one-motion-language.md).
+- [x] **Multiple buffers, and the plugin host wired in**: a viewport per
+      buffer behind a minimal custom-painted tab strip (no frames, no
+      separators — state carried by opacity), `Ctrl+Tab`/`Ctrl+W`/`Ctrl+N`.
+      The plugin host now actually loads `<config dir>/plugins/` and `:name`
+      runs a registered command; it had existed as a tested core library
+      with nothing calling it. See
+      [ADR 0054](adr/0054-multiple-buffers-and-plugin-host-wiring.md).
+- [x] **The dot means unsaved; new-file and panel fixes**: the tab dot
+      moved from "this one is active" (which opacity already said) to
+      "this one has unsaved changes" (which nothing said). `Ctrl+N`.
+      Open/Save-As now resolve a typed path in *both* modes, confirm
+      before overwriting, and show which directory you are in. About
+      panel re-laid out as logo column + left-aligned text; the shortcut
+      reference became data rather than a hand-written HTML blob, and
+      caught up with everything that had shipped since it was written.
+      See [ADR 0055](adr/0055-dirty-dot-new-file-panel-fixes.md).
+- [x] **Linewise Visual, tab motion, searchable shortcuts**: `Shift+V`
+      and `o` close two real gaps against vim. The tab strip reserves
+      close-mark width on every tab so switching reflows nothing, and
+      interpolates every layout change through the shared motion
+      language. The shortcut reference became collapsible sections with
+      a search field. See
+      [ADR 0056](adr/0056-linewise-visual-tab-motion-searchable-shortcuts.md).
+- [x] **An always-present tab strip, and a rewritten welcome screen**:
+      the strip no longer appears and disappears under you; closing
+      reverses opening; `Shift`+wheel pans it past the window edge. The
+      welcome screen leads with what the editor *is*, then the shortcuts
+      that matter — including the one that stops new users dead (Vim
+      mode is on by default, so typing does nothing until `i`). See
+      [ADR 0057](adr/0057-always-on-tab-strip-and-welcome-rework.md).
+- [x] **Tab identity, the session greeting, and panel carets**: tabs were
+      matched across layouts by *display name*, and every `+` buffer is
+      called `untitled` — so new tabs animated from the wrong place and
+      closing skipped its animation entirely. Keyed on the viewport
+      pointer now. The welcome screen is armed only for a startup buffer
+      opened with no file, never for a later `Ctrl+N`. And every panel
+      text field draws the editor's own gliding, breathing caret instead
+      of Qt's hard blink, closing the gap ADR 0028 left open. See
+      [ADR 0058](adr/0058-session-scoped-greeting-and-panel-carets.md).
+- [x] **v0.3.0-alpha**: everything since v0.2.0-alpha — Vim mode and its
+      polish, the block cursor, syntax accent colors, runtime font zoom,
+      the typing pop-in, the `EditorViewport` split, the render hot-path
+      fix, one motion language, multiple buffers, the plugin host wired
+      in, and the tab strip — is a substantially different editor from
+      the one that tag points at.
 
 ## Beyond v1 — what would make this editor unique
 

@@ -1,6 +1,6 @@
 # Maintainer: Saeed <alsaeedalbasi0ny@gmail.com>
 pkgname=ase
-pkgver=0.2.0_alpha
+pkgver=0.3.0_alpha
 pkgrel=1
 pkgdesc="A minimal, robust, blazingly fast, and aesthetically deliberate GUI text editor"
 arch=('x86_64')
@@ -16,7 +16,7 @@ makedepends=('cmake' 'git')
 # "$pkgname-$pkgver" (they differ by that same hyphen/underscore), so
 # _srcdir spells that out explicitly rather than assuming makepkg's
 # default source-dir guess is right.
-_tag=v0.2.0-alpha
+_tag=v0.3.0-alpha
 _srcdir="ase-${_tag#v}"
 
 source=("$pkgname-$pkgver.tar.gz::https://github.com/saeeedhany/ase/archive/refs/tags/${_tag}.tar.gz")
