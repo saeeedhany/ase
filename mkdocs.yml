@@ -77,6 +77,7 @@ nav:
     - adr/0054-multiple-buffers-and-plugin-host-wiring.md
     - adr/0055-dirty-dot-new-file-panel-fixes.md
     - adr/0056-linewise-visual-tab-motion-searchable-shortcuts.md
+    - adr/0057-always-on-tab-strip-and-welcome-rework.md
 
 theme:
   name: material

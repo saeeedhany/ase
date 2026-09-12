@@ -710,8 +710,9 @@ something else.
 - ~~**Show unsaved state in the buffer bar.**~~ Done — the dot now marks
   unsaved changes rather than the active buffer, and stays readable on a
   dimmed entry ([ADR 0055](adr/0055-dirty-dot-new-file-panel-fixes.md)).
-- **Buffer bar overflow.** The bar neither scrolls nor elides, so past
-  roughly a dozen buffers the later entries run off the window edge.
+- ~~**Buffer bar overflow.**~~ Done — `Shift`+wheel pans the strip
+  ([ADR 0057](adr/0057-always-on-tab-strip-and-welcome-rework.md)). Tabs
+  still don't elide long names, which is the remaining half.
 - **Large-file sanity pass.** Sub-frame budgets hold now at ~8k lines;
   find a real ceiling (100k? 1M?) and either fix it or document it
   honestly rather than discovering it from a bug report.

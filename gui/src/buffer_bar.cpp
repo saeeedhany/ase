@@ -8,6 +8,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QResizeEvent>
+#include <QWheelEvent>
 #include <QVariantAnimation>
 
 namespace {
@@ -53,6 +54,18 @@ BufferBar::BufferBar(QWidget *parent) : QWidget(parent) {
         m_transition = value.toDouble();
         update();
     });
+    connect(m_animation, &QVariantAnimation::finished, this, [this]() {
+        bool removed = false;
+        for (int i = m_tabs.size() - 1; i >= 0; --i) {
+            if (m_tabs[i].closing) {
+                m_tabs.remove(i);
+                removed = true;
+            }
+        }
+        if (removed) {
+            update();
+        }
+    });
 }
 
 void BufferBar::setBaseFont(const QFont &font) {
@@ -76,11 +89,13 @@ int BufferBar::barHeight() const {
 }
 
 QSize BufferBar::sizeHint() const {
-    /* One buffer needs no strip at all: the filename is already in the
-     * window title, so a single tab would be chrome that tells you
-     * nothing. Anyone who never opens a second file sees exactly the
-     * editor they had before this existed. */
-    if (m_items.size() < 2) {
+    /* Always present, even for a single buffer. It was hidden below two
+     * tabs originally (the name is already in the title bar), but that
+     * makes the strip appear and disappear under you as you open and
+     * close files, and leaves a pathless buffer with nothing anywhere
+     * calling it "untitled". A tab is where you look for what you have
+     * open; it should always be there. See docs/adr/0057. */
+    if (m_items.isEmpty()) {
         return QSize(0, 0);
     }
     return QSize(0, barHeight());
@@ -95,13 +110,27 @@ void BufferBar::setEntries(const QVector<Item> &items, int activeIndex) {
         return;
     }
 
+    /* Only opening and closing move anything; switching active tab is a
+     * plain state change and should land instantly. Animating it too
+     * meant every single click replayed a slide/fade, which reads as the
+     * app stuttering rather than responding. See docs/adr/0057. */
+    QVector<QString> previousNames;
+    for (const Item &item : m_items) {
+        previousNames.push_back(item.name);
+    }
+    QVector<QString> nextNames;
+    for (const Item &item : items) {
+        nextNames.push_back(item.name);
+    }
+    bool setChanged = previousNames != nextNames;
+
     int previousActive = m_activeIndex;
     bool hadTabs = !m_tabs.isEmpty();
     m_items = items;
     m_activeIndex = activeIndex;
     m_hoverIndex = -1;
     m_hoverClose = false;
-    relayout(hadTabs, previousActive);
+    relayout(hadTabs && setChanged, previousActive);
     updateGeometry(); /* a one-buffer strip hides itself — see sizeHint */
     update();
 }
@@ -113,10 +142,15 @@ void BufferBar::relayout(bool animate, int previousActiveIndex) {
     QVector<QString> previousNames;
     QVector<double> previousX;
     QVector<double> previousAlpha;
+    QVector<double> previousWidth;
     previousNames.reserve(m_tabs.size());
     for (int i = 0; i < m_tabs.size(); ++i) {
+        if (m_tabs[i].closing) {
+            continue; /* a ghost from a previous close; let it go */
+        }
         previousNames.push_back(m_tabs[i].name);
         previousX.push_back(m_tabs[i].fromX + (m_tabs[i].x - m_tabs[i].fromX) * m_transition);
+        previousWidth.push_back(m_tabs[i].width);
         double settled = (i == previousActiveIndex) ? 1.0 : 0.0;
         previousAlpha.push_back(m_tabs[i].fromAlpha + (settled - m_tabs[i].fromAlpha) * m_transition);
     }
@@ -159,6 +193,28 @@ void BufferBar::relayout(bool animate, int previousActiveIndex) {
         m_tabs.push_back(tab);
     }
 
+    /* A closed tab collapses back into whichever tab now holds focus —
+     * the exact reverse of arriving out of the tab it was opened from.
+     * It stays drawn, and un-clickable, until the animation lands. */
+    if (animate) {
+        for (int i = 0; i < previousNames.size(); ++i) {
+            if (m_items.cend() != std::find_if(m_items.cbegin(), m_items.cend(),
+                                                [&](const Item &item) { return item.name == previousNames[i]; })) {
+                continue; /* still open */
+            }
+            Tab ghost;
+            ghost.name = previousNames[i];
+            ghost.closing = true;
+            ghost.width = previousWidth[i];
+            ghost.fromX = previousX[i];
+            ghost.fromAlpha = previousAlpha[i];
+            int target = std::clamp(m_activeIndex, 0, static_cast<int>(m_tabs.size()) - 1);
+            ghost.x = m_tabs.isEmpty() ? ghost.fromX : m_tabs[target].x;
+            m_tabs.push_back(ghost);
+        }
+    }
+
+    clampScroll();
     m_animation->stop();
     if (animate && !m_baseFont.family().isEmpty()) {
         m_transition = 0.0;
@@ -168,9 +224,46 @@ void BufferBar::relayout(bool animate, int previousActiveIndex) {
     }
 }
 
+double BufferBar::contentWidth() const {
+    double widest = 0.0;
+    for (const Tab &tab : m_tabs) {
+        if (!tab.closing) {
+            widest = std::max(widest, tab.x + tab.width);
+        }
+    }
+    return widest;
+}
+
+void BufferBar::clampScroll() {
+    /* The + keeps its own reserved strip at the right edge, so tabs are
+     * never allowed to slide underneath it. */
+    double visible = std::max(0.0, static_cast<double>(width() - kPlusHitWidth));
+    m_scrollX = std::clamp(m_scrollX, 0.0, std::max(0.0, contentWidth() - visible));
+}
+
 double BufferBar::tabLeft(int index) const {
     const Tab &tab = m_tabs[index];
-    return tab.fromX + (tab.x - tab.fromX) * m_transition;
+    return tab.fromX + (tab.x - tab.fromX) * m_transition - m_scrollX;
+}
+
+/* Shift+wheel pans the strip once there are more tabs than fit —
+ * matching the convention every browser and terminal already uses for
+ * horizontal scroll, rather than inventing a key. A plain wheel is left
+ * alone so it keeps reaching the editor underneath. See docs/adr/0057. */
+void BufferBar::wheelEvent(QWheelEvent *event) {
+    double visible = std::max(0.0, static_cast<double>(width() - kPlusHitWidth));
+    if (contentWidth() <= visible) {
+        QWidget::wheelEvent(event);
+        return;
+    }
+    QPoint pixels = event->pixelDelta();
+    QPoint degrees = event->angleDelta();
+    double delta = pixels.isNull() ? (degrees.y() != 0 ? degrees.y() : degrees.x()) / 2.0
+                                   : (pixels.y() != 0 ? pixels.y() : pixels.x());
+    m_scrollX -= delta;
+    clampScroll();
+    update();
+    event->accept();
 }
 
 QRect BufferBar::closeRectFor(int index) const {
@@ -185,6 +278,9 @@ QRect BufferBar::plusRect() const {
 
 int BufferBar::tabAt(const QPoint &pos) const {
     for (int i = 0; i < m_tabs.size(); ++i) {
+        if (m_tabs[i].closing) {
+            continue; /* already gone as far as the user is concerned */
+        }
         QRect bounds(static_cast<int>(tabLeft(i)), 0, static_cast<int>(m_tabs[i].width), barHeight());
         if (bounds.contains(pos)) {
             return i;
@@ -195,7 +291,8 @@ int BufferBar::tabAt(const QPoint &pos) const {
 
 void BufferBar::resizeEvent(QResizeEvent *event) {
     QWidget::resizeEvent(event);
-    update(); /* the + lives against the right edge */
+    clampScroll(); /* a wider window can reveal tabs we were scrolled past */
+    update();      /* the + lives against the right edge */
 }
 
 void BufferBar::paintEvent(QPaintEvent *) {
@@ -211,8 +308,9 @@ void BufferBar::paintEvent(QPaintEvent *) {
         const Tab &tab = m_tabs[i];
         double left = tabLeft(i);
 
-        double settledAlpha = (i == m_activeIndex) ? kActiveAlpha
-                               : (i == m_hoverIndex ? kHoverAlpha : kInactiveAlpha);
+        double settledAlpha = tab.closing ? 0.0
+                               : (i == m_activeIndex ? kActiveAlpha
+                                                     : (i == m_hoverIndex ? kHoverAlpha : kInactiveAlpha));
         /* fromAlpha is 0..1 "how active was it", so scale it into the
          * same 0..255 space before interpolating — this is what makes
          * the active/inactive change crossfade instead of snapping. */
@@ -239,7 +337,7 @@ void BufferBar::paintEvent(QPaintEvent *) {
         /* The close mark only *shows* on the active tab, but its space is
          * always reserved (see relayout) — so it fades rather than
          * shoving the strip around. */
-        double closeOpacity = (i == m_activeIndex) ? m_transition : 0.0;
+        double closeOpacity = (!tab.closing && i == m_activeIndex) ? m_transition : 0.0;
         if (closeOpacity > 0.01) {
             QColor closeColor = m_text;
             int base = (m_hoverClose && m_hoverIndex == i) ? kActiveAlpha : kInactiveAlpha;
@@ -257,7 +355,9 @@ void BufferBar::paintEvent(QPaintEvent *) {
     }
 
     /* New-tab affordance, pinned to the right edge so it doesn't move as
-     * tabs come and go. */
+     * tabs come and go. Painted last, over its own reserved strip, so a
+     * panned tab never slides across it. */
+    painter.fillRect(plusRect(), m_background);
     QColor plusColor = m_text;
     plusColor.setAlpha(m_hoverPlus ? kActiveAlpha : kInactiveAlpha);
     QPen plusPen(plusColor);

@@ -3,6 +3,10 @@
 #include "editor_viewport_internal.h"
 #include "motion.h"
 
+#ifndef ASE_VERSION_STRING
+#define ASE_VERSION_STRING "0.0.0-dev" /* fallback if CMake didn't define it — see gui/CMakeLists.txt */
+#endif
+
 #include <algorithm>
 #include <cmath>
 
@@ -647,6 +651,7 @@ void EditorViewport::drawWelcomeOverlay(QPainter &painter) const {
     painter.save();
     painter.setOpacity(m_welcomeOverlayOpacity);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    painter.setRenderHint(QPainter::Antialiasing, true);
 
     QPixmap logo(QStringLiteral(":/ase.png"));
     QPixmap scaledLogo;
@@ -654,29 +659,43 @@ void EditorViewport::drawWelcomeOverlay(QPainter &painter) const {
         scaledLogo = logo.scaledToWidth(140, Qt::SmoothTransformation);
     }
 
-    /* {description, key} — description reads left-to-right like a
-     * legend ("what it does"), key answers "how" on the right, a small
-     * bullet marks each row on the left. A flat centered line per
-     * shortcut (the first version of this) read as visually
-     * disorganized once there was more than one; this two-column,
-     * dot-led layout is the aesthetic fix, still just the essentials,
-     * not the Help panel's full reference. */
+    /* Identity block (centered) above, shortcuts (two aligned columns)
+     * below. The shortcuts are a deliberately short list of what you
+     * cannot discover by poking around — Ctrl+/ is first because it is
+     * the answer to every other question, and the rest are the things
+     * you need before you can do anything at all: make a file, open
+     * one, save it, and (since Vim mode is on by default now) the fact
+     * that you start in Normal mode and `i` is how you type. See
+     * docs/adr/0057. */
     struct WelcomeInstruction {
         QString description;
         QString key;
     };
     static const QVector<WelcomeInstruction> kInstructions = {
+        {QStringLiteral("All keyboard shortcuts"), QStringLiteral("Ctrl+/")},
+        {QStringLiteral("Start typing (Vim: Normal mode)"), QStringLiteral("i")},
+        {QStringLiteral("New file"), QStringLiteral("Ctrl+N")},
         {QStringLiteral("Open a file"), QStringLiteral("Ctrl+O")},
         {QStringLiteral("Save"), QStringLiteral("Ctrl+S")},
-        {QStringLiteral("Keyboard shortcuts"), QStringLiteral("Ctrl+/")},
-        {QStringLiteral("About"), QStringLiteral("Ctrl+I")},
+        {QStringLiteral("Command line"), QStringLiteral(":")},
     };
+
     QFontMetrics metrics(m_font);
+    QFont titleFont = m_font;
+    titleFont.setBold(true);
+    QFontMetrics titleMetrics(titleFont);
+
     int lineSpacing = metrics.height() + 4;
-    constexpr int kLogoTextGap = 22;
+    constexpr int kLogoGap = 18;
+    constexpr int kIdentityGap = 6;
+    constexpr int kBlockGap = 26;
     constexpr double kDotSize = 5.0;
     constexpr int kDotTextGap = 12;
     constexpr int kColumnGap = 32;
+
+    const QString version = QStringLiteral("Version %1").arg(QStringLiteral(ASE_VERSION_STRING));
+    const QString author = QStringLiteral("Developed by Saeed");
+    const QString tagline = QStringLiteral("The absolutely simple text editor");
 
     int maxDescWidth = 0;
     int maxKeyWidth = 0;
@@ -686,33 +705,54 @@ void EditorViewport::drawWelcomeOverlay(QPainter &painter) const {
     }
     int rowWidth = static_cast<int>(kDotSize) + kDotTextGap + maxDescWidth + kColumnGap + maxKeyWidth;
 
-    int totalHeight = scaledLogo.height() + (scaledLogo.isNull() ? 0 : kLogoTextGap) +
+    int identityHeight = lineSpacing * 2 + titleMetrics.height() + kIdentityGap * 2;
+    int totalHeight = scaledLogo.height() + (scaledLogo.isNull() ? 0 : kLogoGap) + identityHeight + kBlockGap +
                        kInstructions.size() * lineSpacing;
     int top = (height() - totalHeight) / 2;
 
     if (!scaledLogo.isNull()) {
         painter.drawPixmap((width() - scaledLogo.width()) / 2, top, scaledLogo);
+        top += scaledLogo.height() + kLogoGap;
     }
 
-    QColor textColor = m_textColor;
-    textColor.setAlpha(160);
+    /* Three tiers of emphasis, by opacity only (docs/adr/0007): the
+     * tagline is what the editor *is*, so it reads strongest; version
+     * and byline are context. */
+    QColor strong = m_textColor;
+    strong.setAlpha(200);
+    QColor dim = m_textColor;
+    dim.setAlpha(120);
+    QColor rowColor = m_textColor;
+    rowColor.setAlpha(160);
+
+    painter.setFont(m_font);
+    painter.setPen(dim);
+    painter.drawText(QRect(0, top, width(), lineSpacing), Qt::AlignHCenter | Qt::AlignVCenter, version);
+    top += lineSpacing + kIdentityGap;
+
+    painter.drawText(QRect(0, top, width(), lineSpacing), Qt::AlignHCenter | Qt::AlignVCenter, author);
+    top += lineSpacing + kIdentityGap;
+
+    painter.setFont(titleFont);
+    painter.setPen(strong);
+    painter.drawText(QRect(0, top, width(), titleMetrics.height()), Qt::AlignHCenter | Qt::AlignVCenter, tagline);
+    top += titleMetrics.height() + kBlockGap;
+
     painter.setFont(m_font);
     int rowLeft = (width() - rowWidth) / 2;
     int descLeft = rowLeft + static_cast<int>(kDotSize) + kDotTextGap;
     int keyLeft = rowLeft + rowWidth - maxKeyWidth;
-    int textTop = top + scaledLogo.height() + (scaledLogo.isNull() ? 0 : kLogoTextGap);
     for (const WelcomeInstruction &instr : kInstructions) {
         painter.setPen(Qt::NoPen);
-        painter.setBrush(textColor);
-        painter.setRenderHint(QPainter::Antialiasing, true);
-        painter.drawEllipse(QRectF(rowLeft, textTop + (lineSpacing - kDotSize) / 2.0, kDotSize, kDotSize));
+        painter.setBrush(rowColor);
+        painter.drawEllipse(QRectF(rowLeft, top + (lineSpacing - kDotSize) / 2.0, kDotSize, kDotSize));
 
-        painter.setPen(textColor);
-        painter.drawText(QRect(descLeft, textTop, maxDescWidth, lineSpacing), Qt::AlignLeft | Qt::AlignVCenter,
+        painter.setPen(rowColor);
+        painter.drawText(QRect(descLeft, top, maxDescWidth, lineSpacing), Qt::AlignLeft | Qt::AlignVCenter,
                           instr.description);
-        painter.drawText(QRect(keyLeft, textTop, maxKeyWidth, lineSpacing), Qt::AlignRight | Qt::AlignVCenter,
+        painter.drawText(QRect(keyLeft, top, maxKeyWidth, lineSpacing), Qt::AlignRight | Qt::AlignVCenter,
                           instr.key);
-        textTop += lineSpacing;
+        top += lineSpacing;
     }
 
     painter.restore();

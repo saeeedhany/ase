@@ -9,6 +9,7 @@
 #include <QWidget>
 
 class QVariantAnimation;
+class QWheelEvent;
 
 /*
  * The open-buffer tab strip along the top of the window — see
@@ -61,6 +62,7 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
     QSize sizeHint() const override;
 
@@ -75,9 +77,16 @@ private:
         double fromX = 0.0; /* left edge it is animating out of */
         double fromAlpha = 1.0;
         double width = 0.0;
+        /* A tab that has been closed but is still on screen, collapsing
+         * back into the one it leaves focus to — the exact reverse of
+         * how it arrived. Dropped once the animation lands; never
+         * hit-testable meanwhile. */
+        bool closing = false;
     };
 
     void relayout(bool animate, int previousActiveIndex);
+    void clampScroll();
+    double contentWidth() const;
     int tabAt(const QPoint &pos) const;
     QRect closeRectFor(int index) const;
     QRect plusRect() const;
@@ -93,6 +102,9 @@ private:
 
     QVariantAnimation *m_animation = nullptr;
     double m_transition = 1.0; /* 0 = fully in the "from" layout, 1 = settled */
+    /* Horizontal offset for when there are more tabs than fit — see
+     * wheelEvent. */
+    double m_scrollX = 0.0;
 
     QColor m_background;
     QColor m_text;

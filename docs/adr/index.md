@@ -64,3 +64,4 @@ what changed.
 | [0054](0054-multiple-buffers-and-plugin-host-wiring.md) | Multiple buffers, and finally wiring the plugin host in |
 | [0055](0055-dirty-dot-new-file-panel-fixes.md) | The dot means unsaved, plus new-file and panel fixes |
 | [0056](0056-linewise-visual-tab-motion-searchable-shortcuts.md) | Linewise Visual, tab motion, and a searchable shortcut reference |
+| [0057](0057-always-on-tab-strip-and-welcome-rework.md) | An always-present tab strip, and a welcome screen worth reading |
