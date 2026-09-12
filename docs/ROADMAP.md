@@ -708,9 +708,11 @@ something else.
   files means N servers. LSP is designed for one server holding several
   `didOpen` documents; doing that is the fix, and it is the main
   resource cost multi-buffer introduced.
-- **Show unsaved state in the buffer bar.** The dot tracks active, not
-  modified (a deliberate scope call in ADR 0054) — so with several
-  buffers open, the bar won't tell you which have unsaved edits.
+- ~~**Show unsaved state in the buffer bar.**~~ Done — the dot now marks
+  unsaved changes rather than the active buffer, and stays readable on a
+  dimmed entry ([ADR 0055](adr/0055-dirty-dot-new-file-panel-fixes.md)).
+- **Buffer bar overflow.** The bar neither scrolls nor elides, so past
+  roughly a dozen buffers the later entries run off the window edge.
 - **Large-file sanity pass.** Sub-frame budgets hold now at ~8k lines;
   find a real ceiling (100k? 1M?) and either fix it or document it
   honestly rather than discovering it from a bug report.

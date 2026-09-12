@@ -62,3 +62,4 @@ what changed.
 | [0052](0052-editor-viewport-split-into-translation-units.md) | Splitting EditorViewport across several translation units |
 | [0053](0053-render-hot-path-and-one-motion-language.md) | Fixing the render hot path, and one motion language |
 | [0054](0054-multiple-buffers-and-plugin-host-wiring.md) | Multiple buffers, and finally wiring the plugin host in |
+| [0055](0055-dirty-dot-new-file-panel-fixes.md) | The dot means unsaved, plus new-file and panel fixes |

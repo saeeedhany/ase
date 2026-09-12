@@ -26,11 +26,16 @@ class BufferBar : public QWidget {
 public:
     explicit BufferBar(QWidget *parent = nullptr);
 
+    struct Item {
+        QString name;
+        bool dirty = false;
+    };
+
     /* Replaces the whole list — cheap enough at this scale (a handful of
-     * entries, repainted only when the set or the active index actually
-     * changes) that incremental updating would be complexity for
-     * nothing. */
-    void setEntries(const QVector<QString> &names, int activeIndex);
+     * entries, repainted only when the set, the dirty flags or the
+     * active index actually change) that incremental updating would be
+     * complexity for nothing. */
+    void setEntries(const QVector<Item> &items, int activeIndex);
 
     /* Pulled from EditorViewport's config-driven theme, like every other
      * piece of chrome — re-applied on config hot-reload so an edited
@@ -54,6 +59,7 @@ private:
      * clickable can never drift apart. */
     struct Entry {
         QString name;
+        bool dirty = false;
         QRect bounds; /* whole clickable entry */
         QRect close;  /* the close mark; null unless this entry is active */
     };
@@ -61,7 +67,7 @@ private:
     void layoutEntries();
     int entryAt(const QPoint &pos) const;
 
-    QVector<QString> m_names;
+    QVector<Item> m_items;
     QVector<Entry> m_entries;
     int m_activeIndex = -1;
     int m_hoverIndex = -1;

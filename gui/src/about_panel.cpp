@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QPalette>
 #include <QPixmap>
+#include <QSizePolicy>
 #include <QVBoxLayout>
 
 #ifndef ASE_VERSION_STRING
@@ -20,19 +21,16 @@ namespace {
  * hue rather than inventing a "link blue") so the body text still
  * inherits the QLabel's own palette, same reasoning as HelpPanel. */
 const char kAboutHtmlTemplate[] =
-    "<p align=\"center\"><b>Absolute Simple Editor</b><br>"
-    "Version %1 &mdash; first alpha release</p>"
-    "<p align=\"center\">A minimal, robust, blazingly fast, and "
-    "aesthetically deliberate GUI text editor.</p>"
-    "<p align=\"center\">Developed by <b>Saeed</b><br>"
+    "<p style=\"margin-top:0;\"><b>Absolute Simple Editor</b><br>"
+    "<span style=\"color:%6;\">Version %1</span></p>"
+    "<p>A minimal, robust, blazingly fast, and aesthetically deliberate "
+    "GUI text editor.</p>"
+    "<p><span style=\"color:%6;\">Built by</span> <b>Saeed</b><br>"
     "<a href=\"%2\" style=\"color:%5;\">%2</a><br>"
     "<a href=\"%3\" style=\"color:%5;\">%3</a><br>"
     "<a href=\"%4\" style=\"color:%5;\">Discord</a></p>"
-    "<p align=\"center\">The \"complete normal editor\" pass (undo/"
-    "redo, selection, clipboard, find/replace, editor chrome, a "
-    "command line with :compile) and an LSP client (diagnostics, "
-    "completion, hover) are done. Full modal Vim emulation is planned "
-    "next. Licensed under the Apache License 2.0.</p>";
+    "<p style=\"margin-bottom:0;\"><span style=\"color:%6;\">"
+    "Licensed under the Apache License 2.0.</span></p>";
 }
 
 AboutPanel::AboutPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport(viewport) {
@@ -62,25 +60,41 @@ AboutPanel::AboutPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_vi
     layout->addWidget(headerBar);
     setDragHandle(headerBar);
 
-    m_logo = new QLabel(content);
+    /* Two columns: the logo holds its own fixed column on the left, the
+     * text runs left-aligned beside it. Previously both were stacked and
+     * centered (docs/adr/0028) — centered prose is harder to read, since
+     * every line starts at a different x and the eye has to re-find the
+     * left edge on each one. Side-by-side gives the text a single hard
+     * left edge to track while keeping the logo's presence. See
+     * docs/adr/0055. */
+    auto *bodyRow = new QWidget(content);
+    auto *bodyLayout = new QHBoxLayout(bodyRow);
+    bodyLayout->setContentsMargins(0, 4, 0, 0);
+    bodyLayout->setSpacing(18);
+
+    m_logo = new QLabel(bodyRow);
     QPixmap logo(QStringLiteral(":/ase.png"));
     if (!logo.isNull()) {
-        m_logo->setPixmap(logo.scaledToWidth(180, Qt::SmoothTransformation));
+        m_logo->setPixmap(logo.scaledToWidth(132, Qt::SmoothTransformation));
     }
-    m_logo->setAlignment(Qt::AlignHCenter);
-    layout->addWidget(m_logo);
+    /* Fixed, and pinned to the top of its column: the logo is a static
+     * mark, so it must not stretch, re-center, or drift down as the text
+     * beside it grows. */
+    m_logo->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
+    m_logo->setFixedWidth(132);
+    m_logo->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    bodyLayout->addWidget(m_logo, 0, Qt::AlignTop);
 
-    m_body = new QLabel(content);
+    m_body = new QLabel(bodyRow);
     m_body->setTextFormat(Qt::RichText);
     m_body->setWordWrap(true);
     m_body->setOpenExternalLinks(true);
-    m_body->setMinimumWidth(440);
+    m_body->setMinimumWidth(360);
     m_body->setFocusPolicy(Qt::StrongFocus);
-    /* Centered under the centered logo, not left-aligned — per direct
-     * feedback that left-aligned text under a centered image looked
-     * unaligned. See docs/adr/0028. */
-    m_body->setAlignment(Qt::AlignHCenter);
-    layout->addWidget(m_body);
+    m_body->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    bodyLayout->addWidget(m_body, 1);
+
+    layout->addWidget(bodyRow);
 
     m_body->installEventFilter(this);
 }
@@ -119,10 +133,24 @@ void AboutPanel::refreshTheme() {
     m_title->setPalette(pal);
     m_body->setPalette(pal);
 
+    /* Secondary lines (version, byline, licence) sit one opacity tier
+     * down, the same "vary opacity, never hue" move the gutter and
+     * comments already make (docs/adr/0007). Blended to a solid colour
+     * rather than passed as #AARRGGBB: Qt's rich-text CSS does not
+     * reliably parse an alpha channel in a hex colour, so the dimming
+     * would silently come out fully opaque. */
+    QColor dimText = m_viewport->textColor();
+    QColor panelBg = m_viewport->panelBackgroundColor();
+    const double dim = 150.0 / 255.0;
+    dimText.setRgb(static_cast<int>(panelBg.red() + (dimText.red() - panelBg.red()) * dim),
+                    static_cast<int>(panelBg.green() + (dimText.green() - panelBg.green()) * dim),
+                    static_cast<int>(panelBg.blue() + (dimText.blue() - panelBg.blue()) * dim));
+
     m_body->setText(QString::fromUtf8(kAboutHtmlTemplate)
                          .arg(QStringLiteral(ASE_VERSION_STRING), QStringLiteral("https://github.com/saeeedhany"),
                               QStringLiteral("https://saeedz.vercel.app"),
-                              QStringLiteral("https://discord.gg/sBkH45DzHc"), m_viewport->textColor().name()));
+                              QStringLiteral("https://discord.gg/sBkH45DzHc"), m_viewport->textColor().name(),
+                              dimText.name()));
 }
 
 bool AboutPanel::eventFilter(QObject *watched, QEvent *event) {

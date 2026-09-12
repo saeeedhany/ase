@@ -65,6 +65,10 @@ public:
      * reopening a file you already have open should take you to it, not
      * give you a second copy to diverge from. */
     void openBuffer(const QString &path);
+    /* Ctrl+N — an empty, pathless buffer. Saving it routes through
+     * Save-As, since save() already sends an empty path there
+     * (docs/adr/0006). */
+    void newBuffer();
     void addBuffer(AseBuffer *buffer, const QString &path);
 
 protected:
@@ -146,6 +150,8 @@ MainWindow::MainWindow() {
     connect(prev, &QShortcut::activated, this, [this]() { cycleBuffer(-1); });
     auto *close = new QShortcut(QKeySequence(QStringLiteral("Ctrl+W")), this);
     connect(close, &QShortcut::activated, this, [this]() { closeBuffer(m_stack->currentIndex()); });
+    auto *newFile = new QShortcut(QKeySequence(QStringLiteral("Ctrl+N")), this);
+    connect(newFile, &QShortcut::activated, this, [this]() { newBuffer(); });
 }
 
 EditorViewport *MainWindow::activeViewport() const {
@@ -217,6 +223,13 @@ void MainWindow::openBuffer(const QString &path) {
     addBuffer(buffer, path);
 }
 
+void MainWindow::newBuffer() {
+    AseBuffer *buffer = ase_buffer_create();
+    if (buffer != nullptr) {
+        addBuffer(buffer, QString());
+    }
+}
+
 void MainWindow::setActiveIndex(int index) {
     if (index < 0 || index >= m_viewports.size()) {
         return;
@@ -266,16 +279,16 @@ void MainWindow::cycleBuffer(int delta) {
 }
 
 void MainWindow::refreshBufferBar() {
-    QVector<QString> names;
-    names.reserve(m_viewports.size());
+    QVector<BufferBar::Item> items;
+    items.reserve(m_viewports.size());
     for (EditorViewport *viewport : m_viewports) {
-        names.push_back(bufferLabelFor(viewport->filePath()));
+        items.push_back({bufferLabelFor(viewport->filePath()), viewport->isDirty()});
     }
     EditorViewport *viewport = activeViewport();
     if (viewport != nullptr) {
         m_bufferBar->setColors(viewport->backgroundColor(), viewport->textColor());
     }
-    m_bufferBar->setEntries(names, m_stack->currentIndex());
+    m_bufferBar->setEntries(items, m_stack->currentIndex());
 }
 
 /* Every confirm in this window goes through here so they all look like

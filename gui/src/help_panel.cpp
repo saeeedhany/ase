@@ -18,57 +18,130 @@ namespace {
  * no explicit colors in the markup so it inherits the QLabel's own
  * palette (refreshTheme() sets that), keeping this consistent with the
  * "one font color" pillar the rest of the app already follows. */
-const char kHelpHtml[] =
-    "<table cellspacing=\"4\" cellpadding=\"2\">"
-    "<tr><td colspan=\"2\"><b>Navigation</b></td></tr>"
-    "<tr><td>&larr; &rarr; &uarr; &darr;</td><td>Move cursor</td></tr>"
-    "<tr><td>Shift + arrow</td><td>Extend selection</td></tr>"
-    "<tr><td>Home / End</td><td>Line start / end</td></tr>"
-    "<tr><td>Ctrl+D</td><td>Select next occurrence</td></tr>"
-    "<tr><td colspan=\"2\">&nbsp;</td></tr>"
+/* Section -> rows of (keys, what it does). Rendered by buildHelpHtml()
+ * below rather than written as one long HTML literal: the literal had
+ * drifted badly out of date (no Vim mode, no buffers, no font zoom) —
+ * partly because adding a row meant hand-writing four tags, which is
+ * exactly the kind of friction that stops people updating docs. A table
+ * of data is something you can actually keep honest.
+ *
+ * Still maintained by hand, not generated from the keybinding dispatch
+ * — see the class doc comment for why. */
+struct HelpRow {
+    const char *keys;
+    const char *description;
+};
+struct HelpSection {
+    const char *title;
+    /* Sections the user has to opt into are worth saying so, rather than
+     * leaving someone hunting for a key that does nothing on their
+     * setup. nullptr when it always applies. */
+    const char *note;
+    QVector<HelpRow> rows;
+};
 
-    "<tr><td colspan=\"2\"><b>Editing</b></td></tr>"
-    "<tr><td>Backspace / Delete</td><td>Delete char or selection</td></tr>"
-    "<tr><td>Ctrl+Z / Ctrl+Shift+Z</td><td>Undo / redo</td></tr>"
-    "<tr><td>Ctrl+C / Ctrl+X / Ctrl+V</td><td>Copy / cut / paste</td></tr>"
-    "<tr><td>Ctrl+A</td><td>Select all</td></tr>"
-    "<tr><td colspan=\"2\">&nbsp;</td></tr>"
+QVector<HelpSection> helpSections() {
+    return {
+        {"Navigation", nullptr,
+         {{"&larr; &rarr; &uarr; &darr;", "Move cursor"},
+          {"Shift + arrow", "Extend selection"},
+          {"Home / End", "Line start / end"},
+          {"Ctrl+D", "Select next occurrence"}}},
 
-    "<tr><td colspan=\"2\"><b>Find &amp; replace</b></td></tr>"
-    "<tr><td>Ctrl+F</td><td>Find</td></tr>"
-    "<tr><td>Ctrl+H</td><td>Find &amp; replace</td></tr>"
-    "<tr><td>Enter / Shift+Enter</td><td>Next / previous match</td></tr>"
-    "<tr><td>Ctrl+Enter</td><td>Replace all (in the replace field)</td></tr>"
-    "<tr><td colspan=\"2\">&nbsp;</td></tr>"
+        {"Editing", nullptr,
+         {{"Backspace / Delete", "Delete character or selection"},
+          {"Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"},
+          {"Ctrl+C / Ctrl+X / Ctrl+V", "Copy / cut / paste"},
+          {"Ctrl+A", "Select all"}}},
 
-    "<tr><td colspan=\"2\"><b>Files</b></td></tr>"
-    "<tr><td>Ctrl+O</td><td>Open</td></tr>"
-    "<tr><td>Ctrl+S</td><td>Save</td></tr>"
-    "<tr><td>Ctrl+Shift+S</td><td>Save as</td></tr>"
-    "<tr><td colspan=\"2\">&nbsp;</td></tr>"
+        {"Files &amp; buffers", nullptr,
+         {{"Ctrl+N", "New file"},
+          {"Ctrl+O", "Open"},
+          {"Ctrl+S", "Save"},
+          {"Ctrl+Shift+S", "Save as"},
+          {"Ctrl+Tab / Ctrl+Shift+Tab", "Next / previous buffer"},
+          {"Ctrl+W", "Close buffer"}}},
 
-    "<tr><td colspan=\"2\"><b>Build</b></td></tr>"
-    "<tr><td>Ctrl+B</td><td>Compile (build_command)</td></tr>"
-    "<tr><td>Ctrl+Shift+O</td><td>Toggle output panel</td></tr>"
-    "<tr><td colspan=\"2\">&nbsp;</td></tr>"
+        {"Find &amp; replace", nullptr,
+         {{"Ctrl+F", "Find"},
+          {"Ctrl+H", "Find and replace"},
+          {"Enter / Shift+Enter", "Next / previous match"},
+          {"Ctrl+Enter", "Replace all (from the replace field)"}}},
 
-    "<tr><td colspan=\"2\"><b>Language server (lsp_command, .c/.h)</b></td></tr>"
-    "<tr><td>(automatic)</td><td>Completion popup while typing</td></tr>"
-    "<tr><td>&uarr; &darr; / Enter or Tab / Esc</td><td>Navigate / accept / dismiss</td></tr>"
-    "<tr><td>(automatic)</td><td>Hover info on pausing over a symbol</td></tr>"
-    "<tr><td colspan=\"2\">&nbsp;</td></tr>"
+        {"View", nullptr,
+         {{"Ctrl+= / Ctrl+-", "Larger / smaller font"},
+          {"Ctrl+0", "Reset font size"}}},
 
-    "<tr><td colspan=\"2\"><b>Command line</b></td></tr>"
-    "<tr><td>Ctrl+;</td><td>Open command line</td></tr>"
-    "<tr><td>:w  :q  :compile  :output</td><td>Commands</td></tr>"
-    "<tr><td colspan=\"2\">&nbsp;</td></tr>"
+        {"Vim mode", "vim_mode = true",
+         {{"Esc / i / a", "Normal mode / insert / append"},
+          {"I / A / o / O", "Insert at line start / end, open line below / above"},
+          {"h j k l / w b e", "Move by character / word"},
+          {"0 / ^ / $", "Column 0 / first non-blank / line end"},
+          {"gg / G / 3j", "First line / last line / with a count"},
+          {"v", "Visual mode"},
+          {"d y c + motion", "Delete / yank / change (dd, yy, cc for lines)"},
+          {"x / p / P", "Delete character / paste after / before"},
+          {"u / Ctrl+R", "Undo / redo"},
+          {":", "Command line"}}},
 
-    "<tr><td colspan=\"2\"><b>Other</b></td></tr>"
-    "<tr><td>Escape</td><td>Collapse selection, or close the open panel</td></tr>"
-    "<tr><td>Ctrl+Q</td><td>Quit</td></tr>"
-    "<tr><td>Ctrl+/</td><td>This help panel</td></tr>"
-    "<tr><td>Ctrl+I</td><td>About</td></tr>"
-    "</table>";
+        {"Command line", nullptr,
+         {{"Ctrl+; &nbsp;(or : in Vim mode)", "Open command line"},
+          {":w &nbsp; :q", "Save / quit"},
+          {":compile &nbsp; :output", "Build / toggle the output panel"},
+          {":42", "Jump to line 42"},
+          {":&lt;name&gt;", "Run a plugin command"}}},
+
+        {"Build", "build_command",
+         {{"Ctrl+B", "Compile the current file"},
+          {"Ctrl+Shift+O", "Toggle the output panel"}}},
+
+        {"Language server", "lsp_command, .c/.h files",
+         {{"(automatic)", "Diagnostics, and completion while typing"},
+          {"&uarr; &darr;", "Move through completions"},
+          {"Enter / Tab", "Accept completion"},
+          {"Esc", "Dismiss completion"},
+          {"(automatic)", "Hover info when the pointer rests on a symbol"}}},
+
+        {"Panels", nullptr,
+         {{"Ctrl+/", "This panel"},
+          {"Ctrl+I", "About"},
+          {"Esc", "Close the open panel, or collapse the selection"},
+          {"Drag the header", "Move a panel"},
+          {"Ctrl+Q", "Quit"}}},
+    };
+}
+
+/* `dim` carries the section notes and the key column one opacity tier
+ * down — same "vary opacity, never hue" move as everything else
+ * (docs/adr/0007). Keys are given a fixed-width column and the
+ * descriptions a common left edge, so the whole thing reads as two
+ * aligned columns instead of ragged pairs. */
+QString buildHelpHtml(const QString &textColor, const QString &dim) {
+    QString html;
+    const QVector<HelpSection> sections = helpSections();
+    for (int i = 0; i < sections.size(); ++i) {
+        const HelpSection &section = sections[i];
+        html += QStringLiteral("<p style=\"margin-top:%1px; margin-bottom:4px;\">"
+                                "<b style=\"color:%2;\">%3</b>")
+                     .arg(i == 0 ? 0 : 14)
+                     .arg(textColor, QString::fromUtf8(section.title));
+        if (section.note != nullptr) {
+            html += QStringLiteral("<span style=\"color:%1;\"> &nbsp;&mdash;&nbsp; %2</span>")
+                         .arg(dim, QString::fromUtf8(section.note));
+        }
+        html += QStringLiteral("</p><table cellspacing=\"0\" cellpadding=\"3\" width=\"100%\">");
+        for (const HelpRow &row : section.rows) {
+            html += QStringLiteral("<tr>"
+                                    "<td width=\"215\" style=\"color:%1;\">%2</td>"
+                                    "<td style=\"color:%3;\">%4</td>"
+                                    "</tr>")
+                         .arg(dim, QString::fromUtf8(row.keys), textColor, QString::fromUtf8(row.description));
+        }
+        html += QStringLiteral("</table>");
+    }
+    return html;
+}
+
 } // namespace
 
 HelpPanel::HelpPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport(viewport) {
@@ -100,15 +173,17 @@ HelpPanel::HelpPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_view
     layout->addWidget(headerBar);
     setDragHandle(headerBar);
 
-    m_body = new QLabel(QString::fromUtf8(kHelpHtml), content);
+    m_body = new QLabel(content);
     m_body->setTextFormat(Qt::RichText);
     m_body->setWordWrap(true);
+    /* Text is built in refreshTheme(), which is the only place that
+     * knows the current theme colors — see buildHelpHtml(). */
 
     m_scrollArea = new QScrollArea(content);
     m_scrollArea->setWidget(m_body);
     m_scrollArea->setWidgetResizable(true);
     m_scrollArea->setFrameShape(QFrame::NoFrame);
-    m_scrollArea->setMinimumSize(480, 420);
+    m_scrollArea->setMinimumSize(560, 460);
     m_scrollArea->setFocusPolicy(Qt::StrongFocus);
     layout->addWidget(m_scrollArea);
 
@@ -149,6 +224,17 @@ void HelpPanel::refreshTheme() {
     pal.setColor(QPalette::WindowText, m_viewport->textColor());
     m_title->setPalette(pal);
     m_body->setPalette(pal);
+
+    /* Blended to a solid colour rather than passed as #AARRGGBB: Qt's
+     * rich-text CSS does not reliably parse an alpha channel in a hex
+     * colour, so the dimming would silently render fully opaque. */
+    QColor panelBg = m_viewport->panelFieldColor();
+    QColor dim = m_viewport->textColor();
+    const double dimFactor = 150.0 / 255.0;
+    dim.setRgb(static_cast<int>(panelBg.red() + (dim.red() - panelBg.red()) * dimFactor),
+                static_cast<int>(panelBg.green() + (dim.green() - panelBg.green()) * dimFactor),
+                static_cast<int>(panelBg.blue() + (dim.blue() - panelBg.blue()) * dimFactor));
+    m_body->setText(buildHelpHtml(m_viewport->textColor().name(), dim.name()));
 
     QPalette scrollPal = m_scrollArea->palette();
     scrollPal.setColor(QPalette::Base, m_viewport->panelFieldColor());

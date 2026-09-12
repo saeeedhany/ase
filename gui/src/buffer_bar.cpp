@@ -1,5 +1,7 @@
 #include "buffer_bar.h"
 
+#include <algorithm>
+
 #include <QFontMetrics>
 #include <QMouseEvent>
 #include <QPainter>
@@ -15,6 +17,10 @@ namespace {
 constexpr int kActiveAlpha = 255;
 constexpr int kInactiveAlpha = 120;
 constexpr int kHoverAlpha = 185;
+/* The unsaved-changes dot stays readable even on an inactive entry —
+ * telling you about a file you are *not* looking at is the entire
+ * reason it exists, so it must not fade out with the name. */
+constexpr int kDirtyDotMinAlpha = 200;
 
 constexpr double kDotRadius = 2.5;
 constexpr int kDotTextGap = 7;   /* dot to filename */
@@ -29,11 +35,15 @@ BufferBar::BufferBar(QWidget *parent) : QWidget(parent) {
     setAttribute(Qt::WA_OpaquePaintEvent);
 }
 
-void BufferBar::setEntries(const QVector<QString> &names, int activeIndex) {
-    if (m_names == names && m_activeIndex == activeIndex) {
+void BufferBar::setEntries(const QVector<Item> &items, int activeIndex) {
+    bool same = items.size() == m_items.size() && activeIndex == m_activeIndex;
+    for (int i = 0; same && i < items.size(); ++i) {
+        same = items[i].name == m_items[i].name && items[i].dirty == m_items[i].dirty;
+    }
+    if (same) {
         return;
     }
-    m_names = names;
+    m_items = items;
     m_activeIndex = activeIndex;
     m_hoverIndex = -1;
     m_hoverClose = false;
@@ -54,7 +64,7 @@ QSize BufferBar::sizeHint() const {
      * tells you nothing. Collapsing to zero height means someone who
      * never opens a second file sees exactly the editor they had before
      * this feature existed. */
-    if (m_names.size() < 2) {
+    if (m_items.size() < 2) {
         return QSize(0, 0);
     }
     return QSize(0, QFontMetrics(font()).height() + 2 * kBarVerticalPadding);
@@ -62,14 +72,18 @@ QSize BufferBar::sizeHint() const {
 
 void BufferBar::layoutEntries() {
     m_entries.clear();
-    m_entries.reserve(m_names.size());
+    m_entries.reserve(m_items.size());
 
     QFontMetrics metrics(font());
     int height = metrics.height() + 2 * kBarVerticalPadding;
     int x = 0;
 
-    for (int i = 0; i < m_names.size(); ++i) {
-        int nameWidth = metrics.horizontalAdvance(m_names[i]);
+    for (int i = 0; i < m_items.size(); ++i) {
+        int nameWidth = metrics.horizontalAdvance(m_items[i].name);
+        /* The dot's slot is reserved whether or not it is drawn, so
+         * names never shift sideways the moment a file becomes dirty —
+         * a bar that reflows on your first keystroke is worse than a
+         * little extra left padding. */
         int width = kEntryPadding + static_cast<int>(2 * kDotRadius) + kDotTextGap + nameWidth;
         if (i == m_activeIndex) {
             width += kNameCloseGap + static_cast<int>(2 * kCloseArm);
@@ -77,7 +91,8 @@ void BufferBar::layoutEntries() {
         width += kEntryPadding;
 
         Entry entry;
-        entry.name = m_names[i];
+        entry.name = m_items[i].name;
+        entry.dirty = m_items[i].dirty;
         entry.bounds = QRect(x, 0, width, height);
         if (i == m_activeIndex) {
             int closeCenterX = x + width - kEntryPadding - static_cast<int>(kCloseArm);
@@ -103,7 +118,7 @@ int BufferBar::entryAt(const QPoint &pos) const {
 void BufferBar::paintEvent(QPaintEvent *) {
     QPainter painter(this);
     painter.fillRect(rect(), m_background);
-    if (m_entries.size() != m_names.size()) {
+    if (m_entries.size() != m_items.size()) {
         layoutEntries(); /* font changed under us since the last setEntries */
     }
 
@@ -122,13 +137,15 @@ void BufferBar::paintEvent(QPaintEvent *) {
         QColor color = m_text;
         color.setAlpha(alpha);
 
-        /* The dot and the name share one opacity — they read as a single
-         * mark, which is the whole point of the dot being there. */
         double centerY = entry.bounds.center().y() + 0.5;
         double dotX = entry.bounds.left() + kEntryPadding + kDotRadius;
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(color);
-        painter.drawEllipse(QPointF(dotX, centerY), kDotRadius, kDotRadius);
+        if (entry.dirty) {
+            QColor dotColor = m_text;
+            dotColor.setAlpha(std::max(alpha, kDirtyDotMinAlpha));
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(dotColor);
+            painter.drawEllipse(QPointF(dotX, centerY), kDotRadius, kDotRadius);
+        }
 
         int nameLeft = static_cast<int>(dotX + kDotRadius) + kDotTextGap;
         painter.setPen(color);

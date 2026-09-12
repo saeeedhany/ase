@@ -9,7 +9,10 @@
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QKeyEvent>
+#include <QLabel>
 #include <QLineEdit>
+#include <QMessageBox>
+#include <QPushButton>
 #include <QListWidget>
 #include <QPainter>
 #include <QPalette>
@@ -34,6 +37,15 @@ FileBrowserPanel::FileBrowserPanel(EditorViewport *viewport) : FloatingPanel(vie
     m_filterEdit->setFrame(false);
     pathRow->addWidget(m_filterEdit);
     layout->addLayout(pathRow);
+
+    /* Every familiar file dialog tells you which directory you are in.
+     * This one only ever showed the directory's *name* as a
+     * placeholder, which vanished the moment you typed — so while
+     * filtering, the one piece of context you needed was gone. See
+     * docs/adr/0055. */
+    m_pathLabel = new QLabel(content);
+    m_pathLabel->setTextInteractionFlags(Qt::NoTextInteraction);
+    layout->addWidget(m_pathLabel);
 
     m_listWidget = new QListWidget(content);
     m_listWidget->setMinimumHeight(260);
@@ -129,11 +141,56 @@ void FileBrowserPanel::refreshTheme() {
     QColor handleHover = m_viewport->textColor();
     handleHover.setAlpha(170);
     m_listWidget->setStyleSheet(thinScrollBarStyleSheet(handle, handleHover));
+    /* Same trap every other QLabel in this app hit: the default palette
+     * ignores the theme and renders black. One tier down, since the path
+     * is context, not the thing you are acting on. */
+    QColor pathColor = m_viewport->textColor();
+    pathColor.setAlpha(140);
+    QPalette pathPal = m_pathLabel->palette();
+    pathPal.setColor(QPalette::WindowText, pathColor);
+    m_pathLabel->setPalette(pathPal);
+
 }
 
 /* Dotfiles excluded (no QDir::Hidden in the filter) and no toggle to
  * show them — v1 simplification, matching this project's tolerance for
  * a documented, undoable-later scope cut over a half-built option. */
+QString FileBrowserPanel::expandUser(const QString &path) {
+    if (path == QLatin1String("~")) {
+        return QDir::homePath();
+    }
+    if (path.startsWith(QLatin1String("~/"))) {
+        return QDir::homePath() + path.mid(1);
+    }
+    return path;
+}
+
+bool FileBrowserPanel::looksLikePath(const QString &text) {
+    return text.startsWith(QLatin1Char('~')) || QDir::isAbsolutePath(text) || text.contains(QLatin1Char('/'));
+}
+
+bool FileBrowserPanel::confirmOverwrite(const QString &path) {
+    QColor bg = m_viewport->panelBackgroundColor();
+    QColor border = m_viewport->panelBorderColor();
+    QColor text = m_viewport->textColor();
+
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::NoIcon);
+    box.setWindowTitle(QStringLiteral("Overwrite file"));
+    box.setText(QStringLiteral("\"%1\" already exists. Overwrite it?").arg(QFileInfo(path).fileName()));
+    QPushButton *overwriteButton = box.addButton(QStringLiteral("Overwrite"), QMessageBox::DestructiveRole);
+    QPushButton *cancelButton = box.addButton(QStringLiteral("Cancel"), QMessageBox::RejectRole);
+    box.setDefaultButton(cancelButton);
+    box.setStyleSheet(QStringLiteral("QMessageBox { background-color: %1; }"
+                                      "QMessageBox QLabel { color: %2; }"
+                                      "QPushButton { background-color: %1; color: %2; border: 1px solid %3; "
+                                      "padding: 4px 14px; min-width: 60px; }"
+                                      "QPushButton:hover, QPushButton:default { border-color: %2; }")
+                           .arg(bg.name(), text.name(), border.name()));
+    box.exec();
+    return box.clickedButton() == overwriteButton;
+}
+
 void FileBrowserPanel::setDirectory(const QString &dir) {
     QDir directory(dir);
     if (!directory.exists()) {
@@ -143,6 +200,13 @@ void FileBrowserPanel::setDirectory(const QString &dir) {
     QString label = QDir(m_currentDir).dirName();
     m_filterEdit->setPlaceholderText(label.isEmpty() ? QStringLiteral("/") : label);
     m_filterEdit->clear();
+
+    QString shown = m_currentDir;
+    QString home = QDir::homePath();
+    if (shown == home || shown.startsWith(home + QLatin1Char('/'))) {
+        shown = QLatin1Char('~') + shown.mid(home.size());
+    }
+    m_pathLabel->setText(shown);
 
     m_listWidget->blockSignals(true);
     m_listWidget->clear();
@@ -222,22 +286,64 @@ void FileBrowserPanel::activateEntry(const QString &name) {
 }
 
 void FileBrowserPanel::confirmCurrent() {
+    QString typed = m_filterEdit->text().trimmed();
+
+    /* A typed path wins over the list selection in *both* modes. This
+     * used to be Save-As-only: in Open, typing a path just filtered the
+     * listing to nothing and Enter did something unrelated, which is
+     * the main reason this panel felt unfamiliar. See docs/adr/0055. */
+    if (looksLikePath(typed)) {
+        QString resolved = expandUser(typed);
+        if (!QDir::isAbsolutePath(resolved)) {
+            resolved = QDir(m_currentDir).filePath(resolved);
+        }
+        resolved = QDir::cleanPath(resolved);
+        if (QFileInfo(resolved).isDir()) {
+            setDirectory(resolved);
+            return;
+        }
+        if (m_mode == Mode::Open) {
+            /* A path that doesn't exist yet is fine — opening a new file
+             * by name is a normal editor action (docs/adr/0006). */
+            m_viewport->requestOpenFile(resolved);
+            hideBar();
+            return;
+        }
+        if (QFileInfo::exists(resolved) && !confirmOverwrite(resolved)) {
+            return;
+        }
+        m_viewport->saveAs(resolved);
+        hideBar();
+        return;
+    }
+
     if (m_mode == Mode::Open) {
         QListWidgetItem *item = m_listWidget->currentItem();
         if (item == nullptr || item->isHidden()) {
+            /* Nothing matched the filter — treat what was typed as a new
+             * file name in this directory rather than doing nothing at
+             * all, which is what it used to do. */
+            if (!typed.isEmpty()) {
+                m_viewport->requestOpenFile(QDir(m_currentDir).filePath(typed));
+                hideBar();
+            }
             return;
         }
         activateEntry(item->text());
         return;
     }
 
-    QString text = m_filterEdit->text().trimmed();
-    if (text.isEmpty()) {
+    if (typed.isEmpty()) {
         return;
     }
-    QString resolved = QDir::isAbsolutePath(text) ? text : QDir(m_currentDir).filePath(text);
+    QString resolved = QDir(m_currentDir).filePath(typed);
     if (QFileInfo(resolved).isDir()) {
         setDirectory(resolved);
+        return;
+    }
+    /* Silently clobbering an existing file is the one genuinely
+     * dangerous thing this panel could do, and it did it. */
+    if (QFileInfo::exists(resolved) && !confirmOverwrite(resolved)) {
         return;
     }
     m_viewport->saveAs(resolved);

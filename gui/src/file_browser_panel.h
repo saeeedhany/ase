@@ -6,6 +6,7 @@
 
 #include <QString>
 
+class QLabel;
 class QLineEdit;
 class QListWidget;
 class QListWidgetItem;
@@ -39,6 +40,16 @@ protected:
 
 private:
     void hideBar();
+    /* `~` and `~/...` expanded to the home directory, so a typed path
+     * behaves the way it does in every shell and file dialog. Anything
+     * else is returned unchanged. See docs/adr/0055. */
+    static QString expandUser(const QString &path);
+    /* True when `text` is meant as a path to resolve rather than a name
+     * to filter by — it is absolute, starts with `~`, or contains a
+     * separator. Typing a path used to work in Save-As and silently do
+     * nothing in Open, which was the asymmetry that made this panel feel
+     * wrong. */
+    static bool looksLikePath(const QString &text);
     /* Lists `dir`'s entries (dirs first, then files, dotfiles excluded
      * — a v1 simplification, no toggle), clears the filter, and sets
      * the placeholder to `dir`'s own name (not the full path — you
@@ -54,6 +65,9 @@ private:
      * the filter field without confirming (Save-As mode — avoids an
      * accidental overwrite from a stray double-click). */
     void activateEntry(const QString &name);
+    /* Themed yes/no, matching the window's own confirmations rather than
+     * a native dialog (docs/adr/0044). */
+    bool confirmOverwrite(const QString &path);
     /* Enter's behavior, split by mode: Open confirms whichever row is
      * currently highlighted in the (possibly filtered) list — there's
      * no reason to open a file that doesn't exist. Save-As instead
@@ -76,6 +90,7 @@ private:
     QString m_currentDir;
 
     LetterBadge *m_badge;
+    QLabel *m_pathLabel;
     QLineEdit *m_filterEdit;
     QListWidget *m_listWidget;
     TranslucentBar *m_rowHighlight;
