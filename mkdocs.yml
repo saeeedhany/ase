@@ -66,6 +66,7 @@ nav:
     - adr/0044-panel-isolation-drag-bar-unsaved-quit-confirm.md
     - adr/0045-v0.2.0-alpha-and-containerized-packaging.md
     - adr/0046-native-vim-mode-phase-1.md
+    - adr/0047-vim-block-cursor.md
 
 theme:
   name: material

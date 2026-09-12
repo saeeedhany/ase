@@ -34,6 +34,13 @@ namespace {
 constexpr int kCaretAnimationTicks = 24;
 constexpr double kTwoPi = 6.283185307179586;
 constexpr int kCaretWidth = 2;
+/* The Normal-mode block cursor's fill, capped well under fully opaque —
+ * even at the breathing cycle's brightest instant (see caretAlpha
+ * below), a solid 100%-opaque block would flash harder than every
+ * other translucent overlay in this app's aesthetic (selection
+ * highlight, panel backgrounds, ...) and would fight for attention
+ * with the knocked-out glyph drawn on top of it. See docs/adr/0047. */
+constexpr int kVimBlockCursorMaxAlpha = 200;
 constexpr int kGutterPadding = 8; /* on each side of the line-number text */
 /* Per paint — see docs/adr/0015. The single global speed knob for
  * every eased value in this file (caret glide, scroll, diagnostic
@@ -482,13 +489,51 @@ void EditorViewport::paintEvent(QPaintEvent *) {
         caretAlpha = 0;
     }
 
+    /* Normal mode gets a real vim-style block cursor — filling the
+     * whole character cell, not the thin insertion bar used everywhere
+     * else — since otherwise this editor's caret looks identical
+     * whether Normal mode is active or not, with no visual cue that
+     * every keystroke currently means something completely different.
+     * Insert keeps the bar (it still means "an insertion point," same
+     * as with Vim mode off); Visual keeps it too, since Visual already
+     * highlights the selection range itself and the bar there just
+     * marks that selection's moving end without competing with it.
+     * See docs/adr/0047. */
+    bool blockCursor = vimModeActive() && m_vimMode == VimMode::Normal;
+
     if (caretAlpha > 0 && !m_renderedCaretPos.isEmpty()) {
-        QColor caretColor = m_textColor;
-        caretColor.setAlpha(caretAlpha);
         painter.save();
         painter.setClipRect(QRect(gutter, 0, textAreaWidth, height()));
-        for (const QPointF &pos : m_renderedCaretPos) {
-            painter.fillRect(QRectF(pos.x(), pos.y(), kCaretWidth, m_lineHeight), caretColor);
+        if (blockCursor) {
+            int blockAlpha = (caretAlpha * kVimBlockCursorMaxAlpha) / 255;
+            QColor blockColor = m_textColor;
+            blockColor.setAlpha(blockAlpha);
+            for (int i = 0; i < m_renderedCaretPos.size(); ++i) {
+                const QPointF &pos = m_renderedCaretPos[i];
+                int width = m_charWidth;
+                AseHighlightCapture capture = ASE_HL_NONE;
+                QString glyph = vimBlockGlyphAt(m_cursors[i], &width, &capture);
+
+                painter.fillRect(QRectF(pos.x(), pos.y(), width, m_lineHeight), blockColor);
+                if (!glyph.isEmpty()) {
+                    /* Knocked out in the background color, terminal-
+                     * cursor style, so the character underneath stays
+                     * legible through the block regardless of the
+                     * block's own opacity — otherwise a block cursor
+                     * filled in the text's own color would just hide
+                     * whatever it lands on. */
+                    painter.setFont(fontForCapture(capture));
+                    painter.setPen(m_backgroundColor);
+                    painter.drawText(QRectF(pos.x(), pos.y(), width, m_lineHeight),
+                                      Qt::AlignLeft | Qt::AlignVCenter | Qt::TextDontClip, glyph);
+                }
+            }
+        } else {
+            QColor caretColor = m_textColor;
+            caretColor.setAlpha(caretAlpha);
+            for (const QPointF &pos : m_renderedCaretPos) {
+                painter.fillRect(QRectF(pos.x(), pos.y(), kCaretWidth, m_lineHeight), caretColor);
+            }
         }
         painter.restore();
     }
@@ -2063,6 +2108,30 @@ void EditorViewport::vimOpenLineAbove() {
     ensureCursorVisible();
     snapAnimationToTarget();
     update();
+}
+
+QString EditorViewport::vimBlockGlyphAt(size_t cursor, int *width, AseHighlightCapture *capture) const {
+    int line = lineForOffset(cursor);
+    int lineStart = m_lineStarts[line];
+    int lineEnd = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
+    int col = columnForOffset(cursor, line);
+    /* vimNextCharBoundary steps by codepoint, not by byte, so a
+     * multi-byte UTF-8 character under the cursor is measured/drawn
+     * whole rather than split mid-sequence. At end of line/buffer it
+     * returns `cursor` unchanged (nothing to step past), which is
+     * exactly the "no real character here" signal below. */
+    size_t glyphEnd = vimNextCharBoundary(cursor);
+    int endCol = std::min(static_cast<int>(glyphEnd) - lineStart, lineEnd - lineStart);
+    if (endCol <= col) {
+        *width = m_charWidth;
+        *capture = ASE_HL_NONE;
+        return QString();
+    }
+
+    QVector<AseHighlightCapture> captures = capturesForLine(lineStart, lineEnd);
+    *capture = captures[col];
+    *width = xForColumn(lineStart, lineEnd, endCol) - xForColumn(lineStart, lineEnd, col);
+    return QString::fromUtf8(m_cache.constData() + lineStart + col, endCol - col);
 }
 
 /* Top-level Normal/Visual key dispatcher — see docs/adr/0046 for the

@@ -615,6 +615,17 @@ ADRs as each lands here going forward.
       (`/ ? n N`), `J`, indent, case ops, and any keybinding remapping
       (project-wide gap, not Vim-specific — see ADR 0026). See
       [ADR 0046](adr/0046-native-vim-mode-phase-1.md).
+- [x] **Vim mode — block cursor**: Normal mode now renders a real
+      vim-style block cursor filling the character cell (measured/
+      styled the same run-aware way `drawLine`/`xForColumn` are, so
+      bold/italic captures and multi-byte UTF-8 characters size
+      correctly), with the covered character knocked out in the
+      background color on top so it stays legible, and its blink
+      capped well under full opacity so it never flashes as a solid
+      block. Insert/Visual keep the original bar caret. Reuses the
+      existing position-glide and blink-reset animation machinery
+      unchanged — no new animation path needed. See
+      [ADR 0047](adr/0047-vim-block-cursor.md).
 
 ## Explicit non-goals for v1
 

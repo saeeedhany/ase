@@ -375,6 +375,15 @@ private:
      * rather than wherever insertText's normal "advance past what was
      * inserted" semantics would put it. */
     void vimOpenLineAbove();
+    /* The Normal-mode block cursor's glyph — the character it should
+     * visually "fill," measured/styled the same run-aware way
+     * drawLine/xForColumn are (docs/adr/0013), not a fixed m_charWidth.
+     * Returns an empty string (and *width = m_charWidth) when there's
+     * no real character to cover — end of line or buffer, where this
+     * editor's own cursor convention already sits *at* the newline
+     * byte rather than "on" a character (the named fidelity gap, see
+     * docs/adr/0046). See docs/adr/0047. */
+    QString vimBlockGlyphAt(size_t cursor, int *width, AseHighlightCapture *capture) const;
 
     /* Fills the pixel rect(s) for [start, end) across visual lines
      * [firstLine, lastLine), one rect per line — the same per-line
