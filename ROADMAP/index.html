@@ -836,6 +836,18 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2150,6 +2162,174 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0046-native-vim-mode-phase-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0046: Native Vim mode, Phase 1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0047-vim-block-cursor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0047: A real block cursor for Vim Normal mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0048-syntax-accent-colors-caret-inset-status-init/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0048: Syntax accent colors, caret inset, smaller default font, immediate status label
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0049-typing-pop-in-animation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0049: A typing pop-in animation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0050-runtime-font-zoom-and-vim-mode-default-on/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0050: Runtime font-size zoom, and Vim mode on by default
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0051-global-animation-consistency-and-vim-polish/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0051: Global animation consistency, and three Vim-mode polish fixes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2892,11 +3072,77 @@ ADRs as each lands here going forward.</p>
       installing/running the rebuilt packages, not just inspecting
       them. See
       <a href="../adr/0045-v0.2.0-alpha-and-containerized-packaging/">ADR 0045</a>.</li>
-<li>[ ] <strong>Vim mode</strong> (after Phase 17, unscoped until then): full modal
-      emulation, not a lighter subset. Hard prerequisite (undo/redo)
-      now satisfied by Phase 10; also benefits from Phase 11's
-      selection model (Visual mode) and Phase 15's <code>:</code> command line
-      (becomes the ex-command line).</li>
+<li>[x] <strong>Vim mode — Phase 1</strong>: native (not a plugin — the plugin ABI
+      has no raw-keystroke/modal-state hook), built inline into
+      <code>EditorViewport</code>. Insert/Normal/Visual modes; motions
+      <code>h j k l 0 ^ $ gg G w b e</code>; operators <code>d y c</code> composable with any
+      motion and counts (<code>3j</code>, <code>d2w</code>, <code>3dd</code>/<code>yy</code>/<code>cc</code> linewise); <code>x</code>,
+      <code>p</code>/<code>P</code>, <code>u</code>/<code>Ctrl+R</code>; Visual-mode <code>d y c x</code> over the existing
+      selection model; <code>:&lt;digits&gt;</code> ex-command line jump. Off by default
+      (<code>vim_mode = false</code>), byte-identical to before for anyone who
+      hasn't opted in. Found and fixed one real bug during live
+      verification: charwise <code>p</code> at end-of-line landed the paste on the
+      <em>next</em> line instead of appending to the current one. Explicitly
+      deferred for a later phase: registers beyond the clipboard,
+      macros, marks, text objects, dot-repeat, jumplist, Visual
+      Block/Line, Replace mode, <code>r</code>, <code>:s///</code>/<code>:g//</code>, search-motion
+      (<code>/ ? n N</code>), <code>J</code>, indent, case ops, and any keybinding remapping
+      (project-wide gap, not Vim-specific — see ADR 0026). See
+      <a href="../adr/0046-native-vim-mode-phase-1/">ADR 0046</a>.</li>
+<li>[x] <strong>Vim mode — block cursor</strong>: Normal mode now renders a real
+      vim-style block cursor filling the character cell (measured/
+      styled the same run-aware way <code>drawLine</code>/<code>xForColumn</code> are, so
+      bold/italic captures and multi-byte UTF-8 characters size
+      correctly), with the covered character knocked out in the
+      background color on top so it stays legible, and its blink
+      capped well under full opacity so it never flashes as a solid
+      block. Insert/Visual keep the original bar caret. Reuses the
+      existing position-glide and blink-reset animation machinery
+      unchanged — no new animation path needed. See
+      <a href="../adr/0047-vim-block-cursor/">ADR 0047</a>.</li>
+<li>[x] <strong>Syntax accent colors, caret inset, smaller default font,
+      immediate status label</strong>: <code>ASE_HL_TYPE</code>/<code>ASE_HL_STRING</code> now
+      render in two real accent colors instead of one being italic —
+      <code>#689d6a</code> (the color the user previously supplied for the docs
+      site, ADR 0036) for types, a matched warm gold for strings;
+      everything else stays monochrome, per "don't use too much."
+      Both caret shapes (bar and block) trimmed 2px shorter top/bottom.
+      Default <code>font_size</code> 12 → 11. The status bar's mode label now
+      shows immediately on launch instead of only after the first
+      keystroke. A fourth request from the same feedback — a typing
+      animation — was deliberately deferred pending a design decision
+      rather than guessed at. See
+      <a href="../adr/0048-syntax-accent-colors-caret-inset-status-init/">ADR 0048</a>.</li>
+<li>[x] <strong>Typing pop-in animation</strong>: the deferred fourth item from the
+      same feedback. Each newly typed character (plain typing, Tab —
+      not paste, not multi-line insertions, not Enter's own newline)
+      fades and scales in from 85% to full size/opacity over ~120ms,
+      gated on <code>animations = true</code> like every other animation in this
+      editor. Hooks into <code>insertText</code>/<code>insertTextAt</code> (the one funnel
+      every typing-shaped insertion already goes through) rather than
+      adding a new call site. See
+      <a href="../adr/0049-typing-pop-in-animation/">ADR 0049</a>.</li>
+<li>[x] <strong>Runtime font-size zoom; Vim mode on by default</strong>: <code>Ctrl+=</code>/
+      <code>Ctrl+-</code>/<code>Ctrl+0</code> adjust font size live, in-session, independent
+      of <code>config.ase</code> (survives an unrelated config hot-reload; only
+      <code>Ctrl+0</code> or a restart returns to the configured value). Separately,
+      Vim mode is now on by default (<code>vim_mode = true</code> in
+      <code>ase_config_create_default()</code> and the shipped template — this
+      reverses ADR 0046's original "opt-in" reasoning) and a session now
+      starts in Normal mode, not Insert, matching real vim. See
+      <a href="../adr/0050-runtime-font-zoom-and-vim-mode-default-on/">ADR 0050</a>.</li>
+<li>[x] <strong>Global animation consistency; three Vim-mode polish fixes</strong>:
+      fixed a real bug where the typing pop-in (ADR 0049) never actually
+      rendered — <code>snapAnimationToTarget()</code> was wiping its own animation
+      entry in the same keystroke that created it. Removed the last
+      special-cased instant-snaps from Vim mode (every motion, mode-entry
+      command, and mutation) and from plain typing itself, so the whole
+      app now glides consistently with no exceptions. Also: Visual mode
+      now shows the same block cursor as Normal (was bar-only); the
+      block cursor's opacity cap (ADR 0047) is gone, back to full range;
+      and <code>:</code> opens the command line directly in Vim Normal/Visual mode,
+      additive to the existing <code>Ctrl+;</code>. See
+      <a href="../adr/0051-global-animation-consistency-and-vim-polish/">ADR 0051</a>.</li>
 </ul>
 <h2 id="explicit-non-goals-for-v1">Explicit non-goals for v1<a class="headerlink" href="#explicit-non-goals-for-v1" title="Permanent link">&para;</a></h2>
 <ul>

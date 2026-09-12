@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0011-lsp-client/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0048-syntax-accent-colors-caret-inset-status-init/">
       
       
-        <link rel="prev" href="../0010-hand-rolled-json/">
+        <link rel="prev" href="../0047-vim-block-cursor/">
       
       
-        <link rel="next" href="../0012-polish-phase-scope/">
+        <link rel="next" href="../0049-typing-pop-in-animation/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0011: LSP client — process isolation, sync handshake, async everything else - Absolute Simple Editor</title>
+        <title>ADR 0048: Syntax accent colors, caret inset, smaller default font, immediate status label - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0011-lsp-client-process-isolation-sync-handshake-async-everything-else" class="md-skip">
+        <a href="#adr-0048-syntax-accent-colors-caret-inset-smaller-default-font-immediate-status-label" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0011: LSP client — process isolation, sync handshake, async everything else
+              ADR 0048: Syntax accent colors, caret inset, smaller default font, immediate status label
             
           </span>
         </div>
@@ -1056,37 +1056,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0011: LSP client — process isolation, sync handshake, async everything else
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0011-lsp-client/" class="md-nav__link">
         
   
   
@@ -1102,164 +1075,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decisions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decisions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-one-child-process-per-client-real-process-isolation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. One child process per client, real process isolation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-the-initialize-handshake-is-synchronous-bounded-everything-else-is-async" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. The initialize handshake is synchronous (bounded), everything else is async
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-poll-mirrors-the-config-hot-reload-shape-non-blocking-timer-driven" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. poll() mirrors the config hot-reload shape: non-blocking, timer-driven
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-diagnostics-via-callback-requests-via-callback-same-idea-different-arity" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Diagnostics via callback, requests via callback — same idea, different arity
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-server-to-client-requests-are-not-implemented" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Server-to-client requests are not implemented
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-posix-only-in-v1-windows-returns-null-cleanly-not-a-half-tested-attempt" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. POSIX only in v1 — Windows returns NULL cleanly, not a half-tested attempt
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#7-tested-against-a-fake-language-server-not-a-real-one" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Tested against a fake language server, not a real one
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#not-done-deliberately-out-of-phase-6s-scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Not done (deliberately out of Phase 6's scope)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2277,10 +2092,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0048-syntax-accent-colors-caret-inset-status-init/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0048: Syntax accent colors, caret inset, smaller default font, immediate status label
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2296,6 +2138,131 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#two-real-accent-colors-replacing-italic-entirely" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two real accent colors, replacing italic entirely
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#both-caret-shapes-inset-a-little-vertically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Both caret shapes inset a little vertically
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#default-font_size-12-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default font_size: 12 → 11
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-bar-shows-the-mode-label-immediately-not-just-after-the-first-keystroke" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status bar shows the mode label immediately, not just after the first keystroke
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-in-this-adr-the-requested-typing-animation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not in this ADR: the requested typing animation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2441,22 +2408,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decisions
+        Decision
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decisions">
+    <nav class="md-nav" aria-label="Decision">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-one-child-process-per-client-real-process-isolation" class="md-nav__link">
+  <a href="#two-real-accent-colors-replacing-italic-entirely" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. One child process per client, real process isolation
+        Two real accent colors, replacing italic entirely
       
     </span>
   </a>
@@ -2464,10 +2431,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-the-initialize-handshake-is-synchronous-bounded-everything-else-is-async" class="md-nav__link">
+  <a href="#both-caret-shapes-inset-a-little-vertically" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. The initialize handshake is synchronous (bounded), everything else is async
+        Both caret shapes inset a little vertically
       
     </span>
   </a>
@@ -2475,10 +2442,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-poll-mirrors-the-config-hot-reload-shape-non-blocking-timer-driven" class="md-nav__link">
+  <a href="#default-font_size-12-11" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. poll() mirrors the config hot-reload shape: non-blocking, timer-driven
+        Default font_size: 12 → 11
       
     </span>
   </a>
@@ -2486,10 +2453,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-diagnostics-via-callback-requests-via-callback-same-idea-different-arity" class="md-nav__link">
+  <a href="#status-bar-shows-the-mode-label-immediately-not-just-after-the-first-keystroke" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Diagnostics via callback, requests via callback — same idea, different arity
+        Status bar shows the mode label immediately, not just after the first keystroke
       
     </span>
   </a>
@@ -2497,32 +2464,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#5-server-to-client-requests-are-not-implemented" class="md-nav__link">
+  <a href="#not-in-this-adr-the-requested-typing-animation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Server-to-client requests are not implemented
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-posix-only-in-v1-windows-returns-null-cleanly-not-a-half-tested-attempt" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. POSIX only in v1 — Windows returns NULL cleanly, not a half-tested attempt
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#7-tested-against-a-fake-language-server-not-a-real-one" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Tested against a fake language server, not a real one
+        Not in this ADR: the requested typing animation
       
     </span>
   </a>
@@ -2531,17 +2476,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#not-done-deliberately-out-of-phase-6s-scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Not done (deliberately out of Phase 6's scope)
-      
-    </span>
-  </a>
   
 </li>
       
@@ -2573,7 +2507,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0011-lsp-client.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0048-syntax-accent-colors-caret-inset-status-init.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2581,118 +2515,101 @@
   
 
 
-<h1 id="adr-0011-lsp-client-process-isolation-sync-handshake-async-everything-else">ADR 0011: LSP client — process isolation, sync handshake, async everything else<a class="headerlink" href="#adr-0011-lsp-client-process-isolation-sync-handshake-async-everything-else" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0048-syntax-accent-colors-caret-inset-smaller-default-font-immediate-status-label">ADR 0048: Syntax accent colors, caret inset, smaller default font, immediate status label<a class="headerlink" href="#adr-0048-syntax-accent-colors-caret-inset-smaller-default-font-immediate-status-label" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Spec section 4: "LSP client module, isolated process boundary via
-JSON-RPC over stdio — a misbehaving language server must never crash
-the editor." Section 7 phase 6 scopes this to diagnostics, completion,
-and go-to-definition — not full LSP spec coverage.</p>
-<h2 id="decisions">Decisions<a class="headerlink" href="#decisions" title="Permanent link">&para;</a></h2>
-<h3 id="1-one-child-process-per-client-real-process-isolation">1. One child process per client, real process isolation<a class="headerlink" href="#1-one-child-process-per-client-real-process-isolation" title="Permanent link">&para;</a></h3>
-<p><code>ase_lsp_client_start</code> forks/execs the language server and talks to it
-over two pipes (its stdin/stdout). No shared memory, no linking against
-a server library — the server can do anything, including crash, and
-the worst case is <code>ase_lsp_client_is_alive</code> going false. This is the
-same isolation model the spec calls for and the same reasoning as
-process-based (rather than in-process) plugin sandboxing would use, if
-this project had that — here it's mandatory, not a choice.</p>
-<p><strong><code>SIGPIPE</code> is disabled process-wide</strong> (<code>signal(SIGPIPE, SIG_IGN)</code>) the
-first time a client starts. Without this, writing to a server that has
-already died raises <code>SIGPIPE</code>, whose default action kills the whole
-editor — exactly the failure mode this ADR exists to prevent. This is a
-global, not per-client, side effect; documented here since it's the
-kind of thing that's surprising to discover by accident later. Standard
-practice for any program that manages pipes to child processes it
-doesn't fully trust.</p>
-<h3 id="2-the-initialize-handshake-is-synchronous-bounded-everything-else-is-async">2. The initialize handshake is synchronous (bounded), everything else is async<a class="headerlink" href="#2-the-initialize-handshake-is-synchronous-bounded-everything-else-is-async" title="Permanent link">&para;</a></h3>
-<p><code>ase_lsp_client_start</code> blocks — polling with small sleeps, never a raw
-blocking <code>read()</code> — for up to 3 seconds waiting for the <code>initialize</code>
-response before returning. Simpler lifecycle: callers get back either a
-working client or <code>NULL</code>, never a client that might still be mid-setup.
-<code>ase_lsp_client_stop</code> does the same bounded wait for <code>shutdown</code>/<code>exit</code>
-(1 second) before force-killing the process — never left hanging on a
-server that won't cooperate.</p>
-<p>Every other request (<code>textDocument/completion</code>, <code>textDocument/definition</code>)
-is fire-and-return: the callback fires later, from inside
-<code>ase_lsp_client_poll()</code>. Blocking Phase 2's GUI thread waiting on a
-process that might be slow, hung, or gone would violate "no perceptible
-input lag" far more visibly than a 3-second one-time startup delay
-does.</p>
-<h3 id="3-poll-mirrors-the-config-hot-reload-shape-non-blocking-timer-driven">3. <code>poll()</code> mirrors the config hot-reload shape: non-blocking, timer-driven<a class="headerlink" href="#3-poll-mirrors-the-config-hot-reload-shape-non-blocking-timer-driven" title="Permanent link">&para;</a></h3>
-<p><code>ase_lsp_client_poll</code> never blocks — it drains whatever's available
-from the non-blocking read end, tries to frame complete
-<code>Content-Length</code>-delimited JSON-RPC messages out of the accumulated
-buffer, and dispatches each. The intended integration (not built yet —
-see "Not done" below) is the same shape as <code>EditorViewport</code>'s config
-poll timer (ADR 0008): call it periodically from the GUI, no threading,
-no locks, one clear place data crosses from "external process" to
-"editor state."</p>
-<h3 id="4-diagnostics-via-callback-requests-via-callback-same-idea-different-arity">4. Diagnostics via callback, requests via callback — same idea, different arity<a class="headerlink" href="#4-diagnostics-via-callback-requests-via-callback-same-idea-different-arity" title="Permanent link">&para;</a></h3>
-<p><code>textDocument/publishDiagnostics</code> is a server-initiated notification
-with no request behind it, so it gets a standing callback
-(<code>ase_lsp_client_set_diagnostics_callback</code>), set once. Completion and
-definition are request/response, so each call takes its own callback —
-ordinary async-request shape. Both deliver JSON as <em>borrowed</em> pointers,
-valid only for the duration of the callback, to avoid a whole class of
-"who owns this JSON tree" bugs; a caller that needs the data longer
-copies out of it.</p>
-<h3 id="5-server-to-client-requests-are-not-implemented">5. Server-to-client requests are not implemented<a class="headerlink" href="#5-server-to-client-requests-are-not-implemented" title="Permanent link">&para;</a></h3>
-<p>If a server sends <em>us</em> a request (has both <code>method</code> and <code>id</code> — e.g.
-<code>workspace/configuration</code>), v1 doesn't respond. Per LSP semantics, an
-unanswered request degrades gracefully in a well-behaved server (it
-just never resolves on their end); this deliberately doesn't attempt
-the fuller LSP surface that would require answering server-initiated
-requests correctly. Malformed/unrecognized messages of any kind are
-logged nowhere and simply dropped — the framing layer, not this
-dispatch logic, is what has to be bulletproof against garbage.</p>
-<h3 id="6-posix-only-in-v1-windows-returns-null-cleanly-not-a-half-tested-attempt">6. POSIX only in v1 — Windows returns NULL cleanly, not a half-tested attempt<a class="headerlink" href="#6-posix-only-in-v1-windows-returns-null-cleanly-not-a-half-tested-attempt" title="Permanent link">&para;</a></h3>
-<p>Async child-process I/O on Windows needs either overlapped I/O or a
-dedicated reader thread — meaningfully more machinery than any other
-platform branch this project has written so far (contrast: config path
-resolution, <code>_mkdir</code>, <code>LoadLibrary</code> — all a few lines each). Writing an
-under-tested attempt at that risks shipping something that's <em>worse</em>
-than an honest gap: silently-broken async I/O is a much worse failure
-mode than a clean, documented "not supported yet." <code>ase_lsp_client_start</code>
-detects this by simply having <code>platform_spawn</code> return <code>false</code> on
-Windows — every other function in the file is consequently unreachable
-there but still compiles (checked via the Windows CI job, which only
-builds, doesn't run this functionally). Revisit when Windows LSP
-support is an actual, prioritized goal, not before.</p>
-<h3 id="7-tested-against-a-fake-language-server-not-a-real-one">7. Tested against a fake language server, not a real one<a class="headerlink" href="#7-tested-against-a-fake-language-server-not-a-real-one" title="Permanent link">&para;</a></h3>
-<p><code>core/tests/fixtures/fake_lsp_server.c</code> is a ~100-line stand-in
-implementing just enough LSP to be indistinguishable from a real server
-for this client's purposes: replies to <code>initialize</code>, sends
-<code>publishDiagnostics</code> after <code>didOpen</code>, replies to <code>textDocument/completion</code>
-and <code>textDocument/definition</code> with fixed canned results, and handles
-<code>shutdown</code>/<code>exit</code>. This is a deliberate choice over depending on a real
-language server (e.g. <code>clangd</code>) being installed in every dev/CI
-environment — the same reasoning as the plugin host's test fixtures
-(ADR 0009): a real, working integration test that doesn't depend on
-what happens to be installed where it runs.</p>
-<h2 id="not-done-deliberately-out-of-phase-6s-scope">Not done (deliberately out of Phase 6's scope)<a class="headerlink" href="#not-done-deliberately-out-of-phase-6s-scope" title="Permanent link">&para;</a></h2>
+<p>Direct user feedback after using the Phase 1 Vim mode and its new block
+cursor (ADR 0046, ADR 0047): drop italics from syntax highlighting and
+add real color instead, using a specific color the user had already
+supplied once before (<code>#689d6a</code>, ADR 0036's docs-site accent) plus one
+more color that pairs with it, kept restrained ("don't use too much");
+make both caret shapes a little shorter; make the default font a
+little smaller; show the Vim mode label in the status bar immediately
+on launch, not just after the first keystroke; and (tracked separately,
+see the "not in this ADR" note below) add a typing animation.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<h3 id="two-real-accent-colors-replacing-italic-entirely">Two real accent colors, replacing italic entirely<a class="headerlink" href="#two-real-accent-colors-replacing-italic-entirely" title="Permanent link">&para;</a></h3>
+<p>ADR 0007's "one font color" pillar meant every syntax capture rendered
+in <code>m_textColor</code>'s own hue, varying only weight/opacity — <code>ASE_HL_TYPE</code>
+was the one exception, rendered italic. Italic is gone now; in its
+place, <code>ASE_HL_TYPE</code> and <code>ASE_HL_STRING</code> are the two captures that get
+a real, distinct color:</p>
 <ul>
-<li>Not wired into the GUI — no editor UI shows diagnostics, a completion
-  popup, or jumps to a definition yet. That's real UX work (squiggly
-  underlines, a popup widget, cross-file navigation) that belongs with
-  Phase 7 polish or its own pass, not implied by "the client module
-  works." Tracked in <code>docs/ROADMAP.md</code>, matching how Phase 5's plugin
-  host also isn't wired to a keybinding yet.</li>
-<li>No <code>textDocument/didChange</code> — the client can open a document but
-  can't tell the server about edits after that. Fine for a first
-  request/response smoke test; a real editing session would need this
-  before diagnostics/completion results reflect current buffer state.</li>
-<li>No workspace-wide features (symbols, rename, references) — sticking
-  to exactly what section 7 asked for.</li>
+<li><code>syntax_type = #689d6a</code> — the color the user supplied previously for
+  the docs site (ADR 0036), reused here since it's already an
+  established part of this project's identity, not a new arbitrary
+  choice.</li>
+<li><code>syntax_string = #d79921</code> — a warm, muted gold chosen to pair with
+  the given aqua-green without competing with it or with the editor's
+  own warm cream text color; both land in the same desaturated,
+  low-contrast register as everything else in this theme rather than
+  reading as a bright, saturated "rainbow" addition.</li>
 </ul>
+<p><code>ASE_HL_KEYWORD</code> (bold), <code>ASE_HL_NUMBER</code>/<code>ASE_HL_COMMENT</code> (dimmed
+alpha), and <code>ASE_HL_NONE</code> (plain) are unchanged — still monochrome,
+varying only weight/opacity. Only two of the five captures gained a
+hue, deliberately, per "don't use too much": this is a small, scoped
+departure from ADR 0007's pillar, not its replacement. Both colors are
+configurable (<code>syntax_type</code>/<code>syntax_string</code> in <code>config.ase</code>, defaults
+baked into both <code>ase_config_create_default()</code> and
+<code>kDefaultConfigTemplate</code> in <code>core/src/config.c</code>), consistent with every
+other themeable color in this editor.</p>
+<p>Removing italic also let <code>m_italicMetrics</code>/the italic <code>QFont</code> setup in
+<code>applyConfig()</code> be deleted outright rather than kept dead — nothing
+else in this codebase ever used italic.</p>
+<h3 id="both-caret-shapes-inset-a-little-vertically">Both caret shapes inset a little vertically<a class="headerlink" href="#both-caret-shapes-inset-a-little-vertically" title="Permanent link">&para;</a></h3>
+<p><code>kCaretVerticalInset = 2</code> (px) trims 2px off the top and bottom of both
+the bar caret (Insert/Visual) and the Normal-mode block cursor's fill
+rect (ADR 0047) — a full-line-height caret read as slightly too
+tall/blocky against the actual glyph height. The block cursor's
+knocked-out glyph (drawn on top, in the background color) still uses
+the <em>un-inset</em> rect, so the character's own vertical centering/baseline
+stays identical to normal text; only the surrounding fill shrinks.</p>
+<h3 id="default-font_size-12-11">Default <code>font_size</code>: 12 → 11<a class="headerlink" href="#default-font_size-12-11" title="Permanent link">&para;</a></h3>
+<p>A one-point reduction, in <code>ase_config_create_default()</code>,
+<code>kDefaultConfigTemplate</code>, and the <code>ase_config_get_int</code> fallback literal
+in <code>applyConfig()</code> — all three needed updating to actually stay in
+sync (<code>core/tests/test_config.c</code>'s default-value assertions updated to
+match). This only affects a <em>newly generated</em> config file
+(<code>ase_config_write_default_if_missing()</code> never touches an existing
+one) — an already-existing <code>~/.config/ase/config.ase</code> keeps whatever
+<code>font_size</code> it already has and needs a manual edit to pick up the new
+default.</p>
+<h3 id="status-bar-shows-the-mode-label-immediately-not-just-after-the-first-keystroke">Status bar shows the mode label immediately, not just after the first keystroke<a class="headerlink" href="#status-bar-shows-the-mode-label-immediately-not-just-after-the-first-keystroke" title="Permanent link">&para;</a></h3>
+<p><code>main.cpp</code>'s status <code>QLabel</code> was constructed with a hardcoded literal
+(<code>"Ln 1, Col 1"</code>) and only replaced once <code>EditorViewport::statusChanged</code>
+first fired — which happens at <code>ensureCursorVisible()</code>, called from
+every cursor-moving action and edit, but not at construction. A
+Vim-mode user launching the editor therefore saw a bare, mode-less
+status line until their very first keystroke. Fixed with a new public
+<code>EditorViewport::emitInitialStatus()</code> (a one-line wrapper around the
+already-private <code>ensureCursorVisible()</code>, added instead of just making
+that private method public, since nothing else outside the class
+needs it), called once in <code>main()</code> right after <code>window.resize()</code> and
+before <code>window.show()</code> — so the label already reads e.g. <code>"INSERT  Ln
+1, Col 1"</code> the instant the window appears.</p>
+<h3 id="not-in-this-adr-the-requested-typing-animation">Not in this ADR: the requested typing animation<a class="headerlink" href="#not-in-this-adr-the-requested-typing-animation" title="Permanent link">&para;</a></h3>
+<p>A fourth request — "add an animation while typing to give a good
+effect" — is deliberately not designed or built here. Unlike the three
+decisions above, it has no single obvious shape (per-character
+fade/scale-in vs. a caret pulse vs. something else entirely), each
+with real, different implementation cost and feel; picked without
+asking, it's the one item in this batch most likely to need throwing
+away and redoing. Left for a follow-up ADR once the direction is
+confirmed.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Everything above the framing layer (<code>process_complete_messages</code>) is
-platform-independent and fully tested without needing a live process at
-all beyond the fake server. Real language servers (clangd, pyright,
-etc.) should work as-is for the three features implemented — this
-hasn't been verified against one, only against the fake fixture and
-the LSP spec's documented message shapes.</p>
+<p>Verified live (screenshots, real GUI on a C test file exercising every
+capture kind): keywords/<code>typedef</code>/<code>const</code>/<code>struct</code> bold and plain-color
+as before; every <code>int</code>/<code>void</code>/<code>double</code>/<code>char</code>/<code>Point</code> type renders in
+the aqua-green, no italic anywhere; string literals (<code>"hello, world"</code>,
+a format string, <code>&lt;stdio.h&gt;</code>) render in the new gold; comments and
+numbers keep their existing dimmed-alpha treatment. Both caret shapes
+visibly shorter than the full line height on inspection, with the
+block cursor's knocked-out glyph still correctly centered. The status
+bar reads <code>"INSERT  Ln 1, Col 1"</code> on the very first frame after launch,
+before any input. <code>ctest --test-dir build</code> still 9/9 (after updating
+<code>test_config.c</code>'s two hardcoded <code>12</code>s to <code>11</code>).</p>
 
 
 

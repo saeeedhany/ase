@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0011-lsp-client/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0046-native-vim-mode-phase-1/">
       
       
-        <link rel="prev" href="../0010-hand-rolled-json/">
+        <link rel="prev" href="../0045-v0.2.0-alpha-and-containerized-packaging/">
       
       
-        <link rel="next" href="../0012-polish-phase-scope/">
+        <link rel="next" href="../0047-vim-block-cursor/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0011: LSP client — process isolation, sync handshake, async everything else - Absolute Simple Editor</title>
+        <title>ADR 0046: Native Vim mode, Phase 1 - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0011-lsp-client-process-isolation-sync-handshake-async-everything-else" class="md-skip">
+        <a href="#adr-0046-native-vim-mode-phase-1" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0011: LSP client — process isolation, sync handshake, async everything else
+              ADR 0046: Native Vim mode, Phase 1
             
           </span>
         </div>
@@ -1056,37 +1056,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0011: LSP client — process isolation, sync handshake, async everything else
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0011-lsp-client/" class="md-nav__link">
         
   
   
@@ -1102,164 +1075,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decisions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decisions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-one-child-process-per-client-real-process-isolation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. One child process per client, real process isolation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-the-initialize-handshake-is-synchronous-bounded-everything-else-is-async" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. The initialize handshake is synchronous (bounded), everything else is async
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-poll-mirrors-the-config-hot-reload-shape-non-blocking-timer-driven" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. poll() mirrors the config hot-reload shape: non-blocking, timer-driven
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-diagnostics-via-callback-requests-via-callback-same-idea-different-arity" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Diagnostics via callback, requests via callback — same idea, different arity
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-server-to-client-requests-are-not-implemented" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Server-to-client requests are not implemented
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-posix-only-in-v1-windows-returns-null-cleanly-not-a-half-tested-attempt" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. POSIX only in v1 — Windows returns NULL cleanly, not a half-tested attempt
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#7-tested-against-a-fake-language-server-not-a-real-one" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Tested against a fake language server, not a real one
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#not-done-deliberately-out-of-phase-6s-scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Not done (deliberately out of Phase 6's scope)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2221,10 +2036,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0046-native-vim-mode-phase-1/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0046: Native Vim mode, Phase 1
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2240,6 +2082,164 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#data-model-inline-in-editorviewport-no-new-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data model: inline in EditorViewport, no new class
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keypressevent-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        keyPressEvent integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1 scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#word-motion-algorithm-wbe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Word-motion algorithm (w/b/e)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#operatormotioncount-parsing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator+motion+count parsing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#undo-grouping-one-group-per-vim-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Undo grouping: one group per Vim command
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config-status-bar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config + status bar
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-real-bug-found-and-fixed-during-live-verification-paste-landing-on-the-wrong-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A real bug found and fixed during live verification: paste landing on the wrong line
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2441,22 +2441,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decisions
+        Decision
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decisions">
+    <nav class="md-nav" aria-label="Decision">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-one-child-process-per-client-real-process-isolation" class="md-nav__link">
+  <a href="#data-model-inline-in-editorviewport-no-new-class" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. One child process per client, real process isolation
+        Data model: inline in EditorViewport, no new class
       
     </span>
   </a>
@@ -2464,10 +2464,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-the-initialize-handshake-is-synchronous-bounded-everything-else-is-async" class="md-nav__link">
+  <a href="#keypressevent-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. The initialize handshake is synchronous (bounded), everything else is async
+        keyPressEvent integration
       
     </span>
   </a>
@@ -2475,10 +2475,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-poll-mirrors-the-config-hot-reload-shape-non-blocking-timer-driven" class="md-nav__link">
+  <a href="#phase-1-scope" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. poll() mirrors the config hot-reload shape: non-blocking, timer-driven
+        Phase 1 scope
       
     </span>
   </a>
@@ -2486,10 +2486,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-diagnostics-via-callback-requests-via-callback-same-idea-different-arity" class="md-nav__link">
+  <a href="#word-motion-algorithm-wbe" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Diagnostics via callback, requests via callback — same idea, different arity
+        Word-motion algorithm (w/b/e)
       
     </span>
   </a>
@@ -2497,10 +2497,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#5-server-to-client-requests-are-not-implemented" class="md-nav__link">
+  <a href="#operatormotioncount-parsing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Server-to-client requests are not implemented
+        Operator+motion+count parsing
       
     </span>
   </a>
@@ -2508,10 +2508,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#6-posix-only-in-v1-windows-returns-null-cleanly-not-a-half-tested-attempt" class="md-nav__link">
+  <a href="#undo-grouping-one-group-per-vim-command" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. POSIX only in v1 — Windows returns NULL cleanly, not a half-tested attempt
+        Undo grouping: one group per Vim command
       
     </span>
   </a>
@@ -2519,10 +2519,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#7-tested-against-a-fake-language-server-not-a-real-one" class="md-nav__link">
+  <a href="#config-status-bar" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7. Tested against a fake language server, not a real one
+        Config + status bar
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-real-bug-found-and-fixed-during-live-verification-paste-landing-on-the-wrong-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A real bug found and fixed during live verification: paste landing on the wrong line
       
     </span>
   </a>
@@ -2531,17 +2542,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#not-done-deliberately-out-of-phase-6s-scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Not done (deliberately out of Phase 6's scope)
-      
-    </span>
-  </a>
   
 </li>
       
@@ -2573,7 +2573,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0011-lsp-client.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0046-native-vim-mode-phase-1.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2581,118 +2581,189 @@
   
 
 
-<h1 id="adr-0011-lsp-client-process-isolation-sync-handshake-async-everything-else">ADR 0011: LSP client — process isolation, sync handshake, async everything else<a class="headerlink" href="#adr-0011-lsp-client-process-isolation-sync-handshake-async-everything-else" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0046-native-vim-mode-phase-1">ADR 0046: Native Vim mode, Phase 1<a class="headerlink" href="#adr-0046-native-vim-mode-phase-1" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Spec section 4: "LSP client module, isolated process boundary via
-JSON-RPC over stdio — a misbehaving language server must never crash
-the editor." Section 7 phase 6 scopes this to diagnostics, completion,
-and go-to-definition — not full LSP spec coverage.</p>
-<h2 id="decisions">Decisions<a class="headerlink" href="#decisions" title="Permanent link">&para;</a></h2>
-<h3 id="1-one-child-process-per-client-real-process-isolation">1. One child process per client, real process isolation<a class="headerlink" href="#1-one-child-process-per-client-real-process-isolation" title="Permanent link">&para;</a></h3>
-<p><code>ase_lsp_client_start</code> forks/execs the language server and talks to it
-over two pipes (its stdin/stdout). No shared memory, no linking against
-a server library — the server can do anything, including crash, and
-the worst case is <code>ase_lsp_client_is_alive</code> going false. This is the
-same isolation model the spec calls for and the same reasoning as
-process-based (rather than in-process) plugin sandboxing would use, if
-this project had that — here it's mandatory, not a choice.</p>
-<p><strong><code>SIGPIPE</code> is disabled process-wide</strong> (<code>signal(SIGPIPE, SIG_IGN)</code>) the
-first time a client starts. Without this, writing to a server that has
-already died raises <code>SIGPIPE</code>, whose default action kills the whole
-editor — exactly the failure mode this ADR exists to prevent. This is a
-global, not per-client, side effect; documented here since it's the
-kind of thing that's surprising to discover by accident later. Standard
-practice for any program that manages pipes to child processes it
-doesn't fully trust.</p>
-<h3 id="2-the-initialize-handshake-is-synchronous-bounded-everything-else-is-async">2. The initialize handshake is synchronous (bounded), everything else is async<a class="headerlink" href="#2-the-initialize-handshake-is-synchronous-bounded-everything-else-is-async" title="Permanent link">&para;</a></h3>
-<p><code>ase_lsp_client_start</code> blocks — polling with small sleeps, never a raw
-blocking <code>read()</code> — for up to 3 seconds waiting for the <code>initialize</code>
-response before returning. Simpler lifecycle: callers get back either a
-working client or <code>NULL</code>, never a client that might still be mid-setup.
-<code>ase_lsp_client_stop</code> does the same bounded wait for <code>shutdown</code>/<code>exit</code>
-(1 second) before force-killing the process — never left hanging on a
-server that won't cooperate.</p>
-<p>Every other request (<code>textDocument/completion</code>, <code>textDocument/definition</code>)
-is fire-and-return: the callback fires later, from inside
-<code>ase_lsp_client_poll()</code>. Blocking Phase 2's GUI thread waiting on a
-process that might be slow, hung, or gone would violate "no perceptible
-input lag" far more visibly than a 3-second one-time startup delay
-does.</p>
-<h3 id="3-poll-mirrors-the-config-hot-reload-shape-non-blocking-timer-driven">3. <code>poll()</code> mirrors the config hot-reload shape: non-blocking, timer-driven<a class="headerlink" href="#3-poll-mirrors-the-config-hot-reload-shape-non-blocking-timer-driven" title="Permanent link">&para;</a></h3>
-<p><code>ase_lsp_client_poll</code> never blocks — it drains whatever's available
-from the non-blocking read end, tries to frame complete
-<code>Content-Length</code>-delimited JSON-RPC messages out of the accumulated
-buffer, and dispatches each. The intended integration (not built yet —
-see "Not done" below) is the same shape as <code>EditorViewport</code>'s config
-poll timer (ADR 0008): call it periodically from the GUI, no threading,
-no locks, one clear place data crosses from "external process" to
-"editor state."</p>
-<h3 id="4-diagnostics-via-callback-requests-via-callback-same-idea-different-arity">4. Diagnostics via callback, requests via callback — same idea, different arity<a class="headerlink" href="#4-diagnostics-via-callback-requests-via-callback-same-idea-different-arity" title="Permanent link">&para;</a></h3>
-<p><code>textDocument/publishDiagnostics</code> is a server-initiated notification
-with no request behind it, so it gets a standing callback
-(<code>ase_lsp_client_set_diagnostics_callback</code>), set once. Completion and
-definition are request/response, so each call takes its own callback —
-ordinary async-request shape. Both deliver JSON as <em>borrowed</em> pointers,
-valid only for the duration of the callback, to avoid a whole class of
-"who owns this JSON tree" bugs; a caller that needs the data longer
-copies out of it.</p>
-<h3 id="5-server-to-client-requests-are-not-implemented">5. Server-to-client requests are not implemented<a class="headerlink" href="#5-server-to-client-requests-are-not-implemented" title="Permanent link">&para;</a></h3>
-<p>If a server sends <em>us</em> a request (has both <code>method</code> and <code>id</code> — e.g.
-<code>workspace/configuration</code>), v1 doesn't respond. Per LSP semantics, an
-unanswered request degrades gracefully in a well-behaved server (it
-just never resolves on their end); this deliberately doesn't attempt
-the fuller LSP surface that would require answering server-initiated
-requests correctly. Malformed/unrecognized messages of any kind are
-logged nowhere and simply dropped — the framing layer, not this
-dispatch logic, is what has to be bulletproof against garbage.</p>
-<h3 id="6-posix-only-in-v1-windows-returns-null-cleanly-not-a-half-tested-attempt">6. POSIX only in v1 — Windows returns NULL cleanly, not a half-tested attempt<a class="headerlink" href="#6-posix-only-in-v1-windows-returns-null-cleanly-not-a-half-tested-attempt" title="Permanent link">&para;</a></h3>
-<p>Async child-process I/O on Windows needs either overlapped I/O or a
-dedicated reader thread — meaningfully more machinery than any other
-platform branch this project has written so far (contrast: config path
-resolution, <code>_mkdir</code>, <code>LoadLibrary</code> — all a few lines each). Writing an
-under-tested attempt at that risks shipping something that's <em>worse</em>
-than an honest gap: silently-broken async I/O is a much worse failure
-mode than a clean, documented "not supported yet." <code>ase_lsp_client_start</code>
-detects this by simply having <code>platform_spawn</code> return <code>false</code> on
-Windows — every other function in the file is consequently unreachable
-there but still compiles (checked via the Windows CI job, which only
-builds, doesn't run this functionally). Revisit when Windows LSP
-support is an actual, prioritized goal, not before.</p>
-<h3 id="7-tested-against-a-fake-language-server-not-a-real-one">7. Tested against a fake language server, not a real one<a class="headerlink" href="#7-tested-against-a-fake-language-server-not-a-real-one" title="Permanent link">&para;</a></h3>
-<p><code>core/tests/fixtures/fake_lsp_server.c</code> is a ~100-line stand-in
-implementing just enough LSP to be indistinguishable from a real server
-for this client's purposes: replies to <code>initialize</code>, sends
-<code>publishDiagnostics</code> after <code>didOpen</code>, replies to <code>textDocument/completion</code>
-and <code>textDocument/definition</code> with fixed canned results, and handles
-<code>shutdown</code>/<code>exit</code>. This is a deliberate choice over depending on a real
-language server (e.g. <code>clangd</code>) being installed in every dev/CI
-environment — the same reasoning as the plugin host's test fixtures
-(ADR 0009): a real, working integration test that doesn't depend on
-what happens to be installed where it runs.</p>
-<h2 id="not-done-deliberately-out-of-phase-6s-scope">Not done (deliberately out of Phase 6's scope)<a class="headerlink" href="#not-done-deliberately-out-of-phase-6s-scope" title="Permanent link">&para;</a></h2>
+<p><code>docs/ROADMAP.md</code> listed Vim mode as the last item before v1 — "full
+modal emulation, not a lighter subset" — unblocked once undo/redo
+(Phase 10) and the multi-cursor selection model (Phase 11) existed,
+with the <code>:</code> command line (Phase 15) intended to become the ex-command
+line.</p>
+<p><strong>Native vs. plugin</strong>: the plugin ABI (<code>docs/adr/0038</code>-era design)
+only exposes discrete, named commands invoked programmatically — there
+is no raw-keystroke or modal-state hook a plugin could use to
+intercept every key the way modal editing needs. Building that hook
+just to support one feature, then routing every keystroke through the
+Lua FFI boundary, would be slower and more awkward than the
+alternative: build the modal engine directly into <code>EditorViewport</code>,
+which already owns the cursor/selection/undo model these commands need
+to reach.</p>
+<p>Real Vim's full surface is enormous. This ADR scopes a <strong>Phase 1</strong>: a
+complete, genuinely usable modal-editing slice — not a partial attempt
+at everything — with the rest of the surface explicitly deferred and
+named.</p>
+<p>Two facts confirmed directly against the code before designing this:
+<code>cutSelection()</code> already used the exact shape Vim's operators need —
+one <code>ase_undo_begin_group</code>/<code>end_group</code> pair wrapping direct buffer
+calls, not nested calls to another batch entrypoint (undo groups can't
+nest, <code>core/src/undo.c</code>) — so no new undo capability was needed, just
+new methods with the same shape. And <code>statusChanged(int, int, bool)</code>
+had exactly one declaration, one emit site, one connect site — safe to
+extend its signature without a wider audit.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<h3 id="data-model-inline-in-editorviewport-no-new-class">Data model: inline in <code>EditorViewport</code>, no new class<a class="headerlink" href="#data-model-inline-in-editorviewport-no-new-class" title="Permanent link">&para;</a></h3>
+<p>New state is private members on <code>EditorViewport</code>, not a separate
+<code>VimEngine</code>. This project's actual extraction precedent is "a
+self-contained widget with its own paint/animation state gets its own
+class" (<code>TrackingPopup</code>, <code>CompletionPopup</code>); logic that reaches
+<code>m_cursors</code>/<code>m_cache</code>/<code>m_buffer</code>/<code>m_undo</code> directly stays inline — the
+same place the existing cursor primitives and the whole LSP/completion
+subsystem already live, since neither of those has an independent
+widget of its own either.</p>
+<div class="highlight"><pre><span></span><code><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">VimMode</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">Insert</span><span class="p">,</span><span class="w"> </span><span class="n">Normal</span><span class="p">,</span><span class="w"> </span><span class="n">Visual</span><span class="w"> </span><span class="p">};</span>
+<span class="n">VimMode</span><span class="w"> </span><span class="n">m_vimMode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VimMode</span><span class="o">::</span><span class="n">Insert</span><span class="p">;</span><span class="w">   </span><span class="c1">// default Insert == identical to "off" everywhere but one gate</span>
+<span class="kt">bool</span><span class="w"> </span><span class="n">m_vimModeEnabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w">         </span><span class="c1">// from config</span>
+
+<span class="kt">int</span><span class="w">  </span><span class="n">m_vimCount1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">                  </span><span class="c1">// count before an operator/motion</span>
+<span class="kt">char</span><span class="w"> </span><span class="n">m_vimPendingOperator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">'\0'</span><span class="p">;</span><span class="w">      </span><span class="c1">// 'd' / 'y' / 'c'</span>
+<span class="kt">int</span><span class="w">  </span><span class="n">m_vimCount2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">                  </span><span class="c1">// count after the operator</span>
+<span class="kt">bool</span><span class="w"> </span><span class="n">m_vimPendingG</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w">            </span><span class="c1">// mid-"gg"</span>
+<span class="kt">bool</span><span class="w"> </span><span class="n">m_vimLastYankWasLinewise</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"> </span><span class="c1">// drives p/P placement</span>
+</code></pre></div>
+<h3 id="keypressevent-integration"><code>keyPressEvent</code> integration<a class="headerlink" href="#keypressevent-integration" title="Permanent link">&para;</a></h3>
+<p><code>Key_Escape</code> is mode-aware: Insert → step left one char (if not at
+column 0) then enter Normal; Normal/Visual → clear pending Vim state
+and <code>collapseToOneCursor()</code>. A new gate right after the existing
+<code>m_desiredColumn = -1;</code> line hands off to
+<code>handleVimNormalOrVisualKey(event)</code> whenever
+<code>vimModeActive() &amp;&amp; m_vimMode != Insert</code>; it collapses to one cursor
+first (Vim operates on the primary cursor only — a stray Ctrl+D
+fan-out self-corrects on the next Vim keystroke), then claims Vim's
+recognized keys and swallows any other unmodified printable key.
+<code>Tab</code>/<code>Return</code>/<code>Delete</code> get a one-line guard so they no-op in
+Normal/Visual instead of mutating the buffer; the plain-character
+insert path gets the same guard.</p>
+<p><strong>Arrow keys and the entire Ctrl-modifier chain stay unconditional on
+Vim mode</strong> — Ctrl+S/Ctrl+Q/Find/Ctrl+D/etc. never become mode-dependent
+(also preserves ADR 0026's "quit is a single, deliberate action"
+ruling by construction). One addition: <code>Ctrl+R</code> → <code>redo()</code>, gated on
+<code>vimModeActive()</code> so non-Vim users see no new shortcut.</p>
+<h3 id="phase-1-scope">Phase 1 scope<a class="headerlink" href="#phase-1-scope" title="Permanent link">&para;</a></h3>
+<p><strong>Modes:</strong> Insert, Normal, Visual (charwise). <strong>Entry/exit:</strong>
+<code>i a I A o O</code> → Insert; <code>Escape</code> → Normal; <code>v</code> toggles Normal↔Visual.</p>
+<p><strong>Motions</strong> (repeatable by count): <code>h j k l</code>, <code>0</code>, <code>^</code> (first
+non-blank), <code>$</code>, <code>gg</code>, <code>G</code>, <code>w b e</code> (three-class word scan — see
+below).</p>
+<p><strong>Operators:</strong> <code>d y c</code>, composable with any motion, with counts on
+either side (<code>3j</code>, <code>d2w</code>, <code>2dw</code>, <code>3dd</code>/<code>yy</code>/<code>cc</code> linewise). Plus <code>x</code>,
+<code>p</code>/<code>P</code>, <code>u</code>/<code>Ctrl+R</code> (bound to the existing <code>undo()</code>/<code>redo()</code>).</p>
+<p><strong>Visual mode:</strong> motions extend the selection via the existing
+<code>extend=true</code> path; <code>d y c x</code> act on the selection via
+<code>hasSelectionAt</code>/<code>selectionMinAt</code>/<code>selectionMaxAt</code>.</p>
+<p><strong>Ex-command:</strong> <code>runCommand</code>'s existing if/else-if chain (still
+triggered via this app's existing <code>Ctrl+;</code>, not a bare <code>:</code> — see ADR
+0025) gained one new branch: <code>:&lt;digits&gt;</code> jumps to that line. Not gated
+on <code>vim_mode</code> — proves the dispatch grows past exact-string match for
+anyone, Vim or not.</p>
+<p><strong>Explicitly deferred</strong> (named, not silently missing): registers
+(clipboard is the only register), macros, marks, text objects,
+dot-repeat, jumplist (a future <code>Ctrl+I</code> would collide with the About
+panel shortcut), <code>gq</code>, Visual Block/Line, Replace mode, single-char
+<code>r</code>, <code>:s///</code>/<code>:g//</code>, <code>/</code>/<code>?</code>/<code>n</code>/<code>N</code> search-motion (FindBar is a
+plausible future reuse), Insert-mode Vim commands, <code>J</code>, indent, case
+ops.</p>
+<p><strong>Keybinding customization is out of scope, project-wide, not just for
+Vim.</strong> Every existing shortcut in this editor is a hardcoded C++
+constant — ADR 0026 states this explicitly. There is no config-driven
+remapping system to plug into, so Vim's own bindings are hardcoded the
+same way, for the same reason. Real rebinding — a config format,
+conflict resolution against the existing Ctrl-shortcuts, a settings UI
+or file syntax — is a separate, sizable feature spanning every
+keybinding in the app, not a Vim-specific side effect. Worth its own
+future ADR if it's wanted.</p>
+<p><strong>Two named fidelity gaps against real Vim:</strong></p>
 <ul>
-<li>Not wired into the GUI — no editor UI shows diagnostics, a completion
-  popup, or jumps to a definition yet. That's real UX work (squiggly
-  underlines, a popup widget, cross-file navigation) that belongs with
-  Phase 7 polish or its own pass, not implied by "the client module
-  works." Tracked in <code>docs/ROADMAP.md</code>, matching how Phase 5's plugin
-  host also isn't wired to a keybinding yet.</li>
-<li>No <code>textDocument/didChange</code> — the client can open a document but
-  can't tell the server about edits after that. Fine for a first
-  request/response smoke test; a real editing session would need this
-  before diagnostics/completion results reflect current buffer state.</li>
-<li>No workspace-wide features (symbols, rename, references) — sticking
-  to exactly what section 7 asked for.</li>
+<li><code>dw</code>/<code>cw</code> at end-of-line behaves like a plain <code>w</code> (no special
+  end-of-line word carve-out).</li>
+<li><code>$</code>/<code>e</code> land where this editor's existing insertion-caret model
+  already puts Home/End — the insertion <em>gap</em> just before the line's
+  <code>'\n'</code> byte — not "on" the last visible character the way real Vim's
+  block cursor does, since no block cursor exists here. This is a
+  deliberate, accepted deviation, not an oversight — see the bug fixed
+  below for the one place it actually mattered operationally.</li>
 </ul>
+<h3 id="word-motion-algorithm-wbe">Word-motion algorithm (<code>w</code>/<code>b</code>/<code>e</code>)<a class="headerlink" href="#word-motion-algorithm-wbe" title="Permanent link">&para;</a></h3>
+<p>A three-class model over <code>m_cache</code> — <code>Blank</code> (deliberately including
+<code>'\n'</code>, so a motion crosses line boundaries with zero special-casing,
+matching real Vim's own "a blank line acts like whitespace"
+behavior), <code>Word</code> (per the existing <code>isWordChar</code>), <code>Punct</code> (otherwise)
+— stepping by codepoint via two new helpers
+(<code>vimNextCharBoundary</code>/<code>vimPrevCharBoundary</code>) built on the existing
+<code>isUtf8ContinuationByte</code>. Lives in the GUI layer, matching where
+<code>isWordChar</code>/<code>addCursorAtNextOccurrence</code> already live — no new
+<code>AseBuffer</code> byte-range primitive needed, since <code>m_cache</code> already
+mirrors the whole buffer.</p>
+<h3 id="operatormotioncount-parsing">Operator+motion+count parsing<a class="headerlink" href="#operatormotioncount-parsing" title="Permanent link">&para;</a></h3>
+<p>A small pending-state machine using a few member variables rather than
+a formal state enum: digits accumulate into <code>m_vimCount1</code>; an operator
+letter moves to "operator pending," where digits accumulate into
+<code>m_vimCount2</code>, the same operator letter repeated fires the
+linewise-doubled form (<code>dd</code>/<code>yy</code>/<code>cc</code>), and a motion key computes the
+range and applies the operator once. <code>Escape</code> or any unrecognized key
+clears all pending state. <code>j k gg G</code> are linewise when combined with
+an operator; <code>h l w b e 0 ^ $</code> are charwise.</p>
+<h3 id="undo-grouping-one-group-per-vim-command">Undo grouping: one group per Vim command<a class="headerlink" href="#undo-grouping-one-group-per-vim-command" title="Permanent link">&para;</a></h3>
+<p>New mutation methods (<code>vimDeleteRange</code>, <code>vimYankRange</code>,
+<code>vimChangeRange</code>, <code>vimDeleteLines</code>, <code>vimYankLines</code>, <code>vimPasteAfter</code>,
+<code>vimPasteBefore</code>, <code>vimOpenLineAbove</code>) each open exactly one
+<code>ase_undo_begin_group</code>/<code>end_group</code> pair around direct
+<code>ase_buffer_insert</code>/<code>ase_buffer_delete</code> + <code>ase_undo_record_*</code> calls —
+never through <code>insertText()</code>/<code>deleteBackward()</code> as batch entrypoints,
+which would each try to open their own group (groups can't nest). Same
+shape <code>cutSelection()</code> already used, simpler here since Vim mode is
+single-cursor by construction.</p>
+<h3 id="config-status-bar">Config + status bar<a class="headerlink" href="#config-status-bar" title="Permanent link">&para;</a></h3>
+<p><code>applyConfig()</code> reads <code>vim_mode</code> with the exact <code>animations</code> pattern
+(<code>ase_config_get_string</code> + case-insensitive <code>"true"</code> compare, default
+off — this changes what every keystroke does, so it must be opt-in).
+<code>statusChanged</code> gained a 4th parameter, <code>modeLabel</code> (<code>"NORMAL"</code> /
+<code>"INSERT"</code> / <code>"VISUAL"</code>, empty when Vim mode is off, so the status
+text is byte-identical to before for anyone who hasn't opted in).
+Plain text, no icon or color, per ADR 0007's one-font-color pillar.</p>
+<h3 id="a-real-bug-found-and-fixed-during-live-verification-paste-landing-on-the-wrong-line">A real bug found and fixed during live verification: paste landing on the wrong line<a class="headerlink" href="#a-real-bug-found-and-fixed-during-live-verification-paste-landing-on-the-wrong-line" title="Permanent link">&para;</a></h3>
+<p><code>vimPasteAfter()</code>'s charwise branch initially called
+<code>vimNextCharBoundary(m_cursors[0])</code> unconditionally to find the
+insertion point — correct when the cursor sits "on" a real character,
+since stepping past that character is exactly what paste-after means.
+But at end-of-line, this editor's own insertion-point convention (the
+fidelity gap named above) already places the cursor <em>at</em> the <code>'\n'</code>
+byte itself, not on a real character before it. Applying
+<code>vimNextCharBoundary</code> there stepped over the newline too, landing the
+paste at the start of the <em>next</em> line instead of appending it to the
+end of the current one — reproduced live with a <code>0 w v w y $ p</code>
+sequence (yank "int ", paste at end of line) landing "int" prepended
+to the following line.</p>
+<p>Fixed by checking whether the byte at the cursor is <code>'\n'</code>: if so,
+insert directly at the cursor (it's already the correct insertion
+gap); otherwise step past the current character as before.
+<code>vimPasteBefore()</code> was never affected — it always inserts directly at
+the cursor, no forward step, so it had nothing to trip over.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Everything above the framing layer (<code>process_complete_messages</code>) is
-platform-independent and fully tested without needing a live process at
-all beyond the fake server. Real language servers (clangd, pyright,
-etc.) should work as-is for the three features implemented — this
-hasn't been verified against one, only against the fake fixture and
-the LSP spec's documented message shapes.</p>
+<p>Vim mode is a complete, real-editing-capable slice: motions, operators,
+counts, Visual selection, single-step undo/redo, and ex-command line
+jumps, verified live end-to-end (build clean with zero warnings on the
+first attempt; <code>ctest --test-dir build</code> still 9/9). Off by default,
+so it is invisible to anyone who hasn't opted in — every existing
+shortcut, the status bar's format, and plain typing are unaffected
+byte-for-byte when <code>vim_mode</code> is unset.</p>
+<p>What's harder: the deferred list above is real Vim muscle-memory that
+won't work yet (search-motion, dot-repeat, text objects, registers
+beyond the clipboard) — worth tracking honestly in
+<code>docs/ROADMAP.md</code> rather than implying full parity. The two named
+fidelity gaps mean a small number of end-of-line edge cases won't feel
+identical to real Vim; the paste bug above was the one case where that
+gap had an actual behavioral cost, now closed.</p>
 
 
 

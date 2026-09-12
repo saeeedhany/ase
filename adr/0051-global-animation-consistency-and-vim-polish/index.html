@@ -10,13 +10,11 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0011-lsp-client/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0051-global-animation-consistency-and-vim-polish/">
       
       
-        <link rel="prev" href="../0010-hand-rolled-json/">
+        <link rel="prev" href="../0050-runtime-font-zoom-and-vim-mode-default-on/">
       
-      
-        <link rel="next" href="../0012-polish-phase-scope/">
       
       
         
@@ -27,7 +25,7 @@
     
     
       
-        <title>ADR 0011: LSP client — process isolation, sync handshake, async everything else - Absolute Simple Editor</title>
+        <title>ADR 0051: Global animation consistency, and three Vim-mode polish fixes - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0011-lsp-client-process-isolation-sync-handshake-async-everything-else" class="md-skip">
+        <a href="#adr-0051-global-animation-consistency-and-three-vim-mode-polish-fixes" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0011: LSP client — process isolation, sync handshake, async everything else
+              ADR 0051: Global animation consistency, and three Vim-mode polish fixes
             
           </span>
         </div>
@@ -1056,37 +1054,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0011: LSP client — process isolation, sync handshake, async everything else
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0011-lsp-client/" class="md-nav__link">
         
   
   
@@ -1102,164 +1073,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decisions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decisions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-one-child-process-per-client-real-process-isolation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. One child process per client, real process isolation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-the-initialize-handshake-is-synchronous-bounded-everything-else-is-async" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. The initialize handshake is synchronous (bounded), everything else is async
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-poll-mirrors-the-config-hot-reload-shape-non-blocking-timer-driven" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. poll() mirrors the config hot-reload shape: non-blocking, timer-driven
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-diagnostics-via-callback-requests-via-callback-same-idea-different-arity" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Diagnostics via callback, requests via callback — same idea, different arity
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-server-to-client-requests-are-not-implemented" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Server-to-client requests are not implemented
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-posix-only-in-v1-windows-returns-null-cleanly-not-a-half-tested-attempt" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. POSIX only in v1 — Windows returns NULL cleanly, not a half-tested attempt
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#7-tested-against-a-fake-language-server-not-a-real-one" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Tested against a fake language server, not a real one
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#not-done-deliberately-out-of-phase-6s-scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Not done (deliberately out of Phase 6's scope)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2361,10 +2174,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0051-global-animation-consistency-and-vim-polish/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0051: Global animation consistency, and three Vim-mode polish fixes
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2380,6 +2220,142 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-typing-pop-ins-real-bug-snapanimationtotarget-was-clearing-its-own-animation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The typing pop-in's real bug: snapAnimationToTarget() was clearing its own animation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#typing-now-glides-too-not-just-the-character-pop-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typing now glides too, not just the character pop-in
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vim-mode-was-snapping-after-almost-everything" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vim mode was snapping after almost everything
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#visual-mode-gets-the-block-cursor-too" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visual mode gets the block cursor too
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#block-cursor-full-opacity-not-capped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block cursor: full opacity, not capped
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#opens-the-command-line-directly-in-vim-normalvisual-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        : opens the command line directly in Vim Normal/Visual mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2441,22 +2417,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decisions
+        Decision
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decisions">
+    <nav class="md-nav" aria-label="Decision">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-one-child-process-per-client-real-process-isolation" class="md-nav__link">
+  <a href="#the-typing-pop-ins-real-bug-snapanimationtotarget-was-clearing-its-own-animation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. One child process per client, real process isolation
+        The typing pop-in's real bug: snapAnimationToTarget() was clearing its own animation
       
     </span>
   </a>
@@ -2464,10 +2440,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-the-initialize-handshake-is-synchronous-bounded-everything-else-is-async" class="md-nav__link">
+  <a href="#typing-now-glides-too-not-just-the-character-pop-in" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. The initialize handshake is synchronous (bounded), everything else is async
+        Typing now glides too, not just the character pop-in
       
     </span>
   </a>
@@ -2475,10 +2451,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-poll-mirrors-the-config-hot-reload-shape-non-blocking-timer-driven" class="md-nav__link">
+  <a href="#vim-mode-was-snapping-after-almost-everything" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. poll() mirrors the config hot-reload shape: non-blocking, timer-driven
+        Vim mode was snapping after almost everything
       
     </span>
   </a>
@@ -2486,10 +2462,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-diagnostics-via-callback-requests-via-callback-same-idea-different-arity" class="md-nav__link">
+  <a href="#visual-mode-gets-the-block-cursor-too" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Diagnostics via callback, requests via callback — same idea, different arity
+        Visual mode gets the block cursor too
       
     </span>
   </a>
@@ -2497,10 +2473,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#5-server-to-client-requests-are-not-implemented" class="md-nav__link">
+  <a href="#block-cursor-full-opacity-not-capped" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Server-to-client requests are not implemented
+        Block cursor: full opacity, not capped
       
     </span>
   </a>
@@ -2508,21 +2484,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#6-posix-only-in-v1-windows-returns-null-cleanly-not-a-half-tested-attempt" class="md-nav__link">
+  <a href="#opens-the-command-line-directly-in-vim-normalvisual-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. POSIX only in v1 — Windows returns NULL cleanly, not a half-tested attempt
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#7-tested-against-a-fake-language-server-not-a-real-one" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Tested against a fake language server, not a real one
+        : opens the command line directly in Vim Normal/Visual mode
       
     </span>
   </a>
@@ -2531,17 +2496,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#not-done-deliberately-out-of-phase-6s-scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Not done (deliberately out of Phase 6's scope)
-      
-    </span>
-  </a>
   
 </li>
       
@@ -2573,7 +2527,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0011-lsp-client.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0051-global-animation-consistency-and-vim-polish.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2581,118 +2535,100 @@
   
 
 
-<h1 id="adr-0011-lsp-client-process-isolation-sync-handshake-async-everything-else">ADR 0011: LSP client — process isolation, sync handshake, async everything else<a class="headerlink" href="#adr-0011-lsp-client-process-isolation-sync-handshake-async-everything-else" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0051-global-animation-consistency-and-three-vim-mode-polish-fixes">ADR 0051: Global animation consistency, and three Vim-mode polish fixes<a class="headerlink" href="#adr-0051-global-animation-consistency-and-three-vim-mode-polish-fixes" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Spec section 4: "LSP client module, isolated process boundary via
-JSON-RPC over stdio — a misbehaving language server must never crash
-the editor." Section 7 phase 6 scopes this to diagnostics, completion,
-and go-to-definition — not full LSP spec coverage.</p>
-<h2 id="decisions">Decisions<a class="headerlink" href="#decisions" title="Permanent link">&para;</a></h2>
-<h3 id="1-one-child-process-per-client-real-process-isolation">1. One child process per client, real process isolation<a class="headerlink" href="#1-one-child-process-per-client-real-process-isolation" title="Permanent link">&para;</a></h3>
-<p><code>ase_lsp_client_start</code> forks/execs the language server and talks to it
-over two pipes (its stdin/stdout). No shared memory, no linking against
-a server library — the server can do anything, including crash, and
-the worst case is <code>ase_lsp_client_is_alive</code> going false. This is the
-same isolation model the spec calls for and the same reasoning as
-process-based (rather than in-process) plugin sandboxing would use, if
-this project had that — here it's mandatory, not a choice.</p>
-<p><strong><code>SIGPIPE</code> is disabled process-wide</strong> (<code>signal(SIGPIPE, SIG_IGN)</code>) the
-first time a client starts. Without this, writing to a server that has
-already died raises <code>SIGPIPE</code>, whose default action kills the whole
-editor — exactly the failure mode this ADR exists to prevent. This is a
-global, not per-client, side effect; documented here since it's the
-kind of thing that's surprising to discover by accident later. Standard
-practice for any program that manages pipes to child processes it
-doesn't fully trust.</p>
-<h3 id="2-the-initialize-handshake-is-synchronous-bounded-everything-else-is-async">2. The initialize handshake is synchronous (bounded), everything else is async<a class="headerlink" href="#2-the-initialize-handshake-is-synchronous-bounded-everything-else-is-async" title="Permanent link">&para;</a></h3>
-<p><code>ase_lsp_client_start</code> blocks — polling with small sleeps, never a raw
-blocking <code>read()</code> — for up to 3 seconds waiting for the <code>initialize</code>
-response before returning. Simpler lifecycle: callers get back either a
-working client or <code>NULL</code>, never a client that might still be mid-setup.
-<code>ase_lsp_client_stop</code> does the same bounded wait for <code>shutdown</code>/<code>exit</code>
-(1 second) before force-killing the process — never left hanging on a
-server that won't cooperate.</p>
-<p>Every other request (<code>textDocument/completion</code>, <code>textDocument/definition</code>)
-is fire-and-return: the callback fires later, from inside
-<code>ase_lsp_client_poll()</code>. Blocking Phase 2's GUI thread waiting on a
-process that might be slow, hung, or gone would violate "no perceptible
-input lag" far more visibly than a 3-second one-time startup delay
-does.</p>
-<h3 id="3-poll-mirrors-the-config-hot-reload-shape-non-blocking-timer-driven">3. <code>poll()</code> mirrors the config hot-reload shape: non-blocking, timer-driven<a class="headerlink" href="#3-poll-mirrors-the-config-hot-reload-shape-non-blocking-timer-driven" title="Permanent link">&para;</a></h3>
-<p><code>ase_lsp_client_poll</code> never blocks — it drains whatever's available
-from the non-blocking read end, tries to frame complete
-<code>Content-Length</code>-delimited JSON-RPC messages out of the accumulated
-buffer, and dispatches each. The intended integration (not built yet —
-see "Not done" below) is the same shape as <code>EditorViewport</code>'s config
-poll timer (ADR 0008): call it periodically from the GUI, no threading,
-no locks, one clear place data crosses from "external process" to
-"editor state."</p>
-<h3 id="4-diagnostics-via-callback-requests-via-callback-same-idea-different-arity">4. Diagnostics via callback, requests via callback — same idea, different arity<a class="headerlink" href="#4-diagnostics-via-callback-requests-via-callback-same-idea-different-arity" title="Permanent link">&para;</a></h3>
-<p><code>textDocument/publishDiagnostics</code> is a server-initiated notification
-with no request behind it, so it gets a standing callback
-(<code>ase_lsp_client_set_diagnostics_callback</code>), set once. Completion and
-definition are request/response, so each call takes its own callback —
-ordinary async-request shape. Both deliver JSON as <em>borrowed</em> pointers,
-valid only for the duration of the callback, to avoid a whole class of
-"who owns this JSON tree" bugs; a caller that needs the data longer
-copies out of it.</p>
-<h3 id="5-server-to-client-requests-are-not-implemented">5. Server-to-client requests are not implemented<a class="headerlink" href="#5-server-to-client-requests-are-not-implemented" title="Permanent link">&para;</a></h3>
-<p>If a server sends <em>us</em> a request (has both <code>method</code> and <code>id</code> — e.g.
-<code>workspace/configuration</code>), v1 doesn't respond. Per LSP semantics, an
-unanswered request degrades gracefully in a well-behaved server (it
-just never resolves on their end); this deliberately doesn't attempt
-the fuller LSP surface that would require answering server-initiated
-requests correctly. Malformed/unrecognized messages of any kind are
-logged nowhere and simply dropped — the framing layer, not this
-dispatch logic, is what has to be bulletproof against garbage.</p>
-<h3 id="6-posix-only-in-v1-windows-returns-null-cleanly-not-a-half-tested-attempt">6. POSIX only in v1 — Windows returns NULL cleanly, not a half-tested attempt<a class="headerlink" href="#6-posix-only-in-v1-windows-returns-null-cleanly-not-a-half-tested-attempt" title="Permanent link">&para;</a></h3>
-<p>Async child-process I/O on Windows needs either overlapped I/O or a
-dedicated reader thread — meaningfully more machinery than any other
-platform branch this project has written so far (contrast: config path
-resolution, <code>_mkdir</code>, <code>LoadLibrary</code> — all a few lines each). Writing an
-under-tested attempt at that risks shipping something that's <em>worse</em>
-than an honest gap: silently-broken async I/O is a much worse failure
-mode than a clean, documented "not supported yet." <code>ase_lsp_client_start</code>
-detects this by simply having <code>platform_spawn</code> return <code>false</code> on
-Windows — every other function in the file is consequently unreachable
-there but still compiles (checked via the Windows CI job, which only
-builds, doesn't run this functionally). Revisit when Windows LSP
-support is an actual, prioritized goal, not before.</p>
-<h3 id="7-tested-against-a-fake-language-server-not-a-real-one">7. Tested against a fake language server, not a real one<a class="headerlink" href="#7-tested-against-a-fake-language-server-not-a-real-one" title="Permanent link">&para;</a></h3>
-<p><code>core/tests/fixtures/fake_lsp_server.c</code> is a ~100-line stand-in
-implementing just enough LSP to be indistinguishable from a real server
-for this client's purposes: replies to <code>initialize</code>, sends
-<code>publishDiagnostics</code> after <code>didOpen</code>, replies to <code>textDocument/completion</code>
-and <code>textDocument/definition</code> with fixed canned results, and handles
-<code>shutdown</code>/<code>exit</code>. This is a deliberate choice over depending on a real
-language server (e.g. <code>clangd</code>) being installed in every dev/CI
-environment — the same reasoning as the plugin host's test fixtures
-(ADR 0009): a real, working integration test that doesn't depend on
-what happens to be installed where it runs.</p>
-<h2 id="not-done-deliberately-out-of-phase-6s-scope">Not done (deliberately out of Phase 6's scope)<a class="headerlink" href="#not-done-deliberately-out-of-phase-6s-scope" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Not wired into the GUI — no editor UI shows diagnostics, a completion
-  popup, or jumps to a definition yet. That's real UX work (squiggly
-  underlines, a popup widget, cross-file navigation) that belongs with
-  Phase 7 polish or its own pass, not implied by "the client module
-  works." Tracked in <code>docs/ROADMAP.md</code>, matching how Phase 5's plugin
-  host also isn't wired to a keybinding yet.</li>
-<li>No <code>textDocument/didChange</code> — the client can open a document but
-  can't tell the server about edits after that. Fine for a first
-  request/response smoke test; a real editing session would need this
-  before diagnostics/completion results reflect current buffer state.</li>
-<li>No workspace-wide features (symbols, rename, references) — sticking
-  to exactly what section 7 asked for.</li>
-</ul>
+<p>Direct bug reports after using ADR 0047–0050's work for real: Visual-mode
+navigation didn't glide at all; <code>Shift+A</code> (jump to end of line, enter
+Insert) showed no transition; the typing pop-in animation (ADR 0049)
+"doesn't work at all"; and three more asks — Visual mode should use the
+same block cursor as Normal, the block cursor's capped opacity (ADR
+0047) was wrong and should be full/normal, and <code>:</code> should open the
+command line directly in Vim mode instead of requiring <code>Ctrl+;</code>.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<h3 id="the-typing-pop-ins-real-bug-snapanimationtotarget-was-clearing-its-own-animation">The typing pop-in's real bug: <code>snapAnimationToTarget()</code> was clearing its own animation<a class="headerlink" href="#the-typing-pop-ins-real-bug-snapanimationtotarget-was-clearing-its-own-animation" title="Permanent link">&para;</a></h3>
+<p><code>insertText()</code> pushes a fresh <code>TypingAnimation</code> entry, then — for the
+plain-character and Tab cases — <code>keyPressEvent</code> called
+<code>snapAnimationToTarget()</code> right after. ADR 0049 had made that function
+also clear <code>m_typingAnimations</code> (reasoning: an undo/redo or Vim command
+shouldn't let a stale pop-in keep animating over content it's no longer
+about). The result: every single typed character's animation was wiped
+in the same keystroke that created it, before a single frame ever
+rendered any progress. The earlier "verified live" screenshot in ADR
+0049 was a false positive — it compared the typed character's
+brightness against the gutter line-number's own (deliberately dimmed)
+alpha tier, not against that same character at a later frame, so a
+real regression read as a pass.</p>
+<p>Fixed by moving the clear to only where it's actually needed:
+<code>applyUndoResult()</code> (shared by <code>undo()</code>/<code>redo()</code>), the one case that
+truly can invalidate an in-flight animation's byte range with unrelated
+content. <code>snapAnimationToTarget()</code> itself no longer touches
+<code>m_typingAnimations</code> at all.</p>
+<h3 id="typing-now-glides-too-not-just-the-character-pop-in">Typing now glides too, not just the character pop-in<a class="headerlink" href="#typing-now-glides-too-not-just-the-character-pop-in" title="Permanent link">&para;</a></h3>
+<p>Separately, <code>keyPressEvent</code> had an <code>isEdit</code> flag that forced plain
+character insertion and Tab to snap the <em>caret position</em> instantly
+(ADR 0017's original reasoning: gliding can't keep pace with fast
+repeated small jumps). Direct instruction this round: make animation
+consistent everywhere, including typing. Removed <code>isEdit</code> entirely —
+typing's caret now eases through <code>m_renderedCaretPos</code> like every other
+cursor move (arrows, Backspace, Enter already worked this way).</p>
+<h3 id="vim-mode-was-snapping-after-almost-everything">Vim mode was snapping after almost everything<a class="headerlink" href="#vim-mode-was-snapping-after-almost-everything" title="Permanent link">&para;</a></h3>
+<p>The actual cause of "Visual mode doesn't animate" and "Shift+A doesn't
+animate": <code>handleVimNormalOrVisualKey()</code> called <code>snapAnimationToTarget()</code>
+after <em>every</em> resolved key — plain motions (<code>h j k l 0 ^ $ w b e</code>,
+<code>gg</code>, <code>G</code>) in both Normal and Visual mode, the Visual-mode operator
+switch (<code>v x d y c</code>), and the Normal-mode mode-entry/operator switch
+(<code>i a I A o O x p P u</code>, and starting <code>d</code>/<code>y</code>/<code>c</code>). Every one of these
+forced an instant snap regardless of <code>animations</code>, unlike arrow-key
+navigation, which never did. Removed the call from all of these paths,
+plus from the Vim mutation primitives that had their own
+(<code>vimDeleteRange</code>, <code>vimDeleteLines</code>, <code>vimPasteAfter</code>, <code>vimPasteBefore</code>,
+<code>vimOpenLineAbove</code>) and from <code>runCommand</code>'s <code>:&lt;digits&gt;</code> ex-jump — all
+of Vim mode now glides exactly like the rest of the app, with no
+special-cased exceptions left. <code>undo()</code>/<code>redo()</code> keep their snap
+(a restored cursor position can be anywhere in the document — an
+arbitrary jump, not a discrete one-step motion — so instant sync
+remains the sensible default there, matching every other
+non-Vim structural reload in this file, e.g. <code>openFile</code>).</p>
+<h3 id="visual-mode-gets-the-block-cursor-too">Visual mode gets the block cursor too<a class="headerlink" href="#visual-mode-gets-the-block-cursor-too" title="Permanent link">&para;</a></h3>
+<p><code>blockCursor</code>'s condition widened from <code>m_vimMode == VimMode::Normal</code>
+to <code>m_vimMode != VimMode::Insert</code> — Normal and Visual now render
+identically (Insert keeps the bar, since it's still "an insertion
+point"). Visual's own selection highlight and the block cursor
+compose fine together; no rendering changes needed beyond the
+condition itself.</p>
+<h3 id="block-cursor-full-opacity-not-capped">Block cursor: full opacity, not capped<a class="headerlink" href="#block-cursor-full-opacity-not-capped" title="Permanent link">&para;</a></h3>
+<p>ADR 0047's <code>kVimBlockCursorMaxAlpha = 200</code> (~78% peak) is gone —
+direct feedback called the capped-opacity decision wrong. The block
+now uses the exact same <code>caretAlpha</code> (0–255, full breathing range) the
+bar caret always used. The knocked-out glyph drawn on top (also
+unchanged) already guarantees the character stays legible regardless
+of the block's opacity, so nothing else needed to change.</p>
+<h3 id="opens-the-command-line-directly-in-vim-normalvisual-mode"><code>:</code> opens the command line directly in Vim Normal/Visual mode<a class="headerlink" href="#opens-the-command-line-directly-in-vim-normalvisual-mode" title="Permanent link">&para;</a></h3>
+<p>Real vim's own convention. Added as a new check near the top of
+<code>handleVimNormalOrVisualKey()</code> (alongside <code>g</code>/<code>G</code>/motions, before the
+mode-specific branches, so it works identically from Normal or
+Visual): <code>c == ':'</code> calls <code>m_commandLine-&gt;openCommandLine()</code>. Purely
+additive — the existing app-wide <code>Ctrl+;</code> (ADR 0025) still works
+everywhere, Vim mode or not; this just adds the more natural
+Vim-idiomatic bare-colon trigger where it's otherwise a dead, swallowed
+key. Insert mode is untouched — a bare <code>:</code> there still types as a
+literal character, since this check only runs inside Vim's own
+Normal/Visual dispatch.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Everything above the framing layer (<code>process_complete_messages</code>) is
-platform-independent and fully tested without needing a live process at
-all beyond the fake server. Real language servers (clangd, pyright,
-etc.) should work as-is for the three features implemented — this
-hasn't been verified against one, only against the fake fixture and
-the LSP spec's documented message shapes.</p>
+<p>Verified live: a <code>G</code> jump (5 lines) sampled across three frames shows
+the block cursor genuinely mid-transit at 20ms, further along at 50ms,
+and settled by 300ms — real interpolation, not an instant jump with a
+lucky screenshot. The identical motion from Visual mode shows the same
+progressive glide with the selection extending underneath it. A typed
+character sampled at 20ms vs. settled shows a visibly dimmer/smaller
+glyph early and a fully saturated one once settled — the pop-in
+genuinely renders progressively now. Visual mode shows the same block
+cursor as Normal, at full (uncapped) opacity. <code>:</code> opens the command
+line from Normal mode; the same keystroke in Insert mode still inserts
+a literal <code>:</code>. <code>ctest --test-dir build</code> still 9/9 throughout (no
+core-layer change).</p>
 
 
 
