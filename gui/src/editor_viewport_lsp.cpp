@@ -78,6 +78,21 @@ void lspHoverTrampoline(void *user_data, const AseJsonValue *result, const char 
  * a fresh server against the right document. Editing `lsp_command`
  * itself mid-session and hot-reloading is still a documented v1 gap:
  * that only takes effect on the next file open, see docs/adr/0029. */
+/* One-shot: the first time this buffer is actually shown. Keeping the
+ * server alive afterwards (rather than stopping it on switch-away) is
+ * deliberate — restarting clangd costs a reindex, which would make
+ * switching buffers feel slow, and switching is the common action. The
+ * real fix for "N visited C files means N servers" is one project-wide
+ * server handling several didOpen documents; see docs/ROADMAP.md. */
+void EditorViewport::onActivated() {
+    setFocus();
+    if (m_lspActivated) {
+        return;
+    }
+    m_lspActivated = true;
+    startLspClientIfConfigured();
+}
+
 void EditorViewport::startLspClientIfConfigured() {
     QString suffix = QFileInfo(m_filePath).suffix().toLower();
     if (suffix != QLatin1String("c") && suffix != QLatin1String("h")) {

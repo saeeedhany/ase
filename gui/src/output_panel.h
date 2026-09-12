@@ -29,6 +29,12 @@ class OutputPanel : public QWidget {
 public:
     explicit OutputPanel(EditorViewport *viewport, QWidget *parent = nullptr);
 
+    /* One output panel is shared by every buffer (it shows the last
+     * :compile, which belongs to the window, not to a file), so it gets
+     * re-pointed at whichever viewport is active to pull theme colors
+     * from. See docs/adr/0054. */
+    void setViewport(EditorViewport *viewport);
+
     void appendLine(const QString &text);
     /* No implied newline — used for streamed process output, which
      * arrives in arbitrary-sized chunks, not line-at-a-time. */

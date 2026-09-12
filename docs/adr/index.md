@@ -61,3 +61,4 @@ what changed.
 | [0051](0051-global-animation-consistency-and-vim-polish.md) | Global animation consistency, and three Vim-mode polish fixes |
 | [0052](0052-editor-viewport-split-into-translation-units.md) | Splitting EditorViewport across several translation units |
 | [0053](0053-render-hot-path-and-one-motion-language.md) | Fixing the render hot path, and one motion language |
+| [0054](0054-multiple-buffers-and-plugin-host-wiring.md) | Multiple buffers, and finally wiring the plugin host in |

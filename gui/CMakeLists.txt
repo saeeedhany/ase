@@ -34,6 +34,7 @@ add_executable(ase_gui
     src/editor_viewport_find.cpp
     src/editor_viewport_commands.cpp
     src/editor_viewport_lsp.cpp
+    src/buffer_bar.cpp
     src/find_bar.cpp
     src/file_browser_panel.cpp
     src/command_line.cpp

@@ -695,12 +695,22 @@ something else.
   whole buffer every time (a deliberate v1 call — ADR 0007, decision 5).
   `ts_tree_edit` + reusing the previous tree is the fix. This is the
   single biggest remaining gap between the editor and "blazingly fast."
-- **Multiple buffers / files per window.** Today it is strictly one file
-  per window, with no tabs (an explicit v1 scope call). This is the
-  largest *functional* gap for real work — every other item here is worth
-  less until you can hold two files at once.
-- **Wire the plugin host into the GUI.** It exists, it's tested, and the
-  GUI cannot reach it. See [EXTENSIBILITY.md](EXTENSIBILITY.md).
+- ~~**Multiple buffers / files per window.**~~ Done — a viewport per
+  buffer behind a minimal dot-and-name bar, `Ctrl+Tab`/`Ctrl+W` to
+  switch and close. See
+  [ADR 0054](adr/0054-multiple-buffers-and-plugin-host-wiring.md).
+- ~~**Wire the plugin host into the GUI.**~~ Done — `<config dir>/plugins/`
+  loads at startup and `:name` runs any registered command (ADR 0054).
+  The ABI is still the narrow one; widening it is the next plugin step,
+  see [EXTENSIBILITY.md](EXTENSIBILITY.md).
+- **One language server per project, not per visited file.** Buffers now
+  start their own `clangd` on first activation (ADR 0054), so N visited C
+  files means N servers. LSP is designed for one server holding several
+  `didOpen` documents; doing that is the fix, and it is the main
+  resource cost multi-buffer introduced.
+- **Show unsaved state in the buffer bar.** The dot tracks active, not
+  modified (a deliberate scope call in ADR 0054) — so with several
+  buffers open, the bar won't tell you which have unsaved edits.
 - **Large-file sanity pass.** Sub-frame budgets hold now at ~8k lines;
   find a real ceiling (100k? 1M?) and either fix it or document it
   honestly rather than discovering it from a bug report.

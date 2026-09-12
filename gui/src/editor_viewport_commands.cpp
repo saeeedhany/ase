@@ -22,58 +22,6 @@ void EditorViewport::save() {
     }
 }
 
-/* Destroys the current buffer/syntax/undo-history and loads `path`
- * fresh, resetting every piece of per-buffer state — cursors, scroll,
- * find query, dirty flag. Missing/unreadable files start empty with
- * `path` kept as the save target, same tolerance
- * ase_buffer_create_from_file's caller in main.cpp already had for the
- * initial launch (docs/adr/0006) — opening a not-yet-existing file by
- * name is a normal editor action, not an error. */
-void EditorViewport::openFile(const QString &path) {
-    /* The old client (if any) is tied to the old file's URI — stop it
-     * before refreshCache() below can send it a stale-URI didChange,
-     * and clear its diagnostics rather than leave them drawn against
-     * the new file's unrelated content. startLspClientIfConfigured()
-     * at the end starts a fresh one for the new file, same as the
-     * constructor does for the initial one. */
-    ase_lsp_client_stop(m_lspClient);
-    m_lspClient = nullptr;
-    m_diagnostics.clear();
-
-    ase_syntax_destroy(m_syntax);
-    m_syntax = nullptr;
-    ase_undo_destroy(m_undo);
-    ase_buffer_destroy(m_buffer);
-
-    AseBuffer *buffer = ase_buffer_create_from_file(path.toUtf8().constData());
-    if (buffer == nullptr) {
-        buffer = ase_buffer_create();
-    }
-    m_buffer = buffer;
-    m_undo = ase_undo_create();
-    m_filePath = path;
-
-    QString suffix = QFileInfo(path).suffix().toLower();
-    if (suffix == QLatin1String("c") || suffix == QLatin1String("h")) {
-        m_syntax = ase_syntax_create_c();
-    }
-
-    m_cursors = {0};
-    m_selectionAnchors = {0};
-    m_scrollLine = 0;
-    m_scrollX = 0;
-    m_desiredColumn = -1;
-    clearFindQuery();
-    m_dirty = false;
-
-    refreshCache();
-    startLspClientIfConfigured();
-    ensureCursorVisible();
-    resetCaretBlink();
-    snapAnimationToTarget();
-    update();
-}
-
 /* Sets the save target then defers to save() itself, so dirty-clearing
  * and the statusChanged emit (title included, via filePath()) happen
  * in exactly one place rather than being duplicated here. */
@@ -107,10 +55,48 @@ void EditorViewport::runCommand(const QString &command) {
             resetVimPendingState();
             ensureCursorVisible();
             update();
+        } else if (!trimmed.isEmpty()) {
+            runPluginCommand(trimmed);
         }
-        /* Anything else recognized as neither a known word nor a line
-         * number: silent no-op — see docs/adr/0025. */
+        /* Anything else recognized as neither a known word, a line
+         * number, nor a registered plugin command: silent no-op — see
+         * docs/adr/0025. */
     }
+}
+
+/* `:name` for any command a Lua script or native plugin registered.
+ * Checked last, so a plugin can't shadow a built-in. See docs/adr/0054.
+ *
+ * A plugin command is handed the raw AseBuffer and edits it directly —
+ * it does not go through insertText()/the undo primitives, because the
+ * ABI has no way to (docs/adr/0009 registers `void(AseBuffer*, void*)`
+ * and nothing more). That leaves every offset already recorded in the
+ * undo stack potentially stale, and undoing against stale offsets
+ * corrupts the buffer rather than merely doing the wrong thing. So the
+ * undo history is dropped outright after a successful plugin command:
+ * losing history is a visible, understandable cost; silent corruption
+ * is not. Routing plugin edits through undo properly needs the wider
+ * plugin context described in docs/EXTENSIBILITY.md, and is the main
+ * reason that widening is worth doing. */
+void EditorViewport::runPluginCommand(const QString &name) {
+    if (m_pluginHost == nullptr) {
+        return;
+    }
+    if (!ase_plugin_host_run_command(m_pluginHost, name.toUtf8().constData(), m_buffer)) {
+        return; /* no such command — same silent no-op as any other unknown `:` word */
+    }
+
+    ase_undo_destroy(m_undo);
+    m_undo = ase_undo_create();
+
+    m_dirty = true;
+    collapseToOneCursor();
+    refreshCache();
+    /* The buffer may have shrunk under the cursor. */
+    m_cursors[0] = std::min(m_cursors[0], static_cast<size_t>(m_cache.size()));
+    m_selectionAnchors[0] = m_cursors[0];
+    ensureCursorVisible();
+    update();
 }
 
 void EditorViewport::toggleOutputPanel() {

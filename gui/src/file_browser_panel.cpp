@@ -211,7 +211,7 @@ void FileBrowserPanel::activateEntry(const QString &name) {
         return;
     }
     if (m_mode == Mode::Open) {
-        m_viewport->openFile(fullPath);
+        m_viewport->requestOpenFile(fullPath);
         hideBar();
     } else {
         /* Fills the field rather than saving immediately — a stray

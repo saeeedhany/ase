@@ -7,12 +7,16 @@
 #include <QMessageBox>
 #include <QPalette>
 #include <QPushButton>
+#include <QShortcut>
+#include <QStackedWidget>
 #include <QStatusBar>
 #include <QString>
 #include <QVBoxLayout>
+#include <QVector>
 #include <QWidget>
 
 #include "about_panel.h"
+#include "buffer_bar.h"
 #include "command_line.h"
 #include "completion_popup.h"
 #include "editor_viewport.h"
@@ -35,6 +39,53 @@ QString windowTitleFor(const QString &filePath, bool dirty) {
         .arg(name);
 }
 
+/* Just the file name for the buffer bar — the full path is already in
+ * the window title, and a bar of long paths would defeat the point of
+ * keeping it minimal (docs/adr/0054). */
+QString bufferLabelFor(const QString &filePath) {
+    if (filePath.isEmpty()) {
+        return QStringLiteral("untitled");
+    }
+    return QFileInfo(filePath).fileName();
+}
+
+/*
+ * The window: owns the open buffers, one EditorViewport each, stacked so
+ * exactly one is visible. See docs/adr/0054 for why a viewport per buffer
+ * rather than one viewport swapping documents.
+ *
+ * Also still the quit-confirmation owner (docs/adr/0044) — now asking
+ * about every dirty buffer, not just the visible one.
+ */
+class MainWindow : public QMainWindow {
+public:
+    MainWindow();
+
+    /* Opens `path` as a new buffer, or switches to it if already open —
+     * reopening a file you already have open should take you to it, not
+     * give you a second copy to diverge from. */
+    void openBuffer(const QString &path);
+    void addBuffer(AseBuffer *buffer, const QString &path);
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
+private:
+    EditorViewport *activeViewport() const;
+    void setActiveIndex(int index);
+    void closeBuffer(int index);
+    void cycleBuffer(int delta);
+    void refreshBufferBar();
+    bool confirmDiscard(const QString &message);
+
+    QStackedWidget *m_stack = nullptr;
+    BufferBar *m_bufferBar = nullptr;
+    OutputPanel *m_outputPanel = nullptr;
+    QLabel *m_modeLabel = nullptr;
+    QLabel *m_statusLabel = nullptr;
+    QVector<EditorViewport *> m_viewports;
+};
+
 /* QStatusBar defaults to a native, light OS-styled bar — jarring
  * against this app's dark, minimal palette, same problem the floating
  * panels' native-white QLineEdits had (docs/adr/0022). Re-applied on
@@ -50,60 +101,250 @@ void applyStatusBarTheme(QMainWindow &window, QLabel *modeLabel, QLabel *statusL
     statusLabel->setPalette(pal);
 }
 
-/* No Q_OBJECT, no signals/slots of its own — just one virtual override,
- * so a plain subclass defined right here needs no moc pass. See
- * docs/adr/0044: quitting (the window's own close button, Alt+F4, or
- * Ctrl+Q via EditorViewport's window()->close()) with unsaved changes
- * now asks for confirmation instead of silently discarding them. */
-class MainWindow : public QMainWindow {
-public:
-    explicit MainWindow(EditorViewport *viewport) : m_viewport(viewport) {}
+MainWindow::MainWindow() {
+    /* The buffer bar sits above the editor and the output panel below it
+     * — both plain layout rows, not floating chrome. OutputPanel is
+     * shared across buffers rather than one per viewport: it shows the
+     * result of the last :compile, which is a property of the window,
+     * not of whichever file you happen to be looking at. */
+    auto *central = new QWidget(this);
+    auto *centralLayout = new QVBoxLayout(central);
+    centralLayout->setContentsMargins(0, 0, 0, 0);
+    centralLayout->setSpacing(0);
 
-protected:
-    void closeEvent(QCloseEvent *event) override {
-        if (!m_viewport->isDirty()) {
-            event->accept();
+    m_bufferBar = new BufferBar(central);
+    centralLayout->addWidget(m_bufferBar);
+
+    m_stack = new QStackedWidget(central);
+    centralLayout->addWidget(m_stack, 1);
+
+    m_outputPanel = new OutputPanel(nullptr, central);
+    centralLayout->addWidget(m_outputPanel);
+    setCentralWidget(central);
+
+    connect(m_bufferBar, &BufferBar::bufferSelected, this, [this](int index) { setActiveIndex(index); });
+    connect(m_bufferBar, &BufferBar::bufferCloseRequested, this, [this](int index) { closeBuffer(index); });
+
+    statusBar()->setSizeGripEnabled(false);
+    /* addWidget (not addPermanentWidget) puts this in the status bar's
+     * left-aligned message area, separate from statusLabel's own
+     * right-aligned permanent slot below. Empty whenever Vim mode is
+     * off (docs/adr/0046), so it takes no visible space for anyone who
+     * hasn't opted in. */
+    m_modeLabel = new QLabel();
+    statusBar()->addWidget(m_modeLabel);
+    m_statusLabel = new QLabel(QStringLiteral("Ln 1, Col 1"));
+    statusBar()->addPermanentWidget(m_statusLabel);
+
+    /* Window-level shortcuts, deliberately not part of EditorViewport's
+     * own Ctrl-chain: they act on the *window's* buffer list, not on the
+     * text. Qt dispatches shortcuts before the focus widget's key
+     * handler, so Ctrl+Tab never reaches the viewport's Tab case. */
+    auto *next = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Tab")), this);
+    connect(next, &QShortcut::activated, this, [this]() { cycleBuffer(1); });
+    auto *prev = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+Tab")), this);
+    connect(prev, &QShortcut::activated, this, [this]() { cycleBuffer(-1); });
+    auto *close = new QShortcut(QKeySequence(QStringLiteral("Ctrl+W")), this);
+    connect(close, &QShortcut::activated, this, [this]() { closeBuffer(m_stack->currentIndex()); });
+}
+
+EditorViewport *MainWindow::activeViewport() const {
+    int index = m_stack->currentIndex();
+    return (index >= 0 && index < m_viewports.size()) ? m_viewports[index] : nullptr;
+}
+
+void MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
+    auto *viewport = new EditorViewport(buffer, path);
+
+    /* FindBar, FileBrowserPanel, CommandLine, Help and About are all
+     * FloatingPanels: children of *this* viewport, not layout rows, each
+     * centering itself over its own host (docs/adr/0022). So every
+     * buffer gets its own set — they're inert until shown, and sharing
+     * one across viewports would mean a panel floating over the wrong
+     * parent. */
+    viewport->setFindBar(new FindBar(viewport));
+    viewport->setFileBrowser(new FileBrowserPanel(viewport));
+    viewport->setCommandLine(new CommandLine(viewport));
+    viewport->setHelpPanel(new HelpPanel(viewport));
+    viewport->setAboutPanel(new AboutPanel(viewport));
+    /* Not FloatingPanels either — see completion_popup.h/hover_panel.h.
+     * Both track the caret/pointer and refresh far more often than a
+     * glance-act-dismiss chrome window. */
+    viewport->setCompletionPopup(new CompletionPopup(viewport));
+    viewport->setHoverPanel(new HoverPanel(viewport));
+    viewport->setOutputPanel(m_outputPanel);
+
+    connect(viewport, &EditorViewport::statusChanged, this,
+            [this, viewport](int line, int column, bool dirty, const QString &mode) {
+                if (viewport != activeViewport()) {
+                    return; /* a background buffer's cursor is not what the status bar reports */
+                }
+                m_modeLabel->setText(mode);
+                m_statusLabel->setText(QStringLiteral("Ln %1, Col %2%3")
+                                            .arg(line)
+                                            .arg(column)
+                                            .arg(dirty ? QStringLiteral(" *") : QString()));
+                setWindowTitle(windowTitleFor(viewport->filePath(), dirty));
+                applyStatusBarTheme(*this, m_modeLabel, m_statusLabel, viewport);
+                refreshBufferBar(); /* the name may have changed via Save-As */
+            });
+    connect(viewport, &EditorViewport::fileOpenRequested, this,
+            [this](const QString &path) { openBuffer(path); });
+
+    m_viewports.push_back(viewport);
+    m_stack->addWidget(viewport);
+    setActiveIndex(m_viewports.size() - 1);
+}
+
+void MainWindow::openBuffer(const QString &path) {
+    for (int i = 0; i < m_viewports.size(); ++i) {
+        if (m_viewports[i]->filePath() == path) {
+            setActiveIndex(i);
             return;
-        }
-
-        /* A plain QMessageBox::warning() renders with the native OS
-         * palette and a colored warning icon — jarring against this
-         * app's flat, dark, single-accent-color chrome everywhere
-         * else (docs/adr/0022's floating-panel system, the re-themed
-         * QStatusBar in applyStatusBarTheme above). Built manually
-         * instead of via the static convenience function so a
-         * stylesheet can be applied before showing it; NoIcon drops
-         * the colored triangle, consistent with the "one font color"
-         * pillar (docs/adr/0007). */
-        QColor bg = m_viewport->panelBackgroundColor();
-        QColor border = m_viewport->panelBorderColor();
-        QColor text = m_viewport->textColor();
-
-        QMessageBox box(this);
-        box.setIcon(QMessageBox::NoIcon);
-        box.setWindowTitle(QStringLiteral("Unsaved changes"));
-        box.setText(QStringLiteral("This file has unsaved changes. Quit without saving?"));
-        QPushButton *discardButton = box.addButton(QStringLiteral("Discard"), QMessageBox::DestructiveRole);
-        QPushButton *cancelButton = box.addButton(QStringLiteral("Cancel"), QMessageBox::RejectRole);
-        box.setDefaultButton(cancelButton);
-        box.setStyleSheet(QStringLiteral("QMessageBox { background-color: %1; }"
-                                          "QMessageBox QLabel { color: %2; }"
-                                          "QPushButton { background-color: %1; color: %2; border: 1px solid %3; "
-                                          "padding: 4px 14px; min-width: 60px; }"
-                                          "QPushButton:hover, QPushButton:default { border-color: %2; }")
-                               .arg(bg.name(), text.name(), border.name()));
-        box.exec();
-
-        if (box.clickedButton() == discardButton) {
-            event->accept();
-        } else {
-            event->ignore();
         }
     }
 
-private:
-    EditorViewport *m_viewport;
-};
+    /* Missing/unreadable files start empty with `path` kept as the save
+     * target — opening a not-yet-existing file by name is a normal
+     * editor action, not an error (docs/adr/0006). */
+    AseBuffer *buffer = ase_buffer_create_from_file(path.toUtf8().constData());
+    if (buffer == nullptr) {
+        buffer = ase_buffer_create();
+    }
+    if (buffer == nullptr) {
+        return;
+    }
+    addBuffer(buffer, path);
+}
+
+void MainWindow::setActiveIndex(int index) {
+    if (index < 0 || index >= m_viewports.size()) {
+        return;
+    }
+    m_stack->setCurrentIndex(index);
+    EditorViewport *viewport = m_viewports[index];
+    m_outputPanel->setViewport(viewport);
+    viewport->onActivated(); /* focuses, and starts its LSP the first time */
+    refreshBufferBar();
+    /* Pushes this buffer's own line/col/dirty/mode into the status bar
+     * and title through the same statusChanged path every edit uses —
+     * no second copy of the formatting. */
+    viewport->emitInitialStatus();
+}
+
+void MainWindow::closeBuffer(int index) {
+    if (index < 0 || index >= m_viewports.size()) {
+        return;
+    }
+    /* Closing the last buffer is closing the window — going through
+     * close() rather than deleting it keeps the unsaved-changes
+     * confirmation in exactly one place (closeEvent below). */
+    if (m_viewports.size() == 1) {
+        close();
+        return;
+    }
+
+    EditorViewport *viewport = m_viewports[index];
+    if (viewport->isDirty() &&
+        !confirmDiscard(QStringLiteral("\"%1\" has unsaved changes. Close it anyway?")
+                             .arg(bufferLabelFor(viewport->filePath())))) {
+        return;
+    }
+
+    m_viewports.remove(index);
+    m_stack->removeWidget(viewport);
+    viewport->deleteLater();
+    setActiveIndex(std::min(index, static_cast<int>(m_viewports.size()) - 1));
+}
+
+void MainWindow::cycleBuffer(int delta) {
+    if (m_viewports.size() < 2) {
+        return;
+    }
+    int count = m_viewports.size();
+    setActiveIndex(((m_stack->currentIndex() + delta) % count + count) % count);
+}
+
+void MainWindow::refreshBufferBar() {
+    QVector<QString> names;
+    names.reserve(m_viewports.size());
+    for (EditorViewport *viewport : m_viewports) {
+        names.push_back(bufferLabelFor(viewport->filePath()));
+    }
+    EditorViewport *viewport = activeViewport();
+    if (viewport != nullptr) {
+        m_bufferBar->setColors(viewport->backgroundColor(), viewport->textColor());
+    }
+    m_bufferBar->setEntries(names, m_stack->currentIndex());
+}
+
+/* Every confirm in this window goes through here so they all look like
+ * the rest of the app rather than like the OS. A plain
+ * QMessageBox::question/warning() renders with the native palette and a
+ * colored icon — jarring against this app's flat, dark, single-accent
+ * chrome (docs/adr/0022's panels, the re-themed QStatusBar above), and
+ * a reported complaint the first time it shipped (docs/adr/0044). Built
+ * manually so a stylesheet can be applied before showing; NoIcon drops
+ * the colored triangle, consistent with the "one font color" pillar
+ * (docs/adr/0007). */
+bool MainWindow::confirmDiscard(const QString &message) {
+    EditorViewport *themeSource = activeViewport();
+    if (themeSource == nullptr) {
+        return true;
+    }
+    QColor bg = themeSource->panelBackgroundColor();
+    QColor border = themeSource->panelBorderColor();
+    QColor text = themeSource->textColor();
+
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::NoIcon);
+    box.setWindowTitle(QStringLiteral("Unsaved changes"));
+    box.setText(message);
+    QPushButton *discardButton = box.addButton(QStringLiteral("Discard"), QMessageBox::DestructiveRole);
+    QPushButton *cancelButton = box.addButton(QStringLiteral("Cancel"), QMessageBox::RejectRole);
+    box.setDefaultButton(cancelButton);
+    box.setStyleSheet(QStringLiteral("QMessageBox { background-color: %1; }"
+                                      "QMessageBox QLabel { color: %2; }"
+                                      "QPushButton { background-color: %1; color: %2; border: 1px solid %3; "
+                                      "padding: 4px 14px; min-width: 60px; }"
+                                      "QPushButton:hover, QPushButton:default { border-color: %2; }")
+                           .arg(bg.name(), text.name(), border.name()));
+    box.exec();
+    return box.clickedButton() == discardButton;
+}
+
+void MainWindow::closeEvent(QCloseEvent *event) {
+    QVector<EditorViewport *> dirty;
+    for (EditorViewport *viewport : m_viewports) {
+        if (viewport->isDirty()) {
+            dirty.push_back(viewport);
+        }
+    }
+    if (dirty.isEmpty()) {
+        event->accept();
+        return;
+    }
+
+    QString message;
+    if (dirty.size() == 1) {
+        message = QStringLiteral("\"%1\" has unsaved changes. Quit without saving?")
+                      .arg(bufferLabelFor(dirty.first()->filePath()));
+    } else {
+        QStringList names;
+        for (EditorViewport *viewport : dirty) {
+            names << bufferLabelFor(viewport->filePath());
+        }
+        message = QStringLiteral("%1 files have unsaved changes (%2). Quit without saving?")
+                      .arg(dirty.size())
+                      .arg(names.join(QStringLiteral(", ")));
+    }
+
+    if (confirmDiscard(message)) {
+        event->accept();
+    } else {
+        event->ignore();
+    }
+}
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -151,92 +392,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    auto *viewport = new EditorViewport(buffer, filePath);
-
-    MainWindow window(viewport);
-    window.setWindowTitle(windowTitleFor(filePath, false));
-
-    /* OutputPanel is the one docked (non-floating) panel — a real
-     * QVBoxLayout row below viewport, not a child of it. See
-     * docs/adr/0025. */
-    auto *central = new QWidget(&window);
-    auto *centralLayout = new QVBoxLayout(central);
-    centralLayout->setContentsMargins(0, 0, 0, 0);
-    centralLayout->setSpacing(0);
-    centralLayout->addWidget(viewport, 1);
-    auto *outputPanel = new OutputPanel(viewport, central);
-    centralLayout->addWidget(outputPanel);
-    window.setCentralWidget(central);
-    viewport->setOutputPanel(outputPanel);
-
-    /* FindBar, FileBrowserPanel, and CommandLine are all FloatingPanels:
-     * children of viewport, not layout rows — each centers itself over
-     * viewport and floats above it, starting hidden. See docs/adr/0022. */
-    auto *findBar = new FindBar(viewport);
-    viewport->setFindBar(findBar);
-
-    auto *fileBrowser = new FileBrowserPanel(viewport);
-    viewport->setFileBrowser(fileBrowser);
-
-    auto *commandLine = new CommandLine(viewport);
-    viewport->setCommandLine(commandLine);
-
-    auto *helpPanel = new HelpPanel(viewport);
-    viewport->setHelpPanel(helpPanel);
-
-    auto *aboutPanel = new AboutPanel(viewport);
-    viewport->setAboutPanel(aboutPanel);
-
-    /* Not FloatingPanels either — see completion_popup.h/hover_panel.h.
-     * Both track the caret/pointer and refresh far more often than a
-     * glance-act-dismiss chrome window, so neither uses the host-
-     * centering/scale-pop machinery the panels above do. */
-    auto *completionPopup = new CompletionPopup(viewport);
-    viewport->setCompletionPopup(completionPopup);
-
-    auto *hoverPanel = new HoverPanel(viewport);
-    viewport->setHoverPanel(hoverPanel);
-
-    outputPanel->refreshTheme();
-
-    window.statusBar()->setSizeGripEnabled(false);
-    /* addWidget (not addPermanentWidget) puts this in the status bar's
-     * left-aligned message area, separate from statusLabel's own
-     * right-aligned permanent slot below. Empty whenever Vim mode is
-     * off (docs/adr/0046), so it takes no visible space for anyone who
-     * hasn't opted in. */
-    auto *modeLabel = new QLabel();
-    window.statusBar()->addWidget(modeLabel);
-    auto *statusLabel = new QLabel(QStringLiteral("Ln 1, Col 1"));
-    window.statusBar()->addPermanentWidget(statusLabel);
-    applyStatusBarTheme(window, modeLabel, statusLabel, viewport);
-
-    QObject::connect(
-        viewport, &EditorViewport::statusChanged, &window,
-        [&window, viewport, modeLabel, statusLabel](int line, int column, bool dirty, const QString &mode) {
-            modeLabel->setText(mode);
-            statusLabel->setText(QStringLiteral("Ln %1, Col %2%3")
-                                      .arg(line)
-                                      .arg(column)
-                                      .arg(dirty ? QStringLiteral(" *") : QString()));
-            window.setWindowTitle(windowTitleFor(viewport->filePath(), dirty));
-            applyStatusBarTheme(window, modeLabel, statusLabel, viewport);
-        });
-
+    MainWindow window;
     window.resize(900, 650);
-
-    /* Without this, the status bar shows the QLabel's hardcoded
-     * construction-time text ("Ln 1, Col 1", no mode prefix) until the
-     * first keystroke fires ensureCursorVisible()'s emit — so a Vim-mode
-     * user briefly sees no mode label at all on launch, before touching
-     * anything. ensureCursorVisible() is the one place status is already
-     * wired (see its own doc comment), so calling it once here just
-     * brings the label in sync with the viewport's actual initial state
-     * immediately, instead of waiting for the user to move first. */
-    viewport->emitInitialStatus();
-
+    /* Creating the first buffer also sets the title, status bar and
+     * (empty, single-buffer) bar through the same path every later
+     * buffer takes — nothing about the first one is special-cased. */
+    window.addBuffer(buffer, filePath);
     window.show();
-    viewport->setFocus();
 
     return app.exec();
 }

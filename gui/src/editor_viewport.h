@@ -15,6 +15,7 @@ extern "C" {
 #include "ase/buffer.h"
 #include "ase/config.h"
 #include "ase/lsp_client.h"
+#include "ase/plugin_host.h"
 #include "ase/process.h"
 #include "ase/syntax.h"
 #include "ase/undo.h"
@@ -113,17 +114,25 @@ public:
      * crash" tolerance (ADR 0009) rather than an error message for a
      * typo. */
     void runCommand(const QString &command);
+    /* `:name` dispatch into the plugin command registry — see
+     * docs/adr/0054. Checked after every built-in, so plugins can't
+     * shadow one. */
+    void runPluginCommand(const QString &name);
 
     QString filePath() const { return m_filePath; }
     /* For the quit-with-unsaved-changes confirmation — see main.cpp's
      * MainWindow::closeEvent and docs/adr/0044. */
     bool isDirty() const { return m_dirty; }
-    /* Destroys the current buffer/syntax/undo-history and loads `path`
-     * fresh — same "missing/unreadable file starts empty, path becomes
-     * the save target" tolerance ase_buffer_create_from_file's caller
-     * in main.cpp already had (docs/adr/0006), not a new behavior.
-     * Called by FileBrowserPanel on Ctrl+O. */
-    void openFile(const QString &path);
+    /* Ctrl+O no longer replaces this viewport's contents in place — with
+     * multiple buffers (docs/adr/0054) the window opens the file as its
+     * own buffer instead, so FileBrowserPanel routes through here and
+     * MainWindow decides. */
+    void requestOpenFile(const QString &path) { emit fileOpenRequested(path); }
+    /* Called by MainWindow when this viewport becomes the visible buffer.
+     * Starts the language server on first activation rather than in the
+     * constructor, so opening ten files doesn't spawn ten clangd
+     * processes for the nine you never looked at. See docs/adr/0054. */
+    void onActivated();
     /* Sets m_filePath then goes through the normal save() path (so
      * dirty-clearing and the statusChanged emit happen exactly once,
      * not duplicated here). Called by FileBrowserPanel on Ctrl+Shift+S. */
@@ -182,6 +191,8 @@ public:
     void emitInitialStatus() { ensureCursorVisible(); }
 
 signals:
+    /* Ctrl+O picked a file — the window turns this into a new buffer. */
+    void fileOpenRequested(const QString &path);
     /* Emitted from ensureCursorVisible() — every call site that already
      * calls it (every cursor move and every edit) gets this for free,
      * rather than annotating each one individually. 1-based line/column
@@ -575,6 +586,12 @@ private:
     bool m_animationsEnabled = false;
 
     AseSyntax *m_syntax = nullptr; /* null for unsupported file types — see docs/adr/0007 */
+    /* The one command registry Lua scripts and native plugins both feed
+     * (docs/adr/0009). Loaded from <config dir>/plugins/ at startup;
+     * reached via an unrecognised `:name` on the command line. See
+     * docs/adr/0054. */
+    AsePluginHost *m_pluginHost = nullptr;
+
     QVector<AseHighlightSpan> m_highlights;
     /* m_highlights flattened to one capture byte per buffer byte, rebuilt
      * once per edit in refreshCache() — the form every render-path lookup
@@ -615,6 +632,7 @@ private:
      * buffer (unconfigured, wrong file type, or the server failed to
      * start) — every LSP-touching method already checks that first. */
     AseLspClient *m_lspClient = nullptr;
+    bool m_lspActivated = false; /* see onActivated() */
     QString m_lspUri;
     int m_lspVersion = 1; /* didOpen implicitly sends version 1; didChange starts at 2 */
     QTimer *m_lspPollTimer;

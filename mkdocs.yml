@@ -74,6 +74,7 @@ nav:
     - adr/0051-global-animation-consistency-and-vim-polish.md
     - adr/0052-editor-viewport-split-into-translation-units.md
     - adr/0053-render-hot-path-and-one-motion-language.md
+    - adr/0054-multiple-buffers-and-plugin-host-wiring.md
 
 theme:
   name: material

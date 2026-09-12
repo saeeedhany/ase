@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include <QDir>
 #include <QFileInfo>
 #include <QTimer>
 
@@ -48,6 +49,17 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 
     m_undo = ase_undo_create();
 
+    /* Plugins live next to config.ase, in <config dir>/plugins/. A
+     * missing directory is not an error (the host returns 0 loaded), so
+     * there's nothing to configure for anyone who has no plugins — same
+     * "unconfigured is a normal state, not a failure" stance the LSP and
+     * build commands already take. See docs/adr/0054. */
+    m_pluginHost = ase_plugin_host_create();
+    if (m_pluginHost != nullptr && !m_configPath.isEmpty()) {
+        QString pluginDir = QFileInfo(m_configPath).dir().filePath(QStringLiteral("plugins"));
+        ase_plugin_host_load_directory(m_pluginHost, pluginDir.toUtf8().constData());
+    }
+
     m_blinkTimer = new QTimer(this);
     connect(m_blinkTimer, &QTimer::timeout, this, [this]() {
         m_idleTicks++;
@@ -70,7 +82,8 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     m_lspPollTimer = new QTimer(this);
     connect(m_lspPollTimer, &QTimer::timeout, this, [this]() { pollLsp(); });
     m_lspPollTimer->start(200); /* non-blocking poll, same shape as config-reload/compile-output polling */
-    startLspClientIfConfigured();
+    /* The server itself starts on first activation, not here — see
+     * onActivated() and docs/adr/0054. */
 
     /* Needed for mouseMoveEvent to fire with no button held — hover
      * (docs/adr/0030) has to track the pointer passively, not just
@@ -82,6 +95,7 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 }
 
 EditorViewport::~EditorViewport() {
+    ase_plugin_host_destroy(m_pluginHost);
     ase_lsp_client_stop(m_lspClient);
     ase_process_destroy(m_compileProcess);
     ase_syntax_destroy(m_syntax);

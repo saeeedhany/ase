@@ -74,7 +74,18 @@ void OutputPanel::clear() {
 /* Plain background/text, not the translucent panel_background tone —
  * this is a docked part of the window, not floating chrome, so it
  * should read as an extension of the editor rather than an overlay. */
+void OutputPanel::setViewport(EditorViewport *viewport) {
+    if (m_viewport == viewport) {
+        return;
+    }
+    m_viewport = viewport;
+    refreshTheme();
+}
+
 void OutputPanel::refreshTheme() {
+    if (m_viewport == nullptr) {
+        return; /* constructed before any buffer exists — see setViewport */
+    }
     QPalette panelPal = palette();
     panelPal.setColor(QPalette::Window, m_viewport->backgroundColor());
     setPalette(panelPal);
