@@ -897,7 +897,12 @@ void EditorViewport::updateDiagnosticLineHighlights() {
 }
 
 void EditorViewport::updateWelcomeOverlayOpacity() {
-    double target = m_cache.isEmpty() ? 1.0 : 0.0;
+    /* One-way latch: the moment there is any content, the greeting is
+     * done for this buffer's lifetime. */
+    if (!m_cache.isEmpty()) {
+        m_welcomeEligible = false;
+    }
+    double target = (m_welcomeEligible && m_cache.isEmpty()) ? 1.0 : 0.0;
     double delta = target - m_welcomeOverlayOpacity;
     if (!m_animationsEnabled || std::abs(delta) < kOpacitySnapThreshold) {
         m_welcomeOverlayOpacity = target;

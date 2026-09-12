@@ -150,3 +150,14 @@ The lesson worth keeping: **display strings are not identity.** The bug
 was invisible to every test that used distinct filenames, and only
 reproduced through the one entry point that generates duplicates.
 
+## Addendum: the welcome screen is a greeting, not a state display
+
+It was shown whenever the buffer was empty, which meant it came back if
+you deleted everything you had written, and it appeared for an opened
+file that happened to be empty — as though the editor had forgotten
+what you were doing.
+
+It is now armed only for a buffer that started with no path at all, and
+disarmed permanently the first time anything is typed. Verified: an
+empty file shows nothing, a file-less start shows it, typing hides it,
+and deleting everything again does not bring it back.

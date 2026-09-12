@@ -40,6 +40,10 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
         m_vimMode = VimMode::Normal;
     }
 
+    /* Armed before the first refreshCache() so an opened-but-empty *file*
+     * never counts — only a buffer with no path at all. */
+    m_welcomeEligible = m_filePath.isEmpty();
+
     QString suffix = QFileInfo(m_filePath).suffix().toLower();
     if (suffix == QLatin1String("c") || suffix == QLatin1String("h")) {
         m_syntax = ase_syntax_create_c();
