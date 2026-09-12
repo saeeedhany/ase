@@ -133,6 +133,12 @@ public:
      * constructor, so opening ten files doesn't spawn ten clangd
      * processes for the nine you never looked at. See docs/adr/0054. */
     void onActivated();
+    /* Arms the welcome greeting on this buffer. Called by MainWindow for
+     * the startup buffer only, and only when the editor was launched
+     * with no file — a viewport cannot work that out for itself, since
+     * "no path" is equally true of a Ctrl+N buffer opened an hour into a
+     * session, which must not be greeted. See docs/adr/0058. */
+    void armWelcomeGreeting() { m_welcomeEligible = true; }
     /* Sets m_filePath then goes through the normal save() path (so
      * dirty-clearing and the statusChanged emit happen exactly once,
      * not duplicated here). Called by FileBrowserPanel on Ctrl+Shift+S. */
@@ -747,11 +753,13 @@ private:
     /* Eased 0..1 — see docs/adr/0042. */
     double m_welcomeOverlayOpacity = 0.0;
     /* The welcome overlay is a greeting, not a state display: it belongs
-     * to "you just opened the editor with nothing to edit", not to "this
-     * buffer happens to be empty". So it is armed only for a buffer
-     * started with no file, and disarmed permanently the first time
-     * anything is typed — deleting it all again does not bring the
-     * greeting back. See docs/adr/0058. */
+     * to "you just opened the editor with nothing to edit", and to
+     * nothing else. Not to "this buffer happens to be empty", and not
+     * to a new buffer made with Ctrl+N mid-session — you are already
+     * working, and being greeted again is the editor losing its place.
+     * So it is armed from outside, by the window, for the startup
+     * buffer only (armWelcomeGreeting), and disarmed permanently the
+     * first time anything is typed. See docs/adr/0058. */
     bool m_welcomeEligible = false;
 
     QFont m_font;

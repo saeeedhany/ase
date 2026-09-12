@@ -69,7 +69,9 @@ public:
      * Save-As, since save() already sends an empty path there
      * (docs/adr/0006). */
     void newBuffer();
-    void addBuffer(AseBuffer *buffer, const QString &path);
+    /* Returns the viewport it created, which main() needs so it can
+     * arm the welcome greeting on the startup buffer. */
+    EditorViewport *addBuffer(AseBuffer *buffer, const QString &path);
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -160,7 +162,7 @@ EditorViewport *MainWindow::activeViewport() const {
     return (index >= 0 && index < m_viewports.size()) ? m_viewports[index] : nullptr;
 }
 
-void MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
+EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
     auto *viewport = new EditorViewport(buffer, path);
 
     /* FindBar, FileBrowserPanel, CommandLine, Help and About are all
@@ -201,6 +203,7 @@ void MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
     m_viewports.push_back(viewport);
     m_stack->addWidget(viewport);
     setActiveIndex(m_viewports.size() - 1);
+    return viewport;
 }
 
 void MainWindow::openBuffer(const QString &path) {
@@ -415,9 +418,16 @@ int main(int argc, char *argv[]) {
     MainWindow window;
     window.resize(900, 650);
     /* Creating the first buffer also sets the title, status bar and
-     * (empty, single-buffer) bar through the same path every later
-     * buffer takes — nothing about the first one is special-cased. */
-    window.addBuffer(buffer, filePath);
+     * bar through the same path every later buffer takes. The one thing
+     * that *is* special about it: being launched with no file at all is
+     * the only situation the welcome greeting belongs to, and that fact
+     * lives here, where argv is read. A pathless buffer made later with
+     * Ctrl+N looks identical to the viewport and must not be greeted —
+     * you are already working by then. See docs/adr/0058. */
+    EditorViewport *first = window.addBuffer(buffer, filePath);
+    if (filePath.isEmpty()) {
+        first->armWelcomeGreeting();
+    }
     window.show();
 
     return app.exec();
