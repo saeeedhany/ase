@@ -104,7 +104,8 @@ QSize BufferBar::sizeHint() const {
 void BufferBar::setEntries(const QVector<Item> &items, int activeIndex) {
     bool same = items.size() == m_items.size() && activeIndex == m_activeIndex;
     for (int i = 0; same && i < items.size(); ++i) {
-        same = items[i].name == m_items[i].name && items[i].dirty == m_items[i].dirty;
+        same = items[i].id == m_items[i].id && items[i].name == m_items[i].name &&
+               items[i].dirty == m_items[i].dirty;
     }
     if (same) {
         return;
@@ -114,15 +115,15 @@ void BufferBar::setEntries(const QVector<Item> &items, int activeIndex) {
      * plain state change and should land instantly. Animating it too
      * meant every single click replayed a slide/fade, which reads as the
      * app stuttering rather than responding. See docs/adr/0057. */
-    QVector<QString> previousNames;
+    QVector<quintptr> previousIds;
     for (const Item &item : m_items) {
-        previousNames.push_back(item.name);
+        previousIds.push_back(item.id);
     }
-    QVector<QString> nextNames;
+    QVector<quintptr> nextIds;
     for (const Item &item : items) {
-        nextNames.push_back(item.name);
+        nextIds.push_back(item.id);
     }
-    bool setChanged = previousNames != nextNames;
+    bool setChanged = previousIds != nextIds;
 
     int previousActive = m_activeIndex;
     bool hadTabs = !m_tabs.isEmpty();
@@ -139,19 +140,21 @@ void BufferBar::relayout(bool animate, int previousActiveIndex) {
     /* Where each tab is being drawn *at this instant*, so an interrupted
      * animation resumes from the visible position instead of jumping
      * back to wherever the last one started. */
+    QVector<quintptr> previousIds;
     QVector<QString> previousNames;
     QVector<double> previousX;
     QVector<double> previousAlpha;
     QVector<double> previousWidth;
-    previousNames.reserve(m_tabs.size());
+    previousIds.reserve(m_tabs.size());
     for (int i = 0; i < m_tabs.size(); ++i) {
         if (m_tabs[i].closing) {
             continue; /* a ghost from a previous close; let it go */
         }
+        previousIds.push_back(m_tabs[i].id);
         previousNames.push_back(m_tabs[i].name);
         previousX.push_back(m_tabs[i].fromX + (m_tabs[i].x - m_tabs[i].fromX) * m_transition);
         previousWidth.push_back(m_tabs[i].width);
-        double settled = (i == previousActiveIndex) ? 1.0 : 0.0;
+        double settled = (i == previousActiveIndex) ? kActiveAlpha : kInactiveAlpha;
         previousAlpha.push_back(m_tabs[i].fromAlpha + (settled - m_tabs[i].fromAlpha) * m_transition);
     }
 
@@ -162,6 +165,7 @@ void BufferBar::relayout(bool animate, int previousActiveIndex) {
     double x = 0.0;
     for (int i = 0; i < m_items.size(); ++i) {
         Tab tab;
+        tab.id = m_items[i].id;
         tab.name = m_items[i].name;
         tab.dirty = m_items[i].dirty;
         /* Every tab reserves the close mark's width whether or not it is
@@ -173,20 +177,26 @@ void BufferBar::relayout(bool animate, int previousActiveIndex) {
         tab.x = x;
         x += tab.width;
 
-        int wasAt = previousNames.indexOf(tab.name);
+        int wasAt = previousIds.indexOf(tab.id);
         if (wasAt >= 0) {
             tab.fromX = previousX[wasAt];
-            tab.fromAlpha = previousAlpha[wasAt];
+            /* Survivors keep the opacity they already have — only their
+             * *position* may move. Crossfading them too meant closing one
+             * tab made every other tab visibly re-appear. */
+            tab.fromAlpha = (i == m_activeIndex) ? kActiveAlpha : kInactiveAlpha;
         } else {
-            /* A tab that didn't exist a moment ago slides out of the one
-             * it was opened from, fading up as it goes — so a new tab
-             * reads as having come *from* the tab you were in, rather
-             * than blinking into existence beside it. */
+            /* A new tab emerges from the tab immediately to its left —
+             * the one it is about to sit beside — not from whichever tab
+             * happened to be active. New tabs are always appended, so an
+             * active tab further left meant a long slide across the whole
+             * strip that read as coming from the wrong place. Starting
+             * from the neighbour keeps the distance one tab wide and the
+             * gesture identical no matter how many are already open. */
             if (previousX.isEmpty()) {
                 tab.fromX = tab.x; /* the very first tab has nothing to emerge from */
             } else {
-                int origin = std::clamp(previousActiveIndex, 0, static_cast<int>(previousX.size()) - 1);
-                tab.fromX = previousX[origin];
+                int neighbour = std::min(i - 1, static_cast<int>(previousX.size()) - 1);
+                tab.fromX = (neighbour >= 0) ? previousX[neighbour] : previousX.constFirst();
             }
             tab.fromAlpha = 0.0;
         }
@@ -197,13 +207,14 @@ void BufferBar::relayout(bool animate, int previousActiveIndex) {
      * the exact reverse of arriving out of the tab it was opened from.
      * It stays drawn, and un-clickable, until the animation lands. */
     if (animate) {
-        for (int i = 0; i < previousNames.size(); ++i) {
+        for (int i = 0; i < previousIds.size(); ++i) {
             if (m_items.cend() != std::find_if(m_items.cbegin(), m_items.cend(),
-                                                [&](const Item &item) { return item.name == previousNames[i]; })) {
+                                                [&](const Item &item) { return item.id == previousIds[i]; })) {
                 continue; /* still open */
             }
             Tab ghost;
-            ghost.name = previousNames[i];
+            ghost.id = previousIds[i];
+            ghost.name = previousNames.value(i);
             ghost.closing = true;
             ghost.width = previousWidth[i];
             ghost.fromX = previousX[i];
@@ -311,11 +322,8 @@ void BufferBar::paintEvent(QPaintEvent *) {
         double settledAlpha = tab.closing ? 0.0
                                : (i == m_activeIndex ? kActiveAlpha
                                                      : (i == m_hoverIndex ? kHoverAlpha : kInactiveAlpha));
-        /* fromAlpha is 0..1 "how active was it", so scale it into the
-         * same 0..255 space before interpolating — this is what makes
-         * the active/inactive change crossfade instead of snapping. */
-        double startAlpha = tab.fromAlpha * kActiveAlpha + (1.0 - tab.fromAlpha) * kInactiveAlpha;
-        int alpha = static_cast<int>(std::clamp(startAlpha + (settledAlpha - startAlpha) * m_transition, 0.0, 255.0));
+        int alpha = static_cast<int>(
+            std::clamp(tab.fromAlpha + (settledAlpha - tab.fromAlpha) * m_transition, 0.0, 255.0));
 
         QColor color = m_text;
         color.setAlpha(alpha);

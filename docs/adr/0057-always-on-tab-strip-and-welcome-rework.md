@@ -94,3 +94,59 @@ Not isolated frame-by-frame: the ghost's fade *curve*. That it renders
 and then disappears while neighbours reflow is confirmed; the
 interpolation itself is the same code path already proven for the open
 animation, so it was not worth further sub-frame capture work.
+
+## Addendum: what was actually wrong with the tab animation
+
+Two rounds of fixes here missed the real cause, so both the wrong
+diagnoses and the right one are recorded — the wrong ones were plausible
+and someone will reach for them again.
+
+**The actual bug: tabs were identified by display name.** `relayout()`
+matched a tab across layouts with `previousNames.indexOf(tab.name)`, and
+names are not unique. Every buffer opened with `+` is called `untitled`,
+so the collision was immediate and constant rather than a rare edge
+case (two files sharing a basename in different directories would do it
+too).
+
+That single mistake produced every reported symptom:
+
+- A new `untitled` matched an *older* `untitled`, so it was treated as an
+  existing tab: no fade-in, and it slid from whatever position that older
+  tab held — which is why new tabs appeared to come from an early tab no
+  matter how many were open.
+- On close, the ghost check asked "is a tab with this name still open?"
+  With duplicates the answer was always yes, so **no ghost was created
+  and the close animation was skipped entirely.**
+- Survivors matched the wrong entries and inherited the wrong positions
+  and opacities, which is the "random behaviour" on delete.
+
+Named files masked all of it, which is why every earlier verification
+pass — all of which used distinct `.c` files — showed it working.
+
+Tabs are now keyed on a `quintptr id`: the `EditorViewport` pointer,
+which is unique and stable for as long as the buffer is open. The
+display name is only ever drawn, never used for identity.
+
+**The two earlier fixes were real, but secondary.** Both are kept:
+
+- *Origin.* New tabs animated from "whichever tab was active", but new
+  tabs are always appended, so an active tab further left meant a long
+  sweep across the strip. The origin is now the tab immediately to the
+  new one's left.
+- *Survivor opacity.* Survivors started from the previous frame's alpha
+  and interpolated to their settled value; with the old 0..1 "how active"
+  encoding an inactive survivor started from a value that did not match
+  where it already was, so it visibly re-faded. Survivors now start at
+  the alpha they already have, and `Tab::fromAlpha` is a real 0–255 alpha
+  — the old encoding also could not express "start fully invisible", so
+  new tabs faded in from the inactive tier instead of from nothing.
+
+Verified with five buffers all named `untitled`: the fifth slides in from
+the fourth; closing one leaves the strip's ink extent at an intermediate
+value 18ms in (671 → 562 → 534 px), proving a ghost is drawn and
+collapsing where previously there was none.
+
+The lesson worth keeping: **display strings are not identity.** The bug
+was invisible to every test that used distinct filenames, and only
+reproduced through the one entry point that generates duplicates.
+

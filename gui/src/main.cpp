@@ -283,7 +283,12 @@ void MainWindow::refreshBufferBar() {
     QVector<BufferBar::Item> items;
     items.reserve(m_viewports.size());
     for (EditorViewport *viewport : m_viewports) {
-        items.push_back({bufferLabelFor(viewport->filePath()), viewport->isDirty()});
+        /* The viewport pointer is a stable, unique handle for as long as
+         * the buffer is open — exactly what tab identity needs, and
+         * unlike the display name it cannot collide (every `+` buffer is
+         * called "untitled"). See docs/adr/0057. */
+        items.push_back({reinterpret_cast<quintptr>(viewport), bufferLabelFor(viewport->filePath()),
+                          viewport->isDirty()});
     }
     EditorViewport *viewport = activeViewport();
     if (viewport != nullptr) {

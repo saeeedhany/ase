@@ -2,6 +2,7 @@
 #define ASE_BUFFER_BAR_H
 
 #include <QColor>
+#include <QtGlobal>
 #include <QFont>
 #include <QRect>
 #include <QString>
@@ -38,6 +39,16 @@ public:
     explicit BufferBar(QWidget *parent = nullptr);
 
     struct Item {
+        /* Stable, unique per open buffer for as long as it lives. Tabs
+         * used to be matched across layouts by *name*, which silently
+         * broke the moment two shared one — and every buffer opened with
+         * `+` is called "untitled", so it broke immediately and often.
+         * A new untitled matched an older one and so never animated in;
+         * closing one found another "untitled" still open, concluded
+         * nothing had been removed, and skipped the close animation
+         * entirely. Two files with the same basename in different
+         * directories would have done the same. See docs/adr/0057. */
+        quintptr id = 0;
         QString name;
         bool dirty = false;
     };
@@ -71,11 +82,15 @@ private:
      * interpolates between `fromX` and `x` by m_transition, so the same
      * mechanism covers opening, closing and switching. */
     struct Tab {
+        quintptr id = 0;
         QString name;
         bool dirty = false;
         double x = 0.0;     /* settled left edge */
         double fromX = 0.0; /* left edge it is animating out of */
-        double fromAlpha = 1.0;
+        /* Actual 0..255 alpha to start from, not a 0..1 "how active"
+         * value — a new tab must be able to start genuinely invisible,
+         * which the old encoding could not express. */
+        double fromAlpha = 255.0;
         double width = 0.0;
         /* A tab that has been closed but is still on screen, collapsing
          * back into the one it leaves focus to — the exact reverse of
