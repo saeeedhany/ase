@@ -65,6 +65,7 @@ nav:
     - adr/0043-faster-global-easing-and-welcome-overlay-layout.md
     - adr/0044-panel-isolation-drag-bar-unsaved-quit-confirm.md
     - adr/0045-v0.2.0-alpha-and-containerized-packaging.md
+    - adr/0046-native-vim-mode-phase-1.md
 
 theme:
   name: material

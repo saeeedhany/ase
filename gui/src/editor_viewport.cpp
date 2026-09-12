@@ -249,6 +249,13 @@ void EditorViewport::applyConfig() {
     m_animationsEnabled = animationsStr != nullptr &&
                           QString::fromUtf8(animationsStr).compare(QLatin1String("true"), Qt::CaseInsensitive) == 0;
 
+    /* Opt-in, off by default, same reasoning and same pattern as
+     * animations above — this changes what every keystroke does, so it
+     * has to be asked for. See docs/adr/0046. */
+    const char *vimModeStr = ase_config_get_string(m_config, "vim_mode");
+    m_vimModeEnabled = vimModeStr != nullptr &&
+                       QString::fromUtf8(vimModeStr).compare(QLatin1String("true"), Qt::CaseInsensitive) == 0;
+
     /* On by default, unlike animations — see docs/adr/0014, decision 4.
      * An unrecognized value falls back to "absolute" rather than
      * treating it as an error — a bad config value should never break
@@ -1052,12 +1059,38 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         return;
     }
     if (event->key() == Qt::Key_Escape) {
-        collapseToOneCursor();
+        if (vimModeActive() && m_vimMode == VimMode::Insert) {
+            /* Leaving Insert steps back one column, same as real vim —
+             * only when not already at column 0, so Escape on an empty
+             * or just-Home'd line doesn't try to move left of it. */
+            if (m_cursors[0] > static_cast<size_t>(m_lineStarts[lineForOffset(m_cursors[0])])) {
+                moveCursorLeftAt(0, false);
+            }
+            m_vimMode = VimMode::Normal;
+            resetVimPendingState();
+        } else if (vimModeActive()) {
+            /* From Normal or Visual: drop any pending operator/count and
+             * any Visual-mode selection, stay/return to Normal. */
+            resetVimPendingState();
+            collapseToOneCursor();
+            m_vimMode = VimMode::Normal;
+        } else {
+            collapseToOneCursor();
+        }
         ensureCursorVisible();
         update();
         return;
     }
     m_desiredColumn = -1;
+
+    if (vimModeActive() && m_vimMode != VimMode::Insert) {
+        if (handleVimNormalOrVisualKey(event)) {
+            return;
+        }
+        /* Falls through only for keys Vim doesn't claim (arrows, Home/
+         * End, every Ctrl/Alt/Meta combo) — the switch/Ctrl-chain below
+         * handles those exactly as it does with Vim mode off. */
+    }
     /* Set only for plain character insertion — see
      * snapAnimationToTarget's doc comment (docs/adr/0017): typing
      * always renders instantly, even with animations on, because
@@ -1091,6 +1124,13 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         deleteBackward();
         break;
     case Qt::Key_Delete:
+        /* Real vim gives Delete no default Normal-mode meaning either —
+         * see docs/adr/0046. Reachable here at all only because Delete
+         * isn't part of Vim's own recognized key set (handleVimNormal-
+         * OrVisualKey returns false for it), by design. */
+        if (vimModeActive() && m_vimMode != VimMode::Insert) {
+            break;
+        }
         deleteForward();
         break;
     case Qt::Key_Tab:
@@ -1111,7 +1151,12 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
          * plain character insertion (isEdit = true, instant, not
          * glided). Completion-popup Tab-to-accept is intercepted
          * earlier in this function and never reaches here. See
-         * docs/adr/0031. */
+         * docs/adr/0031. Real vim gives Tab no default Normal-mode
+         * meaning either — see docs/adr/0046 — so this is skipped
+         * while Vim mode is on and not in Insert. */
+        if (vimModeActive() && m_vimMode != VimMode::Insert) {
+            break;
+        }
         insertText(QByteArrayLiteral("    "));
         isEdit = true;
         break;
@@ -1124,7 +1169,13 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
          * see glide (Backspace/Delete followed once deletion was
          * asked for too). Regular character insertion stays instant —
          * ADR 0017's original reasoning (gliding can't keep pace with
-         * fast repeated small jumps) still holds for that case. */
+         * fast repeated small jumps) still holds for that case.
+         * Real vim gives Enter no default Normal-mode meaning either —
+         * see docs/adr/0046 — so this is skipped while Vim mode is on
+         * and not in Insert. */
+        if (vimModeActive() && m_vimMode != VimMode::Insert) {
+            break;
+        }
         insertText(QByteArrayLiteral("\n"));
         break;
     default:
@@ -1224,6 +1275,15 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
                 }
                 return;
             }
+            if (event->key() == Qt::Key_R && vimModeActive()) {
+                /* Vim's own redo binding, additive to the existing
+                 * Ctrl+Shift+Z above — gated on vimModeActive() (not on
+                 * m_vimMode) so it works from Insert too, matching how
+                 * Ctrl+Z/Ctrl+Shift+Z are already mode-independent, and
+                 * so non-Vim users see no new shortcut. */
+                redo();
+                return;
+            }
             QWidget::keyPressEvent(event);
             return;
         }
@@ -1232,6 +1292,14 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
             const QString text = event->text();
             if (text.isEmpty() || !text.at(0).isPrint()) {
                 QWidget::keyPressEvent(event);
+                return;
+            }
+            /* Defense-in-depth, not the primary enforcement point: the
+             * gate above (m_desiredColumn = -1's neighbor) already
+             * claims every printable key while Vim mode is on and not
+             * in Insert, so this should be unreachable in that state —
+             * see docs/adr/0046. */
+            if (vimModeActive() && m_vimMode != VimMode::Insert) {
                 return;
             }
             insertText(text.toUtf8());
@@ -1544,6 +1612,659 @@ void EditorViewport::pasteClipboard() {
     ensureCursorVisible();
     snapAnimationToTarget();
     update();
+}
+
+/* ------------------------------------------------------------- Vim mode */
+/* Phase 1 — see docs/adr/0046. Everything below operates on m_cursors[0]
+ * only; handleVimNormalOrVisualKey() collapses to one cursor the moment
+ * any Vim key is pressed. */
+
+void EditorViewport::resetVimPendingState() {
+    m_vimCount1 = 0;
+    m_vimCount2 = 0;
+    m_vimPendingOperator = '\0';
+    m_vimPendingG = false;
+}
+
+/* '\n' counts as Blank, not its own class — the key trick that makes
+ * w/b/e cross line boundaries with zero special-casing, matching real
+ * vim's "a blank line acts like whitespace" model. */
+EditorViewport::VimCharClass EditorViewport::vimClassifyAt(size_t pos) const {
+    char c = m_cache[static_cast<int>(pos)];
+    if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+        return VimCharClass::Blank;
+    }
+    if (isWordChar(c)) {
+        return VimCharClass::Word;
+    }
+    return VimCharClass::Punct;
+}
+
+size_t EditorViewport::vimNextCharBoundary(size_t pos) const {
+    size_t len = static_cast<size_t>(m_cache.size());
+    if (pos >= len) {
+        return len;
+    }
+    pos++;
+    while (pos < len && isUtf8ContinuationByte(m_cache[static_cast<int>(pos)])) {
+        pos++;
+    }
+    return pos;
+}
+
+size_t EditorViewport::vimPrevCharBoundary(size_t pos) const {
+    if (pos == 0) {
+        return 0;
+    }
+    pos--;
+    while (pos > 0 && isUtf8ContinuationByte(m_cache[static_cast<int>(pos)])) {
+        pos--;
+    }
+    return pos;
+}
+
+size_t EditorViewport::vimWordForward(size_t pos) const {
+    size_t len = static_cast<size_t>(m_cache.size());
+    if (pos >= len) {
+        return len;
+    }
+    VimCharClass start = vimClassifyAt(pos);
+    if (start != VimCharClass::Blank) {
+        while (pos < len && vimClassifyAt(pos) == start) {
+            pos = vimNextCharBoundary(pos);
+        }
+    }
+    while (pos < len && vimClassifyAt(pos) == VimCharClass::Blank) {
+        pos = vimNextCharBoundary(pos);
+    }
+    return pos;
+}
+
+size_t EditorViewport::vimWordEnd(size_t pos) const {
+    size_t len = static_cast<size_t>(m_cache.size());
+    if (pos >= len) {
+        return pos;
+    }
+    pos = vimNextCharBoundary(pos);
+    while (pos < len && vimClassifyAt(pos) == VimCharClass::Blank) {
+        pos = vimNextCharBoundary(pos);
+    }
+    if (pos >= len) {
+        return len;
+    }
+    VimCharClass cls = vimClassifyAt(pos);
+    size_t next = vimNextCharBoundary(pos);
+    while (next < len && vimClassifyAt(next) == cls) {
+        pos = next;
+        next = vimNextCharBoundary(next);
+    }
+    return pos;
+}
+
+size_t EditorViewport::vimWordBackward(size_t pos) const {
+    if (pos == 0) {
+        return 0;
+    }
+    pos = vimPrevCharBoundary(pos);
+    while (pos > 0 && vimClassifyAt(pos) == VimCharClass::Blank) {
+        pos = vimPrevCharBoundary(pos);
+    }
+    if (vimClassifyAt(pos) == VimCharClass::Blank) {
+        return 0;
+    }
+    VimCharClass cls = vimClassifyAt(pos);
+    while (pos > 0) {
+        size_t prev = vimPrevCharBoundary(pos);
+        if (vimClassifyAt(prev) != cls) {
+            break;
+        }
+        pos = prev;
+    }
+    return pos;
+}
+
+size_t EditorViewport::vimFirstNonBlank(int line) const {
+    line = std::clamp(line, 0, static_cast<int>(m_lineStarts.size()) - 1);
+    int start = m_lineStarts[line];
+    int end = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
+    int pos = start;
+    while (pos < end && (m_cache[pos] == ' ' || m_cache[pos] == '\t')) {
+        pos++;
+    }
+    return static_cast<size_t>(pos);
+}
+
+void EditorViewport::vimGotoLine(int line) {
+    line = std::clamp(line, 0, static_cast<int>(m_lineStarts.size()) - 1);
+    if (m_vimPendingOperator != '\0') {
+        int beforeLine = lineForOffset(m_cursors[0]);
+        int startLine = std::min(beforeLine, line);
+        int lineCount = std::abs(line - beforeLine) + 1;
+        vimApplyPendingOperatorLinewise(startLine, lineCount);
+        return;
+    }
+    size_t target = vimFirstNonBlank(line);
+    m_cursors[0] = target;
+    if (m_vimMode != VimMode::Visual) {
+        m_selectionAnchors[0] = target;
+    }
+}
+
+void EditorViewport::vimExecuteMotion(char m, int count) {
+    bool visual = (m_vimMode == VimMode::Visual);
+    size_t before = m_cursors[0];
+
+    if (m_vimPendingOperator == '\0') {
+        for (int n = 0; n < count; ++n) {
+            switch (m) {
+            case 'h':
+                moveCursorLeftAt(0, visual);
+                break;
+            case 'l':
+                moveCursorRightAt(0, visual);
+                break;
+            case 'j':
+                moveCursorVerticallyAt(0, 1, visual);
+                break;
+            case 'k':
+                moveCursorVerticallyAt(0, -1, visual);
+                break;
+            case '0':
+                moveCursorHomeAt(0, visual);
+                return;
+            case '^': {
+                size_t target = vimFirstNonBlank(lineForOffset(m_cursors[0]));
+                m_cursors[0] = target;
+                if (!visual) {
+                    m_selectionAnchors[0] = target;
+                }
+                return;
+            }
+            case '$':
+                moveCursorEndAt(0, visual);
+                return;
+            case 'w': {
+                size_t target = vimWordForward(m_cursors[0]);
+                m_cursors[0] = target;
+                if (!visual) {
+                    m_selectionAnchors[0] = target;
+                }
+                break;
+            }
+            case 'b': {
+                size_t target = vimWordBackward(m_cursors[0]);
+                m_cursors[0] = target;
+                if (!visual) {
+                    m_selectionAnchors[0] = target;
+                }
+                break;
+            }
+            case 'e': {
+                size_t target = vimWordEnd(m_cursors[0]);
+                m_cursors[0] = target;
+                if (!visual) {
+                    m_selectionAnchors[0] = target;
+                }
+                break;
+            }
+            default:
+                return;
+            }
+        }
+        return;
+    }
+
+    /* Operator pending — j/k span whole lines; everything else is an
+     * exact byte range from `before` to wherever `count` applications
+     * of the motion land. */
+    if (m == 'j' || m == 'k') {
+        int beforeLine = lineForOffset(before);
+        int deltaLines = (m == 'j') ? count : -count;
+        int targetLine = std::clamp(beforeLine + deltaLines, 0, static_cast<int>(m_lineStarts.size()) - 1);
+        int startLine = std::min(beforeLine, targetLine);
+        int lineCount = std::abs(targetLine - beforeLine) + 1;
+        vimApplyPendingOperatorLinewise(startLine, lineCount);
+        return;
+    }
+
+    size_t after = before;
+    if (m == '0') {
+        after = static_cast<size_t>(m_lineStarts[lineForOffset(before)]);
+    } else if (m == '^') {
+        after = vimFirstNonBlank(lineForOffset(before));
+    } else if (m == '$') {
+        int line = lineForOffset(before);
+        after = (line + 1 < m_lineStarts.size()) ? static_cast<size_t>(m_lineStarts[line + 1] - 1)
+                                                  : static_cast<size_t>(m_cache.size());
+    } else {
+        for (int n = 0; n < count; ++n) {
+            switch (m) {
+            case 'h':
+                after = vimPrevCharBoundary(after);
+                break;
+            case 'l':
+                after = vimNextCharBoundary(after);
+                break;
+            case 'w':
+                after = vimWordForward(after);
+                break;
+            case 'b':
+                after = vimWordBackward(after);
+                break;
+            case 'e':
+                /* Inclusive of the char the motion itself lands on —
+                 * "d/y/c to the end of this word" removes that last
+                 * character too, unlike a plain 'e' cursor move. */
+                after = vimNextCharBoundary(vimWordEnd(after));
+                break;
+            default:
+                break;
+            }
+        }
+    }
+    size_t start = std::min(before, after);
+    size_t end = std::max(before, after);
+    vimApplyPendingOperatorCharwise(start, end);
+}
+
+void EditorViewport::vimApplyPendingOperatorCharwise(size_t start, size_t end) {
+    char op = m_vimPendingOperator;
+    resetVimPendingState();
+    if (start >= end) {
+        return;
+    }
+    switch (op) {
+    case 'd':
+        vimDeleteRange(start, end);
+        break;
+    case 'y':
+        vimYankRange(start, end, false);
+        break;
+    case 'c':
+        vimChangeRange(start, end);
+        break;
+    default:
+        break;
+    }
+}
+
+void EditorViewport::vimApplyPendingOperatorLinewise(int startLine, int lineCount) {
+    char op = m_vimPendingOperator;
+    resetVimPendingState();
+    switch (op) {
+    case 'd':
+        vimDeleteLines(startLine, lineCount);
+        break;
+    case 'y':
+        vimYankLines(startLine, lineCount);
+        break;
+    case 'c':
+        /* Real vim leaves one blank line and enters insert there; v1
+         * simplification (documented, docs/adr/0046) — just delete the
+         * lines and enter insert at the resulting cursor position. */
+        vimDeleteLines(startLine, lineCount);
+        m_vimMode = VimMode::Insert;
+        break;
+    default:
+        break;
+    }
+}
+
+void EditorViewport::vimDeleteRange(size_t start, size_t end) {
+    QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    if (ase_buffer_delete(m_buffer, start, end - start)) {
+        ase_undo_record_delete(m_undo, start, removed.constData(), static_cast<size_t>(removed.size()));
+    }
+    m_cursors[0] = start;
+    m_selectionAnchors[0] = start;
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    m_dirty = true;
+    refreshCache();
+    ensureCursorVisible();
+    snapAnimationToTarget();
+    update();
+}
+
+void EditorViewport::vimYankRange(size_t start, size_t end, bool linewise) {
+    QByteArray text = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
+    QGuiApplication::clipboard()->setText(QString::fromUtf8(text));
+    m_vimLastYankWasLinewise = linewise;
+    m_cursors[0] = start;
+    m_selectionAnchors[0] = start;
+    ensureCursorVisible();
+    update();
+}
+
+void EditorViewport::vimChangeRange(size_t start, size_t end) {
+    vimDeleteRange(start, end);
+    m_vimMode = VimMode::Insert;
+}
+
+void EditorViewport::vimDeleteLines(int startLine, int count) {
+    startLine = std::clamp(startLine, 0, static_cast<int>(m_lineStarts.size()) - 1);
+    int endLine = std::clamp(startLine + count - 1, startLine, static_cast<int>(m_lineStarts.size()) - 1);
+    size_t start = static_cast<size_t>(m_lineStarts[startLine]);
+    /* Consume through the start of the line *after* endLine so the
+     * trailing newline goes with it too (leaves no blank line behind);
+     * on the buffer's last line, there's no following '\n' to eat. */
+    size_t end = (endLine + 1 < m_lineStarts.size()) ? static_cast<size_t>(m_lineStarts[endLine + 1])
+                                                      : static_cast<size_t>(m_cache.size());
+    QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    if (ase_buffer_delete(m_buffer, start, end - start)) {
+        ase_undo_record_delete(m_undo, start, removed.constData(), static_cast<size_t>(removed.size()));
+    }
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    m_dirty = true;
+    refreshCache();
+    int newLine = std::clamp(startLine, 0, static_cast<int>(m_lineStarts.size()) - 1);
+    size_t target = vimFirstNonBlank(newLine);
+    m_cursors[0] = target;
+    m_selectionAnchors[0] = target;
+    ensureCursorVisible();
+    snapAnimationToTarget();
+    update();
+}
+
+void EditorViewport::vimYankLines(int startLine, int count) {
+    startLine = std::clamp(startLine, 0, static_cast<int>(m_lineStarts.size()) - 1);
+    int endLine = std::clamp(startLine + count - 1, startLine, static_cast<int>(m_lineStarts.size()) - 1);
+    size_t start = static_cast<size_t>(m_lineStarts[startLine]);
+    size_t end = (endLine + 1 < m_lineStarts.size()) ? static_cast<size_t>(m_lineStarts[endLine + 1])
+                                                      : static_cast<size_t>(m_cache.size());
+    QByteArray text = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
+    QGuiApplication::clipboard()->setText(QString::fromUtf8(text));
+    m_vimLastYankWasLinewise = true;
+    size_t target = vimFirstNonBlank(startLine);
+    m_cursors[0] = target;
+    m_selectionAnchors[0] = target;
+    ensureCursorVisible();
+    update();
+}
+
+void EditorViewport::vimPasteAfter() {
+    QString clip = QGuiApplication::clipboard()->text();
+    if (clip.isEmpty()) {
+        return;
+    }
+    QByteArray bytes = clip.toUtf8();
+    size_t insertAt;
+    if (m_vimLastYankWasLinewise) {
+        int line = lineForOffset(m_cursors[0]);
+        insertAt = (line + 1 < m_lineStarts.size()) ? static_cast<size_t>(m_lineStarts[line + 1])
+                                                     : static_cast<size_t>(m_cache.size());
+        if (insertAt == static_cast<size_t>(m_cache.size()) && !bytes.endsWith('\n')) {
+            bytes.append('\n');
+        }
+    } else {
+        /* At end-of-line, this editor's own cursor convention already
+         * sits *at* the '\n' byte (an insertion gap, not "on" a real
+         * character — a named fidelity gap vs. real vim, see
+         * docs/adr/0046). vimNextCharBoundary assumes its argument
+         * points at a real character to step past; blindly applying it
+         * here would step over the '\n' itself and land the paste at
+         * the start of the *next* line instead of appending it to the
+         * end of the current one. */
+        size_t cur = m_cursors[0];
+        bool atNewline = cur < static_cast<size_t>(m_cache.size()) && m_cache[static_cast<int>(cur)] == '\n';
+        insertAt = atNewline ? cur : vimNextCharBoundary(cur);
+    }
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    if (ase_buffer_insert(m_buffer, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()))) {
+        ase_undo_record_insert(m_undo, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()));
+    }
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    m_dirty = true;
+    refreshCache();
+    size_t target = m_vimLastYankWasLinewise ? vimFirstNonBlank(lineForOffset(insertAt)) : insertAt;
+    m_cursors[0] = target;
+    m_selectionAnchors[0] = target;
+    ensureCursorVisible();
+    snapAnimationToTarget();
+    update();
+}
+
+void EditorViewport::vimPasteBefore() {
+    QString clip = QGuiApplication::clipboard()->text();
+    if (clip.isEmpty()) {
+        return;
+    }
+    QByteArray bytes = clip.toUtf8();
+    size_t insertAt = m_vimLastYankWasLinewise ? static_cast<size_t>(m_lineStarts[lineForOffset(m_cursors[0])])
+                                                : m_cursors[0];
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    if (ase_buffer_insert(m_buffer, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()))) {
+        ase_undo_record_insert(m_undo, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()));
+    }
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    m_dirty = true;
+    refreshCache();
+    size_t target = m_vimLastYankWasLinewise ? vimFirstNonBlank(lineForOffset(insertAt)) : insertAt;
+    m_cursors[0] = target;
+    m_selectionAnchors[0] = target;
+    ensureCursorVisible();
+    snapAnimationToTarget();
+    update();
+}
+
+void EditorViewport::vimOpenLineAbove() {
+    int line = lineForOffset(m_cursors[0]);
+    size_t at = static_cast<size_t>(m_lineStarts[line]);
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    if (ase_buffer_insert(m_buffer, at, "\n", 1)) {
+        ase_undo_record_insert(m_undo, at, "\n", 1);
+    }
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    m_cursors[0] = at;
+    m_selectionAnchors[0] = at;
+    m_dirty = true;
+    refreshCache();
+    ensureCursorVisible();
+    snapAnimationToTarget();
+    update();
+}
+
+/* Top-level Normal/Visual key dispatcher — see docs/adr/0046 for the
+ * full state-machine table. Returns true for every key Vim claims,
+ * including "recognized but currently invalid, swallowed" cases;
+ * false only for keys outside Vim's alphabet entirely (arrows, Home/
+ * End, every Ctrl/Alt/Meta combo, function keys), which the caller's
+ * own switch/Ctrl-chain still handles unmodified. */
+bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
+    if (event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) {
+        return false;
+    }
+    if (m_cursors.size() > 1) {
+        collapseToOneCursor();
+    }
+
+    if (event->key() == Qt::Key_Backspace) {
+        vimExecuteMotion('h', std::max(1, m_vimCount1) * std::max(1, m_vimCount2));
+        resetVimPendingState();
+        ensureCursorVisible();
+        update();
+        return true;
+    }
+
+    QString text = event->text();
+    if (text.isEmpty()) {
+        return false;
+    }
+    QChar qc = text.at(0);
+
+    /* Mid-"gg": resolved on the very next key, whatever it is. */
+    if (m_vimPendingG) {
+        m_vimPendingG = false;
+        if (qc == QLatin1Char('g')) {
+            int targetLine = (m_vimCount1 > 0) ? (m_vimCount1 - 1) : 0;
+            vimGotoLine(targetLine);
+        }
+        resetVimPendingState();
+        ensureCursorVisible();
+        snapAnimationToTarget();
+        update();
+        return true;
+    }
+
+    /* Counts. A bare '0' (no count typed yet) is the "column 0" motion,
+     * not a digit — matches real vim. */
+    if (qc.isDigit()) {
+        int d = qc.digitValue();
+        int &count = (m_vimPendingOperator != '\0') ? m_vimCount2 : m_vimCount1;
+        if (!(d == 0 && count == 0)) {
+            count = count * 10 + d;
+            return true;
+        }
+    }
+
+    char c = qc.toLatin1(); /* '\0' for non-Latin1 — falls through to "unrecognized" below. */
+    int count = std::max(1, m_vimCount1) * std::max(1, m_vimCount2);
+
+    if (c == 'g') {
+        m_vimPendingG = true;
+        return true;
+    }
+    if (c == 'G') {
+        int targetLine = (m_vimCount1 > 0) ? (m_vimCount1 - 1) : static_cast<int>(m_lineStarts.size()) - 1;
+        vimGotoLine(targetLine);
+        resetVimPendingState();
+        ensureCursorVisible();
+        snapAnimationToTarget();
+        update();
+        return true;
+    }
+    if (c == 'h' || c == 'l' || c == 'j' || c == 'k' || c == '0' || c == '^' || c == '$' || c == 'w' ||
+        c == 'b' || c == 'e') {
+        vimExecuteMotion(c, count);
+        resetVimPendingState();
+        ensureCursorVisible();
+        snapAnimationToTarget();
+        update();
+        return true;
+    }
+
+    if (m_vimMode == VimMode::Visual) {
+        switch (c) {
+        case 'v':
+            collapseToOneCursor();
+            m_vimMode = VimMode::Normal;
+            break;
+        case 'x':
+        case 'd':
+            if (hasSelectionAt(0)) {
+                vimDeleteRange(selectionMinAt(0), selectionMaxAt(0));
+            }
+            m_vimMode = VimMode::Normal;
+            break;
+        case 'y':
+            if (hasSelectionAt(0)) {
+                vimYankRange(selectionMinAt(0), selectionMaxAt(0), false);
+            }
+            collapseToOneCursor();
+            m_vimMode = VimMode::Normal;
+            break;
+        case 'c':
+            if (hasSelectionAt(0)) {
+                vimChangeRange(selectionMinAt(0), selectionMaxAt(0));
+            } else {
+                m_vimMode = VimMode::Insert;
+            }
+            break;
+        default:
+            break; /* unrecognized in Visual: swallowed, no state change */
+        }
+        resetVimPendingState();
+        ensureCursorVisible();
+        snapAnimationToTarget();
+        update();
+        return true;
+    }
+
+    /* Normal-mode-only from here: operators, x/p/P/u, mode entry. */
+
+    if (c == 'd' || c == 'y' || c == 'c') {
+        if (m_vimPendingOperator == c) {
+            vimApplyPendingOperatorLinewise(lineForOffset(m_cursors[0]), count);
+        } else if (m_vimPendingOperator == '\0') {
+            m_vimPendingOperator = c;
+        } else {
+            resetVimPendingState();
+        }
+        ensureCursorVisible();
+        snapAnimationToTarget();
+        update();
+        return true;
+    }
+
+    if (m_vimPendingOperator != '\0') {
+        /* An operator is pending but this key is neither the same
+         * operator repeated nor a recognized motion — an invalid
+         * combo. Real vim also just does nothing here. */
+        resetVimPendingState();
+        return true;
+    }
+
+    switch (c) {
+    case 'v':
+        m_vimMode = VimMode::Visual;
+        break;
+    case 'i':
+        m_vimMode = VimMode::Insert;
+        break;
+    case 'a':
+        moveCursorRightAt(0, false);
+        m_vimMode = VimMode::Insert;
+        break;
+    case 'I': {
+        size_t target = vimFirstNonBlank(lineForOffset(m_cursors[0]));
+        m_cursors[0] = target;
+        m_selectionAnchors[0] = target;
+        m_vimMode = VimMode::Insert;
+        break;
+    }
+    case 'A':
+        moveCursorEndAt(0, false);
+        m_vimMode = VimMode::Insert;
+        break;
+    case 'o':
+        moveCursorEndAt(0, false);
+        insertText(QByteArrayLiteral("\n"));
+        m_vimMode = VimMode::Insert;
+        break;
+    case 'O':
+        vimOpenLineAbove();
+        m_vimMode = VimMode::Insert;
+        break;
+    case 'x': {
+        size_t start = m_cursors[0];
+        size_t end = start;
+        for (int n = 0; n < count && end < static_cast<size_t>(m_cache.size()); ++n) {
+            end = vimNextCharBoundary(end);
+        }
+        if (end > start) {
+            vimDeleteRange(start, end);
+        }
+        break;
+    }
+    case 'p':
+        vimPasteAfter();
+        break;
+    case 'P':
+        vimPasteBefore();
+        break;
+    case 'u':
+        undo();
+        break;
+    default:
+        break; /* unrecognized: swallowed, no state change */
+    }
+
+    resetVimPendingState();
+    ensureCursorVisible();
+    snapAnimationToTarget();
+    update();
+    return true;
 }
 
 QString EditorViewport::primarySelectionText() const {
@@ -1984,8 +2705,24 @@ void EditorViewport::ensureCursorVisible() {
 
     /* 1-based for display — every cursor move and every edit already
      * ends up here, so this is the one place status needs wiring. See
-     * docs/adr/0023. */
-    emit statusChanged(line + 1, col + 1, m_dirty);
+     * docs/adr/0023. modeLabel is empty whenever Vim mode is off, so
+     * the status text is byte-identical to before docs/adr/0046 for
+     * anyone who hasn't opted in. */
+    QString modeLabel;
+    if (vimModeActive()) {
+        switch (m_vimMode) {
+        case VimMode::Normal:
+            modeLabel = QStringLiteral("NORMAL");
+            break;
+        case VimMode::Visual:
+            modeLabel = QStringLiteral("VISUAL");
+            break;
+        case VimMode::Insert:
+            modeLabel = QStringLiteral("INSERT");
+            break;
+        }
+    }
+    emit statusChanged(line + 1, col + 1, m_dirty, modeLabel);
 }
 
 /* Empty m_filePath (launched with no file, or a fresh openFile that
@@ -2074,8 +2811,26 @@ void EditorViewport::runCommand(const QString &command) {
         compile();
     } else if (trimmed == QLatin1String("output")) {
         toggleOutputPanel();
+    } else {
+        /* :<digits> — jump to that 1-based line. Not gated on vim_mode:
+         * a generically useful command line addition, and the first one
+         * to take an argument rather than match an exact string — see
+         * docs/adr/0046. Reuses vimGotoLine (safe regardless of vim_mode:
+         * no operator can be pending here since ex-commands don't go
+         * through Vim's own key dispatch at all). */
+        bool ok = false;
+        int lineNumber = trimmed.toInt(&ok);
+        if (ok && lineNumber > 0) {
+            collapseToOneCursor();
+            vimGotoLine(lineNumber - 1);
+            resetVimPendingState();
+            ensureCursorVisible();
+            snapAnimationToTarget();
+            update();
+        }
+        /* Anything else recognized as neither a known word nor a line
+         * number: silent no-op — see docs/adr/0025. */
     }
-    /* Anything else: silent no-op — see docs/adr/0025. */
 }
 
 void EditorViewport::toggleOutputPanel() {
@@ -2346,6 +3101,14 @@ size_t EditorViewport::completionPrefixStart(size_t offset) const {
 
 void EditorViewport::requestCompletionIfAppropriate() {
     if (m_completionPopup == nullptr) {
+        return;
+    }
+    if (vimModeActive() && m_vimMode != VimMode::Insert) {
+        /* Vim's own buffer mutations (dw, p, etc.) go through refreshCache()
+         * like any other edit, which is what calls this — but a completion
+         * popup responding to Normal/Visual-mode edits would be a
+         * distraction, not a help. See docs/adr/0046. */
+        dismissCompletion();
         return;
     }
     if (m_suppressNextCompletionTrigger) {

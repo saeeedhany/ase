@@ -203,15 +203,20 @@ int main(int argc, char *argv[]) {
     window.statusBar()->addPermanentWidget(statusLabel);
     applyStatusBarTheme(window, statusLabel, viewport);
 
-    QObject::connect(viewport, &EditorViewport::statusChanged, &window,
-                      [&window, viewport, statusLabel](int line, int column, bool dirty) {
-                          statusLabel->setText(QStringLiteral("Ln %1, Col %2%3")
-                                                    .arg(line)
-                                                    .arg(column)
-                                                    .arg(dirty ? QStringLiteral(" *") : QString()));
-                          window.setWindowTitle(windowTitleFor(viewport->filePath(), dirty));
-                          applyStatusBarTheme(window, statusLabel, viewport);
-                      });
+    QObject::connect(
+        viewport, &EditorViewport::statusChanged, &window,
+        [&window, viewport, statusLabel](int line, int column, bool dirty, const QString &modeLabel) {
+            /* modeLabel is empty whenever Vim mode is off (docs/adr/0046),
+             * so this prefix is a no-op for anyone who hasn't opted in. */
+            QString prefix = modeLabel.isEmpty() ? QString() : modeLabel + QStringLiteral("  ");
+            statusLabel->setText(QStringLiteral("%1Ln %2, Col %3%4")
+                                      .arg(prefix)
+                                      .arg(line)
+                                      .arg(column)
+                                      .arg(dirty ? QStringLiteral(" *") : QString()));
+            window.setWindowTitle(windowTitleFor(viewport->filePath(), dirty));
+            applyStatusBarTheme(window, statusLabel, viewport);
+        });
 
     window.resize(900, 650);
     window.show();

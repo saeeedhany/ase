@@ -178,8 +178,9 @@ signals:
     /* Emitted from ensureCursorVisible() — every call site that already
      * calls it (every cursor move and every edit) gets this for free,
      * rather than annotating each one individually. 1-based line/column
-     * for display. See docs/adr/0023. */
-    void statusChanged(int line, int column, bool dirty);
+     * for display. See docs/adr/0023. `modeLabel` is "NORMAL"/"INSERT"/
+     * "VISUAL" when Vim mode is on, empty otherwise — see docs/adr/0046. */
+    void statusChanged(int line, int column, bool dirty, const QString &modeLabel);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -306,6 +307,74 @@ private:
     bool copySelection();
     void cutSelection();
     void pasteClipboard();
+
+    /* Vim mode (Phase 1) — see docs/adr/0046. Operates on the primary
+     * (last) cursor only: handleVimNormalOrVisualKey() collapses to one
+     * cursor the moment any Vim key is pressed, so a stray Ctrl+D
+     * fan-out self-corrects rather than needing its own special case.
+     * true means the key was claimed (including "swallowed, did
+     * nothing" for an unrecognized key while in Normal/Visual mode);
+     * false means the caller's own switch/Ctrl-chain should still
+     * handle it (arrows, Home/End, every Ctrl+ combo). */
+    enum class VimMode { Insert, Normal, Visual };
+    bool vimModeActive() const { return m_vimModeEnabled; }
+    bool handleVimNormalOrVisualKey(QKeyEvent *event);
+    /* Three-class word model (Blank/Word/Punct) — see the .cpp doc
+     * comment on vimClassifyAt for why '\n' counts as Blank. */
+    enum class VimCharClass { Blank, Word, Punct };
+    VimCharClass vimClassifyAt(size_t pos) const;
+    size_t vimNextCharBoundary(size_t pos) const;
+    size_t vimPrevCharBoundary(size_t pos) const;
+    size_t vimWordForward(size_t pos) const;
+    size_t vimWordEnd(size_t pos) const;
+    size_t vimWordBackward(size_t pos) const;
+    /* Byte offset of the first non-blank character on `line`, or the
+     * line's own end offset if the whole line is blank. Vim's `^`/`gg`/
+     * `G`/`dd`-family land here, not at column 0. */
+    size_t vimFirstNonBlank(int line) const;
+    /* `gg`/`G` — line is 0-based, clamped; moves to vimFirstNonBlank of
+     * that line, or, if an operator is pending, applies it linewise
+     * over the span between the current line and `line` instead. */
+    void vimGotoLine(int line);
+    /* Clears count1/count2/pendingOperator/pendingG — called after
+     * every fully-resolved Vim command (whether it did something or
+     * was an invalid/unrecognized combo) so state never leaks into the
+     * next keystroke. */
+    void resetVimPendingState();
+    /* Applies motion `m` (one of h l j k 0 ^ $ w b e) `count` times from
+     * the cursor. With no operator pending, moves the cursor directly
+     * (extend = Visual mode). With one pending, computes the resulting
+     * range/lines and applies it via vimApplyPendingOperator{Charwise,
+     * Linewise} instead — never moves the cursor itself in that case. */
+    void vimExecuteMotion(char m, int count);
+    /* Operator mutations — each opens exactly one ase_undo_begin_group/
+     * end_group pair around direct buffer+undo-record calls (never
+     * through insertText()/deleteBackward() as batch entrypoints, which
+     * would each try to open their own — groups can't nest, see
+     * core/src/undo.c). Single-cursor by construction, so no highest-
+     * offset-first loop is needed the way the multi-cursor primitives
+     * above need one. */
+    void vimDeleteRange(size_t start, size_t end);
+    void vimYankRange(size_t start, size_t end, bool linewise);
+    void vimChangeRange(size_t start, size_t end);
+    void vimDeleteLines(int startLine, int count);
+    void vimYankLines(int startLine, int count);
+    void vimPasteAfter();
+    void vimPasteBefore();
+    /* Dispatches m_vimPendingOperator ('d'/'y'/'c') to the matching
+     * vim*Range/vim*Lines call, then resetVimPendingState() — the one
+     * place a resolved operator+motion actually commits. */
+    void vimApplyPendingOperatorCharwise(size_t start, size_t end);
+    void vimApplyPendingOperatorLinewise(int startLine, int lineCount);
+    /* 'O' — opens a blank line *above* the cursor's line and lands the
+     * cursor on it. Not just moveCursorHomeAt + insertText("\n"): that
+     * would insert the newline *after* the cursor's new position,
+     * landing the cursor one line too low (on the original line, now
+     * pushed down) instead of on the new blank line above it — needs
+     * the raw buffer+undo calls so the cursor can be placed explicitly
+     * rather than wherever insertText's normal "advance past what was
+     * inserted" semantics would put it. */
+    void vimOpenLineAbove();
 
     /* Fills the pixel rect(s) for [start, end) across visual lines
      * [firstLine, lastLine), one rect per line — the same per-line
@@ -556,6 +625,18 @@ private:
     int m_scrollX = 0; /* leftmost visible pixel, not column — see docs/adr/0014 */
     int m_desiredColumn = -1; /* sticky column — single-cursor mode only, see docs/adr/0012 */
     QString m_lineNumberMode = QStringLiteral("absolute"); /* "off" / "absolute" / "relative" */
+
+    /* Vim mode (Phase 1) — see docs/adr/0046. m_vimModeEnabled comes
+     * from config (default off, like animations); m_vimMode default
+     * Insert makes "off" and "on but in Insert" identical everywhere
+     * except the one keyPressEvent gate that checks vimModeActive(). */
+    bool m_vimModeEnabled = false;
+    VimMode m_vimMode = VimMode::Insert;
+    int m_vimCount1 = 0;                  /* count typed before an operator/motion */
+    char m_vimPendingOperator = '\0';     /* 'd' / 'y' / 'c', or '\0' */
+    int m_vimCount2 = 0;                  /* count typed after the operator */
+    bool m_vimPendingG = false;           /* mid-"gg" sequence */
+    bool m_vimLastYankWasLinewise = false; /* drives p/P placement */
 
     /* Rendered (possibly still-easing) counterparts of m_scrollLine/X and
      * m_cursors — see docs/adr/0015. Equal to the logical values whenever

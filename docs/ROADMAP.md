@@ -598,11 +598,23 @@ ADRs as each lands here going forward.
       installing/running the rebuilt packages, not just inspecting
       them. See
       [ADR 0045](adr/0045-v0.2.0-alpha-and-containerized-packaging.md).
-- [ ] **Vim mode** (after Phase 17, unscoped until then): full modal
-      emulation, not a lighter subset. Hard prerequisite (undo/redo)
-      now satisfied by Phase 10; also benefits from Phase 11's
-      selection model (Visual mode) and Phase 15's `:` command line
-      (becomes the ex-command line).
+- [x] **Vim mode — Phase 1**: native (not a plugin — the plugin ABI
+      has no raw-keystroke/modal-state hook), built inline into
+      `EditorViewport`. Insert/Normal/Visual modes; motions
+      `h j k l 0 ^ $ gg G w b e`; operators `d y c` composable with any
+      motion and counts (`3j`, `d2w`, `3dd`/`yy`/`cc` linewise); `x`,
+      `p`/`P`, `u`/`Ctrl+R`; Visual-mode `d y c x` over the existing
+      selection model; `:<digits>` ex-command line jump. Off by default
+      (`vim_mode = false`), byte-identical to before for anyone who
+      hasn't opted in. Found and fixed one real bug during live
+      verification: charwise `p` at end-of-line landed the paste on the
+      *next* line instead of appending to the current one. Explicitly
+      deferred for a later phase: registers beyond the clipboard,
+      macros, marks, text objects, dot-repeat, jumplist, Visual
+      Block/Line, Replace mode, `r`, `:s///`/`:g//`, search-motion
+      (`/ ? n N`), `J`, indent, case ops, and any keybinding remapping
+      (project-wide gap, not Vim-specific — see ADR 0026). See
+      [ADR 0046](adr/0046-native-vim-mode-phase-1.md).
 
 ## Explicit non-goals for v1
 

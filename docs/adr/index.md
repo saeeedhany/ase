@@ -53,3 +53,4 @@ what changed.
 | [0043](0043-faster-global-easing-and-welcome-overlay-layout.md) | Faster global easing; welcome overlay two-column layout |
 | [0044](0044-panel-isolation-drag-bar-unsaved-quit-confirm.md) | Panel isolation, full drag bar, unsaved-quit confirmation |
 | [0045](0045-v0.2.0-alpha-and-containerized-packaging.md) | v0.2.0-alpha, and packaging finally built on pinned old bases |
+| [0046](0046-native-vim-mode-phase-1.md) | Native Vim mode, Phase 1 |
