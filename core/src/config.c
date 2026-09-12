@@ -107,6 +107,10 @@ AseConfig *ase_config_create_default(void) {
     config_set(config, "syntax_string", "#d79921");
     config_set(config, "font_family", "monospace");
     config_set(config, "font_size", "11");
+    /* On by default — see docs/adr/0050 for why this reverses ADR
+     * 0046's original "opt-in, changes what every keystroke does"
+     * reasoning. */
+    config_set(config, "vim_mode", "true");
 
     return config;
 }
@@ -310,10 +314,10 @@ static const char kDefaultConfigTemplate[] =
     "# line, Vim-style, except the current line itself which stays absolute).\n"
     "line_numbers = absolute\n"
     "\n"
-    "# Off by default, same reasoning as animations above -- this changes\n"
-    "# what every keystroke does, so it's opt-in. Phase 1: Normal/Insert/\n"
-    "# Visual modes, core motions and operators. See docs/adr/0046.\n"
-    "vim_mode = false\n"
+    "# On by default. Modal (Vim-style) editing: Normal/Insert/Visual\n"
+    "# modes, motions, operators, counts. Set false for plain, always-\n"
+    "# insert editing instead. See docs/adr/0046, docs/adr/0050.\n"
+    "vim_mode = true\n"
     "\n"
     "# :compile's shell command — %f is replaced with the current file's\n"
     "# path, run with the file's directory as cwd. No default: an\n"

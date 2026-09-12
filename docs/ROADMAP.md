@@ -648,6 +648,15 @@ ADRs as each lands here going forward.
       every typing-shaped insertion already goes through) rather than
       adding a new call site. See
       [ADR 0049](adr/0049-typing-pop-in-animation.md).
+- [x] **Runtime font-size zoom; Vim mode on by default**: `Ctrl+=`/
+      `Ctrl+-`/`Ctrl+0` adjust font size live, in-session, independent
+      of `config.ase` (survives an unrelated config hot-reload; only
+      `Ctrl+0` or a restart returns to the configured value). Separately,
+      Vim mode is now on by default (`vim_mode = true` in
+      `ase_config_create_default()` and the shipped template — this
+      reverses ADR 0046's original "opt-in" reasoning) and a session now
+      starts in Normal mode, not Insert, matching real vim. See
+      [ADR 0050](adr/0050-runtime-font-zoom-and-vim-mode-default-on.md).
 
 ## Explicit non-goals for v1
 

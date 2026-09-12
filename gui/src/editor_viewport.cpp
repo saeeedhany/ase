@@ -49,6 +49,12 @@ constexpr qsizetype kTypingAnimationMaxBytes = 8;
  * quick convergence (ease-out, not linear) for the same snappy feel
  * every other animation in this file already has. */
 constexpr double kTypingAnimationStartScale = 0.85;
+/* Ctrl+=/Ctrl+- clamp range — see docs/adr/0050. Generous enough to be
+ * genuinely useful (a real "I can't read this" zoom, or a presentation/
+ * screen-share bump) without allowing a value so small/large it breaks
+ * layout math elsewhere (gutter width, scroll margins, ...). */
+constexpr int kMinFontSize = 6;
+constexpr int kMaxFontSize = 72;
 /* The Normal-mode block cursor's fill, capped well under fully opaque —
  * even at the breathing cycle's brightest instant (see caretAlpha
  * below), a solid 100%-opaque block would flash harder than every
@@ -159,6 +165,15 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 
     loadConfig();
 
+    /* Real vim starts in Normal mode, not Insert — a one-time startup
+     * decision made here, not inside applyConfig() itself (which also
+     * runs on every config hot-reload; doing it there would yank an
+     * actively-typing user back to Normal just because config.ase's
+     * mtime changed for some unrelated edit). See docs/adr/0050. */
+    if (m_vimModeEnabled) {
+        m_vimMode = VimMode::Normal;
+    }
+
     QString suffix = QFileInfo(m_filePath).suffix().toLower();
     if (suffix == QLatin1String("c") || suffix == QLatin1String("h")) {
         m_syntax = ase_syntax_create_c();
@@ -259,23 +274,12 @@ void EditorViewport::applyConfig() {
     }
 
     const char *familyStr = ase_config_get_string(m_config, "font_family");
-    QString family = familyStr != nullptr ? QString::fromUtf8(familyStr) : QStringLiteral("monospace");
-    long size = ase_config_get_int(m_config, "font_size", 11);
-
-    m_font = family.compare(QLatin1String("monospace"), Qt::CaseInsensitive) == 0
-                 ? QFontDatabase::systemFont(QFontDatabase::FixedFont)
-                 : QFont(family);
-    m_font.setPointSize(static_cast<int>(size));
-
-    /* Cached once here rather than reconstructed per run per paint — see
-     * docs/adr/0017. */
-    m_metrics = QFontMetrics(m_font);
-    QFont boldFont = m_font;
-    boldFont.setBold(true);
-    m_boldMetrics = QFontMetrics(boldFont);
-
-    m_lineHeight = m_metrics.height();
-    m_charWidth = m_metrics.horizontalAdvance(QLatin1Char('M'));
+    m_fontFamily = familyStr != nullptr ? QString::fromUtf8(familyStr) : QStringLiteral("monospace");
+    long configuredSize = ase_config_get_int(m_config, "font_size", 11);
+    /* An active runtime zoom (Ctrl+=/Ctrl+-, docs/adr/0050) survives a
+     * config hot-reload of some *unrelated* setting — only Ctrl+0 (or
+     * restarting) goes back to whatever font_size the file says. */
+    rebuildFont(m_fontSizeOverride > 0 ? m_fontSizeOverride : static_cast<int>(configuredSize));
 
     /* Opt-in, off by default — see docs/adr/0012, decision 2. */
     const char *animationsStr = ase_config_get_string(m_config, "animations");
@@ -299,6 +303,46 @@ void EditorViewport::applyConfig() {
     if (m_lineNumberMode != QLatin1String("off") && m_lineNumberMode != QLatin1String("relative")) {
         m_lineNumberMode = QStringLiteral("absolute");
     }
+}
+
+void EditorViewport::rebuildFont(int pointSize) {
+    m_font = m_fontFamily.compare(QLatin1String("monospace"), Qt::CaseInsensitive) == 0
+                 ? QFontDatabase::systemFont(QFontDatabase::FixedFont)
+                 : QFont(m_fontFamily);
+    m_font.setPointSize(pointSize);
+
+    /* Cached once here rather than reconstructed per run per paint — see
+     * docs/adr/0017. */
+    m_metrics = QFontMetrics(m_font);
+    QFont boldFont = m_font;
+    boldFont.setBold(true);
+    m_boldMetrics = QFontMetrics(boldFont);
+
+    m_lineHeight = m_metrics.height();
+    m_charWidth = m_metrics.horizontalAdvance(QLatin1Char('M'));
+}
+
+void EditorViewport::adjustFontSize(int delta) {
+    int next = std::clamp(m_font.pointSize() + delta, kMinFontSize, kMaxFontSize);
+    if (next == m_font.pointSize()) {
+        return;
+    }
+    m_fontSizeOverride = next;
+    rebuildFont(next);
+    ensureCursorVisible();
+    snapAnimationToTarget();
+    update();
+}
+
+void EditorViewport::resetFontSize() {
+    if (m_fontSizeOverride == 0) {
+        return;
+    }
+    m_fontSizeOverride = 0;
+    rebuildFont(static_cast<int>(ase_config_get_int(m_config, "font_size", 11)));
+    ensureCursorVisible();
+    snapAnimationToTarget();
+    update();
 }
 
 void EditorViewport::checkConfigReload() {
@@ -1419,6 +1463,22 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
                 } else {
                     undo();
                 }
+                return;
+            }
+            if (event->key() == Qt::Key_Equal || event->key() == Qt::Key_Plus) {
+                /* Ctrl+= (the unshifted key '+' shares on most layouts)
+                 * and Ctrl+Plus both zoom in, matching every other
+                 * app's convention (browsers, VS Code, ...). Live,
+                 * in-session only — see docs/adr/0050. */
+                adjustFontSize(1);
+                return;
+            }
+            if (event->key() == Qt::Key_Minus) {
+                adjustFontSize(-1);
+                return;
+            }
+            if (event->key() == Qt::Key_0) {
+                resetFontSize();
                 return;
             }
             if (event->key() == Qt::Key_R && vimModeActive()) {

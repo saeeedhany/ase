@@ -202,6 +202,19 @@ private:
     void loadConfig();
     void applyConfig();
     void checkConfigReload();
+    /* Rebuilds m_font/m_metrics/m_boldMetrics/m_lineHeight/m_charWidth
+     * for m_fontFamily at `pointSize`, without touching config at all —
+     * shared by applyConfig() (config-driven) and the runtime Ctrl+=/
+     * Ctrl+-/Ctrl+0 font-size shortcuts below. See docs/adr/0050. */
+    void rebuildFont(int pointSize);
+    /* Ctrl+=/Ctrl+- — live, in-session font-size zoom, independent of
+     * config.ase (a config-file edit/hot-reload doesn't clear an active
+     * override; Ctrl+0 is the only way back to the configured size).
+     * Clamped to [kMinFontSize, kMaxFontSize]. */
+    void adjustFontSize(int delta);
+    /* Ctrl+0 — clears the override and rebuilds at config's own
+     * font_size. A no-op if there's no active override. */
+    void resetFontSize();
     void refreshCache();
     void drawLine(QPainter &painter, int start, int end, int y);
     QFont fontForCapture(AseHighlightCapture capture) const;
@@ -684,6 +697,14 @@ private:
     double m_welcomeOverlayOpacity = 0.0;
 
     QFont m_font;
+    /* Remembered from config's font_family so rebuildFont() (shared by
+     * applyConfig() and the runtime font-size shortcuts, docs/adr/0050)
+     * can rebuild m_font without re-reading config every time. */
+    QString m_fontFamily;
+    /* 0 = no runtime override, follow config's font_size normally;
+     * otherwise the live-adjusted point size from Ctrl+=/Ctrl+-,
+     * cleared back to 0 by Ctrl+0. See docs/adr/0050. */
+    int m_fontSizeOverride = 0;
     int m_lineHeight = 0;
     int m_charWidth = 0;
     /* One QFontMetrics per capture-style variant actually used, cached
