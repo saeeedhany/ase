@@ -5,6 +5,10 @@
          <lastmod>2026-09-12</lastmod>
     </url>
     <url>
+         <loc>https://saeeedhany.github.io/ase/EXTENSIBILITY/</loc>
+         <lastmod>2026-09-12</lastmod>
+    </url>
+    <url>
          <loc>https://saeeedhany.github.io/ase/ROADMAP/</loc>
          <lastmod>2026-09-12</lastmod>
     </url>
@@ -222,6 +226,14 @@
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0051-global-animation-consistency-and-vim-polish/</loc>
+         <lastmod>2026-09-12</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0052-editor-viewport-split-into-translation-units/</loc>
+         <lastmod>2026-09-12</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0053-render-hot-path-and-one-motion-language/</loc>
          <lastmod>2026-09-12</lastmod>
     </url>
     <url>

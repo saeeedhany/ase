@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0026-keybinding-scheme-help-about/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0052-editor-viewport-split-into-translation-units/">
       
       
-        <link rel="prev" href="../0025-command-system/">
+        <link rel="prev" href="../0051-global-animation-consistency-and-vim-polish/">
       
       
-        <link rel="next" href="../0027-visual-polish-pass/">
+        <link rel="next" href="../0053-render-hot-path-and-one-motion-language/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0026: Keybinding scheme fix, Help/About panels, find bar repositioned - Absolute Simple Editor</title>
+        <title>ADR 0052: Splitting EditorViewport across several translation units - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0026-keybinding-scheme-fix-helpabout-panels-find-bar-repositioned" class="md-skip">
+        <a href="#adr-0052-splitting-editorviewport-across-several-translation-units" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0026: Keybinding scheme fix, Help/About panels, find bar repositioned
+              ADR 0052: Splitting EditorViewport across several translation units
             
           </span>
         </div>
@@ -1526,37 +1526,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0026: Keybinding scheme fix, Help/About panels, find bar repositioned
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0026-keybinding-scheme-help-about/" class="md-nav__link">
         
   
   
@@ -1572,131 +1545,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#the-bug-and-the-new-modifier-scheme" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The : bug and the new modifier scheme
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#closequit-deliberately-unchanged" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Close/quit: deliberately unchanged
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#helppanel-guisrchelp_panelhcpp-ctrl-badge" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HelpPanel (gui/src/help_panel.{h,cpp}) — Ctrl+/, "?" badge
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#aboutpanel-guisrcabout_panelhcpp-ctrli-i-badge" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AboutPanel (gui/src/about_panel.{h,cpp}) — Ctrl+I, "i" badge
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#find-bar-repositioned-the-one-panel-that-isnt-centered" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Find bar repositioned — the one panel that isn't centered
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2406,10 +2254,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0052-editor-viewport-split-into-translation-units/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0052: Splitting EditorViewport across several translation units
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2425,6 +2300,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#split-the-cpp-not-the-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Split the .cpp, not the class
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-this-rather-than-extracting-real-subsystem-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why this rather than extracting real subsystem classes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-shared-symbol-surface-is-the-useful-signal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The shared-symbol surface is the useful signal
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2526,10 +2504,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-bug-and-the-new-modifier-scheme" class="md-nav__link">
+  <a href="#split-the-cpp-not-the-class" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The : bug and the new modifier scheme
+        Split the .cpp, not the class
       
     </span>
   </a>
@@ -2537,10 +2515,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#closequit-deliberately-unchanged" class="md-nav__link">
+  <a href="#why-this-rather-than-extracting-real-subsystem-classes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Close/quit: deliberately unchanged
+        Why this rather than extracting real subsystem classes
       
     </span>
   </a>
@@ -2548,32 +2526,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#helppanel-guisrchelp_panelhcpp-ctrl-badge" class="md-nav__link">
+  <a href="#the-shared-symbol-surface-is-the-useful-signal" class="md-nav__link">
     <span class="md-ellipsis">
       
-        HelpPanel (gui/src/help_panel.{h,cpp}) — Ctrl+/, "?" badge
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#aboutpanel-guisrcabout_panelhcpp-ctrli-i-badge" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AboutPanel (gui/src/about_panel.{h,cpp}) — Ctrl+I, "i" badge
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#find-bar-repositioned-the-one-panel-that-isnt-centered" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Find bar repositioned — the one panel that isn't centered
+        The shared-symbol surface is the useful signal
       
     </span>
   </a>
@@ -2613,7 +2569,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0026-keybinding-scheme-help-about.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0052-editor-viewport-split-into-translation-units.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2621,111 +2577,151 @@
   
 
 
-<h1 id="adr-0026-keybinding-scheme-fix-helpabout-panels-find-bar-repositioned">ADR 0026: Keybinding scheme fix, Help/About panels, find bar repositioned<a class="headerlink" href="#adr-0026-keybinding-scheme-fix-helpabout-panels-find-bar-repositioned" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0052-splitting-editorviewport-across-several-translation-units">ADR 0052: Splitting EditorViewport across several translation units<a class="headerlink" href="#adr-0052-splitting-editorviewport-across-several-translation-units" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Direct user feedback right after Phase 15 landed, several threads at
-once:</p>
-<ol>
-<li><strong>A real bug</strong>: the bare <code>:</code> keypress opened the command line
-   unconditionally — meaning <code>:</code> could never be typed as a literal
-   character into the buffer. <code>:</code> as the command-line trigger is a
-   Vim convention (the ex-command line); this editor isn't in Vim mode
-   yet, so a bare <code>:</code> has to stay a normal, typeable character.</li>
-<li>Wants a <strong>non-conflicting modifier scheme</strong> for the command line,
-   compile, and output toggle, since bare <code>:</code> was wrong anyway.</li>
-<li>Wants to <strong>discuss the keybinding scheme</strong> as its own topic, and
-   wants a <strong>Help panel</strong> (all keybindings) and an <strong>About panel</strong>
-   (app info, author, links) — both centered like the rest.</li>
-<li><strong>Find/replace specifically</strong> feels wrong centered — wants it moved
-   to the top-right instead, leaving every other panel centered.</li>
-<li>Raised a question about closing panels / quitting — resolved by
-   explicitly choosing to change nothing there (see Decision).</li>
-</ol>
+<p><code>gui/src/editor_viewport.cpp</code> had grown to <strong>3608 lines — 51% of the
+entire GUI layer</strong> in a single file, with a 724-line header alongside
+it. It accumulated that way honestly: every phase since ADR 0006 added
+its feature to the one widget that owns the cursor model, the buffer
+cache, and the paint loop, and each addition was individually
+reasonable. By the Vim-mode work (ADR 0046–0051) the file held eight
+distinct concerns — config/theme, painting, animation, the
+cursor/selection model, Vim's modal engine, find/replace, file and
+process commands, and the whole LSP surface (diagnostics, completion,
+hover).</p>
+<p>The seams were already visible in the file itself: it carried its own
+hand-written section dividers (<code>/* --- Vim mode */</code>,
+<code>/* --- completion */</code>, <code>/* --- hover */</code>) exactly where the
+boundaries belonged.</p>
+<p>The core library is not the problem and was left alone — its largest
+file is <code>json.c</code> at 832 lines and each has one clear job.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<h3 id="the-bug-and-the-new-modifier-scheme">The <code>:</code> bug and the new modifier scheme<a class="headerlink" href="#the-bug-and-the-new-modifier-scheme" title="Permanent link">&para;</a></h3>
-<p>Removed the bare-<code>:</code> interception entirely (<code>event-&gt;text() == ":"</code>) —
-<code>:</code> now always inserts a literal colon, like any other character.
-Replaced with <strong><code>Ctrl+;</code></strong> for the command line (matches the visual
-association: <code>;</code> sits right next to where <code>:</code> would be, Shift'd). Two
-new direct shortcuts, bypassing the command line for the two <code>:</code>
-sub-commands used often enough to deserve one: <strong><code>Ctrl+B</code></strong> compiles
-directly (<code>build_command</code>, ADR 0025) — not <code>Ctrl+C</code>, which is already
-Copy; <strong><code>Ctrl+Shift+O</code></strong> toggles the output panel directly, alongside
-the existing (unshifted) <code>Ctrl+O</code> for Open — same shifted-variant-for-
-secondary-action pattern <code>Ctrl+S</code>/<code>Ctrl+Shift+S</code> already established.
-Both also share their implementation with the <code>:compile</code>/<code>:output</code>
-command-line paths (<code>EditorViewport::compile()</code>, new
-<code>toggleOutputPanel()</code>) rather than duplicating logic.</p>
-<h3 id="closequit-deliberately-unchanged">Close/quit: deliberately unchanged<a class="headerlink" href="#closequit-deliberately-unchanged" title="Permanent link">&para;</a></h3>
-<p>Put directly to the user: keep Escape closing whichever panel is
-open (already true, per-panel, since Phase 13) and <code>Ctrl+Q</code>/<code>:q</code>
-always quitting the app outright, with no new dual-purpose binding.
-Chosen specifically to keep "quit" a single, deliberate, unambiguous
-action — never a side effect of a "close panel" gesture that could
-misfire from muscle memory. No code changed here; recorded because the
-alternative (a Vim-<code>:q</code>-style "close panel, or quit if nothing's open"
-cascade) was seriously considered and explicitly declined.</p>
-<h3 id="helppanel-guisrchelp_panelhcpp-ctrl-badge"><code>HelpPanel</code> (<code>gui/src/help_panel.{h,cpp}</code>) — <code>Ctrl+/</code>, <code>"?"</code> badge<a class="headerlink" href="#helppanel-guisrchelp_panelhcpp-ctrl-badge" title="Permanent link">&para;</a></h3>
-<p>Same <code>FloatingPanel</code> family as everything else, but the first one with
-no input field: a <code>QScrollArea</code> wrapping a rich-text <code>QLabel</code>, built
-from a hand-maintained two-column HTML table grouped by category
-(Navigation, Editing, Find &amp; replace, Files, Build, Command line,
-Other). Hand-maintained rather than generated from the keybinding
-dispatch code — a generated single source of truth is real, unscoped
-work, and the two can drift; accepted as a v1 tradeoff. No color in
-the markup itself (only structure) so it inherits the <code>QLabel</code>'s own
-palette — same "one font color" pillar every other panel already
-follows. Escape closes it (the <code>QScrollArea</code> is given focus and
-installed as its own event filter target, the same pattern every other
-panel's input widget already uses, just with a scroll area standing in
-for a <code>QLineEdit</code>).</p>
-<h3 id="aboutpanel-guisrcabout_panelhcpp-ctrli-i-badge"><code>AboutPanel</code> (<code>gui/src/about_panel.{h,cpp}</code>) — <code>Ctrl+I</code>, <code>"i"</code> badge<a class="headerlink" href="#aboutpanel-guisrcabout_panelhcpp-ctrli-i-badge" title="Permanent link">&para;</a></h3>
-<p>Same shape as <code>HelpPanel</code> minus the scroll area (content is short): a
-<code>QLabel</code> with <code>setOpenExternalLinks(true)</code> so the GitHub/website links
-are real clickable links, opened via the system browser. Content: app
-name, version (<code>0.0.0</code> — pulled from <code>CMakeLists.txt</code>'s <code>project()</code>
-call, not invented), one line on what the editor is, "Developed by
-Saeed" with the two links the user gave directly
-(<code>https://github.com/saeeedhany</code>, <code>https://saeedz.vercel.app</code> — not
-guessed), and a short current-state note (all "complete normal editor"
-phases done, Vim mode next, not yet published while the license
-decision stays open — pulled from <code>README.md</code>'s own wording, not
-newly invented).</p>
-<p>One real bug caught and fixed during verification: the notes
-paragraph used a literal UTF-8 em dash character in the C string
-literal, but the code loaded it via <code>QString::fromLatin1</code>, which
-doesn't understand UTF-8 — corrupted into visible mojibake on screen.
-Switched both <code>HelpPanel</code> and <code>AboutPanel</code> to <code>QString::fromUtf8</code> (the
-correct match for this file's actual encoding, and the codebase's
-convention everywhere else — e.g. the em dashes already throughout
-<code>gui/src/*.cpp</code> comments).</p>
-<h3 id="find-bar-repositioned-the-one-panel-that-isnt-centered">Find bar repositioned — the one panel that isn't centered<a class="headerlink" href="#find-bar-repositioned-the-one-panel-that-isnt-centered" title="Permanent link">&para;</a></h3>
-<p>New <code>FloatingPanel::Anchor</code> (<code>Center</code> / <code>TopRight</code>), set once per
-panel (not re-checked per open — a panel's screen position isn't
-config-driven the way its colors/animation are).
-<code>targetGeometry()</code> branches on it. <code>FindBar</code> is the only panel that
-calls <code>setAnchor(Anchor::TopRight)</code>; every other panel keeps the
-default. Reasoning, from the user directly: find/replace is a panel
-you keep open while actively scanning matches in the text below it —
-centered, it sits on top of the very thing you're looking at, in a way
-a glance-act-dismiss panel like Open/Save-As doesn't suffer from.</p>
+<h3 id="split-the-cpp-not-the-class">Split the .cpp, not the class<a class="headerlink" href="#split-the-cpp-not-the-class" title="Permanent link">&para;</a></h3>
+<p><code>EditorViewport</code> is now defined across nine translation units, all
+implementing the same class:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Lines</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>editor_viewport.cpp</code></td>
+<td>169</td>
+<td>construction/teardown, <code>refreshCache</code>, offset↔line/column helpers, <code>isModalPanelOpen</code></td>
+</tr>
+<tr>
+<td><code>editor_viewport_config.cpp</code></td>
+<td>188</td>
+<td>config load/apply/hot-reload, font rebuild + runtime zoom</td>
+</tr>
+<tr>
+<td><code>editor_viewport_render.cpp</code></td>
+<td>877</td>
+<td><code>paintEvent</code>, the animation step, all drawing/measurement, diagnostic presentation</td>
+</tr>
+<tr>
+<td><code>editor_viewport_input.cpp</code></td>
+<td>426</td>
+<td>key/wheel/mouse/leave/focus event handlers</td>
+</tr>
+<tr>
+<td><code>editor_viewport_edit.cpp</code></td>
+<td>584</td>
+<td>cursor + selection model, insert/delete, clipboard, undo/redo</td>
+</tr>
+<tr>
+<td><code>editor_viewport_vim.cpp</code></td>
+<td>692</td>
+<td>the Vim modal engine (ADR 0046)</td>
+</tr>
+<tr>
+<td><code>editor_viewport_find.cpp</code></td>
+<td>156</td>
+<td>find/replace matching and navigation</td>
+</tr>
+<tr>
+<td><code>editor_viewport_commands.cpp</code></td>
+<td>190</td>
+<td>save/open, <code>runCommand</code>, compile + output polling</td>
+</tr>
+<tr>
+<td><code>editor_viewport_lsp.cpp</code></td>
+<td>392</td>
+<td>LSP protocol, diagnostics ingestion, completion, hover</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>editor_viewport.h</code> was not touched at all</strong> — same class, same
+members, same public API, same <code>Q_OBJECT</code>/moc output. Nothing was made
+public and no <code>friend</code> was added, because nothing needed to be: C++
+already allows one class's member functions to be defined in as many
+translation units as you like.</p>
+<h3 id="why-this-rather-than-extracting-real-subsystem-classes">Why this rather than extracting real subsystem classes<a class="headerlink" href="#why-this-rather-than-extracting-real-subsystem-classes" title="Permanent link">&para;</a></h3>
+<p>Extracting <code>VimEngine</code>/<code>LspSubsystem</code>/<code>Renderer</code> classes was considered
+and deliberately deferred. Every one of these concerns reaches directly
+into <code>m_cursors</code>, <code>m_selectionAnchors</code>, <code>m_cache</code>, <code>m_lineStarts</code>,
+<code>m_buffer</code> and <code>m_undo</code>; pulling them out means either passing the
+viewport back in (a circular dependency wearing a hat), widening the
+public API, or <code>friend</code> declarations. ADR 0046 already ruled on exactly
+this question for Vim mode — "logic that reaches <code>m_cursors</code>/<code>m_cache</code>/
+<code>m_buffer</code>/<code>m_undo</code> directly stays inline" — and that reasoning did not
+change just because the file got long.</p>
+<p>So this is an <strong>organisational</strong> refactor, not an architectural one,
+and it is honest about that: coupling between these concerns is
+unchanged. What it buys is navigability (no file over ~880 lines),
+faster incremental builds (touching the Vim engine no longer recompiles
+the renderer), and — the real prize — a <em>measurable</em> seam. Extracting a
+genuine subsystem later now starts from a file that already contains
+exactly that subsystem and nothing else.</p>
+<h3 id="the-shared-symbol-surface-is-the-useful-signal">The shared-symbol surface is the useful signal<a class="headerlink" href="#the-shared-symbol-surface-is-the-useful-signal" title="Permanent link">&para;</a></h3>
+<p><code>editor_viewport_internal.h</code> holds only what genuinely has callers in
+more than one of the nine files:</p>
+<ul>
+<li><code>kCaretWidth</code> — the renderer draws with it; <code>ensureCursorVisible()</code>
+  reserves scroll margin for it.</li>
+<li><code>kTypingAnimationTicks</code> — <code>insertText()</code> stamps entries with it; the
+  renderer measures their progress against it.</li>
+<li><code>isUtf8ContinuationByte()</code> — every "step one character, not one byte"
+  walk (renderer, Vim motions, Backspace).</li>
+<li><code>isWordChar()</code> — Ctrl+D's whole-word match, Vim word motions, the
+  completion prefix scan.</li>
+</ul>
+<p>Everything else — 18 of the 23 symbols in the old file-wide anonymous
+namespace — turned out to belong to exactly one concern and moved into
+that file's own anonymous namespace. That four-symbol shared surface is
+the evidence that the split follows real seams rather than arbitrary
+line counts; a constant that later needs promoting into this header is
+a signal that two files have started reaching into the same concern.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Verified live via <code>xdotool</code>: a literal <code>:</code> types correctly into the
-buffer (confirmed the bug, then the fix); <code>Ctrl+;</code> opens the command
-line; the find bar renders top-right, clear of the text; <code>Ctrl+/</code> and
-<code>Ctrl+I</code> open Help/About respectively, both correctly themed and
-scrollable/link-clickable; the em-dash mojibake was caught by actually
-looking at the rendered screenshot, not just confirming the panel
-opened; Escape closes both new panels and returns focus to the editor,
-confirmed by typing immediately afterward. Full test suite unaffected
-(GUI-only change) — 9/9 still passing.</p>
-<p>Not built: a generated (rather than hand-maintained) keybinding
-reference; any settings/rebinding UI (this app's keybindings are still
-compile-time constants, same as every phase before this one). Vim mode
-remains the next planned phase, unscoped until its own dedicated
-design pass.</p>
+<p>This was a pure code move, and was verified as one rather than assumed
+to be:</p>
+<ul>
+<li><strong>Nothing lost, nothing duplicated</strong>: the extraction ran off explicit
+  line ranges, then a script checked that every one of the original's
+  lines 151–3608 is covered exactly once. The only uncovered lines were
+  the 15 blank separators between blocks; zero non-blank lines were
+  missed and zero were duplicated. All 23 previously-file-scope symbols
+  were confirmed to still be defined exactly once.</li>
+<li><strong>Clean build, zero warnings, first attempt</strong>; <code>ctest</code> 9/9.</li>
+<li><strong>Live smoke test across all nine units</strong>: file load + syntax colors +
+  gutter (core/render), <code>j</code>/<code>w</code>/<code>o</code>/<code>u</code>/<code>:</code> (vim), typing and undo
+  (edit), Ctrl+F with match highlighting (find), <code>Ctrl+=</code>/<code>Ctrl+0</code> zoom
+  (config), <code>:w</code> clearing the dirty marker and writing to disk
+  (commands), and clangd diagnostics rendering as a gutter dot plus
+  squiggles (lsp).</li>
+</ul>
+<p>The cost: <code>EditorViewport</code>'s implementation is no longer greppable in
+one file, so "where does this live" now needs the table above (or a
+<code>grep</code> across <code>editor_viewport*.cpp</code>). The 724-line header is
+unchanged and remains the one place the whole class is visible at once
+— which is now the <em>only</em> place, making it more load-bearing as
+documentation than it was before.</p>
 
 
 
