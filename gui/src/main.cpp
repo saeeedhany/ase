@@ -40,12 +40,13 @@ QString windowTitleFor(const QString &filePath, bool dirty) {
  * panels' native-white QLineEdits had (docs/adr/0022). Re-applied on
  * every statusChanged (see below), so a hot-reloaded config color
  * reaches the status bar too, not just the editor. See docs/adr/0024. */
-void applyStatusBarTheme(QMainWindow &window, QLabel *statusLabel, EditorViewport *viewport) {
+void applyStatusBarTheme(QMainWindow &window, QLabel *modeLabel, QLabel *statusLabel, EditorViewport *viewport) {
     QPalette pal = window.statusBar()->palette();
     pal.setColor(QPalette::Window, viewport->backgroundColor());
     pal.setColor(QPalette::WindowText, viewport->textColor());
     window.statusBar()->setPalette(pal);
     window.statusBar()->setAutoFillBackground(true);
+    modeLabel->setPalette(pal);
     statusLabel->setPalette(pal);
 }
 
@@ -199,23 +200,27 @@ int main(int argc, char *argv[]) {
     outputPanel->refreshTheme();
 
     window.statusBar()->setSizeGripEnabled(false);
+    /* addWidget (not addPermanentWidget) puts this in the status bar's
+     * left-aligned message area, separate from statusLabel's own
+     * right-aligned permanent slot below. Empty whenever Vim mode is
+     * off (docs/adr/0046), so it takes no visible space for anyone who
+     * hasn't opted in. */
+    auto *modeLabel = new QLabel();
+    window.statusBar()->addWidget(modeLabel);
     auto *statusLabel = new QLabel(QStringLiteral("Ln 1, Col 1"));
     window.statusBar()->addPermanentWidget(statusLabel);
-    applyStatusBarTheme(window, statusLabel, viewport);
+    applyStatusBarTheme(window, modeLabel, statusLabel, viewport);
 
     QObject::connect(
         viewport, &EditorViewport::statusChanged, &window,
-        [&window, viewport, statusLabel](int line, int column, bool dirty, const QString &modeLabel) {
-            /* modeLabel is empty whenever Vim mode is off (docs/adr/0046),
-             * so this prefix is a no-op for anyone who hasn't opted in. */
-            QString prefix = modeLabel.isEmpty() ? QString() : modeLabel + QStringLiteral("  ");
-            statusLabel->setText(QStringLiteral("%1Ln %2, Col %3%4")
-                                      .arg(prefix)
+        [&window, viewport, modeLabel, statusLabel](int line, int column, bool dirty, const QString &mode) {
+            modeLabel->setText(mode);
+            statusLabel->setText(QStringLiteral("Ln %1, Col %2%3")
                                       .arg(line)
                                       .arg(column)
                                       .arg(dirty ? QStringLiteral(" *") : QString()));
             window.setWindowTitle(windowTitleFor(viewport->filePath(), dirty));
-            applyStatusBarTheme(window, statusLabel, viewport);
+            applyStatusBarTheme(window, modeLabel, statusLabel, viewport);
         });
 
     window.resize(900, 650);
