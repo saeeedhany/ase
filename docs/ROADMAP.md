@@ -610,8 +610,7 @@ ADRs as each lands here going forward.
       verification: charwise `p` at end-of-line landed the paste on the
       *next* line instead of appending to the current one. Explicitly
       deferred for a later phase: registers beyond the clipboard,
-      macros, marks, text objects, dot-repeat, jumplist, Visual
-      Block/Line, Replace mode, `r`, `:s///`/`:g//`, search-motion
+      macros, marks, text objects, dot-repeat, jumplist, Visual Block, Replace mode, `r`, `:s///`/`:g//`, search-motion
       (`/ ? n N`), `J`, indent, case ops, and any keybinding remapping
       (project-wide gap, not Vim-specific — see ADR 0026). See
       [ADR 0046](adr/0046-native-vim-mode-phase-1.md).

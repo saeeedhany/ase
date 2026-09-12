@@ -9,6 +9,7 @@
 #include <QKeyEvent>
 #include <QLabel>
 #include <QPalette>
+#include <QLineEdit>
 #include <QScrollArea>
 #include <QVBoxLayout>
 
@@ -56,6 +57,7 @@ QVector<HelpSection> helpSections() {
 
         {"Files &amp; buffers", nullptr,
          {{"Ctrl+N", "New file"},
+          {"(the + at the right of the tab strip)", "New file"},
           {"Ctrl+O", "Open"},
           {"Ctrl+S", "Save"},
           {"Ctrl+Shift+S", "Save as"},
@@ -78,7 +80,8 @@ QVector<HelpSection> helpSections() {
           {"h j k l / w b e", "Move by character / word"},
           {"0 / ^ / $", "Column 0 / first non-blank / line end"},
           {"gg / G / 3j", "First line / last line / with a count"},
-          {"v", "Visual mode"},
+          {"v / V", "Visual / visual line mode"},
+          {"o", "Jump to the other end of the selection"},
           {"d y c + motion", "Delete / yank / change (dd, yy, cc for lines)"},
           {"x / p / P", "Delete character / paste after / before"},
           {"u / Ctrl+R", "Undo / redo"},
@@ -109,37 +112,6 @@ QVector<HelpSection> helpSections() {
           {"Drag the header", "Move a panel"},
           {"Ctrl+Q", "Quit"}}},
     };
-}
-
-/* `dim` carries the section notes and the key column one opacity tier
- * down — same "vary opacity, never hue" move as everything else
- * (docs/adr/0007). Keys are given a fixed-width column and the
- * descriptions a common left edge, so the whole thing reads as two
- * aligned columns instead of ragged pairs. */
-QString buildHelpHtml(const QString &textColor, const QString &dim) {
-    QString html;
-    const QVector<HelpSection> sections = helpSections();
-    for (int i = 0; i < sections.size(); ++i) {
-        const HelpSection &section = sections[i];
-        html += QStringLiteral("<p style=\"margin-top:%1px; margin-bottom:4px;\">"
-                                "<b style=\"color:%2;\">%3</b>")
-                     .arg(i == 0 ? 0 : 14)
-                     .arg(textColor, QString::fromUtf8(section.title));
-        if (section.note != nullptr) {
-            html += QStringLiteral("<span style=\"color:%1;\"> &nbsp;&mdash;&nbsp; %2</span>")
-                         .arg(dim, QString::fromUtf8(section.note));
-        }
-        html += QStringLiteral("</p><table cellspacing=\"0\" cellpadding=\"3\" width=\"100%\">");
-        for (const HelpRow &row : section.rows) {
-            html += QStringLiteral("<tr>"
-                                    "<td width=\"215\" style=\"color:%1;\">%2</td>"
-                                    "<td style=\"color:%3;\">%4</td>"
-                                    "</tr>")
-                         .arg(dim, QString::fromUtf8(row.keys), textColor, QString::fromUtf8(row.description));
-        }
-        html += QStringLiteral("</table>");
-    }
-    return html;
 }
 
 } // namespace
@@ -173,29 +145,115 @@ HelpPanel::HelpPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_view
     layout->addWidget(headerBar);
     setDragHandle(headerBar);
 
-    m_body = new QLabel(content);
-    m_body->setTextFormat(Qt::RichText);
-    m_body->setWordWrap(true);
-    /* Text is built in refreshTheme(), which is the only place that
-     * knows the current theme colors — see buildHelpHtml(). */
+    /* Shortcuts are how this editor is driven, so this panel is
+     * something you come back to and scan — not read once. A search
+     * field over every binding beats scrolling a wall of text. */
+    m_search = new QLineEdit(content);
+    m_search->setFrame(false);
+    m_search->setPlaceholderText(QStringLiteral("Search shortcuts"));
+    layout->addWidget(m_search);
+    connect(m_search, &QLineEdit::textChanged, this, [this](const QString &text) { applySearch(text); });
+
+    m_sectionsHost = new QWidget(content);
+    m_sectionsLayout = new QVBoxLayout(m_sectionsHost);
+    m_sectionsLayout->setContentsMargins(0, 2, 0, 0);
+    m_sectionsLayout->setSpacing(2);
+    buildSections();
+    m_sectionsLayout->addStretch(1);
 
     m_scrollArea = new QScrollArea(content);
-    m_scrollArea->setWidget(m_body);
+    m_scrollArea->setWidget(m_sectionsHost);
     m_scrollArea->setWidgetResizable(true);
     m_scrollArea->setFrameShape(QFrame::NoFrame);
-    m_scrollArea->setMinimumSize(560, 460);
+    m_scrollArea->setMinimumSize(580, 440);
     m_scrollArea->setFocusPolicy(Qt::StrongFocus);
     layout->addWidget(m_scrollArea);
 
+    m_search->installEventFilter(this);
     m_scrollArea->installEventFilter(this);
     installSmoothScroll(m_scrollArea, m_viewport); /* see docs/adr/0031 */
 }
 
 void HelpPanel::openHelp() {
+    m_search->clear(); /* every open starts from the full list */
+    applySearch(QString());
     refreshTheme();
     setAnimated(m_viewport->animationsEnabled());
     openPanel();
-    m_scrollArea->setFocus();
+    m_search->setFocus();
+}
+
+/* One header row plus one rows-label per section. The rows are a small
+ * rich-text table rather than a widget per row: a section is shown or
+ * hidden as a unit and its rows never need individual interaction, so
+ * two widgets per section is the cheaper shape that still collapses. */
+void HelpPanel::buildSections() {
+    const QVector<HelpSection> data = helpSections();
+    for (const HelpSection &source : data) {
+        Section section;
+        section.title = QString::fromUtf8(source.title);
+        section.note = source.note != nullptr ? QString::fromUtf8(source.note) : QString();
+        for (const HelpRow &row : source.rows) {
+            section.rows.push_back({QString::fromUtf8(row.keys), QString::fromUtf8(row.description)});
+        }
+
+        section.header = new QWidget(m_sectionsLayout->parentWidget());
+        section.header->setCursor(Qt::PointingHandCursor);
+        auto *headerLayout = new QHBoxLayout(section.header);
+        headerLayout->setContentsMargins(0, 6, 0, 2);
+        headerLayout->setSpacing(0);
+        section.titleLabel = new QLabel(section.header);
+        section.titleLabel->setTextFormat(Qt::RichText);
+        section.titleLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
+        headerLayout->addWidget(section.titleLabel);
+        headerLayout->addStretch(1);
+        section.header->installEventFilter(this);
+        m_sectionsLayout->addWidget(section.header);
+
+        section.rowsWidget = new QWidget(m_sectionsLayout->parentWidget());
+        auto *rowsLayout = new QVBoxLayout(section.rowsWidget);
+        rowsLayout->setContentsMargins(0, 0, 0, 0);
+        rowsLayout->setSpacing(0);
+        section.rowsLabel = new QLabel(section.rowsWidget);
+        section.rowsLabel->setTextFormat(Qt::RichText);
+        section.rowsLabel->setWordWrap(true);
+        rowsLayout->addWidget(section.rowsLabel);
+        m_sectionsLayout->addWidget(section.rowsWidget);
+
+        m_sections.push_back(section);
+    }
+}
+
+void HelpPanel::setSectionExpanded(int index, bool expanded) {
+    if (index < 0 || index >= m_sections.size()) {
+        return;
+    }
+    m_sections[index].expanded = expanded;
+    m_sections[index].rowsWidget->setVisible(expanded && m_sections[index].visible);
+    restyleSections();
+}
+
+/* Case-insensitive match against either column, plus the section title
+ * so "vim" finds the whole Vim block. A section with no surviving rows
+ * disappears entirely rather than sitting there as an empty heading, and
+ * searching force-expands whatever still matches — collapsed state is a
+ * browsing preference, not something that should hide results. */
+void HelpPanel::applySearch(const QString &query) {
+    QString needle = query.trimmed().toLower();
+    for (Section &section : m_sections) {
+        bool titleMatches = needle.isEmpty() || section.title.toLower().contains(needle);
+        int matches = 0;
+        for (const QPair<QString, QString> &row : section.rows) {
+            if (needle.isEmpty() || titleMatches || row.first.toLower().contains(needle) ||
+                row.second.toLower().contains(needle)) {
+                ++matches;
+            }
+        }
+        section.visible = matches > 0;
+        section.header->setVisible(section.visible);
+        section.rowsWidget->setVisible(section.visible && (section.expanded || !needle.isEmpty()));
+    }
+    restyleSections();
 }
 
 void HelpPanel::hideBar() {
@@ -223,25 +281,29 @@ void HelpPanel::refreshTheme() {
     QPalette pal = m_title->palette();
     pal.setColor(QPalette::WindowText, m_viewport->textColor());
     m_title->setPalette(pal);
-    m_body->setPalette(pal);
 
-    /* Blended to a solid colour rather than passed as #AARRGGBB: Qt's
-     * rich-text CSS does not reliably parse an alpha channel in a hex
-     * colour, so the dimming would silently render fully opaque. */
-    QColor panelBg = m_viewport->panelFieldColor();
-    QColor dim = m_viewport->textColor();
-    const double dimFactor = 150.0 / 255.0;
-    dim.setRgb(static_cast<int>(panelBg.red() + (dim.red() - panelBg.red()) * dimFactor),
-                static_cast<int>(panelBg.green() + (dim.green() - panelBg.green()) * dimFactor),
-                static_cast<int>(panelBg.blue() + (dim.blue() - panelBg.blue()) * dimFactor));
-    m_body->setText(buildHelpHtml(m_viewport->textColor().name(), dim.name()));
+    QPalette searchPal = m_search->palette();
+    searchPal.setColor(QPalette::Base, m_viewport->panelFieldColor());
+    searchPal.setColor(QPalette::Text, m_viewport->textColor());
+    QColor searchPlaceholder = m_viewport->textColor();
+    searchPlaceholder.setAlpha(115);
+    searchPal.setColor(QPalette::PlaceholderText, searchPlaceholder);
+    m_search->setPalette(searchPal);
+
+    restyleSections();
 
     QPalette scrollPal = m_scrollArea->palette();
     scrollPal.setColor(QPalette::Base, m_viewport->panelFieldColor());
     scrollPal.setColor(QPalette::Window, m_viewport->panelFieldColor());
     m_scrollArea->setPalette(scrollPal);
     m_scrollArea->setAutoFillBackground(true);
-    m_body->setAutoFillBackground(false);
+    /* The scroll area's *widget* needs the theme too. It used to be the
+     * rich-text body, which inherited it; now it is a plain container,
+     * and without this it painted Qt's default near-white behind
+     * everything — which made the cream description column effectively
+     * invisible while the colours themselves were perfectly correct. */
+    m_sectionsHost->setPalette(scrollPal);
+    m_sectionsHost->setAutoFillBackground(true);
 
     QColor handle = m_viewport->textColor();
     handle.setAlpha(90);
@@ -251,12 +313,83 @@ void HelpPanel::refreshTheme() {
 }
 
 bool HelpPanel::eventFilter(QObject *watched, QEvent *event) {
-    if (event->type() == QEvent::KeyPress && watched == m_scrollArea) {
+    if (event->type() == QEvent::KeyPress && (watched == m_scrollArea || watched == m_search)) {
         auto *keyEvent = static_cast<QKeyEvent *>(event);
         if (keyEvent->key() == Qt::Key_Escape) {
+            /* Escape clears an active search first — losing your filter
+             * is a smaller surprise than losing the whole panel when you
+             * only meant to start over. */
+            if (watched == m_search && !m_search->text().isEmpty()) {
+                m_search->clear();
+                return true;
+            }
             hideBar();
             return true;
         }
     }
+    /* Click a section header to fold it away. */
+    if (event->type() == QEvent::MouseButtonPress) {
+        for (int i = 0; i < m_sections.size(); ++i) {
+            if (watched == m_sections[i].header) {
+                setSectionExpanded(i, !m_sections[i].expanded);
+                return true;
+            }
+        }
+    }
     return FloatingPanel::eventFilter(watched, event);
+}
+
+/* Renders every section's header and rows at the current theme. Colours
+ * are blended to solid RGB rather than passed as #AARRGGBB: Qt's
+ * rich-text CSS does not reliably parse an alpha channel in a hex
+ * colour, so the dimming would silently render fully opaque. */
+void HelpPanel::restyleSections() {
+    if (m_sections.isEmpty()) {
+        return;
+    }
+    QColor field = m_viewport->panelFieldColor();
+    auto blend = [&field](QColor color, double factor) {
+        color.setRgb(static_cast<int>(field.red() + (color.red() - field.red()) * factor),
+                      static_cast<int>(field.green() + (color.green() - field.green()) * factor),
+                      static_cast<int>(field.blue() + (color.blue() - field.blue()) * factor));
+        return color;
+    };
+    QString strong = m_viewport->textColor().name();
+    QString dim = blend(m_viewport->textColor(), 150.0 / 255.0).name();
+    QString faint = blend(m_viewport->textColor(), 105.0 / 255.0).name();
+
+    /* Copied from an already-themed widget, not default-constructed:
+     * QPalette() picks up the *application* palette, whose other roles
+     * then fight the theme — the rich text ended up rendering in a flat
+     * light grey with the inline colours ignored. */
+    QPalette pal = m_title->palette();
+    pal.setColor(QPalette::WindowText, m_viewport->textColor());
+    pal.setColor(QPalette::Text, m_viewport->textColor());
+
+    for (Section &section : m_sections) {
+        section.titleLabel->setPalette(pal);
+        section.rowsLabel->setPalette(pal);
+
+        /* A rotated caret rather than +/- or a chevron image: it reads as
+         * "there is more under here" without adding an icon set to an app
+         * that has none. */
+        QString caret = section.expanded ? QStringLiteral("&#9662;") : QStringLiteral("&#9656;");
+        QString header = QStringLiteral("<span style=\"color:%1;\">%2</span>&nbsp;&nbsp;"
+                                         "<b style=\"color:%3;\">%4</b>")
+                              .arg(faint, caret, strong, section.title);
+        if (!section.note.isEmpty()) {
+            header += QStringLiteral("<span style=\"color:%1;\"> &nbsp;&mdash;&nbsp; %2</span>")
+                           .arg(faint, section.note);
+        }
+        section.titleLabel->setText(header);
+
+        QString rows = QStringLiteral("<table cellspacing=\"0\" cellpadding=\"3\" width=\"100%\">");
+        for (const QPair<QString, QString> &row : section.rows) {
+            rows += QStringLiteral("<tr><td width=\"215\" style=\"color:%1;\">%2</td>"
+                                    "<td style=\"color:%3;\">%4</td></tr>")
+                         .arg(dim, row.first, strong, row.second);
+        }
+        rows += QStringLiteral("</table>");
+        section.rowsLabel->setText(rows);
+    }
 }

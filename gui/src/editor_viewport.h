@@ -162,6 +162,10 @@ public:
         return c.lighter(130);
     }
     bool animationsEnabled() const { return m_animationsEnabled; }
+    /* So chrome that labels the text (the buffer bar) can sit at the
+     * same visual weight as the text itself, and follow Ctrl+=/Ctrl+-
+     * with it. See docs/adr/0056. */
+    QFont editorFont() const { return m_font; }
 
     /* Called by FindBar; see docs/adr/0021. */
     QString primarySelectionText() const;
@@ -372,6 +376,13 @@ private:
      * was an invalid/unrecognized combo) so state never leaks into the
      * next keystroke. */
     void resetVimPendingState();
+    /* Re-snaps the Visual selection to whole lines after a motion, when
+     * Shift+V linewise Visual is active. A no-op otherwise. */
+    void vimNormalizeLinewiseSelection();
+    /* Puts the real cursor back on m_vimVisualCursorLine before a motion
+     * runs, undoing the parking described above. Paired with
+     * vimNormalizeLinewiseSelection() after. No-op unless linewise. */
+    void vimPrepareLinewiseMotion();
     /* Applies motion `m` (one of h l j k 0 ^ $ w b e) `count` times from
      * the cursor. With no operator pending, moves the cursor directly
      * (extend = Visual mode). With one pending, computes the resulting
@@ -697,6 +708,21 @@ private:
     char m_vimPendingOperator = '\0';     /* 'd' / 'y' / 'c', or '\0' */
     int m_vimCount2 = 0;                  /* count typed after the operator */
     bool m_vimPendingG = false;           /* mid-"gg" sequence */
+    /* Shift+V — Visual mode selecting whole lines. Kept as a flag on
+     * VimMode::Visual rather than a fourth mode: every operator, motion
+     * and render path already works off the selection range, so linewise
+     * only has to keep that range snapped to line bounds. m_vimVisualAnchorLine
+     * is the line V started on, so the selection can grow either way
+     * from it. See docs/adr/0056. */
+    bool m_vimVisualLinewise = false;
+    int m_vimVisualAnchorLine = 0;
+    /* The line the cursor logically sits on while linewise. Tracked
+     * separately because normalizing parks the real cursor at the *start
+     * of the following line* (so the selection includes the trailing
+     * newline, which is what makes a linewise delete remove whole lines
+     * rather than leave blanks) — re-deriving the line from that offset
+     * would read one line too far and compound on every motion. */
+    int m_vimVisualCursorLine = 0;
     bool m_vimLastYankWasLinewise = false; /* drives p/P placement */
 
     /* Rendered (possibly still-easing) counterparts of m_scrollLine/X and

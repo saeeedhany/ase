@@ -516,7 +516,7 @@ void EditorViewport::ensureCursorVisible() {
             modeLabel = QStringLiteral("NORMAL");
             break;
         case VimMode::Visual:
-            modeLabel = QStringLiteral("VISUAL");
+            modeLabel = m_vimVisualLinewise ? QStringLiteral("VISUAL LINE") : QStringLiteral("VISUAL");
             break;
         case VimMode::Insert:
             modeLabel = QStringLiteral("INSERT");

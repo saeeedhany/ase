@@ -5,6 +5,7 @@
 #include "command_line.h"
 
 #include <algorithm>
+#include <utility>
 
 #include <QClipboard>
 #include <QGuiApplication>
@@ -14,6 +15,42 @@
 /* Phase 1 — see docs/adr/0046. Everything below operates on m_cursors[0]
  * only; handleVimNormalOrVisualKey() collapses to one cursor the moment
  * any Vim key is pressed. */
+
+/* Anchor and cursor are pushed out to the *outer* edges of the two lines
+ * involved, in whichever order they currently sit, so d/y/c and the
+ * selection highlight all see exactly the whole lines — none of them
+ * need to know linewise Visual exists. See docs/adr/0056. */
+void EditorViewport::vimPrepareLinewiseMotion() {
+    if (!m_vimVisualLinewise || m_vimMode != VimMode::Visual) {
+        return;
+    }
+    int line = std::clamp(m_vimVisualCursorLine, 0, static_cast<int>(m_lineStarts.size()) - 1);
+    m_cursors[0] = static_cast<size_t>(m_lineStarts[line]);
+}
+
+void EditorViewport::vimNormalizeLinewiseSelection() {
+    if (!m_vimVisualLinewise || m_vimMode != VimMode::Visual) {
+        return;
+    }
+    int lineCount = static_cast<int>(m_lineStarts.size());
+    int anchorLine = std::clamp(m_vimVisualAnchorLine, 0, lineCount - 1);
+    int cursorLine = std::clamp(lineForOffset(m_cursors[0]), 0, lineCount - 1);
+    m_vimVisualCursorLine = cursorLine;
+
+    auto lineStart = [this](int line) { return static_cast<size_t>(m_lineStarts[line]); };
+    auto lineEnd = [this, lineCount](int line) {
+        return (line + 1 < lineCount) ? static_cast<size_t>(m_lineStarts[line + 1])
+                                      : static_cast<size_t>(m_cache.size());
+    };
+
+    if (cursorLine >= anchorLine) {
+        m_selectionAnchors[0] = lineStart(anchorLine);
+        m_cursors[0] = lineEnd(cursorLine);
+    } else {
+        m_selectionAnchors[0] = lineEnd(anchorLine);
+        m_cursors[0] = lineStart(cursorLine);
+    }
+}
 
 void EditorViewport::resetVimPendingState() {
     m_vimCount1 = 0;
@@ -513,8 +550,10 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         m_vimPendingG = false;
         if (qc == QLatin1Char('g')) {
             int targetLine = (m_vimCount1 > 0) ? (m_vimCount1 - 1) : 0;
+            vimPrepareLinewiseMotion();
             vimGotoLine(targetLine);
         }
+        vimNormalizeLinewiseSelection();
         resetVimPendingState();
         ensureCursorVisible();
         update();
@@ -553,7 +592,9 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     }
     if (c == 'G') {
         int targetLine = (m_vimCount1 > 0) ? (m_vimCount1 - 1) : static_cast<int>(m_lineStarts.size()) - 1;
+        vimPrepareLinewiseMotion();
         vimGotoLine(targetLine);
+        vimNormalizeLinewiseSelection();
         resetVimPendingState();
         ensureCursorVisible();
         update();
@@ -564,7 +605,9 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         /* A pure motion (no operator resolved here) glides like every
          * other navigation in this app — arrows, Home/End — rather than
          * snapping. See docs/adr/0051. */
+        vimPrepareLinewiseMotion();
         vimExecuteMotion(c, count);
+        vimNormalizeLinewiseSelection();
         resetVimPendingState();
         ensureCursorVisible();
         update();
@@ -574,22 +617,56 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     if (m_vimMode == VimMode::Visual) {
         switch (c) {
         case 'v':
-            collapseToOneCursor();
-            m_vimMode = VimMode::Normal;
+            /* v inside linewise Visual drops back to charwise rather
+             * than leaving Visual — matches real vim, where the two
+             * Visual flavours toggle between each other. */
+            if (m_vimVisualLinewise) {
+                m_vimVisualLinewise = false;
+            } else {
+                collapseToOneCursor();
+                m_vimMode = VimMode::Normal;
+            }
             break;
+        case 'V':
+            if (m_vimVisualLinewise) {
+                collapseToOneCursor();
+                m_vimMode = VimMode::Normal;
+                m_vimVisualLinewise = false;
+            } else {
+                m_vimVisualLinewise = true;
+                m_vimVisualAnchorLine = lineForOffset(m_selectionAnchors[0]);
+                m_vimVisualCursorLine = lineForOffset(m_cursors[0]);
+                vimNormalizeLinewiseSelection();
+            }
+            break;
+        case 'o': {
+            /* Jump to the other end of the selection, keeping it — lets
+             * you fix the end you didn't mean to extend without
+             * reselecting from scratch. */
+            std::swap(m_cursors[0], m_selectionAnchors[0]);
+            if (m_vimVisualLinewise) {
+                std::swap(m_vimVisualAnchorLine, m_vimVisualCursorLine);
+                vimNormalizeLinewiseSelection();
+            }
+            break;
+        }
         case 'x':
         case 'd':
             if (hasSelectionAt(0)) {
                 vimDeleteRange(selectionMinAt(0), selectionMaxAt(0));
             }
             m_vimMode = VimMode::Normal;
+            m_vimVisualLinewise = false;
             break;
         case 'y':
             if (hasSelectionAt(0)) {
-                vimYankRange(selectionMinAt(0), selectionMaxAt(0), false);
+                /* A linewise yank pastes as whole new lines, so p/P need
+                 * to be told which kind this was. */
+                vimYankRange(selectionMinAt(0), selectionMaxAt(0), m_vimVisualLinewise);
             }
             collapseToOneCursor();
             m_vimMode = VimMode::Normal;
+            m_vimVisualLinewise = false;
             break;
         case 'c':
             if (hasSelectionAt(0)) {
@@ -597,6 +674,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
             } else {
                 m_vimMode = VimMode::Insert;
             }
+            m_vimVisualLinewise = false;
             break;
         default:
             break; /* unrecognized in Visual: swallowed, no state change */
@@ -633,6 +711,14 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     switch (c) {
     case 'v':
         m_vimMode = VimMode::Visual;
+        m_vimVisualLinewise = false;
+        break;
+    case 'V':
+        m_vimMode = VimMode::Visual;
+        m_vimVisualLinewise = true;
+        m_vimVisualAnchorLine = lineForOffset(m_cursors[0]);
+        m_vimVisualCursorLine = m_vimVisualAnchorLine;
+        vimNormalizeLinewiseSelection();
         break;
     case 'i':
         m_vimMode = VimMode::Insert;

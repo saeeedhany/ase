@@ -119,6 +119,13 @@ void FileBrowserPanel::refreshTheme() {
     editPalette.setColor(QPalette::Text, m_viewport->textColor());
     editPalette.setColor(QPalette::Highlight, m_viewport->panelBorderColor());
     editPalette.setColor(QPalette::HighlightedText, m_viewport->textColor());
+    /* Qt derives PlaceholderText from Text when it isn't set, and that
+     * derivation lands almost black against this theme's dark field —
+     * the placeholder was effectively invisible. Set explicitly, one
+     * opacity tier down from real input. */
+    QColor placeholder = m_viewport->textColor();
+    placeholder.setAlpha(115);
+    editPalette.setColor(QPalette::PlaceholderText, placeholder);
     m_filterEdit->setPalette(editPalette);
 
     /* Highlight == Base so the native selection rect renders invisible
@@ -134,7 +141,15 @@ void FileBrowserPanel::refreshTheme() {
     /* Reuses the exact translucent tone text selection already uses in
      * the editor itself — one consistent "this is highlighted" color
      * across the whole app, not a new one invented for this list. */
-    m_rowHighlight->setColor(m_viewport->selectionColor());
+    /* Derived from the text color rather than reusing the editor's
+     * selection color: that one is tuned for text sitting on the editor
+     * background, and over the panel's lighter field it came out muddy
+     * rather than lit. Low alpha so the row's text stays the brightest
+     * thing in it. */
+    QColor rowTint = m_viewport->textColor();
+    rowTint.setAlpha(38);
+    m_rowHighlight->setColor(rowTint);
+    m_rowHighlight->setRadius(3.0);
 
     QColor handle = m_viewport->textColor();
     handle.setAlpha(90);

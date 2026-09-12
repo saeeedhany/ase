@@ -84,6 +84,7 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
             resetVimPendingState();
             collapseToOneCursor();
             m_vimMode = VimMode::Normal;
+            m_vimVisualLinewise = false;
         } else {
             collapseToOneCursor();
         }

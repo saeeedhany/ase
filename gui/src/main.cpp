@@ -128,6 +128,7 @@ MainWindow::MainWindow() {
 
     connect(m_bufferBar, &BufferBar::bufferSelected, this, [this](int index) { setActiveIndex(index); });
     connect(m_bufferBar, &BufferBar::bufferCloseRequested, this, [this](int index) { closeBuffer(index); });
+    connect(m_bufferBar, &BufferBar::newBufferRequested, this, [this]() { newBuffer(); });
 
     statusBar()->setSizeGripEnabled(false);
     /* addWidget (not addPermanentWidget) puts this in the status bar's
@@ -287,6 +288,7 @@ void MainWindow::refreshBufferBar() {
     EditorViewport *viewport = activeViewport();
     if (viewport != nullptr) {
         m_bufferBar->setColors(viewport->backgroundColor(), viewport->textColor());
+        m_bufferBar->setBaseFont(viewport->editorFont());
     }
     m_bufferBar->setEntries(items, m_stack->currentIndex());
 }

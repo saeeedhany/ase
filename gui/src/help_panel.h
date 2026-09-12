@@ -3,8 +3,14 @@
 
 #include "floating_panel.h"
 
+#include <QPair>
+#include <QString>
+#include <QVector>
+
 class QLabel;
+class QLineEdit;
 class QScrollArea;
+class QVBoxLayout;
 class EditorViewport;
 class LetterBadge;
 
@@ -14,8 +20,11 @@ class LetterBadge;
  * (this panel, added directly in response to user feedback once the
  * keybinding scheme itself settled — this panel's whole reason to
  * exist is documenting that scheme). "?" badge, `Ctrl+/` opens it.
- * Pure display, no input field: a scrollable rich-text body listing
- * every binding by category, Escape closes it. The body text is
+ * Sections collapse, and a search field filters across every binding —
+ * see docs/adr/0056. Shortcuts are the primary way this editor is
+ * driven, so the reference is something you come back to and scan, not
+ * read once; one long wall of rich text made you hunt. Escape closes
+ * it (or clears the search first, if there is one). The body text is
  * maintained by hand here rather than generated from the keybinding
  * dispatch code — the two can drift; that's an accepted v1 tradeoff
  * (a generated single source of truth is real, unscoped work).
@@ -32,12 +41,36 @@ protected:
     void restoreFocusAfterDrag() override;
 
 private:
+    /* One collapsible section: a clickable title row plus its rows of
+     * bindings. Kept as widgets rather than one rich-text blob so a
+     * section can actually be collapsed and filtered. */
+    struct Section {
+        QString title;
+        QString note;
+        QWidget *header = nullptr;
+        QLabel *titleLabel = nullptr;
+        QLabel *rowsLabel = nullptr;
+        QWidget *rowsWidget = nullptr;
+        QVector<QPair<QString, QString>> rows;
+        bool expanded = true;
+        bool visible = true;
+    };
+
+    void buildSections();
+    void applySearch(const QString &query);
+    void setSectionExpanded(int index, bool expanded);
+    void restyleSections();
+
+    QLineEdit *m_search = nullptr;
+    QWidget *m_sectionsHost = nullptr;
+    QVBoxLayout *m_sectionsLayout = nullptr;
+    QVector<Section> m_sections;
+
     void hideBar();
 
     EditorViewport *m_viewport;
     LetterBadge *m_badge;
     QLabel *m_title;
-    QLabel *m_body;
     QScrollArea *m_scrollArea;
 };
 
