@@ -174,6 +174,13 @@ public:
     void applyLspCompletion(const AseJsonValue *result, const char *error_message);
     void applyLspHover(const AseJsonValue *result, const char *error_message);
 
+    /* Brings the status bar in sync with the viewport's actual initial
+     * state right after construction, instead of leaving main.cpp's
+     * QLabel showing its hardcoded construction-time text until the
+     * first keystroke. Public only for that one call site — everywhere
+     * else already reaches this indirectly via a cursor move or edit. */
+    void emitInitialStatus() { ensureCursorVisible(); }
+
 signals:
     /* Emitted from ensureCursorVisible() — every call site that already
      * calls it (every cursor move and every edit) gets this for free,
@@ -594,6 +601,13 @@ private:
     QVector<GuiDiagnostic> m_diagnostics;
     QColor m_diagnosticErrorColor;
     QColor m_diagnosticWarningColor;
+    /* The two deliberate departures from ADR 0007's "one font color"
+     * pillar — see docs/adr/0048. Defaults match the values baked into
+     * ase_config_create_default() (core/src/config.c) so a config
+     * predating this feature (missing these keys) still renders them
+     * correctly rather than falling back to some other placeholder. */
+    QColor m_syntaxTypeColor {0x68, 0x9d, 0x6a};
+    QColor m_syntaxStringColor {0xd7, 0x99, 0x21};
     /* At most a couple of entries alive at once in practice — one
      * wiping in on the newly-focused line, one wiping back out on the
      * line that just lost focus. See docs/adr/0041. */
@@ -663,7 +677,6 @@ private:
      * in applyConfig() — see docs/adr/0017. */
     QFontMetrics m_metrics {m_font};
     QFontMetrics m_boldMetrics {m_font};
-    QFontMetrics m_italicMetrics {m_font};
 
     QTimer *m_blinkTimer;
     bool m_caretVisible = true;

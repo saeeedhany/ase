@@ -626,6 +626,19 @@ ADRs as each lands here going forward.
       existing position-glide and blink-reset animation machinery
       unchanged — no new animation path needed. See
       [ADR 0047](adr/0047-vim-block-cursor.md).
+- [x] **Syntax accent colors, caret inset, smaller default font,
+      immediate status label**: `ASE_HL_TYPE`/`ASE_HL_STRING` now
+      render in two real accent colors instead of one being italic —
+      `#689d6a` (the color the user previously supplied for the docs
+      site, ADR 0036) for types, a matched warm gold for strings;
+      everything else stays monochrome, per "don't use too much."
+      Both caret shapes (bar and block) trimmed 2px shorter top/bottom.
+      Default `font_size` 12 → 11. The status bar's mode label now
+      shows immediately on launch instead of only after the first
+      keystroke. A fourth request from the same feedback — a typing
+      animation — was deliberately deferred pending a design decision
+      rather than guessed at. See
+      [ADR 0048](adr/0048-syntax-accent-colors-caret-inset-status-init.md).
 
 ## Explicit non-goals for v1
 

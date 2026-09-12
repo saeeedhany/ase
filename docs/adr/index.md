@@ -55,3 +55,4 @@ what changed.
 | [0045](0045-v0.2.0-alpha-and-containerized-packaging.md) | v0.2.0-alpha, and packaging finally built on pinned old bases |
 | [0046](0046-native-vim-mode-phase-1.md) | Native Vim mode, Phase 1 |
 | [0047](0047-vim-block-cursor.md) | A real block cursor for Vim Normal mode |
+| [0048](0048-syntax-accent-colors-caret-inset-status-init.md) | Syntax accent colors, caret inset, smaller default font, immediate status label |

@@ -10,9 +10,12 @@ extern "C" {
 /*
  * Tree-sitter-backed syntax highlighting. See
  * docs/adr/0007-syntax-highlighting-tree-sitter.md for why the capture
- * set is this small, why there's only one language in v1, and why the
- * default theme renders all of these as shades of one color rather than
- * distinct hues.
+ * set is this small and why there's only one language in v1. The
+ * default theme originally rendered every capture as a shade of one
+ * color (docs/adr/0007's "one font color" pillar); docs/adr/0048 later
+ * added two real accent colors (ASE_HL_TYPE, ASE_HL_STRING) as a
+ * deliberate, deliberately small departure from that — everything else
+ * here still varies only by weight/opacity, not hue.
  */
 
 typedef enum {

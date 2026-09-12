@@ -219,6 +219,17 @@ int main(int argc, char *argv[]) {
         });
 
     window.resize(900, 650);
+
+    /* Without this, the status bar shows the QLabel's hardcoded
+     * construction-time text ("Ln 1, Col 1", no mode prefix) until the
+     * first keystroke fires ensureCursorVisible()'s emit — so a Vim-mode
+     * user briefly sees no mode label at all on launch, before touching
+     * anything. ensureCursorVisible() is the one place status is already
+     * wired (see its own doc comment), so calling it once here just
+     * brings the label in sync with the viewport's actual initial state
+     * immediately, instead of waiting for the user to move first. */
+    viewport->emitInitialStatus();
+
     window.show();
     viewport->setFocus();
 

@@ -41,6 +41,12 @@ constexpr int kCaretWidth = 2;
  * highlight, panel backgrounds, ...) and would fight for attention
  * with the knocked-out glyph drawn on top of it. See docs/adr/0047. */
 constexpr int kVimBlockCursorMaxAlpha = 200;
+/* Both caret shapes are inset from the full line height by this much on
+ * top and bottom — a full-line-height caret reads as slightly too tall/
+ * blocky against the actual glyph height. The glyph knocked out on top
+ * of the block cursor still uses the *un-inset* rect (see below) so its
+ * baseline/vertical centering stays identical to normal text. */
+constexpr int kCaretVerticalInset = 2;
 constexpr int kGutterPadding = 8; /* on each side of the line-number text */
 /* Per paint — see docs/adr/0015. The single global speed knob for
  * every eased value in this file (caret glide, scroll, diagnostic
@@ -228,10 +234,18 @@ void EditorViewport::applyConfig() {
     if (ase_config_get_color(m_config, "diagnostic_warning", &r, &g, &b, &a)) {
         m_diagnosticWarningColor = QColor(r, g, b, a);
     }
+    /* The two deliberate departures from the "one font color" pillar —
+     * see docs/adr/0048. */
+    if (ase_config_get_color(m_config, "syntax_type", &r, &g, &b, &a)) {
+        m_syntaxTypeColor = QColor(r, g, b, a);
+    }
+    if (ase_config_get_color(m_config, "syntax_string", &r, &g, &b, &a)) {
+        m_syntaxStringColor = QColor(r, g, b, a);
+    }
 
     const char *familyStr = ase_config_get_string(m_config, "font_family");
     QString family = familyStr != nullptr ? QString::fromUtf8(familyStr) : QStringLiteral("monospace");
-    long size = ase_config_get_int(m_config, "font_size", 12);
+    long size = ase_config_get_int(m_config, "font_size", 11);
 
     m_font = family.compare(QLatin1String("monospace"), Qt::CaseInsensitive) == 0
                  ? QFontDatabase::systemFont(QFontDatabase::FixedFont)
@@ -244,9 +258,6 @@ void EditorViewport::applyConfig() {
     QFont boldFont = m_font;
     boldFont.setBold(true);
     m_boldMetrics = QFontMetrics(boldFont);
-    QFont italicFont = m_font;
-    italicFont.setItalic(true);
-    m_italicMetrics = QFontMetrics(italicFont);
 
     m_lineHeight = m_metrics.height();
     m_charWidth = m_metrics.horizontalAdvance(QLatin1Char('M'));
@@ -514,7 +525,9 @@ void EditorViewport::paintEvent(QPaintEvent *) {
                 AseHighlightCapture capture = ASE_HL_NONE;
                 QString glyph = vimBlockGlyphAt(m_cursors[i], &width, &capture);
 
-                painter.fillRect(QRectF(pos.x(), pos.y(), width, m_lineHeight), blockColor);
+                painter.fillRect(QRectF(pos.x(), pos.y() + kCaretVerticalInset, width,
+                                         m_lineHeight - 2 * kCaretVerticalInset),
+                                  blockColor);
                 if (!glyph.isEmpty()) {
                     /* Knocked out in the background color, terminal-
                      * cursor style, so the character underneath stays
@@ -532,7 +545,9 @@ void EditorViewport::paintEvent(QPaintEvent *) {
             QColor caretColor = m_textColor;
             caretColor.setAlpha(caretAlpha);
             for (const QPointF &pos : m_renderedCaretPos) {
-                painter.fillRect(QRectF(pos.x(), pos.y(), kCaretWidth, m_lineHeight), caretColor);
+                painter.fillRect(QRectF(pos.x(), pos.y() + kCaretVerticalInset, kCaretWidth,
+                                         m_lineHeight - 2 * kCaretVerticalInset),
+                                  caretColor);
             }
         }
         painter.restore();
@@ -1010,8 +1025,6 @@ QFont EditorViewport::fontForCapture(AseHighlightCapture capture) const {
     QFont font = m_font;
     if (capture == ASE_HL_KEYWORD) {
         font.setBold(true);
-    } else if (capture == ASE_HL_TYPE) {
-        font.setItalic(true);
     }
     return font;
 }
@@ -1020,32 +1033,37 @@ const QFontMetrics &EditorViewport::metricsForCapture(AseHighlightCapture captur
     if (capture == ASE_HL_KEYWORD) {
         return m_boldMetrics;
     }
-    if (capture == ASE_HL_TYPE) {
-        return m_italicMetrics;
-    }
     return m_metrics;
 }
 
 QColor EditorViewport::colorForCapture(AseHighlightCapture capture) const {
-    QColor color = m_textColor;
     switch (capture) {
+    case ASE_HL_TYPE:
+        /* The one deliberate hue, alongside ASE_HL_STRING below — see
+         * docs/adr/0048 for why only these two captures get a real
+         * color instead of the monochrome dim/bold treatment
+         * everything else here still uses. */
+        return m_syntaxTypeColor;
     case ASE_HL_STRING:
-    case ASE_HL_NUMBER:
+        return m_syntaxStringColor;
+    case ASE_HL_NUMBER: {
+        QColor color = m_textColor;
         color.setAlpha(200);
-        break;
-    case ASE_HL_COMMENT:
+        return color;
+    }
+    case ASE_HL_COMMENT: {
         /* 145/255 (~57%), not the original 115/255 (~45%) — that measured
          * 3.64:1 against the background, below WCAG AA's 4.5:1 for normal
          * text. See docs/adr/0012, decision 4. */
+        QColor color = m_textColor;
         color.setAlpha(145);
-        break;
+        return color;
+    }
     case ASE_HL_KEYWORD:
-    case ASE_HL_TYPE:
     case ASE_HL_NONE:
     default:
-        break;
+        return m_textColor;
     }
-    return color;
 }
 
 void EditorViewport::keyPressEvent(QKeyEvent *event) {

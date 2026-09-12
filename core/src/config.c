@@ -101,8 +101,12 @@ AseConfig *ase_config_create_default(void) {
      * does. */
     config_set(config, "diagnostic_error", "#E06C75");
     config_set(config, "diagnostic_warning", "#E5C07B");
+    /* The two deliberate departures from the "one font color" pillar —
+     * see docs/adr/0048. */
+    config_set(config, "syntax_type", "#689d6a");
+    config_set(config, "syntax_string", "#d79921");
     config_set(config, "font_family", "monospace");
-    config_set(config, "font_size", "12");
+    config_set(config, "font_size", "11");
 
     return config;
 }
@@ -288,8 +292,14 @@ static const char kDefaultConfigTemplate[] =
     "diagnostic_error = #E06C75\n"
     "diagnostic_warning = #E5C07B\n"
     "\n"
+    "# Syntax highlighting is otherwise monochrome (one font color, only\n"
+    "# weight/opacity vary) -- these two are the deliberate exception,\n"
+    "# used for types and string literals only. See docs/adr/0048.\n"
+    "syntax_type = #689d6a\n"
+    "syntax_string = #d79921\n"
+    "\n"
     "font_family = monospace\n"
-    "font_size = 12\n"
+    "font_size = 11\n"
     "\n"
     "# Off by default (opt-in, per the aesthetic pillar and for anyone who\n"
     "# prefers reduced motion). Set true for a smooth caret fade instead of\n"

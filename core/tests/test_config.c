@@ -17,7 +17,7 @@ static void test_defaults(void) {
     assert(r == 0xF5 && g == 0xE6 && b == 0xC8 && a == 0xFF);
 
     assert(strcmp(ase_config_get_string(config, "font_family"), "monospace") == 0);
-    assert(ase_config_get_int(config, "font_size", -1) == 12);
+    assert(ase_config_get_int(config, "font_size", -1) == 11);
 
     assert(ase_config_get_string(config, "no_such_key") == NULL);
 
@@ -27,7 +27,7 @@ static void test_defaults(void) {
 static void test_load_missing_file_keeps_defaults(void) {
     AseConfig *config = ase_config_load("this_config_does_not_exist.ase");
     assert(config != NULL);
-    assert(ase_config_get_int(config, "font_size", -1) == 12);
+    assert(ase_config_get_int(config, "font_size", -1) == 11);
     ase_config_destroy(config);
 }
 
