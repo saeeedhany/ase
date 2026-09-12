@@ -3,7 +3,7 @@
 
 #include "floating_panel.h"
 
-class QLineEdit;
+class SmoothLineEdit;
 class EditorViewport;
 class LetterBadge;
 
@@ -31,7 +31,7 @@ private:
 
     EditorViewport *m_viewport;
     LetterBadge *m_badge;
-    QLineEdit *m_edit;
+    SmoothLineEdit *m_edit;
 };
 
 #endif /* ASE_COMMAND_LINE_H */

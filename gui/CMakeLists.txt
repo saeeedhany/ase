@@ -48,6 +48,7 @@ add_executable(ase_gui
     src/tracking_popup.cpp
     src/completion_popup.cpp
     src/hover_panel.cpp
+    src/smooth_line_edit.cpp
     src/smooth_scroll.cpp
     resources/resources.qrc
 )

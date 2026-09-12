@@ -3,7 +3,7 @@
 
 #include "floating_panel.h"
 
-class QLineEdit;
+class SmoothLineEdit;
 class EditorViewport;
 class LetterBadge;
 
@@ -36,8 +36,8 @@ protected:
 
 private:
     EditorViewport *m_viewport;
-    QLineEdit *m_findEdit;
-    QLineEdit *m_replaceEdit;
+    SmoothLineEdit *m_findEdit;
+    SmoothLineEdit *m_replaceEdit;
     QWidget *m_replaceRow;
     LetterBadge *m_findBadge;
     LetterBadge *m_replaceBadge;

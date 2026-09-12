@@ -2,6 +2,7 @@
 
 #include "editor_viewport.h"
 #include "letter_badge.h"
+#include "smooth_line_edit.h"
 #include "scrollbar_style.h"
 #include "smooth_scroll.h"
 
@@ -32,7 +33,7 @@ FileBrowserPanel::FileBrowserPanel(EditorViewport *viewport) : FloatingPanel(vie
     m_badge = new LetterBadge(QLatin1Char('O'), content);
     pathRow->addWidget(m_badge);
     setDragHandle(m_badge); /* see docs/adr/0031 */
-    m_filterEdit = new QLineEdit(content);
+    m_filterEdit = new SmoothLineEdit(content);
     m_filterEdit->setMinimumWidth(480);
     m_filterEdit->setFrame(false);
     pathRow->addWidget(m_filterEdit);
@@ -127,6 +128,10 @@ void FileBrowserPanel::refreshTheme() {
     placeholder.setAlpha(115);
     editPalette.setColor(QPalette::PlaceholderText, placeholder);
     m_filterEdit->setPalette(editPalette);
+    /* The caret glides and breathes like the editor's own, and goes
+     * back to a hard blink when `animations = false`. See
+     * docs/adr/0058. */
+    m_filterEdit->setAnimated(m_viewport->animationsEnabled());
 
     /* Highlight == Base so the native selection rect renders invisible
      * — the animated m_rowHighlight bar is the only visible highlight,

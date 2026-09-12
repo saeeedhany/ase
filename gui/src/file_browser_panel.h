@@ -7,7 +7,7 @@
 #include <QString>
 
 class QLabel;
-class QLineEdit;
+class SmoothLineEdit;
 class QListWidget;
 class QListWidgetItem;
 class QPropertyAnimation;
@@ -91,7 +91,7 @@ private:
 
     LetterBadge *m_badge;
     QLabel *m_pathLabel;
-    QLineEdit *m_filterEdit;
+    SmoothLineEdit *m_filterEdit;
     QListWidget *m_listWidget;
     TranslucentBar *m_rowHighlight;
     QPropertyAnimation *m_rowHighlightAnim;

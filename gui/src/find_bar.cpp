@@ -2,6 +2,7 @@
 
 #include "editor_viewport.h"
 #include "letter_badge.h"
+#include "smooth_line_edit.h"
 
 #include <QHBoxLayout>
 #include <QKeyEvent>
@@ -26,7 +27,7 @@ FindBar::FindBar(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport
     m_findBadge = new LetterBadge(QLatin1Char('F'), content);
     findRow->addWidget(m_findBadge);
     setDragHandle(m_findBadge); /* see docs/adr/0031 */
-    m_findEdit = new QLineEdit(content);
+    m_findEdit = new SmoothLineEdit(content);
     m_findEdit->setMinimumWidth(240);
     findRow->addWidget(m_findEdit);
     layout->addLayout(findRow);
@@ -37,7 +38,7 @@ FindBar::FindBar(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport
     replaceRowLayout->setSpacing(8);
     m_replaceBadge = new LetterBadge(QLatin1Char('R'), m_replaceRow);
     replaceRowLayout->addWidget(m_replaceBadge);
-    m_replaceEdit = new QLineEdit(m_replaceRow);
+    m_replaceEdit = new SmoothLineEdit(m_replaceRow);
     replaceRowLayout->addWidget(m_replaceEdit);
     layout->addWidget(m_replaceRow);
     m_replaceRow->setVisible(false);
@@ -110,6 +111,11 @@ void FindBar::refreshTheme() {
     editPalette.setColor(QPalette::HighlightedText, m_viewport->textColor());
     m_findEdit->setPalette(editPalette);
     m_replaceEdit->setPalette(editPalette);
+
+    /* The caret in here glides and breathes like the editor's own —
+     * including honouring `animations = false`. See docs/adr/0058. */
+    m_findEdit->setAnimated(m_viewport->animationsEnabled());
+    m_replaceEdit->setAnimated(m_viewport->animationsEnabled());
 }
 
 /* Return/Enter in the find field navigates (Shift = previous, wrapping

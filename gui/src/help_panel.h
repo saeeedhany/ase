@@ -8,7 +8,7 @@
 #include <QVector>
 
 class QLabel;
-class QLineEdit;
+class SmoothLineEdit;
 class QScrollArea;
 class QVBoxLayout;
 class EditorViewport;
@@ -61,7 +61,7 @@ private:
     void setSectionExpanded(int index, bool expanded);
     void restyleSections();
 
-    QLineEdit *m_search = nullptr;
+    SmoothLineEdit *m_search = nullptr;
     QWidget *m_sectionsHost = nullptr;
     QVBoxLayout *m_sectionsLayout = nullptr;
     QVector<Section> m_sections;

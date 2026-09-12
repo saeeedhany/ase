@@ -2,6 +2,7 @@
 
 #include "editor_viewport.h"
 #include "letter_badge.h"
+#include "smooth_line_edit.h"
 #include "scrollbar_style.h"
 #include "smooth_scroll.h"
 
@@ -148,7 +149,7 @@ HelpPanel::HelpPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_view
     /* Shortcuts are how this editor is driven, so this panel is
      * something you come back to and scan — not read once. A search
      * field over every binding beats scrolling a wall of text. */
-    m_search = new QLineEdit(content);
+    m_search = new SmoothLineEdit(content);
     m_search->setFrame(false);
     m_search->setPlaceholderText(QStringLiteral("Search shortcuts"));
     layout->addWidget(m_search);
@@ -289,6 +290,10 @@ void HelpPanel::refreshTheme() {
     searchPlaceholder.setAlpha(115);
     searchPal.setColor(QPalette::PlaceholderText, searchPlaceholder);
     m_search->setPalette(searchPal);
+    /* The caret glides and breathes like the editor's own, and goes
+     * back to a hard blink when `animations = false`. See
+     * docs/adr/0058. */
+    m_search->setAnimated(m_viewport->animationsEnabled());
 
     restyleSections();
 

@@ -2,6 +2,7 @@
 
 #include "editor_viewport.h"
 #include "letter_badge.h"
+#include "smooth_line_edit.h"
 
 #include <QHBoxLayout>
 #include <QKeyEvent>
@@ -17,7 +18,7 @@ CommandLine::CommandLine(EditorViewport *viewport) : FloatingPanel(viewport), m_
     m_badge = new LetterBadge(QLatin1Char(':'), content);
     layout->addWidget(m_badge);
     setDragHandle(m_badge); /* see docs/adr/0031 */
-    m_edit = new QLineEdit(content);
+    m_edit = new SmoothLineEdit(content);
     m_edit->setMinimumWidth(320);
     m_edit->setFrame(false);
     layout->addWidget(m_edit);
@@ -56,6 +57,10 @@ void CommandLine::refreshTheme() {
     editPalette.setColor(QPalette::Highlight, m_viewport->panelBorderColor());
     editPalette.setColor(QPalette::HighlightedText, m_viewport->textColor());
     m_edit->setPalette(editPalette);
+    /* The caret glides and breathes like the editor's own, and goes
+     * back to a hard blink when `animations = false`. See
+     * docs/adr/0058. */
+    m_edit->setAnimated(m_viewport->animationsEnabled());
 }
 
 /* Return/Escape consumed here, not left to QLineEdit's native
