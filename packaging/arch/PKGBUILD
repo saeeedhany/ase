@@ -20,7 +20,7 @@ _tag=v0.3.0-alpha
 _srcdir="ase-${_tag#v}"
 
 source=("$pkgname-$pkgver.tar.gz::https://github.com/saeeedhany/ase/archive/refs/tags/${_tag}.tar.gz")
-sha256sums=('d510bac586128c0db1cf6424c8928a80abed2563a3bb8a4c71a10212a593778a')
+sha256sums=('d0146a8d14b33d42d7bb373e37f3d9dba67ac5a523ad958935943daaa78bd3ae')
 
 # NOTE: the build needs network access, not just the source fetch —
 # core/CMakeLists.txt (Lua) and modules/syntax/CMakeLists.txt
