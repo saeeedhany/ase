@@ -59,3 +59,5 @@ what changed.
 | [0049](0049-typing-pop-in-animation.md) | A typing pop-in animation |
 | [0050](0050-runtime-font-zoom-and-vim-mode-default-on.md) | Runtime font-size zoom, and Vim mode on by default |
 | [0051](0051-global-animation-consistency-and-vim-polish.md) | Global animation consistency, and three Vim-mode polish fixes |
+| [0052](0052-editor-viewport-split-into-translation-units.md) | Splitting EditorViewport across several translation units |
+| [0053](0053-render-hot-path-and-one-motion-language.md) | Fixing the render hot path, and one motion language |

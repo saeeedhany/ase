@@ -12,10 +12,10 @@
 #include <QParallelAnimationGroup>
 #include <QPropertyAnimation>
 
+#include "motion.h"
+
 namespace {
-constexpr int kAnimDurationMs = 110; /* fast and clean — see docs/adr/0022; was 150, sped up per docs/adr/0027 */
-constexpr int kHostMargin = 16;      /* never touch the host's edges, even on a small window */
-constexpr double kPopScale = 0.96;   /* opens/closes scaling from/to this fraction of full size */
+constexpr int kHostMargin = 16; /* never touch the host's edges, even on a small window */
 
 QRect shrunkAround(const QRect &target, double factor) {
     QSize size = target.size() * factor;
@@ -42,8 +42,7 @@ FloatingPanel::FloatingPanel(QWidget *host) : QWidget(host), m_host(host) {
     m_animGroup->addAnimation(m_opacityAnimation);
     m_animGroup->addAnimation(m_geometryAnimation);
     for (QPropertyAnimation *anim : {m_opacityAnimation, m_geometryAnimation}) {
-        anim->setDuration(kAnimDurationMs);
-        anim->setEasingCurve(QEasingCurve::OutCubic);
+        motion::apply(anim, motion::kChrome);
     }
 
     /* Only ever animating m_snapshot (a plain image-filled QLabel with
@@ -180,7 +179,7 @@ void FloatingPanel::openPanel() {
     beginSnapshotAnimation();
 
     QRect full(QPoint(0, 0), target.size());
-    QRect start = shrunkAround(full, kPopScale);
+    QRect start = shrunkAround(full, motion::kPopScale);
     m_snapshot->setGeometry(start);
     m_opacityEffect->setOpacity(0.0);
 
@@ -204,7 +203,7 @@ void FloatingPanel::closePanel() {
     QRect full = rect();
 
     m_geometryAnimation->setStartValue(full);
-    m_geometryAnimation->setEndValue(shrunkAround(full, kPopScale));
+    m_geometryAnimation->setEndValue(shrunkAround(full, motion::kPopScale));
     m_opacityAnimation->setStartValue(1.0);
     m_opacityAnimation->setEndValue(0.0);
     m_animGroup->start();

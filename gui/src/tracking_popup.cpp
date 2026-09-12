@@ -8,13 +8,7 @@
 #include <QPainter>
 #include <QPropertyAnimation>
 
-namespace {
-constexpr int kFadeDurationMs = 90;
-/* A touch slower than the fade — a position glide reads better with a
- * little more travel time than a fade does (same reasoning as the
- * scroll glide's own duration, see smooth_scroll.cpp). */
-constexpr int kMoveDurationMs = 110;
-} // namespace
+#include "motion.h"
 
 TrackingPopup::TrackingPopup(EditorViewport *viewport) : QWidget(viewport), m_viewport(viewport) {
     setAutoFillBackground(false);
@@ -26,8 +20,7 @@ TrackingPopup::TrackingPopup(EditorViewport *viewport) : QWidget(viewport), m_vi
     setGraphicsEffect(m_opacityEffect);
 
     m_fadeAnimation = new QPropertyAnimation(m_opacityEffect, "opacity", this);
-    m_fadeAnimation->setDuration(kFadeDurationMs);
-    m_fadeAnimation->setEasingCurve(QEasingCurve::OutCubic);
+    motion::apply(m_fadeAnimation, motion::kFade);
     connect(m_fadeAnimation, &QPropertyAnimation::finished, this, [this]() {
         if (m_opacityEffect->opacity() <= 0.001) {
             hide();
@@ -38,8 +31,9 @@ TrackingPopup::TrackingPopup(EditorViewport *viewport) : QWidget(viewport), m_vi
      * property needed, this is the standard way to animate a widget's
      * position in Qt. */
     m_moveAnimation = new QPropertyAnimation(this, "pos", this);
-    m_moveAnimation->setDuration(kMoveDurationMs);
-    m_moveAnimation->setEasingCurve(QEasingCurve::OutCubic);
+    /* The slower chrome tier, not kFade — a position glide reads better
+     * with a little more travel time than a fade does. */
+    motion::apply(m_moveAnimation, motion::kChrome);
 
     hide();
 }

@@ -9,15 +9,12 @@
 #include <QEasingCurve>
 #include <QEvent>
 #include <QPropertyAnimation>
+
+#include "motion.h"
 #include <QScrollBar>
 #include <QWheelEvent>
 
 namespace {
-/* A touch longer than the chrome panels' 90-110ms fades (docs/adr/0022,
- * docs/adr/0030) — a scroll glide reads better with a little more
- * travel time than a fade does. */
-constexpr int kDurationMs = 140;
-
 /* Installed on the scroll area's viewport (where Qt actually delivers
  * wheel events, not the QAbstractScrollArea itself — same place
  * QAbstractScrollAreaPrivate installs its own internal filter), so this
@@ -30,8 +27,7 @@ public:
     SmoothScrollFilter(QAbstractScrollArea *area, EditorViewport *viewport)
         : QObject(area->viewport()), m_area(area), m_viewport(viewport) {
         m_animation = new QPropertyAnimation(area->verticalScrollBar(), "value", this);
-        m_animation->setDuration(kDurationMs);
-        m_animation->setEasingCurve(QEasingCurve::OutCubic);
+        motion::apply(m_animation, motion::kScroll);
     }
 
 protected:

@@ -14,11 +14,9 @@
 #include <QPainter>
 #include <QPalette>
 #include <QPropertyAnimation>
-#include <QVBoxLayout>
 
-namespace {
-constexpr int kRowHighlightAnimMs = 85; /* fast — see docs/adr/0024, docs/adr/0027 */
-}
+#include "motion.h"
+#include <QVBoxLayout>
 
 FileBrowserPanel::FileBrowserPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport(viewport) {
     QWidget *content = contentWidget();
@@ -51,8 +49,7 @@ FileBrowserPanel::FileBrowserPanel(EditorViewport *viewport) : FloatingPanel(vie
     m_rowHighlight = new TranslucentBar(m_listWidget->viewport());
     m_rowHighlight->hide();
     m_rowHighlightAnim = new QPropertyAnimation(m_rowHighlight, "geometry", this);
-    m_rowHighlightAnim->setDuration(kRowHighlightAnimMs);
-    m_rowHighlightAnim->setEasingCurve(QEasingCurve::OutCubic);
+    motion::apply(m_rowHighlightAnim, motion::kQuick);
 
     m_filterEdit->installEventFilter(this);
     m_listWidget->installEventFilter(this);

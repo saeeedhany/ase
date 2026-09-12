@@ -15,6 +15,7 @@ nav:
   - Spec: SPEC.md
   - Roadmap: ROADMAP.md
   - Plugins: plugins.md
+  - Extensibility: EXTENSIBILITY.md
   - Feedback:
     - feedback/index.md
     - feedback/0001-alpha-release-external-review.md
@@ -71,6 +72,8 @@ nav:
     - adr/0049-typing-pop-in-animation.md
     - adr/0050-runtime-font-zoom-and-vim-mode-default-on.md
     - adr/0051-global-animation-consistency-and-vim-polish.md
+    - adr/0052-editor-viewport-split-into-translation-units.md
+    - adr/0053-render-hot-path-and-one-motion-language.md
 
 theme:
   name: material

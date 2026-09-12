@@ -669,6 +669,88 @@ ADRs as each lands here going forward.
       and `:` opens the command line directly in Vim Normal/Visual mode,
       additive to the existing `Ctrl+;`. See
       [ADR 0051](adr/0051-global-animation-consistency-and-vim-polish.md).
+- [x] **Split `EditorViewport` across translation units**: the one file
+      had reached 3608 lines — 51% of the whole GUI layer — holding
+      eight distinct concerns. Now nine `.cpp` files implementing the
+      same class (config, render, input, edit, vim, find, commands, lsp,
+      plus a small core), largest ~880 lines. `editor_viewport.h` is
+      untouched: same class, same API, no `friend`s, nothing made public.
+      Organisational, not architectural — coupling is unchanged, but
+      extracting a real subsystem later now starts from a file that
+      already holds exactly that subsystem. See
+      [ADR 0052](adr/0052-editor-viewport-split-into-translation-units.md).
+
+## Beyond v1 — what would make this editor unique
+
+Deliberately grouped by *why* rather than by area. The ordering inside
+each tier is rough; the tiers themselves are not — Tier 1 is what stops
+the editor being embarrassing on a real codebase, Tier 2 is what makes it
+genuinely usable all day, Tier 3 is what makes it worth choosing over
+something else.
+
+### Tier 1 — make the existing promises true
+
+- **Incremental Tree-sitter reparse.** Measured: **~12.7ms of CPU per
+  keystroke** on an 8400-line file, because `refreshCache()` reparses the
+  whole buffer every time (a deliberate v1 call — ADR 0007, decision 5).
+  `ts_tree_edit` + reusing the previous tree is the fix. This is the
+  single biggest remaining gap between the editor and "blazingly fast."
+- **Multiple buffers / files per window.** Today it is strictly one file
+  per window, with no tabs (an explicit v1 scope call). This is the
+  largest *functional* gap for real work — every other item here is worth
+  less until you can hold two files at once.
+- **Wire the plugin host into the GUI.** It exists, it's tested, and the
+  GUI cannot reach it. See [EXTENSIBILITY.md](EXTENSIBILITY.md).
+- **Large-file sanity pass.** Sub-frame budgets hold now at ~8k lines;
+  find a real ceiling (100k? 1M?) and either fix it or document it
+  honestly rather than discovering it from a bug report.
+
+### Tier 2 — the table stakes of a daily driver
+
+- **Keybindings as data** — the biggest customization gap, and the thing
+  that makes built-ins and plugin commands one mechanism. See
+  EXTENSIBILITY.md, recommendation 4.
+- **Project-wide search** (ripgrep-shaped: search, jump to hit, replace
+  across files), reusing the existing find infrastructure and results
+  panel.
+- **The rest of LSP's useful half**: go-to-definition, find-references,
+  rename, document symbols. Diagnostics, completion and hover are wired
+  (ADR 0029/0030); the navigation half is what people actually miss.
+- **Git gutter marks** — added/changed/deleted per line. Cheap next to
+  the existing diagnostic-gutter machinery, and disproportionately useful.
+- **Session restore** — reopen the files, cursors, and scroll positions
+  from last time.
+- **More languages.** C-only is the current reality. Each new grammar is
+  mostly a `.scm` query file plus a build entry; the capture set is
+  already language-agnostic.
+
+### Tier 3 — the bets that would make it distinctive
+
+- **Smart compile.** Instead of a hand-written `build_command`, infer the
+  right action: read `compile_commands.json` when clangd is configured
+  (it already records the exact invocation per file), else walk up for a
+  `Makefile`/`CMakeLists.txt`. **Show the inferred command for
+  confirmation rather than silently running it** — this project's
+  standing rule is that an unconfigured thing is reported, never guessed
+  (ADR 0029), and a misdetected build target running silently would
+  violate that badly.
+- **A TUI frontend on the same core.** The headless-core split (ADR 0002)
+  is already paid for and tested, and nothing about the buffer, undo,
+  syntax, LSP or plugin layers is Qt-specific. A terminal frontend
+  sharing the exact core is a genuinely unusual thing to be able to
+  offer, and the architecture has been quietly holding the door open for
+  it since Phase 1.
+- **Motion as a designed identity.** The animation language is now one
+  header (ADR 0053) rather than six scattered guesses. Leaning into that
+  deliberately — every state change in the app having a considered,
+  consistent transition — is a real differentiator, because almost no
+  editor treats it as a design system instead of as decoration.
+- **Scriptable/batch mode.** The core runs headless; `ase --script
+  fix.lua file.c` reusing the same plugin commands as the GUI would make
+  plugins testable without a display, and the editor usable in a pipeline.
+- **Remote/SSH editing** and **collaborative editing** stay explicit
+  non-goals below — listed here only to say they were considered and
+  deliberately declined, not overlooked.
 
 ## Explicit non-goals for v1
 

@@ -22,7 +22,18 @@ set(CMAKE_AUTORCC ON)
 
 add_executable(ase_gui
     src/main.cpp
+    # EditorViewport is one class deliberately spread across several
+    # translation units — see docs/adr/0052. They share a private
+    # src/editor_viewport_internal.h; nothing else includes it.
     src/editor_viewport.cpp
+    src/editor_viewport_config.cpp
+    src/editor_viewport_render.cpp
+    src/editor_viewport_input.cpp
+    src/editor_viewport_edit.cpp
+    src/editor_viewport_vim.cpp
+    src/editor_viewport_find.cpp
+    src/editor_viewport_commands.cpp
+    src/editor_viewport_lsp.cpp
     src/find_bar.cpp
     src/file_browser_panel.cpp
     src/command_line.cpp

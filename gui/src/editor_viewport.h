@@ -576,6 +576,13 @@ private:
 
     AseSyntax *m_syntax = nullptr; /* null for unsupported file types — see docs/adr/0007 */
     QVector<AseHighlightSpan> m_highlights;
+    /* m_highlights flattened to one capture byte per buffer byte, rebuilt
+     * once per edit in refreshCache() — the form every render-path lookup
+     * actually wants. Parallel to m_cache, same "mirror it once, index it
+     * cheaply" trade m_cache/m_lineStarts already make (docs/adr/0006);
+     * uint8_t rather than the enum keeps it 1 byte per buffer byte. See
+     * docs/adr/0053. */
+    QVector<uint8_t> m_captureAt;
 
     QByteArray m_cache;
     QVector<int> m_lineStarts;
