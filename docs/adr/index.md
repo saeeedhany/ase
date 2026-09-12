@@ -58,3 +58,4 @@ what changed.
 | [0048](0048-syntax-accent-colors-caret-inset-status-init.md) | Syntax accent colors, caret inset, smaller default font, immediate status label |
 | [0049](0049-typing-pop-in-animation.md) | A typing pop-in animation |
 | [0050](0050-runtime-font-zoom-and-vim-mode-default-on.md) | Runtime font-size zoom, and Vim mode on by default |
+| [0051](0051-global-animation-consistency-and-vim-polish.md) | Global animation consistency, and three Vim-mode polish fixes |

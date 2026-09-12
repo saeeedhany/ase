@@ -657,6 +657,18 @@ ADRs as each lands here going forward.
       reverses ADR 0046's original "opt-in" reasoning) and a session now
       starts in Normal mode, not Insert, matching real vim. See
       [ADR 0050](adr/0050-runtime-font-zoom-and-vim-mode-default-on.md).
+- [x] **Global animation consistency; three Vim-mode polish fixes**:
+      fixed a real bug where the typing pop-in (ADR 0049) never actually
+      rendered — `snapAnimationToTarget()` was wiping its own animation
+      entry in the same keystroke that created it. Removed the last
+      special-cased instant-snaps from Vim mode (every motion, mode-entry
+      command, and mutation) and from plain typing itself, so the whole
+      app now glides consistently with no exceptions. Also: Visual mode
+      now shows the same block cursor as Normal (was bar-only); the
+      block cursor's opacity cap (ADR 0047) is gone, back to full range;
+      and `:` opens the command line directly in Vim Normal/Visual mode,
+      additive to the existing `Ctrl+;`. See
+      [ADR 0051](adr/0051-global-animation-consistency-and-vim-polish.md).
 
 ## Explicit non-goals for v1
 

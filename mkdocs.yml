@@ -70,6 +70,7 @@ nav:
     - adr/0048-syntax-accent-colors-caret-inset-status-init.md
     - adr/0049-typing-pop-in-animation.md
     - adr/0050-runtime-font-zoom-and-vim-mode-default-on.md
+    - adr/0051-global-animation-consistency-and-vim-polish.md
 
 theme:
   name: material

@@ -55,13 +55,6 @@ constexpr double kTypingAnimationStartScale = 0.85;
  * layout math elsewhere (gutter width, scroll margins, ...). */
 constexpr int kMinFontSize = 6;
 constexpr int kMaxFontSize = 72;
-/* The Normal-mode block cursor's fill, capped well under fully opaque —
- * even at the breathing cycle's brightest instant (see caretAlpha
- * below), a solid 100%-opaque block would flash harder than every
- * other translucent overlay in this app's aesthetic (selection
- * highlight, panel backgrounds, ...) and would fight for attention
- * with the knocked-out glyph drawn on top of it. See docs/adr/0047. */
-constexpr int kVimBlockCursorMaxAlpha = 200;
 /* Both caret shapes are inset from the full line height by this much on
  * top and bottom — a full-line-height caret reads as slightly too tall/
  * blocky against the actual glyph height. The glyph knocked out on top
@@ -606,25 +599,26 @@ void EditorViewport::paintEvent(QPaintEvent *) {
         caretAlpha = 0;
     }
 
-    /* Normal mode gets a real vim-style block cursor — filling the
-     * whole character cell, not the thin insertion bar used everywhere
-     * else — since otherwise this editor's caret looks identical
-     * whether Normal mode is active or not, with no visual cue that
-     * every keystroke currently means something completely different.
-     * Insert keeps the bar (it still means "an insertion point," same
-     * as with Vim mode off); Visual keeps it too, since Visual already
-     * highlights the selection range itself and the bar there just
-     * marks that selection's moving end without competing with it.
-     * See docs/adr/0047. */
-    bool blockCursor = vimModeActive() && m_vimMode == VimMode::Normal;
+    /* Normal and Visual mode both get a real vim-style block cursor —
+     * filling the whole character cell, not the thin insertion bar used
+     * in Insert — since otherwise this editor's caret looks identical
+     * regardless of mode, with no visual cue that every keystroke
+     * currently means something completely different. Insert keeps the
+     * bar (it still means "an insertion point," same as with Vim mode
+     * off). See docs/adr/0047, docs/adr/0051. */
+    bool blockCursor = vimModeActive() && m_vimMode != VimMode::Insert;
 
     if (caretAlpha > 0 && !m_renderedCaretPos.isEmpty()) {
         painter.save();
         painter.setClipRect(QRect(gutter, 0, textAreaWidth, height()));
         if (blockCursor) {
-            int blockAlpha = (caretAlpha * kVimBlockCursorMaxAlpha) / 255;
+            /* Same alpha range as the bar caret — a capped, never-fully-
+             * opaque block was tried (ADR 0047) and reverted per direct
+             * feedback: it read as wrong, not as a considered choice.
+             * The knocked-out glyph drawn on top already guarantees
+             * legibility regardless of the block's opacity. */
             QColor blockColor = m_textColor;
-            blockColor.setAlpha(blockAlpha);
+            blockColor.setAlpha(caretAlpha);
             for (int i = 0; i < m_renderedCaretPos.size(); ++i) {
                 const QPointF &pos = m_renderedCaretPos[i];
                 int width = m_charWidth;
@@ -788,11 +782,14 @@ void EditorViewport::snapAnimationToTarget() {
     for (int i = 0; i < m_cursors.size(); ++i) {
         m_renderedCaretPos[i] = caretTargetFor(m_cursors[i]);
     }
-    /* Everything else snaps to "already settled" here, so a typed
-     * character still mid-pop when e.g. an undo/redo or a Vim command
-     * fires should too, rather than finishing its animation over text
-     * that's no longer the reason it started. */
-    m_typingAnimations.clear();
+    /* Does NOT clear m_typingAnimations — insertText() (the only place
+     * that populates it) calls this same function right after pushing a
+     * fresh entry (via pasteClipboard's own snap call further down this
+     * file); clearing here would wipe that entry before it ever
+     * rendered a single frame. Call sites that genuinely need to
+     * invalidate an in-flight pop-in (undo/redo restoring arbitrary
+     * content) clear it explicitly themselves instead — see
+     * applyUndoResult(). */
 }
 
 /* One entry per byte in [start, end), naming which capture (if any) that
@@ -1281,17 +1278,6 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
          * End, every Ctrl/Alt/Meta combo) — the switch/Ctrl-chain below
          * handles those exactly as it does with Vim mode off. */
     }
-    /* Set only for plain character insertion — see
-     * snapAnimationToTarget's doc comment (docs/adr/0017): typing
-     * always renders instantly, even with animations on, because
-     * gliding can't keep pace with fast repeated small jumps and the
-     * result reads as lag, not smoothness. Enter and Backspace/Delete
-     * are deliberately *not* in that bucket (see their own cases
-     * below, and docs/adr/0028) — each is a single, discrete cursor
-     * jump rather than a rapid sequence, so it doesn't have that
-     * problem and gets to glide like navigation does. */
-    bool isEdit = false;
-
     switch (event->key()) {
     case Qt::Key_Left:
         moveCursorLeft(extend);
@@ -1306,11 +1292,6 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         moveCursorEnd(extend);
         break;
     case Qt::Key_Backspace:
-        /* Not isEdit = true, matching Enter — see docs/adr/0028 and
-         * the comment on the Return/Enter case below. Deleting a
-         * newline (merging two lines) is the same kind of discrete
-         * jump Enter makes, worth gliding; deleting an ordinary
-         * character is a one-column move, animated or not. */
         deleteBackward();
         break;
     case Qt::Key_Delete:
@@ -1337,30 +1318,19 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
          * correctly with the exact same per-glyph measurement every
          * other character already uses, and is simplicity keeping with
          * the byte-level column model (docs/adr/0012) rather than
-         * adding tab-stop-aware rendering for one key. Treated as a
-         * plain character insertion (isEdit = true, instant, not
-         * glided). Completion-popup Tab-to-accept is intercepted
-         * earlier in this function and never reaches here. See
-         * docs/adr/0031. Real vim gives Tab no default Normal-mode
-         * meaning either — see docs/adr/0046 — so this is skipped
-         * while Vim mode is on and not in Insert. */
+         * adding tab-stop-aware rendering for one key. Completion-popup
+         * Tab-to-accept is intercepted earlier in this function and
+         * never reaches here. See docs/adr/0031. Real vim gives Tab no
+         * default Normal-mode meaning either — see docs/adr/0046 — so
+         * this is skipped while Vim mode is on and not in Insert. */
         if (vimModeActive() && m_vimMode != VimMode::Insert) {
             break;
         }
         insertText(QByteArrayLiteral("    "));
-        isEdit = true;
         break;
     case Qt::Key_Return:
     case Qt::Key_Enter:
-        /* Deliberately *not* isEdit = true — see docs/adr/0027 and
-         * docs/adr/0028. A newline is a single, discrete jump to a new
-         * line, closer in feel to navigation than to character-by-
-         * character typing, and it's the first edit the user asked to
-         * see glide (Backspace/Delete followed once deletion was
-         * asked for too). Regular character insertion stays instant —
-         * ADR 0017's original reasoning (gliding can't keep pace with
-         * fast repeated small jumps) still holds for that case.
-         * Real vim gives Enter no default Normal-mode meaning either —
+        /* Real vim gives Enter no default Normal-mode meaning either —
          * see docs/adr/0046 — so this is skipped while Vim mode is on
          * and not in Insert. */
         if (vimModeActive() && m_vimMode != VimMode::Insert) {
@@ -1509,14 +1479,10 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
                 return;
             }
             insertText(text.toUtf8());
-            isEdit = true;
         }
     }
 
     ensureCursorVisible();
-    if (isEdit) {
-        snapAnimationToTarget();
-    }
     update();
 }
 
@@ -2128,7 +2094,6 @@ void EditorViewport::vimDeleteRange(size_t start, size_t end) {
     m_dirty = true;
     refreshCache();
     ensureCursorVisible();
-    snapAnimationToTarget();
     update();
 }
 
@@ -2169,7 +2134,6 @@ void EditorViewport::vimDeleteLines(int startLine, int count) {
     m_cursors[0] = target;
     m_selectionAnchors[0] = target;
     ensureCursorVisible();
-    snapAnimationToTarget();
     update();
 }
 
@@ -2227,7 +2191,6 @@ void EditorViewport::vimPasteAfter() {
     m_cursors[0] = target;
     m_selectionAnchors[0] = target;
     ensureCursorVisible();
-    snapAnimationToTarget();
     update();
 }
 
@@ -2250,7 +2213,6 @@ void EditorViewport::vimPasteBefore() {
     m_cursors[0] = target;
     m_selectionAnchors[0] = target;
     ensureCursorVisible();
-    snapAnimationToTarget();
     update();
 }
 
@@ -2267,7 +2229,6 @@ void EditorViewport::vimOpenLineAbove() {
     m_dirty = true;
     refreshCache();
     ensureCursorVisible();
-    snapAnimationToTarget();
     update();
 }
 
@@ -2332,7 +2293,6 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         }
         resetVimPendingState();
         ensureCursorVisible();
-        snapAnimationToTarget();
         update();
         return true;
     }
@@ -2351,6 +2311,18 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     char c = qc.toLatin1(); /* '\0' for non-Latin1 — falls through to "unrecognized" below. */
     int count = std::max(1, m_vimCount1) * std::max(1, m_vimCount2);
 
+    if (c == ':') {
+        /* Real vim's own ex-command-line trigger — bare `:` (Shift+;
+         * on most layouts), not the app-wide Ctrl+; (which still works
+         * everywhere, Vim mode or not — see docs/adr/0025). Only live
+         * here, in Normal/Visual dispatch: Insert mode still needs `:`
+         * to type as a literal character. */
+        if (m_commandLine != nullptr) {
+            m_commandLine->openCommandLine();
+        }
+        resetVimPendingState();
+        return true;
+    }
     if (c == 'g') {
         m_vimPendingG = true;
         return true;
@@ -2360,16 +2332,17 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         vimGotoLine(targetLine);
         resetVimPendingState();
         ensureCursorVisible();
-        snapAnimationToTarget();
         update();
         return true;
     }
     if (c == 'h' || c == 'l' || c == 'j' || c == 'k' || c == '0' || c == '^' || c == '$' || c == 'w' ||
         c == 'b' || c == 'e') {
+        /* A pure motion (no operator resolved here) glides like every
+         * other navigation in this app — arrows, Home/End — rather than
+         * snapping. See docs/adr/0051. */
         vimExecuteMotion(c, count);
         resetVimPendingState();
         ensureCursorVisible();
-        snapAnimationToTarget();
         update();
         return true;
     }
@@ -2406,7 +2379,6 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         }
         resetVimPendingState();
         ensureCursorVisible();
-        snapAnimationToTarget();
         update();
         return true;
     }
@@ -2422,7 +2394,6 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
             resetVimPendingState();
         }
         ensureCursorVisible();
-        snapAnimationToTarget();
         update();
         return true;
     }
@@ -2492,7 +2463,6 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
 
     resetVimPendingState();
     ensureCursorVisible();
-    snapAnimationToTarget();
     update();
     return true;
 }
@@ -3070,7 +3040,6 @@ void EditorViewport::runCommand(const QString &command) {
             vimGotoLine(lineNumber - 1);
             resetVimPendingState();
             ensureCursorVisible();
-            snapAnimationToTarget();
             update();
         }
         /* Anything else recognized as neither a known word nor a line
@@ -3611,6 +3580,11 @@ void EditorViewport::applyUndoResult(size_t *cursors, size_t count) {
     refreshCache();
     ensureCursorVisible();
     resetCaretBlink();
+    /* Undo/redo can restore arbitrary old content — an in-flight typing
+     * pop-in's byte range may no longer mean what it did when it
+     * started, so drop it outright rather than let it keep animating
+     * over content it was never about. */
+    m_typingAnimations.clear();
     snapAnimationToTarget();
     update();
 }
