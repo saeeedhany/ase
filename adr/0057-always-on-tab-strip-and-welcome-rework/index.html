@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0017-viewport-review-pass/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0057-always-on-tab-strip-and-welcome-rework/">
       
       
-        <link rel="prev" href="../0016-caret-visibility-fix/">
+        <link rel="prev" href="../0056-linewise-visual-tab-motion-searchable-shortcuts/">
       
       
-        <link rel="next" href="../0018-undo-redo/">
+        <link rel="next" href="../0058-session-scoped-greeting-and-panel-carets/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0017: Viewport review pass — four fixes from live use - Absolute Simple Editor</title>
+        <title>ADR 0057: An always-present tab strip, and a welcome screen worth reading - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0017-viewport-review-pass-four-fixes-from-live-use" class="md-skip">
+        <a href="#adr-0057-an-always-present-tab-strip-and-a-welcome-screen-worth-reading" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0017: Viewport review pass — four fixes from live use
+              ADR 0057: An always-present tab strip, and a welcome screen worth reading
             
           </span>
         </div>
@@ -1284,37 +1284,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0017: Viewport review pass — four fixes from live use
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0017-viewport-review-pass/" class="md-nav__link">
         
   
   
@@ -1330,120 +1303,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decisions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decisions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Invisible text past the horizontal scroll point — the most
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-caret-still-visibly-blinkingfading-while-moving-with" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Caret still visibly blinking/fading while moving, with
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Caret (and view) feeling like they lag during fast typing/deleting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-qfontmetrics-reconstruction-not-just-a-feeling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. QFontMetrics reconstruction, not just a feeling
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2545,10 +2404,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0057-always-on-tab-strip-and-welcome-rework/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0057: An always-present tab strip, and a welcome screen worth reading
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2564,6 +2450,153 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-strip-is-always-there" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The strip is always there
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#switching-a-tab-is-not-an-animation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Switching a tab is not an animation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#closing-reverses-opening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Closing reverses opening
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#overflow-pans-with-shiftwheel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overflow pans with Shift+wheel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-welcome-screen-says-what-the-editor-is-then-what-to-press" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The welcome screen says what the editor is, then what to press
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#addendum-what-was-actually-wrong-with-the-tab-animation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Addendum: what was actually wrong with the tab animation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#addendum-the-welcome-screen-is-a-greeting-not-a-state-display" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Addendum: the welcome screen is a greeting, not a state display
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2653,22 +2686,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decisions
+        Decision
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decisions">
+    <nav class="md-nav" aria-label="Decision">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" class="md-nav__link">
+  <a href="#the-strip-is-always-there" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Invisible text past the horizontal scroll point — the most
+        The strip is always there
       
     </span>
   </a>
@@ -2676,10 +2709,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-caret-still-visibly-blinkingfading-while-moving-with" class="md-nav__link">
+  <a href="#switching-a-tab-is-not-an-animation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Caret still visibly blinking/fading while moving, with
+        Switching a tab is not an animation
       
     </span>
   </a>
@@ -2687,10 +2720,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" class="md-nav__link">
+  <a href="#closing-reverses-opening" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Caret (and view) feeling like they lag during fast typing/deleting
+        Closing reverses opening
       
     </span>
   </a>
@@ -2698,10 +2731,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-qfontmetrics-reconstruction-not-just-a-feeling" class="md-nav__link">
+  <a href="#overflow-pans-with-shiftwheel" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. QFontMetrics reconstruction, not just a feeling
+        Overflow pans with Shift+wheel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-welcome-screen-says-what-the-editor-is-then-what-to-press" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The welcome screen says what the editor is, then what to press
       
     </span>
   </a>
@@ -2718,6 +2762,28 @@
     <span class="md-ellipsis">
       
         Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#addendum-what-was-actually-wrong-with-the-tab-animation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Addendum: what was actually wrong with the tab animation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#addendum-the-welcome-screen-is-a-greeting-not-a-state-display" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Addendum: the welcome screen is a greeting, not a state display
       
     </span>
   </a>
@@ -2741,7 +2807,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0017-viewport-review-pass.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0057-always-on-tab-strip-and-welcome-rework.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2749,90 +2815,136 @@
   
 
 
-<h1 id="adr-0017-viewport-review-pass-four-fixes-from-live-use">ADR 0017: Viewport review pass — four fixes from live use<a class="headerlink" href="#adr-0017-viewport-review-pass-four-fixes-from-live-use" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0057-an-always-present-tab-strip-and-a-welcome-screen-worth-reading">ADR 0057: An always-present tab strip, and a welcome screen worth reading<a class="headerlink" href="#adr-0057-an-always-present-tab-strip-and-a-welcome-screen-worth-reading" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Continued user testing surfaced four distinct problems in quick
-succession, all in the rendering/animation code added across Phases
-8–9 and the ADR 0016 fix. Rather than patch each in isolation, this
-was a full review of that code's interactions — the request was
-explicitly for real fixes that wouldn't regress anything else, not
-quick patches.</p>
-<h2 id="decisions">Decisions<a class="headerlink" href="#decisions" title="Permanent link">&para;</a></h2>
-<h3 id="1-invisible-text-past-the-horizontal-scroll-point-the-most">1. Invisible text past the horizontal scroll point — the most<a class="headerlink" href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" title="Permanent link">&para;</a></h3>
-<p>severe bug</p>
-<p><code>drawLine</code>'s <code>drawText</code> call used <code>QRect(x, y, width() - x, m_lineHeight)</code>.
-Once ADR 0014 introduced horizontal scroll, <code>x</code> is a <em>local</em> (translated)
-coordinate that legitimately exceeds the widget's raw <code>width()</code> on any
-sufficiently long, scrolled line — <code>width() - x</code> goes negative, and
-Qt's <code>drawText</code> paints nothing into a negative-width rect. Typed
-characters past that point rendered as blank space — a real, severe
-regression from ADR 0014, not cosmetic.</p>
-<p>Fixed by using the run's own measured width (<code>runWidth</code>, already
-needed for the x-advance) as the rect's width instead: always exactly
-right, never dependent on how far into a line the viewport happens to
-be scrolled. Reproduced directly (typed ~300 characters past the
-overflow point, confirmed text visible throughout) before and after.</p>
-<h3 id="2-caret-still-visibly-blinkingfading-while-moving-with">2. Caret still visibly blinking/fading while moving, with<a class="headerlink" href="#2-caret-still-visibly-blinkingfading-while-moving-with" title="Permanent link">&para;</a></h3>
-<p>animations on</p>
-<p>ADR 0016 fixed this for the hard blink but missed that the animated
-fade used a <em>different</em>, free-running counter (<code>m_caretTick</code>,
-incremented unconditionally every tick regardless of activity) — so
-with <code>animations = true</code>, the fade kept oscillating through movement
-exactly as before, which is what the user was still seeing and
-describing as "blinking while I move it."</p>
-<p>Fixed by deleting <code>m_caretTick</code> and driving the fade's phase from the
-same <code>m_idleTicks</code> the hard blink already uses — reset to 0 by
-<code>resetCaretBlink()</code> on every cursor-moving action. Switched <code>sin</code> to
-<code>cos</code> for the phase function specifically so that the instant something
-goes idle (<code>m_idleTicks == 0</code>) evaluates to full brightness — the fade
-now always starts from "was solid" and eases into the breathing cycle,
-rather than jumping to an arbitrary point on the curve the moment
-movement stops.</p>
-<h3 id="3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting">3. Caret (and view) feeling like they lag during fast typing/deleting<a class="headerlink" href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" title="Permanent link">&para;</a></h3>
-<p>Root cause was really a design gap, not a bug: <code>updateAnimation</code>'s
-easing (<code>kEaseFactor</code> per paint, ADR 0015) is tuned for deliberate
-navigation jumps (arrow keys, clicks, <code>Ctrl+D</code>), where a visible glide
-reads as smooth. During <em>fast, repeated, small</em> jumps — typing or
-holding delete — each new keystroke retargets the ease before the
-previous step finishes, so the rendered caret perpetually chases a
-moving target and never actually reaches it. That reads as "the editor
-can't keep up," which is the opposite of the intended effect and a
-direct hit against the "fast as hell" pillar.</p>
-<p>Fixed by adding <code>snapAnimationToTarget()</code> (forces every rendered value
-to its exact target, bypassing easing for that one update) and calling
-it after every text-mutating <code>keyPressEvent</code> branch — typing, Enter,
-Backspace, Delete — regardless of <code>animations</code>. Pure navigation
-(arrows, Home/End, click, <code>Ctrl+D</code>) is untouched and keeps the glide.
-This is the same logic <code>updateAnimation</code>'s disabled-animation branch
-already needed, so it's factored out and shared rather than duplicated
-— see decision 4's fix for why that sharing mattered.</p>
-<h3 id="4-qfontmetrics-reconstruction-not-just-a-feeling">4. <code>QFontMetrics</code> reconstruction, not just a feeling<a class="headerlink" href="#4-qfontmetrics-reconstruction-not-just-a-feeling" title="Permanent link">&para;</a></h3>
-<p>While reviewing the above, found <code>drawLine</code>, <code>xForColumn</code>, and
-<code>caretTargetFor</code> (the last two called once per cursor on <em>every</em>
-animation tick) were each constructing a fresh <code>QFontMetrics(font)</code> for
-every styled run, every call — never cached. <code>QFontMetrics</code> construction
-queries the font engine; doing it dozens of times per frame, every 30ms
-while animating, is real avoidable work sitting directly in the path
-the "feels slow" reports were pointing at. Added three cached instances
-(<code>m_metrics</code>, <code>m_boldMetrics</code>, <code>m_italicMetrics</code>) built once in
-<code>applyConfig()</code>, fetched via <code>metricsForCapture()</code> everywhere a font's
-metrics are needed. Purely a reuse-not-reconstruct change — the
-values were already being computed correctly, just repeatedly.</p>
+<p>More feedback from use, all about the tab strip and the first thing you
+see when the editor opens.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<h3 id="the-strip-is-always-there">The strip is always there<a class="headerlink" href="#the-strip-is-always-there" title="Permanent link">&para;</a></h3>
+<p>ADR 0054 hid it below two tabs, reasoning that a single tab is chrome
+telling you nothing the title bar doesn't. In practice that is worse:
+the strip appears and disappears underneath you as you open and close
+files, so the thing you look at to know what you have open is the one
+thing that moves. And a pathless buffer had nothing anywhere calling it
+<code>untitled</code> — every other editor shows exactly that from the moment it
+starts.</p>
+<p>So the strip is present whenever there is a buffer, which is always.
+This supersedes ADR 0054's collapse-below-two rule.</p>
+<h3 id="switching-a-tab-is-not-an-animation">Switching a tab is not an animation<a class="headerlink" href="#switching-a-tab-is-not-an-animation" title="Permanent link">&para;</a></h3>
+<p>The real complaint — "when I click on one of them they all give the same
+effect each time" — was a bug, not a preference. <code>setEntries()</code> animated
+on <em>every</em> call, so merely changing which tab was active replayed the
+whole interpolation: the close mark faded in from zero, opacities
+crossfaded, and clicking around felt like the app stuttering rather than
+responding.</p>
+<p>Animation is now gated on the tab <em>set</em> actually changing. Opening and
+closing move things; switching is a state change and lands instantly.
+Verified rather than assumed: a screenshot taken 25ms after a click is
+<strong>pixel-identical</strong> to the settled one.</p>
+<h3 id="closing-reverses-opening">Closing reverses opening<a class="headerlink" href="#closing-reverses-opening" title="Permanent link">&para;</a></h3>
+<p>A closed tab does not vanish. It stays drawn as a ghost — marked
+<code>closing</code>, excluded from hit-testing — and collapses toward whichever
+tab now holds focus while fading out, the exact reverse of arriving out
+of the tab it was opened from. Ghosts are dropped when the animation
+finishes.</p>
+<h3 id="overflow-pans-with-shiftwheel">Overflow pans with Shift+wheel<a class="headerlink" href="#overflow-pans-with-shiftwheel" title="Permanent link">&para;</a></h3>
+<p>Past a certain count the tabs run off the edge. <code>Shift</code>+wheel pans the
+strip, matching the convention browsers and terminals already use for
+horizontal scroll rather than inventing a key; a plain wheel is left
+alone so it still reaches the editor underneath. The <code>+</code> keeps a
+reserved strip at the right edge that tabs are never allowed to slide
+under, and is painted last over its own background so a panned tab
+cannot appear through it.</p>
+<p>Note for anyone testing this: <code>xdotool click --window &lt;id&gt; 5</code> does <em>not</em>
+reach Qt as a wheel event. Real pointer events (<code>xdotool mousemove</code> to
+absolute coordinates, then <code>click 5</code> with no <code>--window</code>) are required.
+The first attempt appeared to show scrolling as broken when it was the
+test that was wrong.</p>
+<h3 id="the-welcome-screen-says-what-the-editor-is-then-what-to-press">The welcome screen says what the editor is, then what to press<a class="headerlink" href="#the-welcome-screen-says-what-the-editor-is-then-what-to-press" title="Permanent link">&para;</a></h3>
+<p>Restructured to: logo, version, byline, then <strong>"The absolutely simple
+text editor"</strong> as the strongest line — all centered — followed by the
+shortcut list in its existing two-column, dot-led alignment.</p>
+<p>The shortcut list was re-chosen rather than kept. It had gone stale
+against a much larger app, and more importantly it listed things you
+could guess while omitting the one thing that will actually stop a new
+user dead: <strong>Vim mode is on by default now (ADR 0050), so the editor
+opens in Normal mode and typing does nothing until you press <code>i</code>.</strong> That
+is now the second line. <code>Ctrl+/</code> is first because it is the answer to
+every other question, followed by new file, open, save, and the command
+line.</p>
+<p>Three opacity tiers carry the hierarchy — tagline strongest, shortcuts
+mid, version and byline dimmest — rather than any second colour or rule
+(ADR 0007).</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p><code>updateAnimation</code>'s "animations off" branch and the new
-<code>snapAnimationToTarget()</code> are now one function, not two copies of the
-same four lines — the earlier ADR 0016 bug (clearing instead of
-populating <code>m_renderedCaretPos</code>) was exactly the kind of mistake
-duplication invites, so this pass consolidated rather than added a
-third copy. All four fixes verified live: overflow text visible
-arbitrarily far into a scrolled line; caret stays solid through a
-sustained sequence of arrow-key presses with animations on; a fast
-typed burst shows every character landing at full brightness with the
-caret exactly adjacent, no trailing gap. Full test suite unaffected
-(these bugs were all in GUI rendering/animation state, outside
-anything the suite covers) and still green.</p>
+<p>Verified live: a bare <code>ase_gui</code> shows one <code>untitled</code> tab plus the <code>+</code>,
+with the new welcome layout beneath it; eight open tabs overflow and
+<code>Shift</code>+wheel pans them (the leftmost clips, the rightmost is revealed);
+a click on an existing tab is pixel-identical at 25ms and at rest; a
+closed tab is still drawn 50ms after <code>Ctrl+W</code>, gone by 550ms, with its
+neighbours shifted into place. <code>ctest</code> 9/9, clean build, zero warnings.</p>
+<p>Not isolated frame-by-frame: the ghost's fade <em>curve</em>. That it renders
+and then disappears while neighbours reflow is confirmed; the
+interpolation itself is the same code path already proven for the open
+animation, so it was not worth further sub-frame capture work.</p>
+<h2 id="addendum-what-was-actually-wrong-with-the-tab-animation">Addendum: what was actually wrong with the tab animation<a class="headerlink" href="#addendum-what-was-actually-wrong-with-the-tab-animation" title="Permanent link">&para;</a></h2>
+<p>Two rounds of fixes here missed the real cause, so both the wrong
+diagnoses and the right one are recorded — the wrong ones were plausible
+and someone will reach for them again.</p>
+<p><strong>The actual bug: tabs were identified by display name.</strong> <code>relayout()</code>
+matched a tab across layouts with <code>previousNames.indexOf(tab.name)</code>, and
+names are not unique. Every buffer opened with <code>+</code> is called <code>untitled</code>,
+so the collision was immediate and constant rather than a rare edge
+case (two files sharing a basename in different directories would do it
+too).</p>
+<p>That single mistake produced every reported symptom:</p>
+<ul>
+<li>A new <code>untitled</code> matched an <em>older</em> <code>untitled</code>, so it was treated as an
+  existing tab: no fade-in, and it slid from whatever position that older
+  tab held — which is why new tabs appeared to come from an early tab no
+  matter how many were open.</li>
+<li>On close, the ghost check asked "is a tab with this name still open?"
+  With duplicates the answer was always yes, so <strong>no ghost was created
+  and the close animation was skipped entirely.</strong></li>
+<li>Survivors matched the wrong entries and inherited the wrong positions
+  and opacities, which is the "random behaviour" on delete.</li>
+</ul>
+<p>Named files masked all of it, which is why every earlier verification
+pass — all of which used distinct <code>.c</code> files — showed it working.</p>
+<p>Tabs are now keyed on a <code>quintptr id</code>: the <code>EditorViewport</code> pointer,
+which is unique and stable for as long as the buffer is open. The
+display name is only ever drawn, never used for identity.</p>
+<p><strong>The two earlier fixes were real, but secondary.</strong> Both are kept:</p>
+<ul>
+<li><em>Origin.</em> New tabs animated from "whichever tab was active", but new
+  tabs are always appended, so an active tab further left meant a long
+  sweep across the strip. The origin is now the tab immediately to the
+  new one's left.</li>
+<li><em>Survivor opacity.</em> Survivors started from the previous frame's alpha
+  and interpolated to their settled value; with the old 0..1 "how active"
+  encoding an inactive survivor started from a value that did not match
+  where it already was, so it visibly re-faded. Survivors now start at
+  the alpha they already have, and <code>Tab::fromAlpha</code> is a real 0–255 alpha
+  — the old encoding also could not express "start fully invisible", so
+  new tabs faded in from the inactive tier instead of from nothing.</li>
+</ul>
+<p>Verified with five buffers all named <code>untitled</code>: the fifth slides in from
+the fourth; closing one leaves the strip's ink extent at an intermediate
+value 18ms in (671 → 562 → 534 px), proving a ghost is drawn and
+collapsing where previously there was none.</p>
+<p>The lesson worth keeping: <strong>display strings are not identity.</strong> The bug
+was invisible to every test that used distinct filenames, and only
+reproduced through the one entry point that generates duplicates.</p>
+<h2 id="addendum-the-welcome-screen-is-a-greeting-not-a-state-display">Addendum: the welcome screen is a greeting, not a state display<a class="headerlink" href="#addendum-the-welcome-screen-is-a-greeting-not-a-state-display" title="Permanent link">&para;</a></h2>
+<p>It was shown whenever the buffer was empty, which meant it came back if
+you deleted everything you had written, and it appeared for an opened
+file that happened to be empty — as though the editor had forgotten
+what you were doing.</p>
+<p>It is now armed only for a buffer that started with no path at all, and
+disarmed permanently the first time anything is typed. Verified: an
+empty file shows nothing, a file-less start shows it, typing hides it,
+and deleting everything again does not bring it back.</p>
 
 
 

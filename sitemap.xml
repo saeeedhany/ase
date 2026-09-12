@@ -237,6 +237,26 @@
          <lastmod>2026-09-12</lastmod>
     </url>
     <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0054-multiple-buffers-and-plugin-host-wiring/</loc>
+         <lastmod>2026-09-12</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0055-dirty-dot-new-file-panel-fixes/</loc>
+         <lastmod>2026-09-12</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0056-linewise-visual-tab-motion-searchable-shortcuts/</loc>
+         <lastmod>2026-09-12</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0057-always-on-tab-strip-and-welcome-rework/</loc>
+         <lastmod>2026-09-12</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0058-session-scoped-greeting-and-panel-carets/</loc>
+         <lastmod>2026-09-12</lastmod>
+    </url>
+    <url>
          <loc>https://saeeedhany.github.io/ase/feedback/</loc>
          <lastmod>2026-09-12</lastmod>
     </url>

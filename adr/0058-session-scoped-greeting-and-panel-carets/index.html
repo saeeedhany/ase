@@ -10,13 +10,11 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0017-viewport-review-pass/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0058-session-scoped-greeting-and-panel-carets/">
       
       
-        <link rel="prev" href="../0016-caret-visibility-fix/">
+        <link rel="prev" href="../0057-always-on-tab-strip-and-welcome-rework/">
       
-      
-        <link rel="next" href="../0018-undo-redo/">
       
       
         
@@ -27,7 +25,7 @@
     
     
       
-        <title>ADR 0017: Viewport review pass — four fixes from live use - Absolute Simple Editor</title>
+        <title>ADR 0058: The greeting belongs to the session, and panel carets join the app - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0017-viewport-review-pass-four-fixes-from-live-use" class="md-skip">
+        <a href="#adr-0058-the-greeting-belongs-to-the-session-and-panel-carets-join-the-app" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0017: Viewport review pass — four fixes from live use
+              ADR 0058: The greeting belongs to the session, and panel carets join the app
             
           </span>
         </div>
@@ -1284,37 +1282,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0017: Viewport review pass — four fixes from live use
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0017-viewport-review-pass/" class="md-nav__link">
         
   
   
@@ -1330,120 +1301,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decisions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decisions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Invisible text past the horizontal scroll point — the most
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-caret-still-visibly-blinkingfading-while-moving-with" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Caret still visibly blinking/fading while moving, with
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Caret (and view) feeling like they lag during fast typing/deleting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-qfontmetrics-reconstruction-not-just-a-feeling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. QFontMetrics reconstruction, not just a feeling
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2573,10 +2430,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0058-session-scoped-greeting-and-panel-carets/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0058: The greeting belongs to the session, and panel carets join the app
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2592,6 +2476,98 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-welcome-screen-greets-the-session-not-the-buffer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The welcome screen greets the session, not the buffer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#panel-text-fields-get-the-editors-caret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Panel text fields get the editor's caret
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2653,22 +2629,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decisions
+        Decision
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decisions">
+    <nav class="md-nav" aria-label="Decision">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" class="md-nav__link">
+  <a href="#the-welcome-screen-greets-the-session-not-the-buffer" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Invisible text past the horizontal scroll point — the most
+        The welcome screen greets the session, not the buffer
       
     </span>
   </a>
@@ -2676,32 +2652,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-caret-still-visibly-blinkingfading-while-moving-with" class="md-nav__link">
+  <a href="#panel-text-fields-get-the-editors-caret" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Caret still visibly blinking/fading while moving, with
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Caret (and view) feeling like they lag during fast typing/deleting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-qfontmetrics-reconstruction-not-just-a-feeling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. QFontMetrics reconstruction, not just a feeling
+        Panel text fields get the editor's caret
       
     </span>
   </a>
@@ -2741,7 +2695,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0017-viewport-review-pass.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0058-session-scoped-greeting-and-panel-carets.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2749,90 +2703,90 @@
   
 
 
-<h1 id="adr-0017-viewport-review-pass-four-fixes-from-live-use">ADR 0017: Viewport review pass — four fixes from live use<a class="headerlink" href="#adr-0017-viewport-review-pass-four-fixes-from-live-use" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0058-the-greeting-belongs-to-the-session-and-panel-carets-join-the-app">ADR 0058: The greeting belongs to the session, and panel carets join the app<a class="headerlink" href="#adr-0058-the-greeting-belongs-to-the-session-and-panel-carets-join-the-app" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Continued user testing surfaced four distinct problems in quick
-succession, all in the rendering/animation code added across Phases
-8–9 and the ADR 0016 fix. Rather than patch each in isolation, this
-was a full review of that code's interactions — the request was
-explicitly for real fixes that wouldn't regress anything else, not
-quick patches.</p>
-<h2 id="decisions">Decisions<a class="headerlink" href="#decisions" title="Permanent link">&para;</a></h2>
-<h3 id="1-invisible-text-past-the-horizontal-scroll-point-the-most">1. Invisible text past the horizontal scroll point — the most<a class="headerlink" href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" title="Permanent link">&para;</a></h3>
-<p>severe bug</p>
-<p><code>drawLine</code>'s <code>drawText</code> call used <code>QRect(x, y, width() - x, m_lineHeight)</code>.
-Once ADR 0014 introduced horizontal scroll, <code>x</code> is a <em>local</em> (translated)
-coordinate that legitimately exceeds the widget's raw <code>width()</code> on any
-sufficiently long, scrolled line — <code>width() - x</code> goes negative, and
-Qt's <code>drawText</code> paints nothing into a negative-width rect. Typed
-characters past that point rendered as blank space — a real, severe
-regression from ADR 0014, not cosmetic.</p>
-<p>Fixed by using the run's own measured width (<code>runWidth</code>, already
-needed for the x-advance) as the rect's width instead: always exactly
-right, never dependent on how far into a line the viewport happens to
-be scrolled. Reproduced directly (typed ~300 characters past the
-overflow point, confirmed text visible throughout) before and after.</p>
-<h3 id="2-caret-still-visibly-blinkingfading-while-moving-with">2. Caret still visibly blinking/fading while moving, with<a class="headerlink" href="#2-caret-still-visibly-blinkingfading-while-moving-with" title="Permanent link">&para;</a></h3>
-<p>animations on</p>
-<p>ADR 0016 fixed this for the hard blink but missed that the animated
-fade used a <em>different</em>, free-running counter (<code>m_caretTick</code>,
-incremented unconditionally every tick regardless of activity) — so
-with <code>animations = true</code>, the fade kept oscillating through movement
-exactly as before, which is what the user was still seeing and
-describing as "blinking while I move it."</p>
-<p>Fixed by deleting <code>m_caretTick</code> and driving the fade's phase from the
-same <code>m_idleTicks</code> the hard blink already uses — reset to 0 by
-<code>resetCaretBlink()</code> on every cursor-moving action. Switched <code>sin</code> to
-<code>cos</code> for the phase function specifically so that the instant something
-goes idle (<code>m_idleTicks == 0</code>) evaluates to full brightness — the fade
-now always starts from "was solid" and eases into the breathing cycle,
-rather than jumping to an arbitrary point on the curve the moment
-movement stops.</p>
-<h3 id="3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting">3. Caret (and view) feeling like they lag during fast typing/deleting<a class="headerlink" href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" title="Permanent link">&para;</a></h3>
-<p>Root cause was really a design gap, not a bug: <code>updateAnimation</code>'s
-easing (<code>kEaseFactor</code> per paint, ADR 0015) is tuned for deliberate
-navigation jumps (arrow keys, clicks, <code>Ctrl+D</code>), where a visible glide
-reads as smooth. During <em>fast, repeated, small</em> jumps — typing or
-holding delete — each new keystroke retargets the ease before the
-previous step finishes, so the rendered caret perpetually chases a
-moving target and never actually reaches it. That reads as "the editor
-can't keep up," which is the opposite of the intended effect and a
-direct hit against the "fast as hell" pillar.</p>
-<p>Fixed by adding <code>snapAnimationToTarget()</code> (forces every rendered value
-to its exact target, bypassing easing for that one update) and calling
-it after every text-mutating <code>keyPressEvent</code> branch — typing, Enter,
-Backspace, Delete — regardless of <code>animations</code>. Pure navigation
-(arrows, Home/End, click, <code>Ctrl+D</code>) is untouched and keeps the glide.
-This is the same logic <code>updateAnimation</code>'s disabled-animation branch
-already needed, so it's factored out and shared rather than duplicated
-— see decision 4's fix for why that sharing mattered.</p>
-<h3 id="4-qfontmetrics-reconstruction-not-just-a-feeling">4. <code>QFontMetrics</code> reconstruction, not just a feeling<a class="headerlink" href="#4-qfontmetrics-reconstruction-not-just-a-feeling" title="Permanent link">&para;</a></h3>
-<p>While reviewing the above, found <code>drawLine</code>, <code>xForColumn</code>, and
-<code>caretTargetFor</code> (the last two called once per cursor on <em>every</em>
-animation tick) were each constructing a fresh <code>QFontMetrics(font)</code> for
-every styled run, every call — never cached. <code>QFontMetrics</code> construction
-queries the font engine; doing it dozens of times per frame, every 30ms
-while animating, is real avoidable work sitting directly in the path
-the "feels slow" reports were pointing at. Added three cached instances
-(<code>m_metrics</code>, <code>m_boldMetrics</code>, <code>m_italicMetrics</code>) built once in
-<code>applyConfig()</code>, fetched via <code>metricsForCapture()</code> everywhere a font's
-metrics are needed. Purely a reuse-not-reconstruct change — the
-values were already being computed correctly, just repeatedly.</p>
+<p>Two pieces of feedback, both about a thing being <em>almost</em> right: the
+welcome screen appearing in one situation too many, and the caret
+changing character the moment you opened a panel.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<h3 id="the-welcome-screen-greets-the-session-not-the-buffer">The welcome screen greets the session, not the buffer<a class="headerlink" href="#the-welcome-screen-greets-the-session-not-the-buffer" title="Permanent link">&para;</a></h3>
+<p>ADR 0057 narrowed it from "the buffer is empty" to "this buffer started
+with no path", which fixed the file cases but left one: <code>Ctrl+N</code> (and
+the tab strip's <code>+</code>) makes a pathless buffer too, so a new tab opened an
+hour into a session was greeted with the logo, the version and a list of
+first-steps shortcuts. You are already editing by then. The greeting is
+for the moment you have nothing open at all.</p>
+<p>A viewport genuinely cannot decide this for itself — a <code>Ctrl+N</code> buffer
+and the startup buffer are byte-for-byte identical from inside. What
+separates them is <em>when</em> they were made, which only the window knows.
+So <code>m_welcomeEligible</code> is no longer inferred in the constructor; it is
+armed from outside by <code>armWelcomeGreeting()</code>, called from <code>main()</code> for
+the startup buffer and only when <code>argc == 1</code> — the one place that
+actually knows the editor was launched with no file.</p>
+<p>The first-keystroke latch from ADR 0057 is unchanged, and still the
+thing that makes this a <em>greeting</em>.</p>
+<p>One case left deliberately as-is: switching back to an untouched startup
+buffer still shows it. That buffer <em>is</em> the empty editor you launched,
+nothing has been typed into it, and blanking it on return would mean
+tracking "has been looked away from", which is a state nobody asked for.</p>
+<h3 id="panel-text-fields-get-the-editors-caret">Panel text fields get the editor's caret<a class="headerlink" href="#panel-text-fields-get-the-editors-caret" title="Permanent link">&para;</a></h3>
+<p>Every field in the panels — Find and Replace, Open/Save-As, the <code>:</code>
+command line, the shortcut search — was a plain <code>QLineEdit</code>, so the
+caret changed character as soon as you opened one: the editor's glides
+between positions and fades on a cosine breathe cycle, Qt's native one
+hard-blinks in place. ADR 0028 matched their <em>rate</em> through
+<code>QApplication::setCursorFlashTime</code>, and said in as many words that
+matching the rest would mean replacing the native caret painting, left
+for if the rate match alone stopped being enough. It did.</p>
+<p><code>SmoothLineEdit</code> is that replacement. It reuses the editor's own two
+mechanisms rather than approximating them: <code>motion::kEaseFactor</code> per
+<code>motion::kTickMs</code> tick for the glide (the same exponential decay, so a
+caret crossing a field decelerates exactly like one crossing a line of
+code), and the same <code>128 + 127·cos</code> breathe on the same 24-tick cycle.
+With <code>animations = false</code> it falls back to the same hard blink the
+editor uses in that mode, pushed in by each panel's <code>refreshTheme()</code> so
+a config hot-reload reaches it.</p>
+<p>Two implementation notes worth keeping, because both were the difference
+between this working and not:</p>
+<ul>
+<li><strong>The native caret is removed through the style.</strong> <code>QLineEdit</code> has no
+  public <code>setCursorWidth()</code> (<code>QPlainTextEdit</code> does; <code>QLineEdit</code> does
+  not), and painting over the caret would mean re-rendering the text
+  under it. But it takes its caret width from
+  <code>QStyle::PM_TextCursorWidth</code>, so a <code>QProxyStyle</code> reporting <code>0</code> for
+  that one metric removes the caret and touches nothing else — text,
+  selection, placeholder and frame painting all stay Qt's.</li>
+<li><strong>The caret position comes from <code>QLineEdit::cursorRect()</code></strong>, so
+  horizontal scrolling in an overflowing field, margins and alignment
+  stay Qt's problem. That rect is padded for repaint purposes; the caret
+  sits <code>ceil((width - cursorWidth) / 2)</code> from its left edge, derived
+  from the rect rather than hardcoded, so a change to that padding
+  doesn't silently shift every caret in the app by five pixels.</li>
+</ul>
+<p>The timer runs only while a field has focus. Five fields across five
+panels per buffer, all ticking 33 times a second forever, is exactly the
+kind of idle cost ADR 0053 went and removed.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p><code>updateAnimation</code>'s "animations off" branch and the new
-<code>snapAnimationToTarget()</code> are now one function, not two copies of the
-same four lines — the earlier ADR 0016 bug (clearing instead of
-populating <code>m_renderedCaretPos</code>) was exactly the kind of mistake
-duplication invites, so this pass consolidated rather than added a
-third copy. All four fixes verified live: overflow text visible
-arbitrarily far into a scrolled line; caret stays solid through a
-sustained sequence of arrow-key presses with animations on; a fast
-typed burst shows every character landing at full brightness with the
-caret exactly adjacent, no trailing gap. Full test suite unaffected
-(these bugs were all in GUI rendering/animation state, outside
-anything the suite covers) and still green.</p>
+<p>Verified live, by sampling the caret column across consecutive frames
+rather than by looking at one screenshot:</p>
+<ul>
+<li>Launching bare shows the greeting; <code>Ctrl+N</code> from there opens a second
+  <code>untitled</code> with no greeting; launching on a file shows none.</li>
+<li>In all four field kinds (Find, Open, command line, shortcut search) a
+  2px caret sits at the right character offset and cycles smoothly —
+  measured brightness 181 → 117 → 77 → (trough) → 63 → 117 over
+  successive frames, the cosine curve, not a toggle.</li>
+<li>Backspace catches the caret mid-glide one column short of its
+  destination before it lands.</li>
+<li>With <code>animations = false</code> the same caret reads 225 or nothing, never
+  an intermediate value — a hard blink, as intended.</li>
+</ul>
+<p><code>ctest</code> 9/9, clean build, zero warnings.</p>
+<p>Not done: <code>QTextEdit</code>/<code>QPlainTextEdit</code> fields elsewhere in the app (the
+output panel, the hover and help bodies) still use Qt's caret. They are
+read-only, so they show no caret at all, and the question never arises.</p>
 
 
 

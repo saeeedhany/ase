@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0017-viewport-review-pass/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0055-dirty-dot-new-file-panel-fixes/">
       
       
-        <link rel="prev" href="../0016-caret-visibility-fix/">
+        <link rel="prev" href="../0054-multiple-buffers-and-plugin-host-wiring/">
       
       
-        <link rel="next" href="../0018-undo-redo/">
+        <link rel="next" href="../0056-linewise-visual-tab-motion-searchable-shortcuts/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0017: Viewport review pass — four fixes from live use - Absolute Simple Editor</title>
+        <title>ADR 0055: The dot means unsaved, plus new-file and panel fixes - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0017-viewport-review-pass-four-fixes-from-live-use" class="md-skip">
+        <a href="#adr-0055-the-dot-means-unsaved-plus-new-file-and-panel-fixes" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0017: Viewport review pass — four fixes from live use
+              ADR 0055: The dot means unsaved, plus new-file and panel fixes
             
           </span>
         </div>
@@ -1284,37 +1284,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0017: Viewport review pass — four fixes from live use
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0017-viewport-review-pass/" class="md-nav__link">
         
   
   
@@ -1330,120 +1303,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decisions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decisions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Invisible text past the horizontal scroll point — the most
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-caret-still-visibly-blinkingfading-while-moving-with" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Caret still visibly blinking/fading while moving, with
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Caret (and view) feeling like they lag during fast typing/deleting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-qfontmetrics-reconstruction-not-just-a-feeling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. QFontMetrics reconstruction, not just a feeling
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2489,10 +2348,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0055-dirty-dot-new-file-panel-fixes/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0055: The dot means unsaved, plus new-file and panel fixes
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2508,6 +2394,131 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-dot-marks-unsaved-changes-not-the-active-buffer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The dot marks unsaved changes, not the active buffer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ctrln-creates-a-new-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ctrl+N creates a new file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-opensave-as-panel-behaves-like-a-file-dialog-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Open/Save-As panel behaves like a file dialog now
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#about-panel-logo-in-its-own-static-column-text-left-aligned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        About panel: logo in its own static column, text left-aligned
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keyboard-shortcuts-a-data-table-and-content-that-is-actually-true" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyboard shortcuts: a data table, and content that is actually true
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2653,22 +2664,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decisions
+        Decision
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decisions">
+    <nav class="md-nav" aria-label="Decision">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" class="md-nav__link">
+  <a href="#the-dot-marks-unsaved-changes-not-the-active-buffer" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Invisible text past the horizontal scroll point — the most
+        The dot marks unsaved changes, not the active buffer
       
     </span>
   </a>
@@ -2676,10 +2687,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-caret-still-visibly-blinkingfading-while-moving-with" class="md-nav__link">
+  <a href="#ctrln-creates-a-new-file" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Caret still visibly blinking/fading while moving, with
+        Ctrl+N creates a new file
       
     </span>
   </a>
@@ -2687,10 +2698,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" class="md-nav__link">
+  <a href="#the-opensave-as-panel-behaves-like-a-file-dialog-now" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Caret (and view) feeling like they lag during fast typing/deleting
+        The Open/Save-As panel behaves like a file dialog now
       
     </span>
   </a>
@@ -2698,10 +2709,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-qfontmetrics-reconstruction-not-just-a-feeling" class="md-nav__link">
+  <a href="#about-panel-logo-in-its-own-static-column-text-left-aligned" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. QFontMetrics reconstruction, not just a feeling
+        About panel: logo in its own static column, text left-aligned
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keyboard-shortcuts-a-data-table-and-content-that-is-actually-true" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyboard shortcuts: a data table, and content that is actually true
       
     </span>
   </a>
@@ -2741,7 +2763,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0017-viewport-review-pass.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0055-dirty-dot-new-file-panel-fixes.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2749,90 +2771,103 @@
   
 
 
-<h1 id="adr-0017-viewport-review-pass-four-fixes-from-live-use">ADR 0017: Viewport review pass — four fixes from live use<a class="headerlink" href="#adr-0017-viewport-review-pass-four-fixes-from-live-use" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0055-the-dot-means-unsaved-plus-new-file-and-panel-fixes">ADR 0055: The dot means unsaved, plus new-file and panel fixes<a class="headerlink" href="#adr-0055-the-dot-means-unsaved-plus-new-file-and-panel-fixes" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Continued user testing surfaced four distinct problems in quick
-succession, all in the rendering/animation code added across Phases
-8–9 and the ADR 0016 fix. Rather than patch each in isolation, this
-was a full review of that code's interactions — the request was
-explicitly for real fixes that wouldn't regress anything else, not
-quick patches.</p>
-<h2 id="decisions">Decisions<a class="headerlink" href="#decisions" title="Permanent link">&para;</a></h2>
-<h3 id="1-invisible-text-past-the-horizontal-scroll-point-the-most">1. Invisible text past the horizontal scroll point — the most<a class="headerlink" href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" title="Permanent link">&para;</a></h3>
-<p>severe bug</p>
-<p><code>drawLine</code>'s <code>drawText</code> call used <code>QRect(x, y, width() - x, m_lineHeight)</code>.
-Once ADR 0014 introduced horizontal scroll, <code>x</code> is a <em>local</em> (translated)
-coordinate that legitimately exceeds the widget's raw <code>width()</code> on any
-sufficiently long, scrolled line — <code>width() - x</code> goes negative, and
-Qt's <code>drawText</code> paints nothing into a negative-width rect. Typed
-characters past that point rendered as blank space — a real, severe
-regression from ADR 0014, not cosmetic.</p>
-<p>Fixed by using the run's own measured width (<code>runWidth</code>, already
-needed for the x-advance) as the rect's width instead: always exactly
-right, never dependent on how far into a line the viewport happens to
-be scrolled. Reproduced directly (typed ~300 characters past the
-overflow point, confirmed text visible throughout) before and after.</p>
-<h3 id="2-caret-still-visibly-blinkingfading-while-moving-with">2. Caret still visibly blinking/fading while moving, with<a class="headerlink" href="#2-caret-still-visibly-blinkingfading-while-moving-with" title="Permanent link">&para;</a></h3>
-<p>animations on</p>
-<p>ADR 0016 fixed this for the hard blink but missed that the animated
-fade used a <em>different</em>, free-running counter (<code>m_caretTick</code>,
-incremented unconditionally every tick regardless of activity) — so
-with <code>animations = true</code>, the fade kept oscillating through movement
-exactly as before, which is what the user was still seeing and
-describing as "blinking while I move it."</p>
-<p>Fixed by deleting <code>m_caretTick</code> and driving the fade's phase from the
-same <code>m_idleTicks</code> the hard blink already uses — reset to 0 by
-<code>resetCaretBlink()</code> on every cursor-moving action. Switched <code>sin</code> to
-<code>cos</code> for the phase function specifically so that the instant something
-goes idle (<code>m_idleTicks == 0</code>) evaluates to full brightness — the fade
-now always starts from "was solid" and eases into the breathing cycle,
-rather than jumping to an arbitrary point on the curve the moment
-movement stops.</p>
-<h3 id="3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting">3. Caret (and view) feeling like they lag during fast typing/deleting<a class="headerlink" href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" title="Permanent link">&para;</a></h3>
-<p>Root cause was really a design gap, not a bug: <code>updateAnimation</code>'s
-easing (<code>kEaseFactor</code> per paint, ADR 0015) is tuned for deliberate
-navigation jumps (arrow keys, clicks, <code>Ctrl+D</code>), where a visible glide
-reads as smooth. During <em>fast, repeated, small</em> jumps — typing or
-holding delete — each new keystroke retargets the ease before the
-previous step finishes, so the rendered caret perpetually chases a
-moving target and never actually reaches it. That reads as "the editor
-can't keep up," which is the opposite of the intended effect and a
-direct hit against the "fast as hell" pillar.</p>
-<p>Fixed by adding <code>snapAnimationToTarget()</code> (forces every rendered value
-to its exact target, bypassing easing for that one update) and calling
-it after every text-mutating <code>keyPressEvent</code> branch — typing, Enter,
-Backspace, Delete — regardless of <code>animations</code>. Pure navigation
-(arrows, Home/End, click, <code>Ctrl+D</code>) is untouched and keeps the glide.
-This is the same logic <code>updateAnimation</code>'s disabled-animation branch
-already needed, so it's factored out and shared rather than duplicated
-— see decision 4's fix for why that sharing mattered.</p>
-<h3 id="4-qfontmetrics-reconstruction-not-just-a-feeling">4. <code>QFontMetrics</code> reconstruction, not just a feeling<a class="headerlink" href="#4-qfontmetrics-reconstruction-not-just-a-feeling" title="Permanent link">&para;</a></h3>
-<p>While reviewing the above, found <code>drawLine</code>, <code>xForColumn</code>, and
-<code>caretTargetFor</code> (the last two called once per cursor on <em>every</em>
-animation tick) were each constructing a fresh <code>QFontMetrics(font)</code> for
-every styled run, every call — never cached. <code>QFontMetrics</code> construction
-queries the font engine; doing it dozens of times per frame, every 30ms
-while animating, is real avoidable work sitting directly in the path
-the "feels slow" reports were pointing at. Added three cached instances
-(<code>m_metrics</code>, <code>m_boldMetrics</code>, <code>m_italicMetrics</code>) built once in
-<code>applyConfig()</code>, fetched via <code>metricsForCapture()</code> everywhere a font's
-metrics are needed. Purely a reuse-not-reconstruct change — the
-values were already being computed correctly, just repeatedly.</p>
+<p>Five pieces of feedback after using the multi-buffer work from ADR 0054,
+all of them corrections to decisions made one round earlier.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<h3 id="the-dot-marks-unsaved-changes-not-the-active-buffer">The dot marks unsaved changes, not the active buffer<a class="headerlink" href="#the-dot-marks-unsaved-changes-not-the-active-buffer" title="Permanent link">&para;</a></h3>
+<p>ADR 0054 put a dot beside every filename, sharing the name's opacity, as
+a purely decorative mark. That was wrong, and the reason is worth
+recording: <strong>opacity was already saying "this is the active buffer", so
+the dot said nothing a second time.</strong> Meanwhile the one thing you
+genuinely cannot see about a buffer you are <em>not</em> looking at — whether
+it has unsaved edits — had no indicator at all. The dirty marker lived
+only in the status bar and window title, both of which follow the active
+buffer.</p>
+<p>So the dot now appears only on buffers with unsaved changes, and is
+deliberately exempt from the active/inactive dimming
+(<code>kDirtyDotMinAlpha</code>): warning you about a file you are not looking at
+is its entire purpose, so it must stay readable on a dimmed entry.</p>
+<p>Its slot is reserved whether or not it is drawn, so names do not shift
+sideways the instant a file becomes dirty — a bar that reflows on your
+first keystroke would be worse than a little extra left padding.</p>
+<p>This supersedes ADR 0054's dot decision, and closes the "show unsaved
+state in the buffer bar" gap that ADR flagged as deliberate.</p>
+<h3 id="ctrln-creates-a-new-file"><code>Ctrl+N</code> creates a new file<a class="headerlink" href="#ctrln-creates-a-new-file" title="Permanent link">&para;</a></h3>
+<p>An empty, pathless buffer. Nothing else was needed: <code>save()</code> already
+routes an empty path to Save-As (ADR 0006), and the bar already labels
+a pathless buffer <code>untitled</code>.</p>
+<h3 id="the-opensave-as-panel-behaves-like-a-file-dialog-now">The Open/Save-As panel behaves like a file dialog now<a class="headerlink" href="#the-opensave-as-panel-behaves-like-a-file-dialog-now" title="Permanent link">&para;</a></h3>
+<p>Three real defects, in rough order of severity:</p>
+<ol>
+<li><strong>Save-As silently overwrote an existing file.</strong> No confirmation, no
+   warning. That is the one genuinely destructive thing this panel could
+   do, and it did it without asking. Now a themed confirm (matching the
+   window's own, per ADR 0044 — not a native dialog).</li>
+<li><strong>A typed path worked in Save-As and did nothing in Open.</strong> Open
+   treated the field purely as a filter against the current directory,
+   so typing a real path filtered the list to nothing and Enter did
+   something unrelated. This asymmetry is the single biggest reason the
+   panel felt unfamiliar. Both modes now resolve a typed path — absolute,
+   <code>~</code>-prefixed, or containing a separator — navigating to it if it is a
+   directory, otherwise opening/saving it. In Open, a path that does not
+   exist yet is accepted, since opening a new file by name is a normal
+   editor action (ADR 0006) and the panel was the one place that refused
+   to do it.</li>
+<li><strong>Neither showed which directory you were in.</strong> The directory name was
+   a placeholder in the input, which disappeared the moment you typed —
+   so exactly while filtering, the context you needed was gone. There is
+   now a dim path line under the input, with <code>$HOME</code> collapsed to <code>~</code>.</li>
+</ol>
+<p>Also: <code>~</code> expansion, and Enter on an unmatched filter in Open now treats
+what you typed as a new file name in the current directory instead of
+doing nothing.</p>
+<h3 id="about-panel-logo-in-its-own-static-column-text-left-aligned">About panel: logo in its own static column, text left-aligned<a class="headerlink" href="#about-panel-logo-in-its-own-static-column-text-left-aligned" title="Permanent link">&para;</a></h3>
+<p>Was a centered logo with centered prose stacked beneath it (ADR 0028,
+which chose centered text specifically because left-aligned text under a
+centered image looked unaligned). The fix is not to re-align the text
+under the image but to stop stacking them: the logo now holds a fixed
+132px column pinned to the top, with the text left-aligned beside it.</p>
+<p>Centered prose is harder to read — every line starts at a different x, so
+the eye has to re-find the left edge on each one. Side by side gives the
+text one hard left edge to track and still gives the logo its presence.
+The logo is <code>Fixed</code>/<code>AlignTop</code> so it cannot stretch or drift downward as
+the text beside it grows.</p>
+<p>Secondary lines (version, byline, licence) drop one opacity tier — the
+same "vary opacity, never hue" move as the gutter and comments
+(ADR 0007).</p>
+<h3 id="keyboard-shortcuts-a-data-table-and-content-that-is-actually-true">Keyboard shortcuts: a data table, and content that is actually true<a class="headerlink" href="#keyboard-shortcuts-a-data-table-and-content-that-is-actually-true" title="Permanent link">&para;</a></h3>
+<p>The panel was one long HTML string literal, and it had <strong>drifted badly out
+of date</strong> — no Vim mode, no buffers, no font zoom, no <code>:</code> command line,
+no plugin commands, despite all of those shipping. That is not an
+accident: adding a row meant hand-writing four tags, and that friction is
+what stops documentation being updated.</p>
+<p>It is now a <code>QVector&lt;HelpSection&gt;</code> of <code>{keys, description}</code> rows rendered
+by <code>buildHelpHtml()</code>. Sections that require opting in carry a dim note
+(<code>Vim mode — vim_mode = true</code>) rather than leaving someone hunting for a
+key that does nothing on their setup. Keys sit in a fixed-width column
+one opacity tier down, descriptions at full strength, so it reads as two
+aligned columns rather than ragged pairs.</p>
+<p>Both panels blend their dim colour to a solid RGB rather than passing
+<code>#AARRGGBB</code>: <strong>Qt's rich-text CSS does not reliably parse an alpha
+channel in a hex colour</strong>, so the dimming would have silently rendered
+fully opaque.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p><code>updateAnimation</code>'s "animations off" branch and the new
-<code>snapAnimationToTarget()</code> are now one function, not two copies of the
-same four lines — the earlier ADR 0016 bug (clearing instead of
-populating <code>m_renderedCaretPos</code>) was exactly the kind of mistake
-duplication invites, so this pass consolidated rather than added a
-third copy. All four fixes verified live: overflow text visible
-arbitrarily far into a scrolled line; caret stays solid through a
-sustained sequence of arrow-key presses with animations on; a fast
-typed burst shows every character landing at full brightness with the
-caret exactly adjacent, no trailing gap. Full test suite unaffected
-(these bugs were all in GUI rendering/animation state, outside
-anything the suite covers) and still green.</p>
+<p>Verified live: <code>alpha.c</code> active and clean shows no dot while <code>• beta.c</code>
+sits dimmed with its unsaved dot clearly readable — the exact case the
+old design could not express. <code>Ctrl+N</code> opens <code>untitled</code>. Typing an
+absolute path into Open now opens it as a buffer (previously a no-op).
+Save-As onto an existing file raises the themed overwrite confirm. The
+About panel renders as two columns with the logo static on the left, and
+the shortcuts panel lists <code>Ctrl+N</code>, buffer switching, font zoom and the
+full Vim command set.</p>
+<p><code>ctest</code> 9/9, clean build, zero warnings.</p>
+<p>Still not shown anywhere: which buffer a dirty dot belongs to when the
+bar overflows the window width — the bar does not scroll or elide yet.
+Fine at a handful of buffers, a real gap at twenty.</p>
 
 
 

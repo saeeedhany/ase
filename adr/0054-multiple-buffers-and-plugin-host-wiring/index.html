@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0017-viewport-review-pass/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0054-multiple-buffers-and-plugin-host-wiring/">
       
       
-        <link rel="prev" href="../0016-caret-visibility-fix/">
+        <link rel="prev" href="../0053-render-hot-path-and-one-motion-language/">
       
       
-        <link rel="next" href="../0018-undo-redo/">
+        <link rel="next" href="../0055-dirty-dot-new-file-panel-fixes/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0017: Viewport review pass — four fixes from live use - Absolute Simple Editor</title>
+        <title>ADR 0054: Multiple buffers, and finally wiring the plugin host in - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0017-viewport-review-pass-four-fixes-from-live-use" class="md-skip">
+        <a href="#adr-0054-multiple-buffers-and-finally-wiring-the-plugin-host-in" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0017: Viewport review pass — four fixes from live use
+              ADR 0054: Multiple buffers, and finally wiring the plugin host in
             
           </span>
         </div>
@@ -1284,37 +1284,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0017: Viewport review pass — four fixes from live use
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0017-viewport-review-pass/" class="md-nav__link">
         
   
   
@@ -1330,120 +1303,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decisions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decisions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Invisible text past the horizontal scroll point — the most
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-caret-still-visibly-blinkingfading-while-moving-with" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Caret still visibly blinking/fading while moving, with
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Caret (and view) feeling like they lag during fast typing/deleting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-qfontmetrics-reconstruction-not-just-a-feeling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. QFontMetrics reconstruction, not just a feeling
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2461,10 +2320,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0054-multiple-buffers-and-plugin-host-wiring/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0054: Multiple buffers, and finally wiring the plugin host in
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2480,6 +2366,142 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-viewport-per-buffer-not-a-document-per-viewport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A viewport per buffer, not a document per viewport
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-buffer-bar-is-a-dot-a-name-and-nothing-else" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The buffer bar is a dot, a name, and nothing else
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deliberately-not-shown-in-the-bar-dirty-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deliberately not shown in the bar: dirty state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lsp-starts-on-first-activation-not-at-construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LSP starts on first activation, not at construction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openfile-deleted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        openFile() deleted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plugin-host-wired-with-the-undo-hazard-handled-honestly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin host: wired, with the undo hazard handled honestly
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2653,22 +2675,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decisions
+        Decision
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decisions">
+    <nav class="md-nav" aria-label="Decision">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" class="md-nav__link">
+  <a href="#a-viewport-per-buffer-not-a-document-per-viewport" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Invisible text past the horizontal scroll point — the most
+        A viewport per buffer, not a document per viewport
       
     </span>
   </a>
@@ -2676,10 +2698,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-caret-still-visibly-blinkingfading-while-moving-with" class="md-nav__link">
+  <a href="#the-buffer-bar-is-a-dot-a-name-and-nothing-else" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Caret still visibly blinking/fading while moving, with
+        The buffer bar is a dot, a name, and nothing else
       
     </span>
   </a>
@@ -2687,10 +2709,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" class="md-nav__link">
+  <a href="#deliberately-not-shown-in-the-bar-dirty-state" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Caret (and view) feeling like they lag during fast typing/deleting
+        Deliberately not shown in the bar: dirty state
       
     </span>
   </a>
@@ -2698,10 +2720,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-qfontmetrics-reconstruction-not-just-a-feeling" class="md-nav__link">
+  <a href="#lsp-starts-on-first-activation-not-at-construction" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. QFontMetrics reconstruction, not just a feeling
+        LSP starts on first activation, not at construction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openfile-deleted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        openFile() deleted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plugin-host-wired-with-the-undo-hazard-handled-honestly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin host: wired, with the undo hazard handled honestly
       
     </span>
   </a>
@@ -2741,7 +2785,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0017-viewport-review-pass.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0054-multiple-buffers-and-plugin-host-wiring.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2749,90 +2793,124 @@
   
 
 
-<h1 id="adr-0017-viewport-review-pass-four-fixes-from-live-use">ADR 0017: Viewport review pass — four fixes from live use<a class="headerlink" href="#adr-0017-viewport-review-pass-four-fixes-from-live-use" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0054-multiple-buffers-and-finally-wiring-the-plugin-host-in">ADR 0054: Multiple buffers, and finally wiring the plugin host in<a class="headerlink" href="#adr-0054-multiple-buffers-and-finally-wiring-the-plugin-host-in" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Continued user testing surfaced four distinct problems in quick
-succession, all in the rendering/animation code added across Phases
-8–9 and the ADR 0016 fix. Rather than patch each in isolation, this
-was a full review of that code's interactions — the request was
-explicitly for real fixes that wouldn't regress anything else, not
-quick patches.</p>
-<h2 id="decisions">Decisions<a class="headerlink" href="#decisions" title="Permanent link">&para;</a></h2>
-<h3 id="1-invisible-text-past-the-horizontal-scroll-point-the-most">1. Invisible text past the horizontal scroll point — the most<a class="headerlink" href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" title="Permanent link">&para;</a></h3>
-<p>severe bug</p>
-<p><code>drawLine</code>'s <code>drawText</code> call used <code>QRect(x, y, width() - x, m_lineHeight)</code>.
-Once ADR 0014 introduced horizontal scroll, <code>x</code> is a <em>local</em> (translated)
-coordinate that legitimately exceeds the widget's raw <code>width()</code> on any
-sufficiently long, scrolled line — <code>width() - x</code> goes negative, and
-Qt's <code>drawText</code> paints nothing into a negative-width rect. Typed
-characters past that point rendered as blank space — a real, severe
-regression from ADR 0014, not cosmetic.</p>
-<p>Fixed by using the run's own measured width (<code>runWidth</code>, already
-needed for the x-advance) as the rect's width instead: always exactly
-right, never dependent on how far into a line the viewport happens to
-be scrolled. Reproduced directly (typed ~300 characters past the
-overflow point, confirmed text visible throughout) before and after.</p>
-<h3 id="2-caret-still-visibly-blinkingfading-while-moving-with">2. Caret still visibly blinking/fading while moving, with<a class="headerlink" href="#2-caret-still-visibly-blinkingfading-while-moving-with" title="Permanent link">&para;</a></h3>
-<p>animations on</p>
-<p>ADR 0016 fixed this for the hard blink but missed that the animated
-fade used a <em>different</em>, free-running counter (<code>m_caretTick</code>,
-incremented unconditionally every tick regardless of activity) — so
-with <code>animations = true</code>, the fade kept oscillating through movement
-exactly as before, which is what the user was still seeing and
-describing as "blinking while I move it."</p>
-<p>Fixed by deleting <code>m_caretTick</code> and driving the fade's phase from the
-same <code>m_idleTicks</code> the hard blink already uses — reset to 0 by
-<code>resetCaretBlink()</code> on every cursor-moving action. Switched <code>sin</code> to
-<code>cos</code> for the phase function specifically so that the instant something
-goes idle (<code>m_idleTicks == 0</code>) evaluates to full brightness — the fade
-now always starts from "was solid" and eases into the breathing cycle,
-rather than jumping to an arbitrary point on the curve the moment
-movement stops.</p>
-<h3 id="3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting">3. Caret (and view) feeling like they lag during fast typing/deleting<a class="headerlink" href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" title="Permanent link">&para;</a></h3>
-<p>Root cause was really a design gap, not a bug: <code>updateAnimation</code>'s
-easing (<code>kEaseFactor</code> per paint, ADR 0015) is tuned for deliberate
-navigation jumps (arrow keys, clicks, <code>Ctrl+D</code>), where a visible glide
-reads as smooth. During <em>fast, repeated, small</em> jumps — typing or
-holding delete — each new keystroke retargets the ease before the
-previous step finishes, so the rendered caret perpetually chases a
-moving target and never actually reaches it. That reads as "the editor
-can't keep up," which is the opposite of the intended effect and a
-direct hit against the "fast as hell" pillar.</p>
-<p>Fixed by adding <code>snapAnimationToTarget()</code> (forces every rendered value
-to its exact target, bypassing easing for that one update) and calling
-it after every text-mutating <code>keyPressEvent</code> branch — typing, Enter,
-Backspace, Delete — regardless of <code>animations</code>. Pure navigation
-(arrows, Home/End, click, <code>Ctrl+D</code>) is untouched and keeps the glide.
-This is the same logic <code>updateAnimation</code>'s disabled-animation branch
-already needed, so it's factored out and shared rather than duplicated
-— see decision 4's fix for why that sharing mattered.</p>
-<h3 id="4-qfontmetrics-reconstruction-not-just-a-feeling">4. <code>QFontMetrics</code> reconstruction, not just a feeling<a class="headerlink" href="#4-qfontmetrics-reconstruction-not-just-a-feeling" title="Permanent link">&para;</a></h3>
-<p>While reviewing the above, found <code>drawLine</code>, <code>xForColumn</code>, and
-<code>caretTargetFor</code> (the last two called once per cursor on <em>every</em>
-animation tick) were each constructing a fresh <code>QFontMetrics(font)</code> for
-every styled run, every call — never cached. <code>QFontMetrics</code> construction
-queries the font engine; doing it dozens of times per frame, every 30ms
-while animating, is real avoidable work sitting directly in the path
-the "feels slow" reports were pointing at. Added three cached instances
-(<code>m_metrics</code>, <code>m_boldMetrics</code>, <code>m_italicMetrics</code>) built once in
-<code>applyConfig()</code>, fetched via <code>metricsForCapture()</code> everywhere a font's
-metrics are needed. Purely a reuse-not-reconstruct change — the
-values were already being computed correctly, just repeatedly.</p>
+<p>Two items from <a href="../../EXTENSIBILITY/">EXTENSIBILITY.md</a> and the post-v1
+roadmap, taken together because the first is small and the second is the
+largest functional gap the editor had: it could only ever hold <strong>one file
+per window</strong>, with no way to open a second without losing the first.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<h3 id="a-viewport-per-buffer-not-a-document-per-viewport">A viewport per buffer, not a document per viewport<a class="headerlink" href="#a-viewport-per-buffer-not-a-document-per-viewport" title="Permanent link">&para;</a></h3>
+<p>ADR 0052 predicted that multi-buffer would force extracting a <code>Document</code>
+class (buffer + undo + syntax + path + LSP state) out of <code>EditorViewport</code>,
+since the viewport owns all of those as singletons. On actually costing
+it out, <strong>that prediction was wrong, and the reverse is true.</strong></p>
+<p>A <code>Document</code> earns its keep only when you need two <em>views of the same
+file</em> — split view. That isn't this feature. Without that requirement,
+"one <code>EditorViewport</code> per open buffer, stacked so one is visible" is not
+a workaround for missing the extraction; it is the simpler correct model:
+the viewport <em>is</em> the document view. Extracting <code>Document</code> first would
+have meant moving fifteen-odd members and touching all nine translation
+units to buy nothing today.</p>
+<p>So: <code>QStackedWidget</code> of viewports, owned by <code>MainWindow</code>, which grew
+from "a <code>closeEvent</code> override" into the thing that owns the buffer list.
+<code>Document</code> is now explicitly parked until split view is wanted — at
+which point it becomes the right call, for a reason that actually
+applies.</p>
+<p>The honest cost of this shape: some per-viewport state is duplicated
+N times (a blink timer, a config-reload timer, a full set of floating
+panels). Panels are inert until shown and hidden widgets get no paint
+events, so the cost is small — but it is real, and it is the price of
+not having a <code>Document</code>.</p>
+<h3 id="the-buffer-bar-is-a-dot-a-name-and-nothing-else">The buffer bar is a dot, a name, and nothing else<a class="headerlink" href="#the-buffer-bar-is-a-dot-a-name-and-nothing-else" title="Permanent link">&para;</a></h3>
+<p>Explicit design direction: filename with a dot beside it, active at full
+opacity, inactive dimmed (dot and name together), <strong>no lines above,
+below or between</strong>, close mark only on the active entry, minimal and
+fast.</p>
+<p>Deliberately <em>not</em> a <code>QTabBar</code>. Every native tab widget draws frames,
+separators, a selected-tab lip and a hover plate — none of which this app
+has anywhere else. The chrome language here is "no lines, state carried
+by opacity" (ADR 0007's one-font-color pillar, ADR 0022's panels), and a
+<code>QTabBar</code> would have imported a different one. <code>BufferBar</code> is ~180 lines
+of custom paint instead, using the same opacity tiers the gutter already
+uses to say "this line is yours / these are context".</p>
+<p>Two consequences worth naming:</p>
+<ul>
+<li><strong>One buffer means no bar at all.</strong> <code>sizeHint()</code> returns zero height
+  below two entries — the filename is already in the window title, so a
+  single-entry bar would be chrome that tells you nothing. Anyone who
+  never opens a second file sees exactly the editor they had before this
+  feature existed.</li>
+<li><strong>The close mark only exists on the active entry</strong>, per the direction.
+  An x on every buffer is five things asking to be clicked instead of
+  one. Its hit rect is deliberately padded well beyond the 7px glyph.</li>
+</ul>
+<p>The one thing added beyond the brief: a small opacity lift on hover for
+inactive entries, so a click target acknowledges the pointer. It adds no
+chrome — it's the same opacity channel, one tier up.</p>
+<h3 id="deliberately-not-shown-in-the-bar-dirty-state">Deliberately not shown in the bar: dirty state<a class="headerlink" href="#deliberately-not-shown-in-the-bar-dirty-state" title="Permanent link">&para;</a></h3>
+<p>The dot tracks <em>active</em>, exactly as specified, not <em>modified</em>. That is a
+real trade: with three buffers open and two edited, the bar won't tell
+you which. The dirty marker lives in the status bar and window title
+(ADR 0023) and those follow the active buffer only. Flagged here as a
+known gap rather than silently "improved", since the dot is the obvious
+place to put it if it's wanted later.</p>
+<h3 id="lsp-starts-on-first-activation-not-at-construction">LSP starts on first activation, not at construction<a class="headerlink" href="#lsp-starts-on-first-activation-not-at-construction" title="Permanent link">&para;</a></h3>
+<p>Opening ten files must not spawn ten <code>clangd</code> processes for the nine you
+never looked at, so <code>startLspClientIfConfigured()</code> moved out of the
+constructor into <code>onActivated()</code>, called when a buffer first becomes
+visible.</p>
+<p>It deliberately does <strong>not</strong> stop on switch-away: restarting clangd costs
+a full reindex, and switching buffers is the common action — making the
+common action slow to save memory on the uncommon one is the wrong
+trade. So the cost is one server per <em>visited</em> C file. The real fix is
+one project-wide server handling several <code>didOpen</code> documents, which is
+what LSP is designed for; that's now a named roadmap item.</p>
+<h3 id="openfile-deleted"><code>openFile()</code> deleted<a class="headerlink" href="#openfile-deleted" title="Permanent link">&para;</a></h3>
+<p>In-place replacement of a viewport's contents is obsolete once opening a
+file means opening a buffer. <code>FileBrowserPanel</code> now emits through
+<code>EditorViewport::fileOpenRequested</code> and the window decides; the 52-line
+<code>openFile()</code> and its LSP-restart dance are gone. Reopening an
+already-open path switches to it rather than creating a second copy.</p>
+<h3 id="plugin-host-wired-with-the-undo-hazard-handled-honestly">Plugin host: wired, with the undo hazard handled honestly<a class="headerlink" href="#plugin-host-wired-with-the-undo-hazard-handled-honestly" title="Permanent link">&para;</a></h3>
+<p><code>EditorViewport</code> creates an <code>AsePluginHost</code>, loads <code>&lt;config dir&gt;/plugins/</code>
+at startup (a missing directory is not an error — same "unconfigured is
+a normal state" stance as <code>lsp_command</code>/<code>build_command</code>), and
+<code>runCommand()</code> falls through to the registry for any <code>:name</code> that isn't a
+built-in. Built-ins are checked first, so a plugin cannot shadow one.</p>
+<p>The hazard, and why it is handled the way it is: a plugin command is
+handed the raw <code>AseBuffer</code> and edits it directly, because the ABI
+(ADR 0009) has no way to do anything else. That leaves every offset
+already recorded in the undo stack potentially stale — and undoing
+against stale offsets <em>corrupts the buffer</em> rather than merely doing the
+wrong thing. So the undo history is <strong>dropped</strong> after a successful
+plugin command. Losing history is a visible, understandable cost; silent
+corruption is not. Routing plugin edits through undo needs the wider
+plugin context described in EXTENSIBILITY.md, and this is the concrete
+reason that widening is worth doing.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p><code>updateAnimation</code>'s "animations off" branch and the new
-<code>snapAnimationToTarget()</code> are now one function, not two copies of the
-same four lines — the earlier ADR 0016 bug (clearing instead of
-populating <code>m_renderedCaretPos</code>) was exactly the kind of mistake
-duplication invites, so this pass consolidated rather than added a
-third copy. All four fixes verified live: overflow text visible
-arbitrarily far into a scrolled line; caret stays solid through a
-sustained sequence of arrow-key presses with animations on; a fast
-typed burst shows every character landing at full brightness with the
-caret exactly adjacent, no trailing gap. Full test suite unaffected
-(these bugs were all in GUI rendering/animation state, outside
-anything the suite covers) and still green.</p>
+<p>Verified live end to end: three buffers open showing <code>• alpha.c</code>
+<code>• beta.c</code> <code>• gamma.c ×</code> with only the active one at full opacity and no
+rules anywhere; click-to-switch and <code>Ctrl+Tab</code> both move the active entry
+and its close mark; closing back down to one collapses the bar to zero
+height; a dirty buffer refuses to close without the themed confirmation,
+and Cancel leaves the unsaved edit intact. The plugin host was verified
+with a real Lua plugin (<code>:shout</code>, uppercasing the buffer) loaded from
+<code>~/.config/ase/plugins/</code> — syntax, diagnostics and the dirty marker all
+updated correctly afterwards.</p>
+<p>Every confirmation in the window now goes through one themed
+<code>confirmDiscard()</code> rather than each building its own box — the
+per-buffer close was briefly a native <code>QMessageBox::question</code>, which is
+exactly the mismatch ADR 0044 already had to fix once.</p>
+<p>New keys: <code>Ctrl+Tab</code> / <code>Ctrl+Shift+Tab</code> cycle buffers, <code>Ctrl+W</code> closes
+one. They are window-level <code>QShortcut</code>s rather than additions to
+<code>EditorViewport</code>'s Ctrl-chain, because they act on the window's buffer
+list, not on text — and Qt dispatches shortcuts before the focus
+widget's key handler, so <code>Ctrl+Tab</code> never reaches the viewport's Tab
+case.</p>
+<p><code>ctest</code> 9/9, clean build, zero warnings.</p>
 
 
 

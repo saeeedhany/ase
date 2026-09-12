@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0017-viewport-review-pass/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0056-linewise-visual-tab-motion-searchable-shortcuts/">
       
       
-        <link rel="prev" href="../0016-caret-visibility-fix/">
+        <link rel="prev" href="../0055-dirty-dot-new-file-panel-fixes/">
       
       
-        <link rel="next" href="../0018-undo-redo/">
+        <link rel="next" href="../0057-always-on-tab-strip-and-welcome-rework/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0017: Viewport review pass — four fixes from live use - Absolute Simple Editor</title>
+        <title>ADR 0056: Linewise Visual, tab motion, and a searchable shortcut reference - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0017-viewport-review-pass-four-fixes-from-live-use" class="md-skip">
+        <a href="#adr-0056-linewise-visual-tab-motion-and-a-searchable-shortcut-reference" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0017: Viewport review pass — four fixes from live use
+              ADR 0056: Linewise Visual, tab motion, and a searchable shortcut reference
             
           </span>
         </div>
@@ -1284,37 +1284,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0017: Viewport review pass — four fixes from live use
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0017-viewport-review-pass/" class="md-nav__link">
         
   
   
@@ -1330,120 +1303,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decisions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decisions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Invisible text past the horizontal scroll point — the most
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-caret-still-visibly-blinkingfading-while-moving-with" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Caret still visibly blinking/fading while moving, with
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Caret (and view) feeling like they lag during fast typing/deleting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-qfontmetrics-reconstruction-not-just-a-feeling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. QFontMetrics reconstruction, not just a feeling
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2517,10 +2376,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0056-linewise-visual-tab-motion-searchable-shortcuts/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0056: Linewise Visual, tab motion, and a searchable shortcut reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2536,6 +2422,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#shiftv-linewise-visual-and-o-to-swap-ends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shift+V linewise Visual, and o to swap ends
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-tab-strip-fixed-slots-and-everything-interpolated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The tab strip: fixed slots, and everything interpolated
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-panel-legibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File panel legibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shortcuts-collapsible-sections-and-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shortcuts: collapsible sections and search
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2653,22 +2653,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decisions
+        Decision
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decisions">
+    <nav class="md-nav" aria-label="Decision">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" class="md-nav__link">
+  <a href="#shiftv-linewise-visual-and-o-to-swap-ends" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Invisible text past the horizontal scroll point — the most
+        Shift+V linewise Visual, and o to swap ends
       
     </span>
   </a>
@@ -2676,10 +2676,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-caret-still-visibly-blinkingfading-while-moving-with" class="md-nav__link">
+  <a href="#the-tab-strip-fixed-slots-and-everything-interpolated" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Caret still visibly blinking/fading while moving, with
+        The tab strip: fixed slots, and everything interpolated
       
     </span>
   </a>
@@ -2687,10 +2687,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" class="md-nav__link">
+  <a href="#file-panel-legibility" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Caret (and view) feeling like they lag during fast typing/deleting
+        File panel legibility
       
     </span>
   </a>
@@ -2698,10 +2698,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-qfontmetrics-reconstruction-not-just-a-feeling" class="md-nav__link">
+  <a href="#shortcuts-collapsible-sections-and-search" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. QFontMetrics reconstruction, not just a feeling
+        Shortcuts: collapsible sections and search
       
     </span>
   </a>
@@ -2741,7 +2741,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0017-viewport-review-pass.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0056-linewise-visual-tab-motion-searchable-shortcuts.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2749,90 +2749,108 @@
   
 
 
-<h1 id="adr-0017-viewport-review-pass-four-fixes-from-live-use">ADR 0017: Viewport review pass — four fixes from live use<a class="headerlink" href="#adr-0017-viewport-review-pass-four-fixes-from-live-use" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0056-linewise-visual-tab-motion-and-a-searchable-shortcut-reference">ADR 0056: Linewise Visual, tab motion, and a searchable shortcut reference<a class="headerlink" href="#adr-0056-linewise-visual-tab-motion-and-a-searchable-shortcut-reference" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Continued user testing surfaced four distinct problems in quick
-succession, all in the rendering/animation code added across Phases
-8–9 and the ADR 0016 fix. Rather than patch each in isolation, this
-was a full review of that code's interactions — the request was
-explicitly for real fixes that wouldn't regress anything else, not
-quick patches.</p>
-<h2 id="decisions">Decisions<a class="headerlink" href="#decisions" title="Permanent link">&para;</a></h2>
-<h3 id="1-invisible-text-past-the-horizontal-scroll-point-the-most">1. Invisible text past the horizontal scroll point — the most<a class="headerlink" href="#1-invisible-text-past-the-horizontal-scroll-point-the-most" title="Permanent link">&para;</a></h3>
-<p>severe bug</p>
-<p><code>drawLine</code>'s <code>drawText</code> call used <code>QRect(x, y, width() - x, m_lineHeight)</code>.
-Once ADR 0014 introduced horizontal scroll, <code>x</code> is a <em>local</em> (translated)
-coordinate that legitimately exceeds the widget's raw <code>width()</code> on any
-sufficiently long, scrolled line — <code>width() - x</code> goes negative, and
-Qt's <code>drawText</code> paints nothing into a negative-width rect. Typed
-characters past that point rendered as blank space — a real, severe
-regression from ADR 0014, not cosmetic.</p>
-<p>Fixed by using the run's own measured width (<code>runWidth</code>, already
-needed for the x-advance) as the rect's width instead: always exactly
-right, never dependent on how far into a line the viewport happens to
-be scrolled. Reproduced directly (typed ~300 characters past the
-overflow point, confirmed text visible throughout) before and after.</p>
-<h3 id="2-caret-still-visibly-blinkingfading-while-moving-with">2. Caret still visibly blinking/fading while moving, with<a class="headerlink" href="#2-caret-still-visibly-blinkingfading-while-moving-with" title="Permanent link">&para;</a></h3>
-<p>animations on</p>
-<p>ADR 0016 fixed this for the hard blink but missed that the animated
-fade used a <em>different</em>, free-running counter (<code>m_caretTick</code>,
-incremented unconditionally every tick regardless of activity) — so
-with <code>animations = true</code>, the fade kept oscillating through movement
-exactly as before, which is what the user was still seeing and
-describing as "blinking while I move it."</p>
-<p>Fixed by deleting <code>m_caretTick</code> and driving the fade's phase from the
-same <code>m_idleTicks</code> the hard blink already uses — reset to 0 by
-<code>resetCaretBlink()</code> on every cursor-moving action. Switched <code>sin</code> to
-<code>cos</code> for the phase function specifically so that the instant something
-goes idle (<code>m_idleTicks == 0</code>) evaluates to full brightness — the fade
-now always starts from "was solid" and eases into the breathing cycle,
-rather than jumping to an arbitrary point on the curve the moment
-movement stops.</p>
-<h3 id="3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting">3. Caret (and view) feeling like they lag during fast typing/deleting<a class="headerlink" href="#3-caret-and-view-feeling-like-they-lag-during-fast-typingdeleting" title="Permanent link">&para;</a></h3>
-<p>Root cause was really a design gap, not a bug: <code>updateAnimation</code>'s
-easing (<code>kEaseFactor</code> per paint, ADR 0015) is tuned for deliberate
-navigation jumps (arrow keys, clicks, <code>Ctrl+D</code>), where a visible glide
-reads as smooth. During <em>fast, repeated, small</em> jumps — typing or
-holding delete — each new keystroke retargets the ease before the
-previous step finishes, so the rendered caret perpetually chases a
-moving target and never actually reaches it. That reads as "the editor
-can't keep up," which is the opposite of the intended effect and a
-direct hit against the "fast as hell" pillar.</p>
-<p>Fixed by adding <code>snapAnimationToTarget()</code> (forces every rendered value
-to its exact target, bypassing easing for that one update) and calling
-it after every text-mutating <code>keyPressEvent</code> branch — typing, Enter,
-Backspace, Delete — regardless of <code>animations</code>. Pure navigation
-(arrows, Home/End, click, <code>Ctrl+D</code>) is untouched and keeps the glide.
-This is the same logic <code>updateAnimation</code>'s disabled-animation branch
-already needed, so it's factored out and shared rather than duplicated
-— see decision 4's fix for why that sharing mattered.</p>
-<h3 id="4-qfontmetrics-reconstruction-not-just-a-feeling">4. <code>QFontMetrics</code> reconstruction, not just a feeling<a class="headerlink" href="#4-qfontmetrics-reconstruction-not-just-a-feeling" title="Permanent link">&para;</a></h3>
-<p>While reviewing the above, found <code>drawLine</code>, <code>xForColumn</code>, and
-<code>caretTargetFor</code> (the last two called once per cursor on <em>every</em>
-animation tick) were each constructing a fresh <code>QFontMetrics(font)</code> for
-every styled run, every call — never cached. <code>QFontMetrics</code> construction
-queries the font engine; doing it dozens of times per frame, every 30ms
-while animating, is real avoidable work sitting directly in the path
-the "feels slow" reports were pointing at. Added three cached instances
-(<code>m_metrics</code>, <code>m_boldMetrics</code>, <code>m_italicMetrics</code>) built once in
-<code>applyConfig()</code>, fetched via <code>metricsForCapture()</code> everywhere a font's
-metrics are needed. Purely a reuse-not-reconstruct change — the
-values were already being computed correctly, just repeatedly.</p>
+<p>A round of feedback from real use, spanning Vim fidelity, the tab strip's
+motion, the file panel's legibility, and the shortcut reference.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<h3 id="shiftv-linewise-visual-and-o-to-swap-ends"><code>Shift+V</code> linewise Visual, and <code>o</code> to swap ends<a class="headerlink" href="#shiftv-linewise-visual-and-o-to-swap-ends" title="Permanent link">&para;</a></h3>
+<p>Two genuine gaps against real vim, both from ADR 0046's Phase 1 scope.</p>
+<p><code>V</code> is a flag on <code>VimMode::Visual</code> rather than a fourth mode. Every
+operator, motion and render path already works off the selection range,
+so linewise only has to keep that range snapped to whole lines —
+<code>vimNormalizeLinewiseSelection()</code> pushes anchor and cursor out to the
+outer edges of the two lines involved, and nothing downstream needs to
+know linewise exists.</p>
+<p>The subtlety worth recording, because it was a real bug caught by
+testing rather than by reading: normalizing parks the cursor at the
+<strong>start of the following line</strong>, because that is what makes the selection
+include the trailing newline and therefore makes a linewise delete remove
+whole lines instead of leaving blanks behind. But that means
+re-deriving the cursor's line from its offset reads one line too far —
+and the error compounds on every motion, so <code>V</code> then <code>j</code> selected three
+lines instead of two. Fixed by tracking <code>m_vimVisualCursorLine</code>
+explicitly and restoring the real cursor onto it before each motion
+(<code>vimPrepareLinewiseMotion()</code>).</p>
+<p><code>o</code> swaps cursor and anchor, so you can fix the end you didn't mean to
+extend without reselecting. In linewise mode it swaps the tracked lines
+too. A linewise <code>y</code> now records the yank as linewise, so <code>p</code>/<code>P</code> paste it
+as whole lines.</p>
+<p>The status bar distinguishes <code>VISUAL</code> from <code>VISUAL LINE</code>, as vim does.</p>
+<h3 id="the-tab-strip-fixed-slots-and-everything-interpolated">The tab strip: fixed slots, and everything interpolated<a class="headerlink" href="#the-tab-strip-fixed-slots-and-everything-interpolated" title="Permanent link">&para;</a></h3>
+<p>The strip felt jumpy for a concrete reason: <strong>only the active tab
+reserved width for its close mark</strong>, so every switch changed every tab's
+width and the whole strip reflowed. Now every tab reserves that space
+whether or not the mark is drawn, and the mark fades in on the active
+one. Switching moves nothing. (Verified: the leftmost ink sits at the
+same x before and after a switch.)</p>
+<p>On top of that, all layout change is animated through one
+<code>QVariantAnimation</code> on <code>motion::kChrome</code>/<code>motion::kCurve</code> (the shared
+language from ADR 0053). Each tab interpolates from where it <em>currently
+is</em> toward where it now belongs, which means:</p>
+<ul>
+<li>A new tab has no previous position, so it starts at the <strong>position of
+  the tab it was opened from</strong> and fades up as it slides out to its own
+  slot — the requested "it comes from the other one" effect.</li>
+<li>Active/inactive opacity crossfades rather than snapping.</li>
+<li>Interrupting a slide resumes from the visible position instead of
+  restarting, because <code>relayout()</code> samples the current interpolated
+  position as the new starting point.</li>
+</ul>
+<p>Also: the strip now uses the <strong>editor's own font</strong> and more generous
+padding, so tabs sit at the same visual weight as the text they label
+(and follow <code>Ctrl+=</code>/<code>Ctrl+-</code> with it) rather than reading as a thin
+afterthought. A <code>+</code> at the right edge opens a new tab; it is pinned to
+the edge so it doesn't move as tabs come and go.</p>
+<p>One crash fixed on the way: <code>std::clamp(previousActiveIndex, 0, size-1)</code>
+asserts when the list is empty (<code>hi &lt; lo</code>) — the very first tab has
+nothing to emerge from, and the empty check that was meant to guard it
+ran one line too late.</p>
+<h3 id="file-panel-legibility">File panel legibility<a class="headerlink" href="#file-panel-legibility" title="Permanent link">&para;</a></h3>
+<p>Two things that were wrong rather than merely plain:</p>
+<ul>
+<li><strong>The placeholder was effectively invisible.</strong> <code>QPalette::PlaceholderText</code>
+  was never set, and Qt's derivation from <code>Text</code> lands almost black
+  against this theme's dark field. Set explicitly, one tier down.</li>
+<li><strong>The row highlight reused the editor's selection colour</strong>, which is
+  tuned for text on the editor background; over the panel's lighter
+  field it came out muddy rather than lit. It is now derived from the
+  text colour at low alpha, with a small corner radius
+  (<code>TranslucentBar::setRadius</code>) so a bar sliding between rows reads as a
+  highlight rather than a block.</li>
+</ul>
+<h3 id="shortcuts-collapsible-sections-and-search">Shortcuts: collapsible sections and search<a class="headerlink" href="#shortcuts-collapsible-sections-and-search" title="Permanent link">&para;</a></h3>
+<p>Shortcuts are the primary way this editor is driven, so the reference is
+something you come back to and scan — not read once. One long rich-text
+blob made you hunt.</p>
+<p>It is now a list of section widgets: a clickable header (caret + title +
+the dim "what enables this" note) and a rows table. Clicking a header
+folds it. A search field filters across keys, descriptions and section
+titles, hides sections with no surviving rows, and force-expands what
+still matches — a collapsed section is a browsing preference and should
+not hide results. Escape clears an active search before closing the
+panel, since losing your filter is a smaller surprise than losing the
+panel.</p>
+<p>A bug found while building it, worth recording because the symptom
+pointed the wrong way: the text rendered in colours that looked wrong,
+and the obvious suspect was the <code>QString::arg</code> colour substitution.
+Dumping the generated HTML showed it was <strong>perfectly correct</strong>. The real
+cause was that the scroll area's new <em>container widget</em> was never
+themed, so everything painted on Qt's default near-white — against
+which the cream description column is nearly invisible. The lesson:
+when colours look wrong, check what is behind them before suspecting
+the colours.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p><code>updateAnimation</code>'s "animations off" branch and the new
-<code>snapAnimationToTarget()</code> are now one function, not two copies of the
-same four lines — the earlier ADR 0016 bug (clearing instead of
-populating <code>m_renderedCaretPos</code>) was exactly the kind of mistake
-duplication invites, so this pass consolidated rather than added a
-third copy. All four fixes verified live: overflow text visible
-arbitrarily far into a scrolled line; caret stays solid through a
-sustained sequence of arrow-key presses with animations on; a fast
-typed burst shows every character landing at full brightness with the
-caret exactly adjacent, no trailing gap. Full test suite unaffected
-(these bugs were all in GUI rendering/animation state, outside
-anything the suite covers) and still green.</p>
+<p>Verified live: <code>V</code> then <code>j</code> selects exactly two whole lines (it selected
+three before the cursor-line fix); <code>o</code> then <code>k</code> extends the opposite end;
+a new tab is caught mid-slide emerging from the tab it was opened from;
+switching tabs leaves the strip's left edge at an identical x; the
+shortcut panel filters on "vim" to just the matching sections, and a
+clicked header collapses to <code>▸</code>. <code>ctest</code> 9/9, clean build, zero warnings.</p>
+<p>Unchanged and still open: the tab strip does not scroll or elide, so
+past roughly a dozen tabs the later ones run off the window edge.</p>
 
 
 
