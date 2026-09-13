@@ -68,6 +68,7 @@ QVector<HelpSection> helpSections() {
 
         {"Find &amp; replace", nullptr,
          {{"Ctrl+F", "Find"},
+          {"Ctrl+Shift+F", "Search every file in the project"},
           {"Ctrl+H", "Find and replace"},
           {"Enter / Shift+Enter", "Next / previous match"},
           {"Ctrl+Enter", "Replace all (from the replace field)"}}},

@@ -798,6 +798,16 @@ ADRs as each lands here going forward.
       `edvim` finds `editor_viewport_vim.cpp` first. Rides in the
       existing panel as a third mode rather than duplicating it. See
       [ADR 0065](adr/0065-quick-open.md).
+- [x] **Project-wide search (`Ctrl+Shift+F`)**: find searched only the
+      buffer in front of you; there was no way to answer "where else is
+      this called?" without leaving the editor. The query rides in the
+      find bar as a third mode, the results in the output panel — docked
+      and non-modal, because reading a hit, looking at the code and
+      coming back is the actual workflow and a floating panel blocks the
+      document. Same file list as quick open, so the two can never
+      disagree about what is in the project. Enter or a single click on
+      a row opens that file at that line. See
+      [ADR 0066](adr/0066-project-wide-search.md).
 - [x] **v0.3.0-alpha**: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the `EditorViewport` split, the render hot-path
@@ -848,11 +858,12 @@ something else.
 - **Keybindings as data** — the biggest customization gap, and the thing
   that makes built-ins and plugin commands one mechanism. See
   EXTENSIBILITY.md, recommendation 4.
-- **Project-wide search** (ripgrep-shaped: search, jump to hit, replace
-  across files), reusing the existing find infrastructure and results
-  panel — and now also `project::collect()` and the quick-open panel
-  from [ADR 0065](adr/0065-quick-open.md), which is most of the
-  machinery.
+- ~~**Project-wide search**~~ Done for the read-only half — search, and
+  jump to a hit ([ADR 0066](adr/0066-project-wide-search.md)). **Replace
+  across files** is deliberately still open: editing every file in a
+  project from one keystroke wants its own design pass (a preview, an
+  undo story spanning buffers), not a ride-along on a read-only
+  feature.
 - **The rest of LSP's useful half**: go-to-definition, find-references,
   rename, document symbols. Diagnostics, completion and hover are wired
   (ADR 0029/0030); the navigation half is what people actually miss.

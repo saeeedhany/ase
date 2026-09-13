@@ -267,7 +267,11 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
             }
             if (event->key() == Qt::Key_F) {
                 if (m_findBar != nullptr) {
-                    m_findBar->openFor(FindBar::Mode::Find);
+                    /* Ctrl+Shift+F searches every file in the project;
+                     * Ctrl+F keeps its existing meaning, this buffer.
+                     * Same split as Ctrl+O / Ctrl+Shift+O above. */
+                    m_findBar->openFor((event->modifiers() & Qt::ShiftModifier) ? FindBar::Mode::Project
+                                                                               : FindBar::Mode::Find);
                 }
                 return;
             }

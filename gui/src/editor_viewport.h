@@ -158,6 +158,15 @@ public:
      * own buffer instead, so FileBrowserPanel routes through here and
      * MainWindow decides. */
     void requestOpenFile(const QString &path) { emit fileOpenRequested(path); }
+    /* Ctrl+Shift+F's other half: walks the project (the same file list
+     * Ctrl+P uses) for `needle` and hands the hits to the output panel.
+     * Runs synchronously — see docs/adr/0066 for the measured cost and
+     * the caps that bound it. */
+    void searchProject(const QString &needle);
+    /* Jump to a 1-based line, the way `:42` does. Public because a
+     * project-search hit opens a file *and* needs to land on a line,
+     * which the window arranges across two objects. */
+    void goToLine(int oneBasedLine);
     /* The one way to say anything to the user. Public so panels and, in
      * time, plugins can reach it — a plugin that cannot report "that
      * file isn't a thing" is a plugin that fails silently. */

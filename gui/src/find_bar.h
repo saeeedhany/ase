@@ -17,7 +17,12 @@ class LetterBadge;
  */
 class FindBar : public FloatingPanel {
 public:
-    enum class Mode { Find, Replace };
+    /* Project rides in this panel as a third mode for the same reason
+     * QuickOpen rides in the file browser (docs/adr/0065): it is the
+     * same badge, field, theming and Escape handling, and the only
+     * difference is what Enter does with what you typed. See
+     * docs/adr/0066. */
+    enum class Mode { Find, Replace, Project };
 
     /* `viewport` is both the logic owner and the host FloatingPanel
      * centers over. */
@@ -36,6 +41,7 @@ protected:
 
 private:
     EditorViewport *m_viewport;
+    Mode m_mode = Mode::Find;
     SmoothLineEdit *m_findEdit;
     SmoothLineEdit *m_replaceEdit;
     QWidget *m_replaceRow;

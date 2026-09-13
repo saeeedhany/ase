@@ -1,8 +1,14 @@
 #ifndef ASE_OUTPUT_PANEL_H
 #define ASE_OUTPUT_PANEL_H
 
+#include "project_search.h"
+
 #include <QWidget>
 
+class QListWidget;
+class QListWidgetItem;
+class QKeyEvent;
+class QLabel;
 class QPlainTextEdit;
 class EditorViewport;
 class TranslucentBar;
@@ -26,7 +32,14 @@ class TranslucentBar;
  * editor" simplicity they said they still want to keep.
  */
 class OutputPanel : public QWidget {
+    Q_OBJECT
+
 public:
+    /* Two things live here, and they are the same shape: output you read
+     * while looking at your code. `:compile` streams text; a project
+     * search fills a list you pick from. Whichever is showing, the other
+     * is hidden — see docs/adr/0066. */
+    enum class Mode { Output, SearchResults };
     explicit OutputPanel(EditorViewport *viewport, QWidget *parent = nullptr);
 
     /* One output panel is shared by every buffer (it shows the last
@@ -35,6 +48,11 @@ public:
      * from. See docs/adr/0054. */
     void setViewport(EditorViewport *viewport);
 
+    /* Switches to the results list and fills it. `root` is kept so an
+     * activated row can be turned back into an absolute path. */
+    void showSearchResults(const QString &root, const QString &needle,
+                            const project::SearchResult &result);
+
     void appendLine(const QString &text);
     /* No implied newline — used for streamed process output, which
      * arrives in arbitrary-sized chunks, not line-at-a-time. */
@@ -42,10 +60,26 @@ public:
     void clear();
     void refreshTheme();
 
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+
+signals:
+    /* A results row was picked. The window opens the file and jumps —
+     * this panel deliberately knows nothing about buffers. */
+    void hitActivated(const QString &absolutePath, int line);
+
 private:
+    void setMode(Mode mode);
+    void activateRow(QListWidgetItem *item);
+
     EditorViewport *m_viewport;
     TranslucentBar *m_divider;
     QPlainTextEdit *m_text;
+    QLabel *m_resultsHeader;
+    QListWidget *m_results;
+    Mode m_mode = Mode::Output;
+    QString m_searchRoot;
+    QVector<project::SearchHit> m_hits;
 };
 
 #endif /* ASE_OUTPUT_PANEL_H */

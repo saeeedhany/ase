@@ -2,7 +2,21 @@
 
 #include "file_browser_panel.h"
 #include "output_panel.h"
+#include "project_files.h"
+#include "project_search.h"
 
+namespace {
+/* Shared with quick open's own cap in spirit, kept separate in fact:
+ * this one bounds a *search*, which reads every file it lists, so the
+ * ceiling that matters is different from the one on a name listing.
+ * See docs/adr/0066. */
+constexpr int kProjectFileCap = 20000;
+/* Enough to be useful, few enough that the list stays navigable and the
+ * search stops early on a query like "e". */
+constexpr int kProjectSearchHitCap = 1000;
+} // namespace
+
+#include <QDir>
 #include <QFileInfo>
 #include <QTimer>
 
@@ -73,11 +87,7 @@ void EditorViewport::runCommand(const QString &command) {
         bool ok = false;
         int lineNumber = trimmed.toInt(&ok);
         if (ok && lineNumber > 0) {
-            collapseToOneCursor();
-            vimGotoLine(lineNumber - 1);
-            resetVimPendingState();
-            ensureCursorVisible();
-            update();
+            goToLine(lineNumber);
         } else if (!trimmed.isEmpty()) {
             if (!runPluginCommand(trimmed)) {
                 notify(NotifyLevel::Warning, QStringLiteral("unknown command: %1").arg(trimmed));
@@ -130,6 +140,48 @@ bool EditorViewport::runPluginCommand(const QString &name) {
     ensureCursorVisible();
     update();
     return true;
+}
+
+void EditorViewport::goToLine(int oneBasedLine) {
+    collapseToOneCursor();
+    vimGotoLine(oneBasedLine - 1);
+    resetVimPendingState();
+    ensureCursorVisible();
+    resetCaretBlink();
+    update();
+}
+
+/*
+ * Ctrl+Shift+F. Same file list as Ctrl+P, so a search can never find a
+ * hit in a file quick open refuses to show — see docs/adr/0066.
+ *
+ * Synchronous, like the quick-open walk: this repository searches in a
+ * few milliseconds, and the caps (file count, file size, hit count)
+ * bound the worst case rather than a thread doing it.
+ */
+void EditorViewport::searchProject(const QString &needle) {
+    if (m_outputPanel == nullptr) {
+        return;
+    }
+    QString trimmed = needle.trimmed();
+    if (trimmed.isEmpty()) {
+        return;
+    }
+
+    QString startDir = m_filePath.isEmpty() ? QDir::currentPath() : QFileInfo(m_filePath).absolutePath();
+    QString root = project::rootFor(startDir);
+    bool truncatedFileList = false;
+    QStringList files = project::collect(root, kProjectFileCap, &truncatedFileList);
+    project::SearchResult result = project::search(root, files, trimmed.toUtf8(), kProjectSearchHitCap);
+    result.truncated = result.truncated || truncatedFileList;
+
+    m_outputPanel->showSearchResults(root, trimmed, result);
+    if (result.hits.isEmpty()) {
+        /* The panel says so too, but it may be the first time it has
+         * ever been shown — the message is what tells you the search
+         * actually ran. */
+        notify(NotifyLevel::Warning, QStringLiteral("no matches for \"%1\"").arg(trimmed));
+    }
 }
 
 void EditorViewport::toggleOutputPanel() {

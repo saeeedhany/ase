@@ -48,14 +48,24 @@ FindBar::FindBar(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport
     m_findEdit->installEventFilter(this);
     m_replaceEdit->installEventFilter(this);
 
-    connect(m_findEdit, &QLineEdit::textChanged, this,
-            [this](const QString &text) { m_viewport->setFindQuery(text); });
+    connect(m_findEdit, &QLineEdit::textChanged, this, [this](const QString &text) {
+        /* Project mode types a query for *another* search; highlighting
+         * it in this buffer as you go would be a different answer to a
+         * question nobody asked. */
+        if (m_mode != Mode::Project) {
+            m_viewport->setFindQuery(text);
+        }
+    });
 }
 
 void FindBar::openFor(Mode mode) {
+    m_mode = mode;
     refreshTheme();
     bool replaceMode = (mode == Mode::Replace);
     m_replaceRow->setVisible(replaceMode);
+    /* G for grep — the word everyone already has for this, and
+     * unambiguous against F and R. */
+    m_findBadge->setLetter(mode == Mode::Project ? QLatin1Char('G') : QLatin1Char('F'));
 
     /* Pre-fill from the current selection, single-line only — a
      * multi-line "needle" as a starting point is more surprising than
@@ -69,7 +79,9 @@ void FindBar::openFor(Mode mode) {
     openPanel();
     m_findEdit->setFocus();
     m_findEdit->selectAll();
-    m_viewport->setFindQuery(m_findEdit->text());
+    if (mode != Mode::Project) {
+        m_viewport->setFindQuery(m_findEdit->text());
+    }
 }
 
 void FindBar::hideBar() {
@@ -133,7 +145,11 @@ bool FindBar::eventFilter(QObject *watched, QEvent *event) {
 
         bool isReturn = keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter;
         if (isReturn) {
-            if (watched == m_findEdit) {
+            if (watched == m_findEdit && m_mode == Mode::Project) {
+                QString needle = m_findEdit->text();
+                hideBar();
+                m_viewport->searchProject(needle);
+            } else if (watched == m_findEdit) {
                 if (keyEvent->modifiers() & Qt::ShiftModifier) {
                     m_viewport->findPrevious();
                 } else {

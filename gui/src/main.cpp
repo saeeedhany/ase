@@ -244,6 +244,18 @@ MainWindow::MainWindow() {
 
     m_outputPanel = new OutputPanel(nullptr, central);
     centralLayout->addWidget(m_outputPanel);
+    /* A search hit is a file *and* a line, and opening the file is the
+     * window's job while landing on the line is the viewport's — so the
+     * two are joined here rather than either one reaching into the
+     * other. See docs/adr/0066. */
+    connect(m_outputPanel, &OutputPanel::hitActivated, this, [this](const QString &path, int line) {
+        openBuffer(path);
+        EditorViewport *viewport = activeViewport();
+        if (viewport != nullptr) {
+            viewport->goToLine(line);
+            viewport->setFocus();
+        }
+    });
     setCentralWidget(central);
 
     connect(m_bufferBar, &BufferBar::bufferSelected, this, [this](int index) { setActiveIndex(index); });
