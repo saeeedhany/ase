@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0048-syntax-accent-colors-caret-inset-status-init/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0059-derived-dirty-state-paste-cursor-and-more-vim-motions/">
       
       
-        <link rel="prev" href="../0047-vim-block-cursor/">
+        <link rel="prev" href="../0058-session-scoped-greeting-and-panel-carets/">
       
       
-        <link rel="next" href="../0049-typing-pop-in-animation/">
+        <link rel="next" href="../0060-linewise-operations-at-the-end-of-the-buffer/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0048: Syntax accent colors, caret inset, smaller default font, immediate status label - Absolute Simple Editor</title>
+        <title>ADR 0059: Dirtiness is derived, paste lands where vim lands, and four more motions - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0048-syntax-accent-colors-caret-inset-smaller-default-font-immediate-status-label" class="md-skip">
+        <a href="#adr-0059-dirtiness-is-derived-paste-lands-where-vim-lands-and-four-more-motions" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0048: Syntax accent colors, caret inset, smaller default font, immediate status label
+              ADR 0059: Dirtiness is derived, paste lands where vim lands, and four more motions
             
           </span>
         </div>
@@ -2156,37 +2156,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0048: Syntax accent colors, caret inset, smaller default font, immediate status label
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0048-syntax-accent-colors-caret-inset-status-init/" class="md-nav__link">
         
   
   
@@ -2202,131 +2175,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#two-real-accent-colors-replacing-italic-entirely" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Two real accent colors, replacing italic entirely
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#both-caret-shapes-inset-a-little-vertically" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Both caret shapes inset a little vertically
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#default-font_size-12-11" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Default font_size: 12 → 11
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#status-bar-shows-the-mode-label-immediately-not-just-after-the-first-keystroke" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status bar shows the mode label immediately, not just after the first keystroke
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#not-in-this-adr-the-requested-typing-animation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Not in this ADR: the requested typing animation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2616,10 +2464,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0059-derived-dirty-state-paste-cursor-and-more-vim-motions/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0059: Dirtiness is derived, paste lands where vim lands, and four more motions
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2635,6 +2510,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#m_dirty-was-a-latch-dirtiness-is-a-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        m_dirty was a latch; dirtiness is a comparison
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#charwise-paste-leaves-the-cursor-on-the-last-pasted-character" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Charwise paste leaves the cursor on the last pasted character
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#and-paragraph-motions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        { and } — paragraph motions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ctrlu-ctrld-half-a-screen-cursor-and-view-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ctrl+U / Ctrl+D — half a screen, cursor and view together
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2736,10 +2725,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#two-real-accent-colors-replacing-italic-entirely" class="md-nav__link">
+  <a href="#m_dirty-was-a-latch-dirtiness-is-a-comparison" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Two real accent colors, replacing italic entirely
+        m_dirty was a latch; dirtiness is a comparison
       
     </span>
   </a>
@@ -2747,10 +2736,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#both-caret-shapes-inset-a-little-vertically" class="md-nav__link">
+  <a href="#charwise-paste-leaves-the-cursor-on-the-last-pasted-character" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Both caret shapes inset a little vertically
+        Charwise paste leaves the cursor on the last pasted character
       
     </span>
   </a>
@@ -2758,10 +2747,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#default-font_size-12-11" class="md-nav__link">
+  <a href="#and-paragraph-motions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Default font_size: 12 → 11
+        { and } — paragraph motions
       
     </span>
   </a>
@@ -2769,21 +2758,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#status-bar-shows-the-mode-label-immediately-not-just-after-the-first-keystroke" class="md-nav__link">
+  <a href="#ctrlu-ctrld-half-a-screen-cursor-and-view-together" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Status bar shows the mode label immediately, not just after the first keystroke
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#not-in-this-adr-the-requested-typing-animation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Not in this ADR: the requested typing animation
+        Ctrl+U / Ctrl+D — half a screen, cursor and view together
       
     </span>
   </a>
@@ -2823,7 +2801,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0048-syntax-accent-colors-caret-inset-status-init.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0059-derived-dirty-state-paste-cursor-and-more-vim-motions.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2831,101 +2809,113 @@
   
 
 
-<h1 id="adr-0048-syntax-accent-colors-caret-inset-smaller-default-font-immediate-status-label">ADR 0048: Syntax accent colors, caret inset, smaller default font, immediate status label<a class="headerlink" href="#adr-0048-syntax-accent-colors-caret-inset-smaller-default-font-immediate-status-label" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0059-dirtiness-is-derived-paste-lands-where-vim-lands-and-four-more-motions">ADR 0059: Dirtiness is derived, paste lands where vim lands, and four more motions<a class="headerlink" href="#adr-0059-dirtiness-is-derived-paste-lands-where-vim-lands-and-four-more-motions" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Direct user feedback after using the Phase 1 Vim mode and its new block
-cursor (ADR 0046, ADR 0047): drop italics from syntax highlighting and
-add real color instead, using a specific color the user had already
-supplied once before (<code>#689d6a</code>, ADR 0036's docs-site accent) plus one
-more color that pairs with it, kept restrained ("don't use too much");
-make both caret shapes a little shorter; make the default font a
-little smaller; show the Vim mode label in the status bar immediately
-on launch, not just after the first keystroke; and (tracked separately,
-see the "not in this ADR" note below) add a typing animation.</p>
+<p>Two defects from an external tester, plus two motions requested
+alongside them. The tester's third report — "LSP doesn't work from the
+AppImage or the .deb" — is real but has a different cause and is handled
+separately.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<h3 id="two-real-accent-colors-replacing-italic-entirely">Two real accent colors, replacing italic entirely<a class="headerlink" href="#two-real-accent-colors-replacing-italic-entirely" title="Permanent link">&para;</a></h3>
-<p>ADR 0007's "one font color" pillar meant every syntax capture rendered
-in <code>m_textColor</code>'s own hue, varying only weight/opacity — <code>ASE_HL_TYPE</code>
-was the one exception, rendered italic. Italic is gone now; in its
-place, <code>ASE_HL_TYPE</code> and <code>ASE_HL_STRING</code> are the two captures that get
-a real, distinct color:</p>
-<ul>
-<li><code>syntax_type = #689d6a</code> — the color the user supplied previously for
-  the docs site (ADR 0036), reused here since it's already an
-  established part of this project's identity, not a new arbitrary
-  choice.</li>
-<li><code>syntax_string = #d79921</code> — a warm, muted gold chosen to pair with
-  the given aqua-green without competing with it or with the editor's
-  own warm cream text color; both land in the same desaturated,
-  low-contrast register as everything else in this theme rather than
-  reading as a bright, saturated "rainbow" addition.</li>
-</ul>
-<p><code>ASE_HL_KEYWORD</code> (bold), <code>ASE_HL_NUMBER</code>/<code>ASE_HL_COMMENT</code> (dimmed
-alpha), and <code>ASE_HL_NONE</code> (plain) are unchanged — still monochrome,
-varying only weight/opacity. Only two of the five captures gained a
-hue, deliberately, per "don't use too much": this is a small, scoped
-departure from ADR 0007's pillar, not its replacement. Both colors are
-configurable (<code>syntax_type</code>/<code>syntax_string</code> in <code>config.ase</code>, defaults
-baked into both <code>ase_config_create_default()</code> and
-<code>kDefaultConfigTemplate</code> in <code>core/src/config.c</code>), consistent with every
-other themeable color in this editor.</p>
-<p>Removing italic also let <code>m_italicMetrics</code>/the italic <code>QFont</code> setup in
-<code>applyConfig()</code> be deleted outright rather than kept dead — nothing
-else in this codebase ever used italic.</p>
-<h3 id="both-caret-shapes-inset-a-little-vertically">Both caret shapes inset a little vertically<a class="headerlink" href="#both-caret-shapes-inset-a-little-vertically" title="Permanent link">&para;</a></h3>
-<p><code>kCaretVerticalInset = 2</code> (px) trims 2px off the top and bottom of both
-the bar caret (Insert/Visual) and the Normal-mode block cursor's fill
-rect (ADR 0047) — a full-line-height caret read as slightly too
-tall/blocky against the actual glyph height. The block cursor's
-knocked-out glyph (drawn on top, in the background color) still uses
-the <em>un-inset</em> rect, so the character's own vertical centering/baseline
-stays identical to normal text; only the surrounding fill shrinks.</p>
-<h3 id="default-font_size-12-11">Default <code>font_size</code>: 12 → 11<a class="headerlink" href="#default-font_size-12-11" title="Permanent link">&para;</a></h3>
-<p>A one-point reduction, in <code>ase_config_create_default()</code>,
-<code>kDefaultConfigTemplate</code>, and the <code>ase_config_get_int</code> fallback literal
-in <code>applyConfig()</code> — all three needed updating to actually stay in
-sync (<code>core/tests/test_config.c</code>'s default-value assertions updated to
-match). This only affects a <em>newly generated</em> config file
-(<code>ase_config_write_default_if_missing()</code> never touches an existing
-one) — an already-existing <code>~/.config/ase/config.ase</code> keeps whatever
-<code>font_size</code> it already has and needs a manual edit to pick up the new
-default.</p>
-<h3 id="status-bar-shows-the-mode-label-immediately-not-just-after-the-first-keystroke">Status bar shows the mode label immediately, not just after the first keystroke<a class="headerlink" href="#status-bar-shows-the-mode-label-immediately-not-just-after-the-first-keystroke" title="Permanent link">&para;</a></h3>
-<p><code>main.cpp</code>'s status <code>QLabel</code> was constructed with a hardcoded literal
-(<code>"Ln 1, Col 1"</code>) and only replaced once <code>EditorViewport::statusChanged</code>
-first fired — which happens at <code>ensureCursorVisible()</code>, called from
-every cursor-moving action and edit, but not at construction. A
-Vim-mode user launching the editor therefore saw a bare, mode-less
-status line until their very first keystroke. Fixed with a new public
-<code>EditorViewport::emitInitialStatus()</code> (a one-line wrapper around the
-already-private <code>ensureCursorVisible()</code>, added instead of just making
-that private method public, since nothing else outside the class
-needs it), called once in <code>main()</code> right after <code>window.resize()</code> and
-before <code>window.show()</code> — so the label already reads e.g. <code>"INSERT  Ln
-1, Col 1"</code> the instant the window appears.</p>
-<h3 id="not-in-this-adr-the-requested-typing-animation">Not in this ADR: the requested typing animation<a class="headerlink" href="#not-in-this-adr-the-requested-typing-animation" title="Permanent link">&para;</a></h3>
-<p>A fourth request — "add an animation while typing to give a good
-effect" — is deliberately not designed or built here. Unlike the three
-decisions above, it has no single obvious shape (per-character
-fade/scale-in vs. a caret pulse vs. something else entirely), each
-with real, different implementation cost and feel; picked without
-asking, it's the one item in this batch most likely to need throwing
-away and redoing. Left for a follow-up ADR once the direction is
-confirmed.</p>
+<h3 id="m_dirty-was-a-latch-dirtiness-is-a-comparison"><code>m_dirty</code> was a latch; dirtiness is a comparison<a class="headerlink" href="#m_dirty-was-a-latch-dirtiness-is-a-comparison" title="Permanent link">&para;</a></h3>
+<p>The bug as reported: type a space, delete it, and the file is still
+marked modified — the tab keeps its dot, the title keeps its <code>*</code>, and
+quitting still asks about unsaved changes for a file that is byte-for-byte
+what is on disk.</p>
+<p><code>m_dirty</code> was set <code>true</code> at twelve mutation sites and cleared in exactly
+one, on save. <strong>It recorded that the buffer had been touched, not that
+it differed from disk</strong> — those are different questions, and only the
+second one matters. ADR 0023 shipped this knowingly, and
+<code>applyUndoResult()</code> carried a comment calling it "a minor cosmetic paper
+cut". It isn't cosmetic: it makes the unsaved-changes confirmation cry
+wolf, and a prompt that fires when nothing is wrong is a prompt people
+learn to dismiss without reading.</p>
+<p>The fix is vim's own model, moved into <code>core/</code> where it can be tested.
+<code>AseUndoStack</code> now carries a <strong>state id</strong>: a fresh stack is state 0 ("the
+file as loaded"), every committed group is assigned an id that is never
+reused, and undo/redo move <em>between</em> existing states rather than
+creating new ones. So two observations of <code>ase_undo_state_id()</code> are
+equal exactly when the content is the same. <code>EditorViewport</code> records the
+id at save and <code>isDirty()</code> is that comparison — derived, never latched.</p>
+<p>Deliberately <strong>not</strong> a group count: undo one group, type a different
+one, and the count is back where it started while the content is not.
+That is a unit test, not a footnote (<code>test_state_id_is_not_a_group_count</code>).</p>
+<p>One case a state id cannot describe, so it is named rather than papered
+over: a plugin command mutates the buffer directly and the undo history
+is destroyed, which resets the id to "as loaded" for a buffer that
+plainly isn't. <code>runPluginCommand()</code> sets an explicit
+<code>m_historyDiscardedWhileDirty</code> flag, cleared by the next save.</p>
+<p>A content hash would also be correct and was rejected: it is O(file) per
+keystroke, against an editor whose pitch is "fast as hell" and whose
+last performance fix was about exactly this kind of per-frame scan
+(ADR 0053).</p>
+<h3 id="charwise-paste-leaves-the-cursor-on-the-last-pasted-character">Charwise paste leaves the cursor on the last pasted character<a class="headerlink" href="#charwise-paste-leaves-the-cursor-on-the-last-pasted-character" title="Permanent link">&para;</a></h3>
+<p>Real vim: charwise <code>p</code>/<code>P</code> leave the cursor on the <strong>last</strong> character of
+what was pasted. This editor left it on the first, which is why a second
+<code>p</code> re-pasted into the middle of the first paste instead of continuing
+after it.</p>
+<p>The tester asked for "the end of the pasted text" in both cases, and
+that half of the request is declined: <strong>linewise paste was already
+right.</strong> Vim puts the cursor on the <em>first non-blank of the first pasted
+line</em> for <code>p</code> after a <code>yy</code>, and that is what <code>vimFirstNonBlank</code> branch
+already did. Changing it would have traded a real bug for a new one.</p>
+<h3 id="and-paragraph-motions"><code>{</code> and <code>}</code> — paragraph motions<a class="headerlink" href="#and-paragraph-motions" title="Permanent link">&para;</a></h3>
+<p>Previous/next <strong>empty</strong> line. Whitespace-only lines are not boundaries:
+vim's paragraph boundary is a genuinely zero-length line, and treating
+an indented blank as one stops the motion in places that look like
+text.</p>
+<p>The scan starts from the line after (or before) the cursor's own, so
+repeating the motion through a run of blank lines advances one at a
+time, as real vim does. Falling off either end lands at the start/end of
+the buffer rather than refusing to move.</p>
+<p>They are ordinary charwise motions, so they compose with operators for
+free: <code>d}</code> deletes to the next blank line, <code>y{</code> yanks back to the
+previous one, and both extend the selection in Visual mode.</p>
+<h3 id="ctrlu-ctrld-half-a-screen-cursor-and-view-together"><code>Ctrl+U</code> / <code>Ctrl+D</code> — half a screen, cursor and view together<a class="headerlink" href="#ctrlu-ctrld-half-a-screen-cursor-and-view-together" title="Permanent link">&para;</a></h3>
+<p>Vim moves <em>both</em>: half a screen of lines, with the viewport following by
+the same amount so the cursor keeps its row and the text slides under
+it. Scrolling without moving the cursor (what the wheel does here) or
+moving without scrolling (what every other motion does, via
+<code>ensureCursorVisible</code>) would each read as a different gesture. The move
+goes through <code>moveCursorVerticallyAt</code>, so the remembered column behaves
+exactly as it does for <code>j</code>/<code>k</code> and the arrows.</p>
+<p><strong>This is the one place Vim mode takes over an existing Ctrl shortcut
+rather than adding one, and it reverses a rule ADR 0046 set
+deliberately.</strong> That ADR kept the entire Ctrl chain mode-independent, so
+<code>Ctrl+S</code>, <code>Ctrl+Q</code> and friends never depend on which mode you are in,
+and it is still right for all of those. But <code>Ctrl+D</code> is
+half-a-screen-down to anyone with vim in their fingers, and having it
+fan out multi-cursors in Normal mode is a surprise that costs more than
+the consistency saves. The override is scoped as narrowly as it can be:
+<strong>Normal and Visual only.</strong> Insert mode and <code>vim_mode = false</code> keep
+multi-cursor <code>Ctrl+D</code> untouched — which is where multi-cursor editing
+actually happens, since it is a typing-time tool.</p>
+<p>The shortcut reference says so on both rows rather than leaving two
+entries that contradict each other.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Verified live (screenshots, real GUI on a C test file exercising every
-capture kind): keywords/<code>typedef</code>/<code>const</code>/<code>struct</code> bold and plain-color
-as before; every <code>int</code>/<code>void</code>/<code>double</code>/<code>char</code>/<code>Point</code> type renders in
-the aqua-green, no italic anywhere; string literals (<code>"hello, world"</code>,
-a format string, <code>&lt;stdio.h&gt;</code>) render in the new gold; comments and
-numbers keep their existing dimmed-alpha treatment. Both caret shapes
-visibly shorter than the full line height on inspection, with the
-block cursor's knocked-out glyph still correctly centered. The status
-bar reads <code>"INSERT  Ln 1, Col 1"</code> on the very first frame after launch,
-before any input. <code>ctest --test-dir build</code> still 9/9 (after updating
-<code>test_config.c</code>'s two hardcoded <code>12</code>s to <code>11</code>).</p>
+<p>Verified live, on a real file:</p>
+<ul>
+<li>Type a space → the tab shows its unsaved dot and the status bar its
+  <code>*</code>; <code>u</code> → both gone; <code>Ctrl+R</code> → both back; <code>u</code> → gone again.</li>
+<li><code>yw</code> then <code>p</code> on <code>alpha beta gamma</code> yields <code>aalpha lpha beta gamma</code>
+  with the cursor at <strong>Col 7</strong>, on the trailing space of the pasted run
+  — the last pasted character, where vim leaves it.</li>
+<li><code>}</code> from line 1 lands on line 2, again on line 5, and <code>{</code> returns to
+  line 2 (the file's two blank lines).</li>
+<li><code>d}</code> from the first line of a paragraph removes exactly that paragraph
+  and leaves the blank line.</li>
+<li><code>Ctrl+D</code> from line 2 lands on line 24 with the viewport scrolled to
+  match; again to 46; <code>Ctrl+U</code> back to 24.</li>
+<li>With <code>vim_mode = false</code>, <code>Ctrl+D</code> still selects all three occurrences
+  of a word.</li>
+</ul>
+<p><code>ctest</code> 9/9, clean build, zero warnings — the undo suite gained three
+state-id cases (return-after-undo, not-a-group-count, no-op group).</p>
+<p>Still deferred, unchanged from ADR 0046: registers beyond the clipboard,
+macros, marks, text objects, dot-repeat, <code>Ctrl+F</code>/<code>Ctrl+B</code> full-page
+(<code>Ctrl+F</code> is Find here, and unlike <code>Ctrl+D</code> that collision has no scope
+narrow enough to resolve cleanly), and search motions.</p>
 
 
 

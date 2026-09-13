@@ -775,6 +775,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2224,6 +2228,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#addendum-the-containers-caught-exactly-what-they-were-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Addendum: the containers caught exactly what they were for
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2597,6 +2612,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0059-derived-dirty-state-paste-cursor-and-more-vim-motions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0059: Dirtiness is derived, paste lands where vim lands, and four more motions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0060-linewise-operations-at-the-end-of-the-buffer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0060: Linewise operations at the end of the buffer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2724,6 +2795,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#addendum-the-containers-caught-exactly-what-they-were-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Addendum: the containers caught exactly what they were for
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2844,6 +2926,30 @@ then, more conclusively, by running the actual AppImage for real.</p>
 <p>Containerized builds are slower and need Docker, but the pinned base
 is the correct fix, matching real AppImage/Debian-packaging convention
 rather than a workaround.</p>
+<h2 id="addendum-the-containers-caught-exactly-what-they-were-for">Addendum: the containers caught exactly what they were for<a class="headerlink" href="#addendum-the-containers-caught-exactly-what-they-were-for" title="Permanent link">&para;</a></h2>
+<p>Cutting v0.3.0-alpha, the <code>.deb</code> build failed outright:</p>
+<div class="highlight"><pre><span></span><code>error: 'QVector&lt;unsigned char&gt;' has no member named 'assign'
+</code></pre></div>
+<p><code>QList::assign()</code> arrived in <strong>Qt 6.6</strong>. <code>debian:bookworm</code> ships Qt 6.4,
+<code>ubuntu:22.04</code> ships Qt 6.2. The call went in with ADR 0053's render
+hot-path fix and had been on <code>main</code> through several rounds of work,
+because every build since was native on this rolling-release machine —
+Qt 6.10, where it compiles fine. <strong>Neither package had been buildable
+for that entire stretch, and nothing said so.</strong></p>
+<p>That is precisely the failure this ADR introduced the pinned bases to
+catch, and it only surfaced because a release was cut. Two changes so
+the next one surfaces sooner and louder:</p>
+<ul>
+<li><code>fill()</code> instead of <code>assign()</code> — same operation, available since Qt 5.</li>
+<li><code>find_package(Qt6 6.2 ...)</code>, so a too-old Qt fails at <em>configure</em> time
+  with a version number instead of at 84% of a compile with a
+  missing-member error. The floor is stated, not implied by whatever
+  happens to compile.</li>
+</ul>
+<p>The remaining gap, stated plainly: nothing runs a pinned-base build
+except a human cutting a release. A CI job doing one build against the
+floor on every push is the real fix; until then this will be found the
+same way again.</p>
 
 
 

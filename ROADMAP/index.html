@@ -958,6 +958,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2636,6 +2640,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0059-derived-dirty-state-paste-cursor-and-more-vim-motions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0059: Dirtiness is derived, paste lands where vim lands, and four more motions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0060-linewise-operations-at-the-end-of-the-buffer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0060: Linewise operations at the end of the buffer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3556,6 +3616,28 @@ ADRs as each lands here going forward.</p>
       text field draws the editor's own gliding, breathing caret instead
       of Qt's hard blink, closing the gap ADR 0028 left open. See
       <a href="../adr/0058-session-scoped-greeting-and-panel-carets/">ADR 0058</a>.</li>
+<li>[x] <strong>Derived dirty state, vim paste position, four more motions</strong>: from
+      external testing. "Is this file modified?" is now a comparison
+      against the undo stack's state id rather than a flag set by
+      whoever touched the buffer last — type a space, undo it, and the
+      file is correctly clean again, where before it stayed marked
+      modified until saved. Charwise <code>p</code>/<code>P</code> leave the cursor on the
+      last pasted character, as real vim does (linewise was already
+      correct and was left alone). New: <code>{</code>/<code>}</code> paragraph motions,
+      composable with operators, and <code>Ctrl+U</code>/<code>Ctrl+D</code> half-screen
+      motions that move cursor and viewport together — the latter
+      taking over <code>Ctrl+D</code> in Normal/Visual only, the single deliberate
+      exception to ADR 0046's mode-independent Ctrl chain. See
+      <a href="../adr/0059-derived-dirty-state-paste-cursor-and-more-vim-motions/">ADR 0059</a>.</li>
+<li>[x] <strong>Linewise operations at the end of the buffer</strong>: <code>dd</code> on the last
+      line did nothing at all — the range was built as "through the start
+      of the next line", and at the end of the buffer there is no next
+      line, so it came out zero-length. Same asymmetry emptied rather
+      than removed a non-empty last line, made <code>yy</code> there yank a
+      fragment, and left a blank line behind on a linewise Visual delete.
+      Linewise ranges that end at the buffer's end now take the
+      <em>preceding</em> newline, in one shared helper. See
+      <a href="../adr/0060-linewise-operations-at-the-end-of-the-buffer/">ADR 0060</a>.</li>
 <li>[x] <strong>v0.3.0-alpha</strong>: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the <code>EditorViewport</code> split, the render hot-path

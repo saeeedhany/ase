@@ -10,13 +10,11 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0048-syntax-accent-colors-caret-inset-status-init/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0060-linewise-operations-at-the-end-of-the-buffer/">
       
       
-        <link rel="prev" href="../0047-vim-block-cursor/">
+        <link rel="prev" href="../0059-derived-dirty-state-paste-cursor-and-more-vim-motions/">
       
-      
-        <link rel="next" href="../0049-typing-pop-in-animation/">
       
       
         
@@ -27,7 +25,7 @@
     
     
       
-        <title>ADR 0048: Syntax accent colors, caret inset, smaller default font, immediate status label - Absolute Simple Editor</title>
+        <title>ADR 0060: Linewise operations at the end of the buffer - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0048-syntax-accent-colors-caret-inset-smaller-default-font-immediate-status-label" class="md-skip">
+        <a href="#adr-0060-linewise-operations-at-the-end-of-the-buffer" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0048: Syntax accent colors, caret inset, smaller default font, immediate status label
+              ADR 0060: Linewise operations at the end of the buffer
             
           </span>
         </div>
@@ -2156,37 +2154,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0048: Syntax accent colors, caret inset, smaller default font, immediate status label
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0048-syntax-accent-colors-caret-inset-status-init/" class="md-nav__link">
         
   
   
@@ -2202,131 +2173,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#two-real-accent-colors-replacing-italic-entirely" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Two real accent colors, replacing italic entirely
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#both-caret-shapes-inset-a-little-vertically" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Both caret shapes inset a little vertically
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#default-font_size-12-11" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Default font_size: 12 → 11
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#status-bar-shows-the-mode-label-immediately-not-just-after-the-first-keystroke" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status bar shows the mode label immediately, not just after the first keystroke
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#not-in-this-adr-the-requested-typing-animation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Not in this ADR: the requested typing animation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2644,10 +2490,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0060-linewise-operations-at-the-end-of-the-buffer/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0060: Linewise operations at the end of the buffer
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2663,6 +2536,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-asymmetry-four-symptoms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One asymmetry, four symptoms
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The rule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#two-smaller-end-of-buffer-fixes-found-while-verifying" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two smaller end-of-buffer fixes found while verifying
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2736,10 +2712,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#two-real-accent-colors-replacing-italic-entirely" class="md-nav__link">
+  <a href="#one-asymmetry-four-symptoms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Two real accent colors, replacing italic entirely
+        One asymmetry, four symptoms
       
     </span>
   </a>
@@ -2747,10 +2723,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#both-caret-shapes-inset-a-little-vertically" class="md-nav__link">
+  <a href="#the-rule" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Both caret shapes inset a little vertically
+        The rule
       
     </span>
   </a>
@@ -2758,32 +2734,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#default-font_size-12-11" class="md-nav__link">
+  <a href="#two-smaller-end-of-buffer-fixes-found-while-verifying" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Default font_size: 12 → 11
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#status-bar-shows-the-mode-label-immediately-not-just-after-the-first-keystroke" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status bar shows the mode label immediately, not just after the first keystroke
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#not-in-this-adr-the-requested-typing-animation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Not in this ADR: the requested typing animation
+        Two smaller end-of-buffer fixes found while verifying
       
     </span>
   </a>
@@ -2823,7 +2777,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0048-syntax-accent-colors-caret-inset-status-init.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0060-linewise-operations-at-the-end-of-the-buffer.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2831,101 +2785,94 @@
   
 
 
-<h1 id="adr-0048-syntax-accent-colors-caret-inset-smaller-default-font-immediate-status-label">ADR 0048: Syntax accent colors, caret inset, smaller default font, immediate status label<a class="headerlink" href="#adr-0048-syntax-accent-colors-caret-inset-smaller-default-font-immediate-status-label" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0060-linewise-operations-at-the-end-of-the-buffer">ADR 0060: Linewise operations at the end of the buffer<a class="headerlink" href="#adr-0060-linewise-operations-at-the-end-of-the-buffer" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Direct user feedback after using the Phase 1 Vim mode and its new block
-cursor (ADR 0046, ADR 0047): drop italics from syntax highlighting and
-add real color instead, using a specific color the user had already
-supplied once before (<code>#689d6a</code>, ADR 0036's docs-site accent) plus one
-more color that pairs with it, kept restrained ("don't use too much");
-make both caret shapes a little shorter; make the default font a
-little smaller; show the Vim mode label in the status bar immediately
-on launch, not just after the first keystroke; and (tracked separately,
-see the "not in this ADR" note below) add a typing animation.</p>
+<p>Reported from use: <code>dd</code> on the last line of a file does nothing at all.
+It only starts working one line up.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<h3 id="two-real-accent-colors-replacing-italic-entirely">Two real accent colors, replacing italic entirely<a class="headerlink" href="#two-real-accent-colors-replacing-italic-entirely" title="Permanent link">&para;</a></h3>
-<p>ADR 0007's "one font color" pillar meant every syntax capture rendered
-in <code>m_textColor</code>'s own hue, varying only weight/opacity — <code>ASE_HL_TYPE</code>
-was the one exception, rendered italic. Italic is gone now; in its
-place, <code>ASE_HL_TYPE</code> and <code>ASE_HL_STRING</code> are the two captures that get
-a real, distinct color:</p>
+<h3 id="one-asymmetry-four-symptoms">One asymmetry, four symptoms<a class="headerlink" href="#one-asymmetry-four-symptoms" title="Permanent link">&para;</a></h3>
+<p>Every linewise operation built its byte range as "from the start of the
+first line, through the start of the line <em>after</em> the last one" — the
+trailing newline goes with the text, so no blank line is left behind.
+That is right everywhere except at the end of the buffer, where <strong>there
+is no line after and no trailing newline to take.</strong></p>
+<p>The range there was clamped to the end of the buffer instead, which
+produces four different wrong behaviours depending on what the last line
+is:</p>
 <ul>
-<li><code>syntax_type = #689d6a</code> — the color the user supplied previously for
-  the docs site (ADR 0036), reused here since it's already an
-  established part of this project's identity, not a new arbitrary
-  choice.</li>
-<li><code>syntax_string = #d79921</code> — a warm, muted gold chosen to pair with
-  the given aqua-green without competing with it or with the editor's
-  own warm cream text color; both land in the same desaturated,
-  low-contrast register as everything else in this theme rather than
-  reading as a bright, saturated "rainbow" addition.</li>
+<li><strong>The last line is empty</strong> (any file ending in a newline — i.e. almost
+  all of them). Its start offset already <em>is</em> the end of the buffer, so
+  the range was zero-length and <code>dd</code> deleted nothing. This is what was
+  reported, and why it looked like the last line was special-cased out.</li>
+<li><strong>The last line has text.</strong> <code>dd</code> removed the text but not the line
+  break above it, emptying the line rather than deleting it.</li>
+<li><strong><code>yy</code> on the last line</strong> yanked a string with no trailing newline —
+  nothing at all on an empty last line — so the register held a fragment
+  and the following <code>p</code> pasted a fragment, or nothing.</li>
+<li><strong>Linewise Visual <code>d</code></strong> on the last line had the same shape as <code>dd</code>,
+  through a different code path (a selection range rather than a line
+  count), and left an empty line behind.</li>
 </ul>
-<p><code>ASE_HL_KEYWORD</code> (bold), <code>ASE_HL_NUMBER</code>/<code>ASE_HL_COMMENT</code> (dimmed
-alpha), and <code>ASE_HL_NONE</code> (plain) are unchanged — still monochrome,
-varying only weight/opacity. Only two of the five captures gained a
-hue, deliberately, per "don't use too much": this is a small, scoped
-departure from ADR 0007's pillar, not its replacement. Both colors are
-configurable (<code>syntax_type</code>/<code>syntax_string</code> in <code>config.ase</code>, defaults
-baked into both <code>ase_config_create_default()</code> and
-<code>kDefaultConfigTemplate</code> in <code>core/src/config.c</code>), consistent with every
-other themeable color in this editor.</p>
-<p>Removing italic also let <code>m_italicMetrics</code>/the italic <code>QFont</code> setup in
-<code>applyConfig()</code> be deleted outright rather than kept dead — nothing
-else in this codebase ever used italic.</p>
-<h3 id="both-caret-shapes-inset-a-little-vertically">Both caret shapes inset a little vertically<a class="headerlink" href="#both-caret-shapes-inset-a-little-vertically" title="Permanent link">&para;</a></h3>
-<p><code>kCaretVerticalInset = 2</code> (px) trims 2px off the top and bottom of both
-the bar caret (Insert/Visual) and the Normal-mode block cursor's fill
-rect (ADR 0047) — a full-line-height caret read as slightly too
-tall/blocky against the actual glyph height. The block cursor's
-knocked-out glyph (drawn on top, in the background color) still uses
-the <em>un-inset</em> rect, so the character's own vertical centering/baseline
-stays identical to normal text; only the surrounding fill shrinks.</p>
-<h3 id="default-font_size-12-11">Default <code>font_size</code>: 12 → 11<a class="headerlink" href="#default-font_size-12-11" title="Permanent link">&para;</a></h3>
-<p>A one-point reduction, in <code>ase_config_create_default()</code>,
-<code>kDefaultConfigTemplate</code>, and the <code>ase_config_get_int</code> fallback literal
-in <code>applyConfig()</code> — all three needed updating to actually stay in
-sync (<code>core/tests/test_config.c</code>'s default-value assertions updated to
-match). This only affects a <em>newly generated</em> config file
-(<code>ase_config_write_default_if_missing()</code> never touches an existing
-one) — an already-existing <code>~/.config/ase/config.ase</code> keeps whatever
-<code>font_size</code> it already has and needs a manual edit to pick up the new
-default.</p>
-<h3 id="status-bar-shows-the-mode-label-immediately-not-just-after-the-first-keystroke">Status bar shows the mode label immediately, not just after the first keystroke<a class="headerlink" href="#status-bar-shows-the-mode-label-immediately-not-just-after-the-first-keystroke" title="Permanent link">&para;</a></h3>
-<p><code>main.cpp</code>'s status <code>QLabel</code> was constructed with a hardcoded literal
-(<code>"Ln 1, Col 1"</code>) and only replaced once <code>EditorViewport::statusChanged</code>
-first fired — which happens at <code>ensureCursorVisible()</code>, called from
-every cursor-moving action and edit, but not at construction. A
-Vim-mode user launching the editor therefore saw a bare, mode-less
-status line until their very first keystroke. Fixed with a new public
-<code>EditorViewport::emitInitialStatus()</code> (a one-line wrapper around the
-already-private <code>ensureCursorVisible()</code>, added instead of just making
-that private method public, since nothing else outside the class
-needs it), called once in <code>main()</code> right after <code>window.resize()</code> and
-before <code>window.show()</code> — so the label already reads e.g. <code>"INSERT  Ln
-1, Col 1"</code> the instant the window appears.</p>
-<h3 id="not-in-this-adr-the-requested-typing-animation">Not in this ADR: the requested typing animation<a class="headerlink" href="#not-in-this-adr-the-requested-typing-animation" title="Permanent link">&para;</a></h3>
-<p>A fourth request — "add an animation while typing to give a good
-effect" — is deliberately not designed or built here. Unlike the three
-decisions above, it has no single obvious shape (per-character
-fade/scale-in vs. a caret pulse vs. something else entirely), each
-with real, different implementation cost and feel; picked without
-asking, it's the one item in this batch most likely to need throwing
-away and redoing. Left for a follow-up ADR once the direction is
-confirmed.</p>
+<h3 id="the-rule">The rule<a class="headerlink" href="#the-rule" title="Permanent link">&para;</a></h3>
+<p>A linewise range that ends at the end of the buffer takes the
+<strong>preceding</strong> newline instead of a following one. That is what removes a
+line rather than emptying it, and it is what real vim does — which is
+why deleting the last line moves the cursor up.</p>
+<p>It lives in one place, <code>vimLinewiseDeleteStart()</code>, used by both <code>dd</code> and
+linewise Visual <code>d</code>, because the same mistake made independently in two
+code paths is how it survived this long. The first line is exempt:
+deleting from there legitimately takes the whole buffer.</p>
+<p>Yanks get the mirror of it — a linewise register always ends in a
+newline, appended if the buffer had none to give.</p>
+<p><code>c</code> is deliberately <strong>not</strong> extended over the preceding newline. <code>d</code>
+removes lines; <code>c</code> leaves you typing where they were, and swallowing the
+break above would drop the insertion point onto the end of the previous
+line.</p>
+<h3 id="two-smaller-end-of-buffer-fixes-found-while-verifying">Two smaller end-of-buffer fixes found while verifying<a class="headerlink" href="#two-smaller-end-of-buffer-fixes-found-while-verifying" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Linewise <code>p</code> on the last line of a file that <strong>does not end in a
+  newline</strong> appended the register directly to the end, so <code>a\nb</code> + <code>p</code>
+  produced <code>a\nbb</code> — the pasted line joined onto the last one. The paste
+  now trades the register's trailing newline for a leading one, so the
+  buffer gains exactly one line.</li>
+<li>A linewise Visual delete left the cursor on the newline the range was
+  extended over, i.e. visually past the end of the previous line. It now
+  lands on that line's first non-blank, like every other linewise
+  operation in Vim mode.</li>
+</ul>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Verified live (screenshots, real GUI on a C test file exercising every
-capture kind): keywords/<code>typedef</code>/<code>const</code>/<code>struct</code> bold and plain-color
-as before; every <code>int</code>/<code>void</code>/<code>double</code>/<code>char</code>/<code>Point</code> type renders in
-the aqua-green, no italic anywhere; string literals (<code>"hello, world"</code>,
-a format string, <code>&lt;stdio.h&gt;</code>) render in the new gold; comments and
-numbers keep their existing dimmed-alpha treatment. Both caret shapes
-visibly shorter than the full line height on inspection, with the
-block cursor's knocked-out glyph still correctly centered. The status
-bar reads <code>"INSERT  Ln 1, Col 1"</code> on the very first frame after launch,
-before any input. <code>ctest --test-dir build</code> still 9/9 (after updating
-<code>test_config.c</code>'s two hardcoded <code>12</code>s to <code>11</code>).</p>
+<p>Verified live, on a file ending in three blank lines:</p>
+<ul>
+<li><code>G</code> then <code>dd</code> deletes the last (empty) line and lands on the new last
+  line; repeating walks up the file one line per press, where before it
+  did nothing until two lines from the end.</li>
+<li><code>dd</code> on a non-empty last line removes it outright, leaving no blank —
+  <code>one</code>/<code>two</code> + <code>dd</code> on <code>two</code> leaves exactly <code>one</code>.</li>
+<li><code>dd</code> on the only line empties the buffer; one <code>u</code> restores the entire
+  original file, so the extended range is still a single undo group.</li>
+<li><code>yy</code> on the empty last line now puts <code>\n</code> in the register (confirmed at
+  the clipboard) and <code>p</code> adds a line; before, both were no-ops.</li>
+<li>On a file with no trailing newline, <code>yy</code>+<code>p</code> on the last line gives
+  three lines, not a joined one.</li>
+<li>Linewise Visual <code>d</code> on the last line leaves no blank line and puts the
+  cursor on the first non-blank above.</li>
+<li>Unchanged mid-file: <code>dd</code> on line 2 of four leaves the rest intact, and
+  <code>V j d</code> from the top removes exactly two lines.</li>
+</ul>
+<p><code>ctest</code> 9/9, clean build, zero warnings.</p>
+<p><strong>Found, not fixed, and deliberately left for a decision:</strong> <code>d</code>/<code>dd</code>/<code>x</code>
+do not put the deleted text in any register, so vim's most common
+line-move idiom, <code>dd</code> then <code>p</code>, does not work — <code>p</code> pastes whatever the
+system clipboard happened to hold. ADR 0046 scoped Phase 1 to "the
+clipboard is the only register", and the missing half of that is that
+deletes never fill it. Making them fill it is a real design choice, not a
+bug fix: the register here <em>is</em> the system clipboard, so every <code>x</code> would
+destroy whatever you last copied from another application. The proper
+answer is vim's own model — an internal unnamed register for <code>d</code>/<code>y</code>/<code>p</code>,
+with the system clipboard reachable separately — which is a larger piece
+of work than this ADR.</p>
 
 
 
