@@ -159,6 +159,11 @@ void EditorViewport::checkConfigReload() {
     ase_config_destroy(m_config);
     m_config = ase_config_load(m_configPath.toUtf8().constData());
     applyConfig();
+    /* The hot-reload has always been silent, which is fine when the
+     * change is visible (a colour) and confusing when it isn't (a
+     * keybinding-adjacent setting, or a typo that made the file parse to
+     * defaults). */
+    notify(NotifyLevel::Info, QStringLiteral("config reloaded"));
     if (m_findBar != nullptr) {
         m_findBar->refreshTheme();
     }

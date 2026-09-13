@@ -757,6 +757,18 @@ ADRs as each lands here going forward.
       `y d c x` and read by `p`/`P`; the system clipboard is a separate
       destination on `Ctrl+C`/`Ctrl+V`, which yank still mirrors into
       (delete does not). See [ADR 0061](adr/0061-the-unnamed-register.md).
+- [x] **The status bar message line**: the editor had no way to say
+      anything at all — an unconfigured language server, a mistyped `:`
+      command and a *failed write* were all silence, which reads as
+      broken rather than as not-set-up. Everything now goes through one
+      `notify()` funnel onto a message area sharing the status bar with
+      the mode label: info dim and brief, warnings full strength and
+      longer, errors in the existing diagnostic colour, staying until you
+      move the cursor. See
+      [ADR 0062](adr/0062-the-status-bar-message-line.md). Next on the
+      same thread: a `:messages` history, and a persistent status-bar
+      segment for language-server *state* (which is what the packaged
+      LSP complaint actually needs).
 - [x] **v0.3.0-alpha**: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the `EditorViewport` split, the render hot-path

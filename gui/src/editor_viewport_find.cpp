@@ -78,6 +78,13 @@ void EditorViewport::setFindQuery(const QString &needle) {
     }
 }
 
+void EditorViewport::notifyNoMatches() {
+    if (m_findNeedle.isEmpty()) {
+        return;
+    }
+    notify(NotifyLevel::Warning, QStringLiteral("no matches for \"%1\"").arg(QString::fromUtf8(m_findNeedle)));
+}
+
 void EditorViewport::clearFindQuery() {
     m_findNeedle.clear();
     m_matches.clear();
@@ -87,6 +94,10 @@ void EditorViewport::clearFindQuery() {
 
 void EditorViewport::findNext() {
     if (m_matches.isEmpty()) {
+        /* Reported on Enter, not while typing: incremental search passes
+         * through "no matches" on the way to almost every real query, and
+         * a message per keystroke would be noise. */
+        notifyNoMatches();
         return;
     }
     jumpToMatch(m_currentMatch < 0 ? 0 : m_currentMatch + 1);
@@ -94,6 +105,7 @@ void EditorViewport::findNext() {
 
 void EditorViewport::findPrevious() {
     if (m_matches.isEmpty()) {
+        notifyNoMatches();
         return;
     }
     jumpToMatch(m_currentMatch < 0 ? -1 : m_currentMatch - 1);

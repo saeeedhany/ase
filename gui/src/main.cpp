@@ -1,16 +1,20 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QFileInfo>
+#include <QFontMetrics>
+#include <QGraphicsOpacityEffect>
 #include <QIcon>
 #include <QLabel>
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QPalette>
+#include <QPropertyAnimation>
 #include <QPushButton>
 #include <QShortcut>
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QString>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <QVector>
 #include <QWidget>
@@ -24,6 +28,8 @@
 #include "find_bar.h"
 #include "help_panel.h"
 #include "hover_panel.h"
+#include "motion.h"
+#include "notification.h"
 #include "output_panel.h"
 
 extern "C" {
@@ -64,6 +70,9 @@ public:
     /* Opens `path` as a new buffer, or switches to it if already open —
      * reopening a file you already have open should take you to it, not
      * give you a second copy to diverge from. */
+    void showMessage(NotifyLevel level, const QString &text);
+    void clearStickyMessage();
+    void hideMessage();
     void openBuffer(const QString &path);
     /* Ctrl+N — an empty, pathless buffer. Saving it routes through
      * Save-As, since save() already sends an empty path there
@@ -89,6 +98,18 @@ private:
     OutputPanel *m_outputPanel = nullptr;
     QLabel *m_modeLabel = nullptr;
     QLabel *m_statusLabel = nullptr;
+    /* The message area — see showMessage() and docs/adr/0062. Shares the
+     * bar with the mode label rather than replacing it: losing NORMAL
+     * because a file got saved would be a bad trade. */
+    QLabel *m_messageLabel = nullptr;
+    QGraphicsOpacityEffect *m_messageOpacity = nullptr;
+    QPropertyAnimation *m_messageFade = nullptr;
+    QTimer *m_messageTimer = nullptr;
+    /* An error stays up until you do something else — see
+     * clearStickyMessage(). Armed one event-loop turn after it is shown,
+     * so the very keystroke that produced it cannot also dismiss it. */
+    bool m_messageSticky = false;
+    bool m_messageStickyArmed = false;
     QVector<EditorViewport *> m_viewports;
 };
 
@@ -105,6 +126,48 @@ void applyStatusBarTheme(QMainWindow &window, QLabel *modeLabel, QLabel *statusL
     window.statusBar()->setAutoFillBackground(true);
     modeLabel->setPalette(pal);
     statusLabel->setPalette(pal);
+}
+
+/* Info and warnings are the status bar's own text colour — the
+ * one-font-colour pillar (docs/adr/0007) — separated by how long they
+ * linger, not by hue. Info drops one opacity tier, the same "this line
+ * is secondary" move the About panel and welcome screen already use
+ * (docs/adr/0055): a confirmation you did not need should not shout as
+ * loudly as the mode label it sits beside. A warning is something you
+ * are meant to read, so it does not drop.
+ *
+ * Errors are the exception the theme already sanctions:
+ * `diagnostic_error`, the same colour as the gutter dot and the
+ * underline, so nothing new enters the palette. */
+QColor messageColorFor(NotifyLevel level, EditorViewport *viewport) {
+    if (level == NotifyLevel::Error) {
+        return viewport->diagnosticErrorColor();
+    }
+    QColor color = viewport->textColor();
+    if (level == NotifyLevel::Info) {
+        color.setAlpha(210);
+    }
+    return color;
+}
+
+/* How long a message sits before fading, in milliseconds.
+ *
+ * Info is a glance: long enough to catch if you look down, short enough
+ * that it is gone before it becomes furniture. A warning is a sentence
+ * you are meant to finish reading, and it is usually telling you the
+ * thing you just asked for did not happen.
+ *
+ * An error does not time out at all — see clearStickyMessage(). */
+int messageHoldFor(NotifyLevel level) {
+    switch (level) {
+    case NotifyLevel::Info:
+        return 3000;
+    case NotifyLevel::Warning:
+        return 6000;
+    case NotifyLevel::Error:
+        return 0;
+    }
+    return 3000;
 }
 
 MainWindow::MainWindow() {
@@ -140,6 +203,22 @@ MainWindow::MainWindow() {
      * hasn't opted in. */
     m_modeLabel = new QLabel();
     statusBar()->addWidget(m_modeLabel);
+    /* Also addWidget, so it sits immediately right of the mode label and
+     * grows into the free middle of the bar — the space that was doing
+     * nothing. Elided rather than allowed to push the position readout
+     * off the edge on a narrow window. */
+    m_messageLabel = new QLabel();
+    m_messageLabel->setTextFormat(Qt::PlainText);
+    m_messageLabel->setContentsMargins(8, 0, 0, 0);
+    m_messageOpacity = new QGraphicsOpacityEffect(m_messageLabel);
+    m_messageOpacity->setOpacity(0.0);
+    m_messageLabel->setGraphicsEffect(m_messageOpacity);
+    m_messageFade = new QPropertyAnimation(m_messageOpacity, "opacity", this);
+    motion::apply(m_messageFade, motion::kChrome);
+    m_messageTimer = new QTimer(this);
+    m_messageTimer->setSingleShot(true);
+    connect(m_messageTimer, &QTimer::timeout, this, [this]() { hideMessage(); });
+    statusBar()->addWidget(m_messageLabel, 1);
     m_statusLabel = new QLabel(QStringLiteral("Ln 1, Col 1"));
     statusBar()->addPermanentWidget(m_statusLabel);
 
@@ -188,6 +267,7 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
                 if (viewport != activeViewport()) {
                     return; /* a background buffer's cursor is not what the status bar reports */
                 }
+                clearStickyMessage();
                 m_modeLabel->setText(mode);
                 m_statusLabel->setText(QStringLiteral("Ln %1, Col %2%3")
                                             .arg(line)
@@ -199,11 +279,91 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
             });
     connect(viewport, &EditorViewport::fileOpenRequested, this,
             [this](const QString &path) { openBuffer(path); });
+    /* Only the buffer you are looking at gets to speak — same rule the
+     * status readout follows, and for the same reason: a message about a
+     * file in another tab, with nothing naming that file, reads as a
+     * message about this one. */
+    connect(viewport, &EditorViewport::messagePosted, this,
+            [this, viewport](NotifyLevel level, const QString &text) {
+                if (viewport == activeViewport()) {
+                    showMessage(level, text);
+                }
+            });
 
     m_viewports.push_back(viewport);
     m_stack->addWidget(viewport);
     setActiveIndex(m_viewports.size() - 1);
     return viewport;
+}
+
+/*
+ * Renders one message in the status bar: fade in on the app's own motion
+ * tier, hold for a level-dependent beat, fade out. A new message
+ * replaces whatever was there rather than queueing — a queue means the
+ * thing you are being told about happened several seconds ago, which is
+ * worse than missing it. See docs/adr/0062.
+ */
+void MainWindow::showMessage(NotifyLevel level, const QString &text) {
+    EditorViewport *viewport = activeViewport();
+    if (viewport == nullptr) {
+        return;
+    }
+
+    QPalette pal = m_messageLabel->palette();
+    pal.setColor(QPalette::WindowText, messageColorFor(level, viewport));
+    m_messageLabel->setPalette(pal);
+    /* Elided here rather than by the layout, so a long path shortens the
+     * message instead of squeezing Ln/Col off the end of the bar. */
+    QFontMetrics metrics(m_messageLabel->font());
+    int room = std::max(80, m_messageLabel->width());
+    m_messageLabel->setText(metrics.elidedText(text, Qt::ElideMiddle, room));
+    m_messageLabel->setToolTip(text);
+
+    m_messageFade->stop();
+    m_messageFade->setStartValue(m_messageOpacity->opacity());
+    m_messageFade->setEndValue(1.0);
+    m_messageFade->start();
+
+    int hold = messageHoldFor(level);
+    m_messageSticky = (hold == 0);
+    m_messageStickyArmed = false;
+    if (hold > 0) {
+        m_messageTimer->start(hold + motion::kChrome);
+    } else {
+        m_messageTimer->stop();
+        /* Next turn, not now: the keystroke that caused this error is
+         * still being delivered, and anything it emits on its way out
+         * would otherwise dismiss the error before it was read. */
+        QTimer::singleShot(0, this, [this]() { m_messageStickyArmed = true; });
+    }
+}
+
+void MainWindow::hideMessage() {
+    m_messageSticky = false;
+    m_messageStickyArmed = false;
+    m_messageTimer->stop();
+    m_messageFade->stop();
+    m_messageFade->setStartValue(m_messageOpacity->opacity());
+    m_messageFade->setEndValue(0.0);
+    m_messageFade->start();
+}
+
+/*
+ * Vim's rule: an error sits on the message line until you do something
+ * else, then it is gone. "Something else" here is any cursor move or
+ * edit — statusChanged already fires on exactly those and on nothing
+ * that isn't the user (docs/adr/0023), so this needs no new signal and
+ * cannot miss a case that one would.
+ *
+ * The alternative, letting an error time out like the other tiers, was
+ * rejected: the one message you must not miss is the one saying a thing
+ * you asked for did not happen, and a save that failed while you were
+ * looking elsewhere is exactly how people lose work.
+ */
+void MainWindow::clearStickyMessage() {
+    if (m_messageSticky && m_messageStickyArmed) {
+        hideMessage();
+    }
 }
 
 void MainWindow::openBuffer(const QString &path) {
@@ -239,6 +399,10 @@ void MainWindow::setActiveIndex(int index) {
         return;
     }
     m_stack->setCurrentIndex(index);
+    /* A message raised by the buffer you just left, still sitting in the
+     * bar over a different file's text, reads as being about *this*
+     * file. Switching buffers clears it. */
+    hideMessage();
     EditorViewport *viewport = m_viewports[index];
     m_outputPanel->setViewport(viewport);
     viewport->onActivated(); /* focuses, and starts its LSP the first time */

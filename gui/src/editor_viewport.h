@@ -11,6 +11,8 @@
 #include <QVector>
 #include <QWidget>
 
+#include "notification.h"
+
 extern "C" {
 #include "ase/buffer.h"
 #include "ase/config.h"
@@ -117,7 +119,9 @@ public:
     /* `:name` dispatch into the plugin command registry — see
      * docs/adr/0054. Checked after every built-in, so plugins can't
      * shadow one. */
-    void runPluginCommand(const QString &name);
+    /* Returns false when no plugin registered that name, so the caller
+     * can say so rather than the command vanishing silently. */
+    bool runPluginCommand(const QString &name);
 
     QString filePath() const { return m_filePath; }
     /* For the quit-with-unsaved-changes confirmation — see main.cpp's
@@ -128,6 +132,10 @@ public:
      * own buffer instead, so FileBrowserPanel routes through here and
      * MainWindow decides. */
     void requestOpenFile(const QString &path) { emit fileOpenRequested(path); }
+    /* The one way to say anything to the user. Public so panels and, in
+     * time, plugins can reach it — a plugin that cannot report "that
+     * file isn't a thing" is a plugin that fails silently. */
+    void notify(NotifyLevel level, const QString &text) { emit messagePosted(level, text); }
     /* Called by MainWindow when this viewport becomes the visible buffer.
      * Starts the language server on first activation rather than in the
      * constructor, so opening ten files doesn't spawn ten clangd
@@ -168,6 +176,10 @@ public:
         return c.lighter(130);
     }
     bool animationsEnabled() const { return m_animationsEnabled; }
+    /* The theme's error colour, already used by the diagnostic underline
+     * and gutter dot — reused for error messages so the status bar
+     * introduces no new hue (docs/adr/0007, docs/adr/0062). */
+    QColor diagnosticErrorColor() const { return m_diagnosticErrorColor; }
     /* So chrome that labels the text (the buffer bar) can sit at the
      * same visual weight as the text itself, and follow Ctrl+=/Ctrl+-
      * with it. See docs/adr/0056. */
@@ -209,6 +221,10 @@ signals:
      * for display. See docs/adr/0023. `modeLabel` is "NORMAL"/"INSERT"/
      * "VISUAL" when Vim mode is on, empty otherwise — see docs/adr/0046. */
     void statusChanged(int line, int column, bool dirty, const QString &modeLabel);
+    /* Everything the editor has to say, on one signal — the window owns
+     * the rendering so there is exactly one place that decides what a
+     * message looks like. See gui/src/notification.h and docs/adr/0062. */
+    void messagePosted(NotifyLevel level, const QString &text);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -501,6 +517,7 @@ private:
      * case-insensitive (QByteArray::toLower() is ASCII-only; documented
      * v1 simplification). */
     void recomputeMatches();
+    void notifyNoMatches();
     /* Moves to m_matches[index] (wrapping either direction), selecting
      * its range like any other selection — replaceCurrentMatch then
      * just reuses insertText's existing selection-replace path. */

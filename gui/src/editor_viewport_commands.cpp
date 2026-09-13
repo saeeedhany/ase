@@ -16,13 +16,21 @@ void EditorViewport::save() {
         }
         return;
     }
-    if (ase_buffer_save_to_file(m_buffer, m_filePath.toUtf8().constData())) {
+    if (!ase_buffer_save_to_file(m_buffer, m_filePath.toUtf8().constData())) {
+        /* A failed write used to be indistinguishable from a successful
+         * one: the dirty marker simply stayed, and the file you thought
+         * you had saved was not on disk. */
+        notify(NotifyLevel::Error, QStringLiteral("could not write %1").arg(QFileInfo(m_filePath).fileName()));
+        return;
+    }
+    {
         /* What is on disk is now this exact state — remember which one
          * it was, and every later "is this dirty?" is that comparison.
          * See docs/adr/0059. */
         m_savedStateId = ase_undo_state_id(m_undo);
         m_historyDiscardedWhileDirty = false;
         ensureCursorVisible(); /* pushes the cleared dirty flag (and title) through statusChanged */
+        notify(NotifyLevel::Info, QStringLiteral("saved %1").arg(QFileInfo(m_filePath).fileName()));
     }
 }
 
@@ -71,11 +79,14 @@ void EditorViewport::runCommand(const QString &command) {
             ensureCursorVisible();
             update();
         } else if (!trimmed.isEmpty()) {
-            runPluginCommand(trimmed);
+            if (!runPluginCommand(trimmed)) {
+                notify(NotifyLevel::Warning, QStringLiteral("unknown command: %1").arg(trimmed));
+            }
         }
-        /* Anything else recognized as neither a known word, a line
-         * number, nor a registered plugin command: silent no-op — see
-         * docs/adr/0025. */
+        /* Neither a known word, a line number, nor a registered plugin
+         * command. Silence here (docs/adr/0025) meant a typo in a `:`
+         * command looked exactly like a command that ran and did
+         * nothing — say which word wasn't understood. */
     }
 }
 
@@ -93,12 +104,12 @@ void EditorViewport::runCommand(const QString &command) {
  * is not. Routing plugin edits through undo properly needs the wider
  * plugin context described in docs/EXTENSIBILITY.md, and is the main
  * reason that widening is worth doing. */
-void EditorViewport::runPluginCommand(const QString &name) {
+bool EditorViewport::runPluginCommand(const QString &name) {
     if (m_pluginHost == nullptr) {
-        return;
+        return false;
     }
     if (!ase_plugin_host_run_command(m_pluginHost, name.toUtf8().constData(), m_buffer)) {
-        return; /* no such command — same silent no-op as any other unknown `:` word */
+        return false; /* no such command — the caller reports it */
     }
 
     /* A plugin edits the buffer directly, with no undo entries for what
@@ -118,6 +129,7 @@ void EditorViewport::runPluginCommand(const QString &name) {
     m_selectionAnchors[0] = m_cursors[0];
     ensureCursorVisible();
     update();
+    return true;
 }
 
 void EditorViewport::toggleOutputPanel() {
