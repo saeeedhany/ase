@@ -265,6 +265,30 @@
          <lastmod>2026-09-13</lastmod>
     </url>
     <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0061-the-unnamed-register/</loc>
+         <lastmod>2026-09-13</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0062-the-status-bar-message-line/</loc>
+         <lastmod>2026-09-13</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0063-language-server-state-in-the-status-bar/</loc>
+         <lastmod>2026-09-13</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0064-gui-in-ci-and-a-test-suite-that-runs-in-release/</loc>
+         <lastmod>2026-09-13</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0065-quick-open/</loc>
+         <lastmod>2026-09-13</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0066-project-wide-search/</loc>
+         <lastmod>2026-09-13</lastmod>
+    </url>
+    <url>
          <loc>https://saeeedhany.github.io/ase/feedback/</loc>
          <lastmod>2026-09-13</lastmod>
     </url>

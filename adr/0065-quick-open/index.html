@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0039-mouse-hit-test-drift-fix/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0065-quick-open/">
       
       
-        <link rel="prev" href="../0038-feedback-triage-criteria-and-deferred-status/">
+        <link rel="prev" href="../0064-gui-in-ci-and-a-test-suite-that-runs-in-release/">
       
       
-        <link rel="next" href="../0040-italic-glyph-clipping-fix/">
+        <link rel="next" href="../0066-project-wide-search/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0039: Fix mouse click/hover drift on styled lines - Absolute Simple Editor</title>
+        <title>ADR 0065: Quick open (Ctrl+P) - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0039-fix-mouse-clickhover-drift-on-styled-lines" class="md-skip">
+        <a href="#adr-0065-quick-open-ctrlp" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0039: Fix mouse click/hover drift on styled lines
+              ADR 0065: Quick open (Ctrl+P)
             
           </span>
         </div>
@@ -1916,37 +1916,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0039: Fix mouse click/hover drift on styled lines
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0039-mouse-hit-test-drift-fix/" class="md-nav__link">
         
   
   
@@ -1962,87 +1935,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#verified-live-not-just-built" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verified live, not just built
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2752,10 +2644,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0065-quick-open/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0065: Quick open (Ctrl+P)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2771,6 +2690,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ctrlp-as-a-third-mode-of-the-panel-that-already-exists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ctrl+P, as a third mode of the panel that already exists
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-project-is-the-git-checkout-or-the-folder-you-are-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "The project" is the git checkout, or the folder you are in
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-score-is-the-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The score is the feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-field-is-a-query-never-a-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The field is a query, never a path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2872,10 +2905,43 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#verified-live-not-just-built" class="md-nav__link">
+  <a href="#ctrlp-as-a-third-mode-of-the-panel-that-already-exists" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Verified live, not just built
+        Ctrl+P, as a third mode of the panel that already exists
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-project-is-the-git-checkout-or-the-folder-you-are-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "The project" is the git checkout, or the folder you are in
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-score-is-the-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The score is the feature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-field-is-a-query-never-a-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The field is a query, never a path
       
     </span>
   </a>
@@ -2915,7 +2981,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0039-mouse-hit-test-drift-fix.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0065-quick-open.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2923,69 +2989,98 @@
   
 
 
-<h1 id="adr-0039-fix-mouse-clickhover-drift-on-styled-lines">ADR 0039: Fix mouse click/hover drift on styled lines<a class="headerlink" href="#adr-0039-fix-mouse-clickhover-drift-on-styled-lines" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0065-quick-open-ctrlp">ADR 0065: Quick open (<code>Ctrl+P</code>)<a class="headerlink" href="#adr-0065-quick-open-ctrlp" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>User-reported bug: clicking (or hovering) further right on a line
-increasingly missed the character actually under the pointer, on
-lines with mixed syntax-highlight styling (e.g. bold keywords next to
-plain identifiers). This is the same class of bug ADR 0013 already
-fixed for the <em>caret</em> — assuming a fixed per-character pixel width
-instead of measuring what was actually rendered — just never fixed on
-the mouse-hit-testing side.</p>
-<p><code>EditorViewport::offsetForPoint()</code> (used by both <code>mousePressEvent</code> and
-the no-button branch of <code>mouseMoveEvent</code>, i.e. click, drag-select, and
-hover) computed the target column as <code>localX / m_charWidth</code>, a single
-project-wide average character width. Meanwhile <code>drawLine</code> and
-<code>xForColumn</code> — used for actually painting text and positioning the
-caret — measure each syntax-highlight run's real advance with
-<code>QFontMetrics::horizontalAdvance</code> on that run's actual text and font
-(<code>fontForCapture</code>/<code>metricsForCapture</code>), because bold/italic variants of
-even a "monospace" font don't reliably share the exact same advance as
-the regular weight. Any line with more than one highlight capture
-accumulates a small error per run boundary; far enough right on a long
-styled line, that error becomes visible as exactly what was reported —
-the pointer needing to move noticeably further than a character-width
-to advance the cursor by one character, or landing on the wrong one
-entirely.</p>
+<p>Multiple buffers landed in ADR 0054, but the only way to <em>get</em> a buffer
+was ADR 0023's file browser: one directory at a time, navigating with
+<code>..</code>. That is fine for the file next to the one you have open and
+tedious for anything else, which in practice means the editor is
+pleasant to edit in and awkward to move around in.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Added <code>EditorViewport::columnForX(lineStart, lineEnd, localX)</code>, the
-direct inverse of <code>xForColumn</code>: it walks the same per-run segmentation
-<code>xForColumn</code>/<code>drawLine</code> use, measuring each run's actual rendered
-width, and finds which column's glyph <code>localX</code> falls nearest to —
-rounding to the <em>nearest</em> codepoint boundary rather than flooring
-(same reasoning as ADR 0028's click-precision fix), and stepping by
-codepoint (using the existing <code>isUtf8ContinuationByte</code> helper) rather
-than by raw byte, so a multi-byte UTF-8 character is never measured as
-a partial, invalid byte sequence.</p>
-<p><code>offsetForPoint()</code> now calls <code>columnForX()</code> instead of dividing by
-<code>m_charWidth</code>. This also <em>removes</em> code, not just adds it: the
-separate post-hoc "snap forward past any continuation byte" loop
-<code>offsetForPoint()</code> used to need is now redundant — <code>columnForX()</code>
-already only ever returns a codepoint boundary.</p>
-<p><code>m_charWidth</code> itself is unchanged and still used elsewhere (horizontal
-scroll margin, the line-wrap continuation hint) — those are approximate
-by nature already, unlike hit-testing where the pointer needs to track
-a specific glyph.</p>
-<h3 id="verified-live-not-just-built">Verified live, not just built<a class="headerlink" href="#verified-live-not-just-built" title="Permanent link">&para;</a></h3>
-<p>Launched the real GUI against a <code>.c</code> file with a long line mixing bold
-keyword highlights and plain identifiers. Placed the caret at a known
-column via keyboard navigation (<code>End</code>, then <code>Left</code> N times),
-screenshotted its exact pixel position, then clicked at that exact
-pixel and confirmed the reported column matched — both near column 80
-on a ~100-column styled line and again near the line's end. Before
-this fix, <code>offsetForPoint</code>'s fixed-pitch math and <code>xForColumn</code>'s
-per-run measurement could only coincidentally agree; after, a mouse
-click and the caret's own rendered position resolve to the same
-character by construction, however far right on the line.</p>
+<h3 id="ctrlp-as-a-third-mode-of-the-panel-that-already-exists"><code>Ctrl+P</code>, as a third mode of the panel that already exists<a class="headerlink" href="#ctrlp-as-a-third-mode-of-the-panel-that-already-exists" title="Permanent link">&para;</a></h3>
+<p>Not a new widget. Quick open is the same badge, the same input field,
+the same list, the same sliding row highlight, the same theming and the
+same Enter/Escape handling as Open and Save-As — it differs only in
+where the entries come from and how they are filtered. A separate class
+would have been roughly two hundred duplicated lines that then drift
+apart visually, which is how editors end up with two file pickers that
+look almost the same.</p>
+<p>So <code>FileBrowserPanel::Mode</code> gains <code>QuickOpen</code>, the badge shows <code>P</code>, and
+three methods branch on it.</p>
+<h3 id="the-project-is-the-git-checkout-or-the-folder-you-are-in">"The project" is the git checkout, or the folder you are in<a class="headerlink" href="#the-project-is-the-git-checkout-or-the-folder-you-are-in" title="Permanent link">&para;</a></h3>
+<p><code>project::rootFor()</code> walks up from the current file's directory looking
+for <code>.git</code> and stops at the first one; with no repository anywhere
+above, the file's own directory is the root.</p>
+<p>Deliberately <strong>not</strong> <code>git ls-files</code>. It would be faster on a huge
+repository and would respect <code>.gitignore</code> for free — and it would also
+mean <code>Ctrl+P</code> silently doing nothing in a directory that isn't a
+checkout, which is a perfectly normal way to use a text editor.</p>
+<p>The walk prunes rather than filters: an explicit directory stack, not
+<code>QDirIterator::Subdirectories</code>, because that descends into everything
+and only lets you drop the <em>results</em> — on this repository that means
+walking all of <code>.git</code> to throw it away. Hidden entries and a fixed list
+of build/vendor directory names (<code>build*</code>, <code>node_modules</code>, <code>.venv*</code>,
+<code>target</code>, <code>dist</code>, …) are skipped. It is not a <code>.gitignore</code> parser and
+does not pretend to be one; it is a fixed list, which never surprises
+you by hiding a file you can see in your own directory listing.</p>
+<h3 id="the-score-is-the-feature">The score is the feature<a class="headerlink" href="#the-score-is-the-feature" title="Permanent link">&para;</a></h3>
+<p>Matching is subsequence — <code>edvim</code> finds
+<code>gui/src/editor_viewport_vim.cpp</code> — but with a few hundred files, half
+of them match any short query, so ranking is the entire job. Four
+things, in descending weight: consecutive <strong>runs</strong>, characters matched
+at a <strong>boundary</strong> (<code>/</code>, <code>_</code>, <code>-</code>, <code>.</code>, or a camelCase hump), matches in
+the <strong>basename</strong> rather than a directory name, and <strong>brevity</strong> as a
+tiebreak.</p>
+<p>Matching is greedy left-to-right — each needle character takes the next
+occurrence, not the best one. That is a real limitation, stated in
+<code>fuzzy_match.h</code> rather than hidden: a query whose letters appear early
+in a bad spot and again later in a good one is scored on the early one.
+The alternative is a dynamic-programming pass over every candidate on
+every keystroke, and this editor's whole claim is that it doesn't do
+that sort of thing.</p>
+<p>Unlike <code>applyFilter()</code>, which hides rows, quick open <strong>rebuilds</strong> the
+list in score order — hiding rows in a fixed alphabetical order cannot
+put the file you meant first, which is the only thing a fuzzy finder is
+for. The sort is stable, so equal scores keep the walk's alphabetical
+order instead of shuffling under you as you type, and only the top 200
+rows are built: you never look past the first handful, and constructing
+thousands of list items per keystroke is exactly the per-frame work
+ADR 0053 was about.</p>
+<h3 id="the-field-is-a-query-never-a-path">The field is a query, never a path<a class="headerlink" href="#the-field-is-a-query-never-a-path" title="Permanent link">&para;</a></h3>
+<p>In Open and Save-As, typing something that looks like a path resolves it
+(ADR 0055). In quick open it does not: <code>src/ed</code> is something to match
+against, not a file to create. Enter opens whatever is highlighted, and
+nothing else.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Click, drag-select, and hover (LSP hover popup, completion popup
-positioning) all route through <code>offsetForPoint</code>, so all three are
-fixed together, not just the plain click case reported. No new O(line
-length) cost class was introduced beyond what already existed:
-<code>xForColumn</code> was already a linear scan over the line's runs for the
-caret's own position, and <code>columnForX</code> is the same shape.</p>
+<p>Verified live in this repository: <code>Ctrl+P</code> lists 298 files with the
+root shown as <code>~/Lab/area56/textEditor — 298 files</code>; typing <code>edvim</code>
+puts <code>gui/src/editor_viewport_vim.cpp</code> first, ahead of
+<code>editor_viewport_commands.cpp</code> and the vim-related ADRs; Enter opens it
+as a new buffer; <code>Down</code> moves the highlight; <code>Escape</code> closes. Opened on
+a file outside any repository, the root falls back to that file's own
+directory.</p>
+<p>The listing header says how many files are in play, and says <code>first N
+files</code> when the walk hit its cap — a listing that silently stops is a
+listing that lies about what you can open.</p>
+<p><strong>The cost, measured rather than assumed.</strong> The walk runs on the UI
+thread, once per <code>Ctrl+P</code>. Pruned, this repository is ~8ms — instant.
+A home directory with no repository above it reaches the 20,000-file cap
+in ~0.5s, which is a perceptible hitch. That is the honest ceiling of
+this design, and the fixes when it matters are a background thread or
+caching the listing between invocations; neither is worth doing before
+the hitch is actually in someone's way.</p>
+<p>Deferred, and cheap on top of this:</p>
+<ul>
+<li><strong>Ranking recently-opened files first.</strong> The single biggest quality
+  jump a quick-open gets, and it needs a buffer-history list the editor
+  doesn't keep yet.</li>
+<li><strong>Highlighting the matched characters</strong> in each row. The scorer
+  already knows the positions; the list renders plain strings.</li>
+<li><strong>Project-wide search</strong> reuses all of this — the walk, the panel, the
+  results list — which is why it is the next thing on the list.</li>
+</ul>
 
 
 

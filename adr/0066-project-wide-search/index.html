@@ -10,13 +10,11 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0039-mouse-hit-test-drift-fix/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0066-project-wide-search/">
       
       
-        <link rel="prev" href="../0038-feedback-triage-criteria-and-deferred-status/">
+        <link rel="prev" href="../0065-quick-open/">
       
-      
-        <link rel="next" href="../0040-italic-glyph-clipping-fix/">
       
       
         
@@ -27,7 +25,7 @@
     
     
       
-        <title>ADR 0039: Fix mouse click/hover drift on styled lines - Absolute Simple Editor</title>
+        <title>ADR 0066: Project-wide search - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0039-fix-mouse-clickhover-drift-on-styled-lines" class="md-skip">
+        <a href="#adr-0066-project-wide-search" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0039: Fix mouse click/hover drift on styled lines
+              ADR 0066: Project-wide search
             
           </span>
         </div>
@@ -1916,37 +1914,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0039: Fix mouse click/hover drift on styled lines
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0039-mouse-hit-test-drift-fix/" class="md-nav__link">
         
   
   
@@ -1962,87 +1933,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#verified-live-not-just-built" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verified live, not just built
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2780,10 +2670,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0066-project-wide-search/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0066: Project-wide search
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2799,6 +2716,131 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-query-rides-in-the-find-bar-the-results-ride-in-the-output-panel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The query rides in the find bar; the results ride in the output panel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-same-file-list-as-quick-open" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The same file list as quick open
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#case-insensitive-literal-matching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case-insensitive literal matching
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#synchronous-with-caps-that-are-admitted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synchronous, with caps that are admitted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#opening-a-hit-is-two-objects-work-joined-in-one-place" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Opening a hit is two objects' work, joined in one place
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2872,10 +2914,54 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#verified-live-not-just-built" class="md-nav__link">
+  <a href="#the-query-rides-in-the-find-bar-the-results-ride-in-the-output-panel" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Verified live, not just built
+        The query rides in the find bar; the results ride in the output panel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-same-file-list-as-quick-open" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The same file list as quick open
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#case-insensitive-literal-matching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case-insensitive literal matching
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#synchronous-with-caps-that-are-admitted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synchronous, with caps that are admitted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#opening-a-hit-is-two-objects-work-joined-in-one-place" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Opening a hit is two objects' work, joined in one place
       
     </span>
   </a>
@@ -2915,7 +3001,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0039-mouse-hit-test-drift-fix.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0066-project-wide-search.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2923,69 +3009,91 @@
   
 
 
-<h1 id="adr-0039-fix-mouse-clickhover-drift-on-styled-lines">ADR 0039: Fix mouse click/hover drift on styled lines<a class="headerlink" href="#adr-0039-fix-mouse-clickhover-drift-on-styled-lines" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0066-project-wide-search">ADR 0066: Project-wide search<a class="headerlink" href="#adr-0066-project-wide-search" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>User-reported bug: clicking (or hovering) further right on a line
-increasingly missed the character actually under the pointer, on
-lines with mixed syntax-highlight styling (e.g. bold keywords next to
-plain identifiers). This is the same class of bug ADR 0013 already
-fixed for the <em>caret</em> — assuming a fixed per-character pixel width
-instead of measuring what was actually rendered — just never fixed on
-the mouse-hit-testing side.</p>
-<p><code>EditorViewport::offsetForPoint()</code> (used by both <code>mousePressEvent</code> and
-the no-button branch of <code>mouseMoveEvent</code>, i.e. click, drag-select, and
-hover) computed the target column as <code>localX / m_charWidth</code>, a single
-project-wide average character width. Meanwhile <code>drawLine</code> and
-<code>xForColumn</code> — used for actually painting text and positioning the
-caret — measure each syntax-highlight run's real advance with
-<code>QFontMetrics::horizontalAdvance</code> on that run's actual text and font
-(<code>fontForCapture</code>/<code>metricsForCapture</code>), because bold/italic variants of
-even a "monospace" font don't reliably share the exact same advance as
-the regular weight. Any line with more than one highlight capture
-accumulates a small error per run boundary; far enough right on a long
-styled line, that error becomes visible as exactly what was reported —
-the pointer needing to move noticeably further than a character-width
-to advance the cursor by one character, or landing on the wrong one
-entirely.</p>
+<p>Find (ADR 0021) searches the buffer you are looking at. Everything else
+in the project was invisible — you could not answer "where else is this
+called?" without leaving the editor. With quick open (ADR 0065) the two
+pieces this needs already existed: a definition of "the project", and a
+walk that produces its files.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Added <code>EditorViewport::columnForX(lineStart, lineEnd, localX)</code>, the
-direct inverse of <code>xForColumn</code>: it walks the same per-run segmentation
-<code>xForColumn</code>/<code>drawLine</code> use, measuring each run's actual rendered
-width, and finds which column's glyph <code>localX</code> falls nearest to —
-rounding to the <em>nearest</em> codepoint boundary rather than flooring
-(same reasoning as ADR 0028's click-precision fix), and stepping by
-codepoint (using the existing <code>isUtf8ContinuationByte</code> helper) rather
-than by raw byte, so a multi-byte UTF-8 character is never measured as
-a partial, invalid byte sequence.</p>
-<p><code>offsetForPoint()</code> now calls <code>columnForX()</code> instead of dividing by
-<code>m_charWidth</code>. This also <em>removes</em> code, not just adds it: the
-separate post-hoc "snap forward past any continuation byte" loop
-<code>offsetForPoint()</code> used to need is now redundant — <code>columnForX()</code>
-already only ever returns a codepoint boundary.</p>
-<p><code>m_charWidth</code> itself is unchanged and still used elsewhere (horizontal
-scroll margin, the line-wrap continuation hint) — those are approximate
-by nature already, unlike hit-testing where the pointer needs to track
-a specific glyph.</p>
-<h3 id="verified-live-not-just-built">Verified live, not just built<a class="headerlink" href="#verified-live-not-just-built" title="Permanent link">&para;</a></h3>
-<p>Launched the real GUI against a <code>.c</code> file with a long line mixing bold
-keyword highlights and plain identifiers. Placed the caret at a known
-column via keyboard navigation (<code>End</code>, then <code>Left</code> N times),
-screenshotted its exact pixel position, then clicked at that exact
-pixel and confirmed the reported column matched — both near column 80
-on a ~100-column styled line and again near the line's end. Before
-this fix, <code>offsetForPoint</code>'s fixed-pitch math and <code>xForColumn</code>'s
-per-run measurement could only coincidentally agree; after, a mouse
-click and the caret's own rendered position resolve to the same
-character by construction, however far right on the line.</p>
+<h3 id="the-query-rides-in-the-find-bar-the-results-ride-in-the-output-panel">The query rides in the find bar; the results ride in the output panel<a class="headerlink" href="#the-query-rides-in-the-find-bar-the-results-ride-in-the-output-panel" title="Permanent link">&para;</a></h3>
+<p>Two different surfaces, because they are two different lifetimes.</p>
+<p>Typing a query is glance-act-dismiss, exactly what <code>FindBar</code> already is
+— so <code>Ctrl+Shift+F</code> opens it in a third mode, <code>Project</code>, with the badge
+showing <code>G</code>. Same field, same theming, same Escape. Enter runs the
+search and closes the panel.</p>
+<p><strong>Results are not glance-act-dismiss.</strong> You read a hit, look at the
+code, come back, read the next one. A floating panel is exactly wrong
+for that: ADR 0044 made panels block the document while open, which is
+right for a file picker and hostile to a results list. The <code>OutputPanel</code>
+is already the docked, non-modal place for "output you read while
+looking at your code" (ADR 0025), so it grows a second mode: the same
+panel, showing a list instead of streamed text.</p>
+<p>Rows are <code>path:line:  text</code>, the shape every compiler, linter and grep
+on the machine already prints, so it needs no explaining. A row
+activates on a <em>single</em> click as well as Enter — requiring a
+double-click to follow a hit is the friction that makes people stop
+using a feature.</p>
+<h3 id="the-same-file-list-as-quick-open">The same file list as quick open<a class="headerlink" href="#the-same-file-list-as-quick-open" title="Permanent link">&para;</a></h3>
+<p><code>project::collect()</code> again, so a search can never find a hit in a file
+that <code>Ctrl+P</code> refuses to show. Two different answers to "what is in this
+project" would be a bug in one of them, discovered confusingly.</p>
+<p>Skipped inside that list: files over 1 MiB, and anything with a NUL in
+its first kilobyte — the same binary heuristic grep uses, for the same
+reason (cheap, and text files do not contain NUL).</p>
+<h3 id="case-insensitive-literal-matching">Case-insensitive literal matching<a class="headerlink" href="#case-insensitive-literal-matching" title="Permanent link">&para;</a></h3>
+<p>What the in-file find already does. Two searches in one editor that
+disagree about whether <code>Foo</code> matches <code>foo</code> would be a worse surprise
+than either choice is a limitation. No regular expressions yet.</p>
+<p><strong>One hit per line.</strong> A line containing the needle six times is one
+place to look; six identical rows would push real hits off the screen.</p>
+<h3 id="synchronous-with-caps-that-are-admitted">Synchronous, with caps that are admitted<a class="headerlink" href="#synchronous-with-caps-that-are-admitted" title="Permanent link">&para;</a></h3>
+<p>The search runs on the UI thread, like the quick-open walk. Measured
+with <code>grep</code> over the same file set as a proxy: this repository is ~30ms
+for a rare identifier and ~8ms for a common word (it stops early). The
+caps — 20,000 files, 1,000 hits — bound the worst case, and when one is
+hit the header says <code>first N matches</code> rather than presenting a prefix
+of the answer as the answer.</p>
+<p>The lowercasing is done once per file rather than once per match
+attempt, and the line counter walks forward to each hit instead of
+re-counting from the top of the file. Both are the difference between
+searching a tree and waiting for one.</p>
+<h3 id="opening-a-hit-is-two-objects-work-joined-in-one-place">Opening a hit is two objects' work, joined in one place<a class="headerlink" href="#opening-a-hit-is-two-objects-work-joined-in-one-place" title="Permanent link">&para;</a></h3>
+<p>A hit is a file <em>and</em> a line. Opening the file belongs to <code>MainWindow</code>
+(it owns the buffer list); landing on the line belongs to
+<code>EditorViewport</code>. Rather than either reaching into the other, the panel
+emits <code>hitActivated(path, line)</code> and the window does both — and
+<code>EditorViewport::goToLine()</code> is now public, which also let <code>:42</code> stop
+duplicating the same four calls.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Click, drag-select, and hover (LSP hover popup, completion popup
-positioning) all route through <code>offsetForPoint</code>, so all three are
-fixed together, not just the plain click case reported. No new O(line
-length) cost class was introduced beyond what already existed:
-<code>xForColumn</code> was already a linear scan over the line's runs for the
-caret's own position, and <code>columnForX</code> is the same shape.</p>
+<p>Verified live in this repository: <code>Ctrl+Shift+F</code> for <code>vimGotoLine</code>
+reports <code>6 matches for "vimGotoLine" in 235 files</code> and lists them with
+paths and line numbers; arrowing to the fourth and pressing Enter opens
+<code>gui/src/editor_viewport_vim.cpp</code> as a new buffer with the status bar
+reading <code>Ln 233, Col 1</code> — the line the hit named. A search with no
+matches says so both in the header and as a message, since the panel may
+be appearing for the first time and an empty list is ambiguous.</p>
+<p>Focus lands on the results list, so Up/Down/Enter work immediately;
+Escape hands focus back to the editor <strong>without</strong> hiding the results,
+because looking at the code and coming back to the list is the whole
+workflow.</p>
+<p>Deferred, in the order I would do them:</p>
+<ul>
+<li><strong>Replace across files.</strong> The obvious next step, and deliberately not
+  bundled: editing every file in a project from one keystroke deserves
+  its own design pass (a preview, an undo story that spans buffers) and
+  should not ride in on a read-only feature.</li>
+<li><strong>A background thread</strong>, when a repository big enough to make this
+  stutter actually shows up. The caps make that a quality issue, not a
+  hang.</li>
+<li><strong>Regular expressions</strong>, which want to be shared with the in-file find
+  rather than bolted onto one of them.</li>
+<li><strong>Highlighting the matched span</strong> in each row; the hit already carries
+  its column.</li>
+</ul>
 
 
 

@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0039-mouse-hit-test-drift-fix/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0063-language-server-state-in-the-status-bar/">
       
       
-        <link rel="prev" href="../0038-feedback-triage-criteria-and-deferred-status/">
+        <link rel="prev" href="../0062-the-status-bar-message-line/">
       
       
-        <link rel="next" href="../0040-italic-glyph-clipping-fix/">
+        <link rel="next" href="../0064-gui-in-ci-and-a-test-suite-that-runs-in-release/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0039: Fix mouse click/hover drift on styled lines - Absolute Simple Editor</title>
+        <title>ADR 0063: Language-server state in the status bar - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0039-fix-mouse-clickhover-drift-on-styled-lines" class="md-skip">
+        <a href="#adr-0063-language-server-state-in-the-status-bar" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0039: Fix mouse click/hover drift on styled lines
+              ADR 0063: Language-server state in the status bar
             
           </span>
         </div>
@@ -1916,37 +1916,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0039: Fix mouse click/hover drift on styled lines
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0039-mouse-hit-test-drift-fix/" class="md-nav__link">
         
   
   
@@ -1962,87 +1935,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#verified-live-not-just-built" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verified live, not just built
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2696,10 +2588,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0063-language-server-state-in-the-status-bar/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0063: Language-server state in the status bar
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2715,6 +2634,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-segment-sitting-left-of-the-cursor-position" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A segment, sitting left of the cursor position
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#it-follows-the-buffer-not-the-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        It follows the buffer, not the window
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#death-is-noticed-not-assumed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Death is noticed, not assumed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#two-layers-not-the-same-sentence-twice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two layers, not the same sentence twice
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2872,10 +2905,43 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#verified-live-not-just-built" class="md-nav__link">
+  <a href="#a-segment-sitting-left-of-the-cursor-position" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Verified live, not just built
+        A segment, sitting left of the cursor position
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#it-follows-the-buffer-not-the-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        It follows the buffer, not the window
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#death-is-noticed-not-assumed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Death is noticed, not assumed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#two-layers-not-the-same-sentence-twice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two layers, not the same sentence twice
       
     </span>
   </a>
@@ -2915,7 +2981,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0039-mouse-hit-test-drift-fix.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0063-language-server-state-in-the-status-bar.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2923,69 +2989,127 @@
   
 
 
-<h1 id="adr-0039-fix-mouse-clickhover-drift-on-styled-lines">ADR 0039: Fix mouse click/hover drift on styled lines<a class="headerlink" href="#adr-0039-fix-mouse-clickhover-drift-on-styled-lines" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0063-language-server-state-in-the-status-bar">ADR 0063: Language-server state in the status bar<a class="headerlink" href="#adr-0063-language-server-state-in-the-status-bar" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>User-reported bug: clicking (or hovering) further right on a line
-increasingly missed the character actually under the pointer, on
-lines with mixed syntax-highlight styling (e.g. bold keywords next to
-plain identifiers). This is the same class of bug ADR 0013 already
-fixed for the <em>caret</em> — assuming a fixed per-character pixel width
-instead of measuring what was actually rendered — just never fixed on
-the mouse-hit-testing side.</p>
-<p><code>EditorViewport::offsetForPoint()</code> (used by both <code>mousePressEvent</code> and
-the no-button branch of <code>mouseMoveEvent</code>, i.e. click, drag-select, and
-hover) computed the target column as <code>localX / m_charWidth</code>, a single
-project-wide average character width. Meanwhile <code>drawLine</code> and
-<code>xForColumn</code> — used for actually painting text and positioning the
-caret — measure each syntax-highlight run's real advance with
-<code>QFontMetrics::horizontalAdvance</code> on that run's actual text and font
-(<code>fontForCapture</code>/<code>metricsForCapture</code>), because bold/italic variants of
-even a "monospace" font don't reliably share the exact same advance as
-the regular weight. Any line with more than one highlight capture
-accumulates a small error per run boundary; far enough right on a long
-styled line, that error becomes visible as exactly what was reported —
-the pointer needing to move noticeably further than a character-width
-to advance the cursor by one character, or landing on the wrong one
-entirely.</p>
+<p>An external tester reported that LSP "doesn't work" in the AppImage and
+<code>.deb</code> builds. It wasn't a packaging bug. <code>lsp_command</code> ships commented
+out in the default config (<code>core/src/config.c</code>), and
+<code>startLspClientIfConfigured()</code> returned silently when it was unset — so
+a C file opened with no diagnostics, no completion, no hover, and
+<strong>nothing anywhere saying why</strong>. Three quite different situations —
+not configured, configured but the binary isn't there, working fine —
+were indistinguishable from each other and from a broken editor.</p>
+<p>ADR 0062 built the message line and deliberately stopped short of this:
+a message fires once and is gone, so it cannot answer a question asked
+ten minutes later. This is state.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Added <code>EditorViewport::columnForX(lineStart, lineEnd, localX)</code>, the
-direct inverse of <code>xForColumn</code>: it walks the same per-run segmentation
-<code>xForColumn</code>/<code>drawLine</code> use, measuring each run's actual rendered
-width, and finds which column's glyph <code>localX</code> falls nearest to —
-rounding to the <em>nearest</em> codepoint boundary rather than flooring
-(same reasoning as ADR 0028's click-precision fix), and stepping by
-codepoint (using the existing <code>isUtf8ContinuationByte</code> helper) rather
-than by raw byte, so a multi-byte UTF-8 character is never measured as
-a partial, invalid byte sequence.</p>
-<p><code>offsetForPoint()</code> now calls <code>columnForX()</code> instead of dividing by
-<code>m_charWidth</code>. This also <em>removes</em> code, not just adds it: the
-separate post-hoc "snap forward past any continuation byte" loop
-<code>offsetForPoint()</code> used to need is now redundant — <code>columnForX()</code>
-already only ever returns a codepoint boundary.</p>
-<p><code>m_charWidth</code> itself is unchanged and still used elsewhere (horizontal
-scroll margin, the line-wrap continuation hint) — those are approximate
-by nature already, unlike hit-testing where the pointer needs to track
-a specific glyph.</p>
-<h3 id="verified-live-not-just-built">Verified live, not just built<a class="headerlink" href="#verified-live-not-just-built" title="Permanent link">&para;</a></h3>
-<p>Launched the real GUI against a <code>.c</code> file with a long line mixing bold
-keyword highlights and plain identifiers. Placed the caret at a known
-column via keyboard navigation (<code>End</code>, then <code>Left</code> N times),
-screenshotted its exact pixel position, then clicked at that exact
-pixel and confirmed the reported column matched — both near column 80
-on a ~100-column styled line and again near the line's end. Before
-this fix, <code>offsetForPoint</code>'s fixed-pitch math and <code>xForColumn</code>'s
-per-run measurement could only coincidentally agree; after, a mouse
-click and the caret's own rendered position resolve to the same
-character by construction, however far right on the line.</p>
+<h3 id="a-segment-sitting-left-of-the-cursor-position">A segment, sitting left of the cursor position<a class="headerlink" href="#a-segment-sitting-left-of-the-cursor-position" title="Permanent link">&para;</a></h3>
+<p>Five states, one label:</p>
+<table>
+<thead>
+<tr>
+<th>state</th>
+<th>shows</th>
+<th>when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NotApplicable</code></td>
+<td><em>nothing</em></td>
+<td>a file no server would be started for</td>
+</tr>
+<tr>
+<td><code>Unconfigured</code></td>
+<td><code>no lsp</code></td>
+<td><code>lsp_command</code> not set</td>
+</tr>
+<tr>
+<td><code>Running</code></td>
+<td><code>clangd</code></td>
+<td>the handshake completed</td>
+</tr>
+<tr>
+<td><code>Failed</code></td>
+<td><code>clangd failed</code></td>
+<td>configured, but it never came up</td>
+</tr>
+<tr>
+<td><code>Stopped</code></td>
+<td><code>clangd stopped</code></td>
+<td>it came up, then went away</td>
+</tr>
+</tbody>
+</table>
+<p>The running state <strong>names the server rather than announcing it</strong>:
+<code>clangd</code> sitting two opacity tiers down beside the cursor position
+answers "is one running?" without ever competing with the file for
+attention. It is reference information you go looking for, and it should
+be findable and otherwise invisible.</p>
+<p>The failure states are the only ones in the theme's <code>diagnostic_error</code>
+colour, because they are the only ones you might act on.</p>
+<p><code>no lsp</code> is deliberately quiet but <em>present</em>. Every packaged install
+starts in that state, and a blank status bar is exactly what made it
+read as broken. Showing nothing at all for files no server would handle
+(a <code>.txt</code>, a <code>.md</code>) is the other half of the same judgement: an
+indicator that is permanently blank for most files is noise with extra
+steps.</p>
+<h3 id="it-follows-the-buffer-not-the-window">It follows the buffer, not the window<a class="headerlink" href="#it-follows-the-buffer-not-the-window" title="Permanent link">&para;</a></h3>
+<p>Each buffer starts its own server (ADR 0054), so the segment shows the
+state of the file you are looking at, exactly like the title and the
+position readout. Switching tabs repaints it from
+<code>EditorViewport::lspState()</code> rather than waiting for a transition that
+may never come.</p>
+<h3 id="death-is-noticed-not-assumed">Death is noticed, not assumed<a class="headerlink" href="#death-is-noticed-not-assumed" title="Permanent link">&para;</a></h3>
+<p>A server that comes up and later dies — a crash, an OOM kill, someone's
+<code>pkill</code> — used to leave the editor reporting a language server that
+isn't there, which is worse than reporting none. <code>checkLspAlive()</code> runs
+on the existing 750ms config-reload timer rather than a second timer of
+its own: both ask "has something outside this process changed under
+us?", and one timer is one thing to reason about.</p>
+<h3 id="two-layers-not-the-same-sentence-twice">Two layers, not the same sentence twice<a class="headerlink" href="#two-layers-not-the-same-sentence-twice" title="Permanent link">&para;</a></h3>
+<p>The first cut had the transient message and the permanent segment saying
+identical words at the same moment, which reads as a duplicate rather
+than as two layers. They now divide the job:</p>
+<ul>
+<li>the <strong>message</strong> says what to <em>do</em> — <code>clangd not found — check
+  lsp_command</code></li>
+<li>the <strong>segment</strong> says what <em>is</em> — <code>clangd failed</code></li>
+</ul>
+<p>The message catches you at the moment it happens; the segment answers
+"why are there no diagnostics?" an hour later. Neither is sufficient
+alone, which is the whole argument for having both.</p>
+<p>Nothing is said at all for <code>Unconfigured</code>: an error message on every C
+file you open, for a state that is normal and deliberate, is nagging.
+The quiet segment carries it.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Click, drag-select, and hover (LSP hover popup, completion popup
-positioning) all route through <code>offsetForPoint</code>, so all three are
-fixed together, not just the plain click case reported. No new O(line
-length) cost class was introduced beyond what already existed:
-<code>xForColumn</code> was already a linear scan over the line's runs for the
-caret's own position, and <code>columnForX</code> is the same shape.</p>
+<p>Verified live, all five states:</p>
+<ul>
+<li>A <code>.c</code> file with <code>lsp_command = clangd</code>: <code>clangd</code>, dim, next to the
+  position readout.</li>
+<li><code>pkill</code>ing that clangd: within a second, <code>clangd stopped</code> in red, plus
+  a one-time message.</li>
+<li>A config with no <code>lsp_command</code>: <code>no lsp</code>.</li>
+<li><code>lsp_command = clangd-does-not-exist</code>: <code>clangd-does-not-exist failed</code>
+  in the segment, <code>clangd-does-not-exist not found — check lsp_command</code>
+  on the message line.</li>
+<li>A <code>.txt</code> file: nothing at all.</li>
+</ul>
+<p><strong>A real bug in ADR 0062 fell out of this.</strong> Messages were elided once,
+at post time, against the status bar's width — but the first message of
+a session is posted <em>while the window is still being built</em> (the server
+starts on the first buffer's activation, before <code>show()</code>), when that
+width is a meaningless default. Early messages were being cut to a few
+characters on a window with plenty of room: <code>clangd…ig.ase</code>. The full
+text is now kept and re-elided on every resize, which also fixes the
+case nobody had tested — making the window narrower with a message up.</p>
+<p><code>ctest</code> 9/9, clean build, zero warnings.</p>
+<p>Still open, and now the obvious next step on this thread: <code>lsp_command</code>
+ships commented out, so the good path requires editing a config file
+you don't know exists. The segment makes that discoverable rather than
+invisible; it does not make it unnecessary.</p>
 
 
 

@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0039-mouse-hit-test-drift-fix/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0064-gui-in-ci-and-a-test-suite-that-runs-in-release/">
       
       
-        <link rel="prev" href="../0038-feedback-triage-criteria-and-deferred-status/">
+        <link rel="prev" href="../0063-language-server-state-in-the-status-bar/">
       
       
-        <link rel="next" href="../0040-italic-glyph-clipping-fix/">
+        <link rel="next" href="../0065-quick-open/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0039: Fix mouse click/hover drift on styled lines - Absolute Simple Editor</title>
+        <title>ADR 0064: The GUI in CI, and a test suite that actually runs in Release - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0039-fix-mouse-clickhover-drift-on-styled-lines" class="md-skip">
+        <a href="#adr-0064-the-gui-in-ci-and-a-test-suite-that-actually-runs-in-release" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0039: Fix mouse click/hover drift on styled lines
+              ADR 0064: The GUI in CI, and a test suite that actually runs in Release
             
           </span>
         </div>
@@ -1916,37 +1916,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0039: Fix mouse click/hover drift on styled lines
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0039-mouse-hit-test-drift-fix/" class="md-nav__link">
         
   
   
@@ -1962,87 +1935,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#verified-live-not-just-built" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verified live, not just built
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2724,10 +2616,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0064-gui-in-ci-and-a-test-suite-that-runs-in-release/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0064: The GUI in CI, and a test suite that actually runs in Release
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2743,6 +2662,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-gui-job-on-the-oldest-qt-this-project-ships-against" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A GUI job, on the oldest Qt this project ships against
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-job-launches-the-binary-not-just-links-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The job launches the binary, not just links it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-thing-this-immediately-found-the-test-suite-was-vacuous-in-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The thing this immediately found: the test suite was vacuous in Release
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verified-by-breaking-something-on-purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verified by breaking something on purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2872,10 +2905,43 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#verified-live-not-just-built" class="md-nav__link">
+  <a href="#a-gui-job-on-the-oldest-qt-this-project-ships-against" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Verified live, not just built
+        A GUI job, on the oldest Qt this project ships against
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-job-launches-the-binary-not-just-links-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The job launches the binary, not just links it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-thing-this-immediately-found-the-test-suite-was-vacuous-in-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The thing this immediately found: the test suite was vacuous in Release
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verified-by-breaking-something-on-purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verified by breaking something on purpose
       
     </span>
   </a>
@@ -2915,7 +2981,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0039-mouse-hit-test-drift-fix.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0064-gui-in-ci-and-a-test-suite-that-runs-in-release.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2923,69 +2989,90 @@
   
 
 
-<h1 id="adr-0039-fix-mouse-clickhover-drift-on-styled-lines">ADR 0039: Fix mouse click/hover drift on styled lines<a class="headerlink" href="#adr-0039-fix-mouse-clickhover-drift-on-styled-lines" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0064-the-gui-in-ci-and-a-test-suite-that-actually-runs-in-release">ADR 0064: The GUI in CI, and a test suite that actually runs in Release<a class="headerlink" href="#adr-0064-the-gui-in-ci-and-a-test-suite-that-actually-runs-in-release" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>User-reported bug: clicking (or hovering) further right on a line
-increasingly missed the character actually under the pointer, on
-lines with mixed syntax-highlight styling (e.g. bold keywords next to
-plain identifiers). This is the same class of bug ADR 0013 already
-fixed for the <em>caret</em> — assuming a fixed per-character pixel width
-instead of measuring what was actually rendered — just never fixed on
-the mouse-hit-testing side.</p>
-<p><code>EditorViewport::offsetForPoint()</code> (used by both <code>mousePressEvent</code> and
-the no-button branch of <code>mouseMoveEvent</code>, i.e. click, drag-select, and
-hover) computed the target column as <code>localX / m_charWidth</code>, a single
-project-wide average character width. Meanwhile <code>drawLine</code> and
-<code>xForColumn</code> — used for actually painting text and positioning the
-caret — measure each syntax-highlight run's real advance with
-<code>QFontMetrics::horizontalAdvance</code> on that run's actual text and font
-(<code>fontForCapture</code>/<code>metricsForCapture</code>), because bold/italic variants of
-even a "monospace" font don't reliably share the exact same advance as
-the regular weight. Any line with more than one highlight capture
-accumulates a small error per run boundary; far enough right on a long
-styled line, that error becomes visible as exactly what was reported —
-the pointer needing to move noticeably further than a character-width
-to advance the cursor by one character, or landing on the wrong one
-entirely.</p>
+<p><code>.github/workflows/ci.yml</code> built <code>-DASE_BUILD_GUI=OFF</code> on every job,
+with a <code># TODO: add a gui job once Phase 2 lands</code> comment left over from
+Phase 1. Phase 2 landed a long time ago.</p>
+<p>The cost of that gap is on the record: a Qt 6.6-only call
+(<code>QList::assign</code>) reached <code>main</code> with ADR 0053 and stayed there through
+several rounds of work, with <strong>both packages unbuildable the whole
+time</strong>, because every build in between was native on a rolling-release
+machine with Qt 6.10 and nothing ever compiled the GUI anywhere else. It
+was found by a human cutting a release (addendum to ADR 0045), which is
+the worst possible moment.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Added <code>EditorViewport::columnForX(lineStart, lineEnd, localX)</code>, the
-direct inverse of <code>xForColumn</code>: it walks the same per-run segmentation
-<code>xForColumn</code>/<code>drawLine</code> use, measuring each run's actual rendered
-width, and finds which column's glyph <code>localX</code> falls nearest to —
-rounding to the <em>nearest</em> codepoint boundary rather than flooring
-(same reasoning as ADR 0028's click-precision fix), and stepping by
-codepoint (using the existing <code>isUtf8ContinuationByte</code> helper) rather
-than by raw byte, so a multi-byte UTF-8 character is never measured as
-a partial, invalid byte sequence.</p>
-<p><code>offsetForPoint()</code> now calls <code>columnForX()</code> instead of dividing by
-<code>m_charWidth</code>. This also <em>removes</em> code, not just adds it: the
-separate post-hoc "snap forward past any continuation byte" loop
-<code>offsetForPoint()</code> used to need is now redundant — <code>columnForX()</code>
-already only ever returns a codepoint boundary.</p>
-<p><code>m_charWidth</code> itself is unchanged and still used elsewhere (horizontal
-scroll margin, the line-wrap continuation hint) — those are approximate
-by nature already, unlike hit-testing where the pointer needs to track
-a specific glyph.</p>
-<h3 id="verified-live-not-just-built">Verified live, not just built<a class="headerlink" href="#verified-live-not-just-built" title="Permanent link">&para;</a></h3>
-<p>Launched the real GUI against a <code>.c</code> file with a long line mixing bold
-keyword highlights and plain identifiers. Placed the caret at a known
-column via keyboard navigation (<code>End</code>, then <code>Left</code> N times),
-screenshotted its exact pixel position, then clicked at that exact
-pixel and confirmed the reported column matched — both near column 80
-on a ~100-column styled line and again near the line's end. Before
-this fix, <code>offsetForPoint</code>'s fixed-pitch math and <code>xForColumn</code>'s
-per-run measurement could only coincidentally agree; after, a mouse
-click and the caret's own rendered position resolve to the same
-character by construction, however far right on the line.</p>
+<h3 id="a-gui-job-on-the-oldest-qt-this-project-ships-against">A GUI job, on the oldest Qt this project ships against<a class="headerlink" href="#a-gui-job-on-the-oldest-qt-this-project-ships-against" title="Permanent link">&para;</a></h3>
+<p><code>ubuntu-22.04</code> is not an arbitrary runner choice: it is the AppImage's
+own build base (packaging/README.md), and it ships <strong>Qt 6.2</strong> — the
+floor <code>gui/CMakeLists.txt</code> now asks for explicitly. <code>debian:bookworm</code>'s
+6.4 sits between that and whatever a dev machine happens to have. If it
+compiles there, it compiles for everyone this project claims to support.</p>
+<h3 id="the-job-launches-the-binary-not-just-links-it">The job launches the binary, not just links it<a class="headerlink" href="#the-job-launches-the-binary-not-just-links-it" title="Permanent link">&para;</a></h3>
+<p>Linking proves the API exists. It does not prove the app starts: a
+missing platform plugin, a bad resource path, or a constructor that
+throws all link perfectly and then die on launch. So the job runs
+<code>ase_gui</code> headless under <code>QT_QPA_PLATFORM=offscreen</code> and requires it to
+<em>still be running</em> when a timeout fires — <code>timeout</code> returning 124 (had
+to kill it) or 143 (took the SIGTERM) is the pass condition, anything
+else means it exited on its own, which it should never do.</p>
+<h3 id="the-thing-this-immediately-found-the-test-suite-was-vacuous-in-release">The thing this immediately found: the test suite was vacuous in Release<a class="headerlink" href="#the-thing-this-immediately-found-the-test-suite-was-vacuous-in-release" title="Permanent link">&para;</a></h3>
+<p>The new job builds <code>Release</code>, because Release is what the packages ship.
+It failed instantly — three suites <strong>segfaulting</strong>: <code>ase_buffer_tests</code>,
+<code>ase_config_tests</code>, <code>ase_undo_tests</code>. That reproduced on the dev machine
+too, so it was never a CI or container artefact.</p>
+<p>The cause: every test used <code>assert()</code>, and CMake defines <code>NDEBUG</code> for
+Release builds, which compiles <code>assert()</code> away entirely.</p>
+<ul>
+<li><strong>263 checks across nine test binaries evaluated to nothing.</strong></li>
+<li><strong>122 of them wrapped a call with side effects</strong> —
+  <code>assert(ase_undo_undo(undo, buf, &amp;cursors, &amp;count))</code> being the shape.
+  Under <code>NDEBUG</code> the call itself vanished, the out-parameters it was
+  meant to fill stayed uninitialised, and the next line freed or read
+  them. Hence the segfaults; <code>ase_config_tests</code> was crashing <em>inside
+  <code>fread()</code></em> on a file that a deleted call had never written.</li>
+</ul>
+<p>The three that crashed were the lucky ones. The other six passed while
+testing nothing at all.</p>
+<p>Every check is now <code>CHECK()</code> (<code>core/tests/test_assert.h</code>): always
+evaluated, in every build type, reporting file, line and the failing
+expression. A test that silently stops testing in the configuration you
+ship is worse than no test, because it still reports success.</p>
+<p>Nothing else in the project used <code>assert()</code> — no production code relied
+on it for invariants — so this is confined to the test suite.</p>
+<h3 id="verified-by-breaking-something-on-purpose">Verified by breaking something on purpose<a class="headerlink" href="#verified-by-breaking-something-on-purpose" title="Permanent link">&para;</a></h3>
+<p>A fix that only stops the crash would be worse than useless, so the fix
+was checked by mutation: an expectation in <code>test_undo.c</code> was changed to
+a deliberately wrong value, and the Release build reported</p>
+<div class="highlight"><pre><span></span><code>core/tests/test_undo.c:11: CHECK failed: ase_buffer_length(buf) == len
+</code></pre></div>
+<p>Before this change, that same mutation passed silently in Release.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Click, drag-select, and hover (LSP hover popup, completion popup
-positioning) all route through <code>offsetForPoint</code>, so all three are
-fixed together, not just the plain click case reported. No new O(line
-length) cost class was introduced beyond what already existed:
-<code>xForColumn</code> was already a linear scan over the line's runs for the
-caret's own position, and <code>columnForX</code> is the same shape.</p>
+<p>The whole job was run end to end in a bare <code>ubuntu:22.04</code> container
+before being committed, since a workflow that has never executed is a
+guess: Qt 6.2.4, GUI builds clean, <strong>9/9 tests pass in Release</strong>, and
+the headless launch stays up. Both Release and Debug pass on the dev
+machine too.</p>
+<p><code>build-essential</code> and <code>cmake</code> are named in the install step even though
+the GitHub runner image already has them — that is what makes the job
+runnable in a plain container, which is how it gets tested before it is
+trusted.</p>
+<p>Not done, and worth knowing:</p>
+<ul>
+<li><strong>No build caching.</strong> Lua and Tree-sitter come down through
+  <code>FetchContent</code> at configure time on every run, costing a couple of
+  minutes. Worth an <code>actions/cache</code> entry when the wait starts to
+  matter, not before.</li>
+<li><strong>No GUI job on macOS or Windows.</strong> The process and LSP layers are
+  POSIX-only by design (ADR 0011), and the core matrix already covers
+  all three platforms headless.</li>
+<li><strong>Nothing runs the packaging containers in CI.</strong> A release still means
+  a human running <code>packaging/</code>'s Docker lines by hand. This job covers
+  the compile-against-old-Qt half, which is the half that actually
+  broke.</li>
+</ul>
 
 
 

@@ -962,6 +962,18 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2696,6 +2708,174 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0061-the-unnamed-register/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0061: The unnamed register
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0062-the-status-bar-message-line/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0062: The status bar message line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0063-language-server-state-in-the-status-bar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0063: Language-server state in the status bar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0064-gui-in-ci-and-a-test-suite-that-runs-in-release/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0064: The GUI in CI, and a test suite that actually runs in Release
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0065-quick-open/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0065: Quick open (Ctrl+P)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0066-project-wide-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0066: Project-wide search
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3638,6 +3818,66 @@ ADRs as each lands here going forward.</p>
       Linewise ranges that end at the buffer's end now take the
       <em>preceding</em> newline, in one shared helper. See
       <a href="../adr/0060-linewise-operations-at-the-end-of-the-buffer/">ADR 0060</a>.</li>
+<li>[x] <strong>The unnamed register</strong>: Vim mode had been using the system
+      clipboard as its only register, which got both halves wrong —
+      <code>d</code>/<code>x</code>/<code>c</code> filled nothing, so <code>dd</code> then <code>p</code> (the way you move a
+      line) did nothing, and the obvious fix would have made every <code>x</code>
+      destroy whatever you last copied from another application. There
+      is now a real unnamed register, shared across buffers, filled by
+      <code>y d c x</code> and read by <code>p</code>/<code>P</code>; the system clipboard is a separate
+      destination on <code>Ctrl+C</code>/<code>Ctrl+V</code>, which yank still mirrors into
+      (delete does not). See <a href="../adr/0061-the-unnamed-register/">ADR 0061</a>.</li>
+<li>[x] <strong>The status bar message line</strong>: the editor had no way to say
+      anything at all — an unconfigured language server, a mistyped <code>:</code>
+      command and a <em>failed write</em> were all silence, which reads as
+      broken rather than as not-set-up. Everything now goes through one
+      <code>notify()</code> funnel onto a message area sharing the status bar with
+      the mode label: info dim and brief, warnings full strength and
+      longer, errors in the existing diagnostic colour, staying until you
+      move the cursor. See
+      <a href="../adr/0062-the-status-bar-message-line/">ADR 0062</a>. Next on the
+      same thread: a <code>:messages</code> history, and a persistent status-bar
+      segment for language-server <em>state</em> (which is what the packaged
+      LSP complaint actually needs).</li>
+<li>[x] <strong>Language-server state in the status bar</strong>: closes the external
+      report that LSP "doesn't work in the packages". It wasn't a
+      packaging bug — <code>lsp_command</code> ships commented out, and nothing
+      anywhere distinguished "not configured" from "binary missing" from
+      "working". A segment beside the cursor position now names the
+      running server, says <code>no lsp</code> when there is none, and turns the
+      diagnostic colour when one was configured but failed or died
+      (noticed within a second, on the existing config-reload timer).
+      See <a href="../adr/0063-language-server-state-in-the-status-bar/">ADR 0063</a>.</li>
+<li>[x] <strong>The GUI in CI, and a test suite that runs in Release</strong>: CI had
+      built <code>-DASE_BUILD_GUI=OFF</code> on every job since Phase 1, which is
+      why a Qt 6.6-only call could sit on <code>main</code> with both packages
+      unbuildable until a human cut a release. There is now a job
+      building the GUI on <code>ubuntu-22.04</code> (Qt 6.2 — the AppImage's own
+      base) and launching it headless. It immediately found something
+      worse: every test used <code>assert()</code>, which <code>NDEBUG</code> compiles out of
+      Release builds, so <strong>263 checks evaluated to nothing</strong> and the 122
+      that wrapped calls with side effects took the calls with them —
+      three suites segfaulted, the rest passed while testing nothing.
+      All of them are now an always-evaluated <code>CHECK()</code>. See
+      <a href="../adr/0064-gui-in-ci-and-a-test-suite-that-runs-in-release/">ADR 0064</a>.</li>
+<li>[x] <strong>Quick open (<code>Ctrl+P</code>)</strong>: multiple buffers landed in ADR 0054,
+      but the only way to <em>get</em> one was the directory-at-a-time browser.
+      <code>Ctrl+P</code> walks the project (the enclosing git checkout, or the
+      current folder), fuzzy-matches as you type, and ranks by
+      consecutive runs, word boundaries, basename hits and brevity —
+      <code>edvim</code> finds <code>editor_viewport_vim.cpp</code> first. Rides in the
+      existing panel as a third mode rather than duplicating it. See
+      <a href="../adr/0065-quick-open/">ADR 0065</a>.</li>
+<li>[x] <strong>Project-wide search (<code>Ctrl+Shift+F</code>)</strong>: find searched only the
+      buffer in front of you; there was no way to answer "where else is
+      this called?" without leaving the editor. The query rides in the
+      find bar as a third mode, the results in the output panel — docked
+      and non-modal, because reading a hit, looking at the code and
+      coming back is the actual workflow and a floating panel blocks the
+      document. Same file list as quick open, so the two can never
+      disagree about what is in the project. Enter or a single click on
+      a row opens that file at that line. See
+      <a href="../adr/0066-project-wide-search/">ADR 0066</a>.</li>
 <li>[x] <strong>v0.3.0-alpha</strong>: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the <code>EditorViewport</code> split, the render hot-path
@@ -3686,9 +3926,12 @@ something else.</p>
 <li><strong>Keybindings as data</strong> — the biggest customization gap, and the thing
   that makes built-ins and plugin commands one mechanism. See
   EXTENSIBILITY.md, recommendation 4.</li>
-<li><strong>Project-wide search</strong> (ripgrep-shaped: search, jump to hit, replace
-  across files), reusing the existing find infrastructure and results
-  panel.</li>
+<li>~~<strong>Project-wide search</strong>~~ Done for the read-only half — search, and
+  jump to a hit (<a href="../adr/0066-project-wide-search/">ADR 0066</a>). <strong>Replace
+  across files</strong> is deliberately still open: editing every file in a
+  project from one keystroke wants its own design pass (a preview, an
+  undo story spanning buffers), not a ride-along on a read-only
+  feature.</li>
 <li><strong>The rest of LSP's useful half</strong>: go-to-definition, find-references,
   rename, document symbols. Diagnostics, completion and hover are wired
   (ADR 0029/0030); the navigation half is what people actually miss.</li>

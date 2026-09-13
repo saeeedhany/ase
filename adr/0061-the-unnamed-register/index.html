@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0039-mouse-hit-test-drift-fix/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0061-the-unnamed-register/">
       
       
-        <link rel="prev" href="../0038-feedback-triage-criteria-and-deferred-status/">
+        <link rel="prev" href="../0060-linewise-operations-at-the-end-of-the-buffer/">
       
       
-        <link rel="next" href="../0040-italic-glyph-clipping-fix/">
+        <link rel="next" href="../0062-the-status-bar-message-line/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0039: Fix mouse click/hover drift on styled lines - Absolute Simple Editor</title>
+        <title>ADR 0061: The unnamed register - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0039-fix-mouse-clickhover-drift-on-styled-lines" class="md-skip">
+        <a href="#adr-0061-the-unnamed-register" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0039: Fix mouse click/hover drift on styled lines
+              ADR 0061: The unnamed register
             
           </span>
         </div>
@@ -1916,37 +1916,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0039: Fix mouse click/hover drift on styled lines
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0039-mouse-hit-test-drift-fix/" class="md-nav__link">
         
   
   
@@ -1962,87 +1935,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#verified-live-not-just-built" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verified live, not just built
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2640,10 +2532,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0061-the-unnamed-register/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0061: The unnamed register
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2659,6 +2578,131 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deletes-need-a-register-and-the-clipboard-cannot-be-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deletes need a register, and the clipboard cannot be it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yank-mirrors-to-the-clipboard-delete-does-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Yank mirrors to the clipboard; delete does not
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p-does-not-fall-back-to-the-clipboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        p does not fall back to the clipboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process-wide-not-per-viewport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process-wide, not per viewport
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linewise-travels-with-the-text" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linewise travels with the text
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2872,10 +2916,54 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#verified-live-not-just-built" class="md-nav__link">
+  <a href="#deletes-need-a-register-and-the-clipboard-cannot-be-it" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Verified live, not just built
+        Deletes need a register, and the clipboard cannot be it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yank-mirrors-to-the-clipboard-delete-does-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Yank mirrors to the clipboard; delete does not
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p-does-not-fall-back-to-the-clipboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        p does not fall back to the clipboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process-wide-not-per-viewport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process-wide, not per viewport
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linewise-travels-with-the-text" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linewise travels with the text
       
     </span>
   </a>
@@ -2915,7 +3003,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0039-mouse-hit-test-drift-fix.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0061-the-unnamed-register.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2923,69 +3011,91 @@
   
 
 
-<h1 id="adr-0039-fix-mouse-clickhover-drift-on-styled-lines">ADR 0039: Fix mouse click/hover drift on styled lines<a class="headerlink" href="#adr-0039-fix-mouse-clickhover-drift-on-styled-lines" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0061-the-unnamed-register">ADR 0061: The unnamed register<a class="headerlink" href="#adr-0061-the-unnamed-register" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>User-reported bug: clicking (or hovering) further right on a line
-increasingly missed the character actually under the pointer, on
-lines with mixed syntax-highlight styling (e.g. bold keywords next to
-plain identifiers). This is the same class of bug ADR 0013 already
-fixed for the <em>caret</em> — assuming a fixed per-character pixel width
-instead of measuring what was actually rendered — just never fixed on
-the mouse-hit-testing side.</p>
-<p><code>EditorViewport::offsetForPoint()</code> (used by both <code>mousePressEvent</code> and
-the no-button branch of <code>mouseMoveEvent</code>, i.e. click, drag-select, and
-hover) computed the target column as <code>localX / m_charWidth</code>, a single
-project-wide average character width. Meanwhile <code>drawLine</code> and
-<code>xForColumn</code> — used for actually painting text and positioning the
-caret — measure each syntax-highlight run's real advance with
-<code>QFontMetrics::horizontalAdvance</code> on that run's actual text and font
-(<code>fontForCapture</code>/<code>metricsForCapture</code>), because bold/italic variants of
-even a "monospace" font don't reliably share the exact same advance as
-the regular weight. Any line with more than one highlight capture
-accumulates a small error per run boundary; far enough right on a long
-styled line, that error becomes visible as exactly what was reported —
-the pointer needing to move noticeably further than a character-width
-to advance the cursor by one character, or landing on the wrong one
-entirely.</p>
+<p>Vim mode has shipped since ADR 0046 with the clipboard standing in for a
+register: <code>y</code> wrote the system clipboard, <code>p</code> read it, and <code>d</code>/<code>x</code>/<code>c</code>
+wrote nothing at all. So <strong><code>dd</code> then <code>p</code> — vim's most common idiom, the
+way you move a line — did nothing</strong>, or worse, pasted whatever you had
+last copied from a browser.</p>
+<p>Found while fixing ADR 0060, and raised as a decision rather than fixed
+there, because the obvious one-line version of it is wrong.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Added <code>EditorViewport::columnForX(lineStart, lineEnd, localX)</code>, the
-direct inverse of <code>xForColumn</code>: it walks the same per-run segmentation
-<code>xForColumn</code>/<code>drawLine</code> use, measuring each run's actual rendered
-width, and finds which column's glyph <code>localX</code> falls nearest to —
-rounding to the <em>nearest</em> codepoint boundary rather than flooring
-(same reasoning as ADR 0028's click-precision fix), and stepping by
-codepoint (using the existing <code>isUtf8ContinuationByte</code> helper) rather
-than by raw byte, so a multi-byte UTF-8 character is never measured as
-a partial, invalid byte sequence.</p>
-<p><code>offsetForPoint()</code> now calls <code>columnForX()</code> instead of dividing by
-<code>m_charWidth</code>. This also <em>removes</em> code, not just adds it: the
-separate post-hoc "snap forward past any continuation byte" loop
-<code>offsetForPoint()</code> used to need is now redundant — <code>columnForX()</code>
-already only ever returns a codepoint boundary.</p>
-<p><code>m_charWidth</code> itself is unchanged and still used elsewhere (horizontal
-scroll margin, the line-wrap continuation hint) — those are approximate
-by nature already, unlike hit-testing where the pointer needs to track
-a specific glyph.</p>
-<h3 id="verified-live-not-just-built">Verified live, not just built<a class="headerlink" href="#verified-live-not-just-built" title="Permanent link">&para;</a></h3>
-<p>Launched the real GUI against a <code>.c</code> file with a long line mixing bold
-keyword highlights and plain identifiers. Placed the caret at a known
-column via keyboard navigation (<code>End</code>, then <code>Left</code> N times),
-screenshotted its exact pixel position, then clicked at that exact
-pixel and confirmed the reported column matched — both near column 80
-on a ~100-column styled line and again near the line's end. Before
-this fix, <code>offsetForPoint</code>'s fixed-pitch math and <code>xForColumn</code>'s
-per-run measurement could only coincidentally agree; after, a mouse
-click and the caret's own rendered position resolve to the same
-character by construction, however far right on the line.</p>
+<h3 id="deletes-need-a-register-and-the-clipboard-cannot-be-it">Deletes need a register, and the clipboard cannot be it<a class="headerlink" href="#deletes-need-a-register-and-the-clipboard-cannot-be-it" title="Permanent link">&para;</a></h3>
+<p>Making <code>d</code>/<code>x</code> write the system clipboard would fix <code>dd</code>+<code>p</code> and
+introduce something worse: <strong>every <code>x</code> would destroy what you last
+copied from another application.</strong> Deleting a character is editing, not
+copying, and an editor that silently empties your clipboard as you edit
+is not one people forgive.</p>
+<p>So this adds the thing vim actually has and this editor was missing: an
+<strong>unnamed register</strong>, internal to the editor, filled by <code>y</code>, <code>d</code>, <code>c</code>
+and <code>x</code>, and read by <code>p</code>/<code>P</code>. The system clipboard becomes what it
+should always have been — a separate destination, reached with <code>Ctrl+C</code>
+/ <code>Ctrl+V</code>, which work in every mode.</p>
+<h3 id="yank-mirrors-to-the-clipboard-delete-does-not">Yank mirrors to the clipboard; delete does not<a class="headerlink" href="#yank-mirrors-to-the-clipboard-delete-does-not" title="Permanent link">&para;</a></h3>
+<p>The one asymmetry, and the only judgement call here. <code>y</code> is the explicit
+"I want this text" gesture, so carrying it to other applications is
+almost always what was meant, and that behaviour already existed and was
+worth keeping. <code>d</code>, <code>c</code> and <code>x</code> are editing operations that happen to
+produce text as a by-product. They fill the register and leave the
+clipboard alone.</p>
+<p>Real vim draws this line differently — nothing touches the system
+clipboard unless you ask for <code>"+</code> or set <code>clipboard=unnamed</code> — but vim
+has <code>"+y</code> to reach across, and this editor deliberately has no register
+prefixes. Between "yank never leaves the editor" and "delete wipes your
+clipboard", the middle position is the one that surprises nobody.</p>
+<h3 id="p-does-not-fall-back-to-the-clipboard"><code>p</code> does not fall back to the clipboard<a class="headerlink" href="#p-does-not-fall-back-to-the-clipboard" title="Permanent link">&para;</a></h3>
+<p>An empty register pastes nothing. It would be easy to make <code>p</code> fall back
+to the system clipboard when nothing has been yanked yet, and that was
+rejected: it would mean <code>p</code> quietly changing meaning the first time you
+delete something, which is worse than a <code>p</code> that always means exactly
+one thing. <code>Ctrl+V</code> pastes the clipboard, in any mode, including Normal.</p>
+<h3 id="process-wide-not-per-viewport">Process-wide, not per viewport<a class="headerlink" href="#process-wide-not-per-viewport" title="Permanent link">&para;</a></h3>
+<p>Each open buffer is its own <code>EditorViewport</code> (ADR 0054), so a register
+stored on the viewport would make yanking in one file and pasting in
+another — one of the most obvious uses of a register — silently paste
+the wrong thing. <code>VimRegister::unnamed()</code> is a single instance for the
+process. Two separate <code>ase_gui</code> processes have separate registers, which
+is also how vim behaves.</p>
+<h3 id="linewise-travels-with-the-text">Linewise travels with the text<a class="headerlink" href="#linewise-travels-with-the-text" title="Permanent link">&para;</a></h3>
+<p><code>linewise</code> is what separates <code>yy</code> from <code>yw</code>: it decides whether <code>p</code>
+opens a new line below or inserts after the cursor. It is a property of
+the stored text, so it lives in the register rather than in a viewport
+member (<code>m_vimLastYankWasLinewise</code>, now gone — it was per-viewport, and
+would have had the same cross-buffer bug).</p>
+<p>Storing normalises a linewise payload to whole newline-terminated lines
+whatever shape the range that produced it had. That matters because of
+ADR 0060: a linewise delete at the end of the buffer takes the newline
+<em>above</em> the lines, so the raw removed bytes are <code>\nfoo</code>, and a register
+holding that would make <code>p</code> paste a blank line. One helper,
+<code>vimSetRegister()</code>, so no call site has to remember.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Click, drag-select, and hover (LSP hover popup, completion popup
-positioning) all route through <code>offsetForPoint</code>, so all three are
-fixed together, not just the plain click case reported. No new O(line
-length) cost class was introduced beyond what already existed:
-<code>xForColumn</code> was already a linear scan over the line's runs for the
-caret's own position, and <code>columnForX</code> is the same shape.</p>
+<p>Verified live, with a distinct string placed in the system clipboard by
+another program first:</p>
+<ul>
+<li><code>dd</code> on <code>bravo</code> then <code>p</code> on the line below moves the line — the idiom
+  that previously did nothing.</li>
+<li>After that <code>dd</code>, the system clipboard still holds the other program's
+  text, untouched.</li>
+<li><code>yy</code> puts <code>alpha\n</code> on the system clipboard; the following <code>x</code> leaves
+  it exactly as it was.</li>
+<li><code>x</code> then <code>p</code> puts the deleted character back, charwise, even though
+  the clipboard holds something else entirely — proof that <code>p</code> reads the
+  register and not the clipboard.</li>
+<li><code>yy</code> in one buffer then <code>p</code> in a second, freshly opened one pastes the
+  yanked line: the register crosses buffers.</li>
+<li><code>Ctrl+V</code> in Normal mode still pastes the system clipboard at the
+  cursor.</li>
+</ul>
+<p>The shortcut reference gained a line under the operators saying all four
+fill the register, and a <code>Ctrl+V</code> row saying where the clipboard lives.</p>
+<p><code>ctest</code> 9/9, clean build, zero warnings.</p>
+<p>Still deferred, and now cheap to add on top of this: <strong>named registers</strong>
+(<code>"ayy</code>), the numbered ring (<code>"1p</code> for the last delete), and the
+small-delete register. This is the one vim uses when you do not name
+one, which is nearly always.</p>
 
 
 

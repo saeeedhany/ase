@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0039-mouse-hit-test-drift-fix/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0062-the-status-bar-message-line/">
       
       
-        <link rel="prev" href="../0038-feedback-triage-criteria-and-deferred-status/">
+        <link rel="prev" href="../0061-the-unnamed-register/">
       
       
-        <link rel="next" href="../0040-italic-glyph-clipping-fix/">
+        <link rel="next" href="../0063-language-server-state-in-the-status-bar/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0039: Fix mouse click/hover drift on styled lines - Absolute Simple Editor</title>
+        <title>ADR 0062: The status bar message line - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0039-fix-mouse-clickhover-drift-on-styled-lines" class="md-skip">
+        <a href="#adr-0062-the-status-bar-message-line" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0039: Fix mouse click/hover drift on styled lines
+              ADR 0062: The status bar message line
             
           </span>
         </div>
@@ -1916,37 +1916,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0039: Fix mouse click/hover drift on styled lines
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0039-mouse-hit-test-drift-fix/" class="md-nav__link">
         
   
   
@@ -1962,87 +1935,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#verified-live-not-just-built" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verified live, not just built
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2668,10 +2560,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0062-the-status-bar-message-line/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0062: The status bar message line
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2687,6 +2606,142 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#two-problems-not-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two problems, not one
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#one-funnel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One funnel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-status-bar-not-toasts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The status bar, not toasts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#three-tiers-separated-by-dwell-not-by-colour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Three tiers, separated by dwell — not by colour
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#an-error-stays-until-you-do-something-else" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An error stays until you do something else
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#long-text-elides-rather-than-pushing-the-readout-off-the-edge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Long text elides, rather than pushing the readout off the edge
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2872,10 +2927,65 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#verified-live-not-just-built" class="md-nav__link">
+  <a href="#two-problems-not-one" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Verified live, not just built
+        Two problems, not one
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#one-funnel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One funnel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-status-bar-not-toasts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The status bar, not toasts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#three-tiers-separated-by-dwell-not-by-colour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Three tiers, separated by dwell — not by colour
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#an-error-stays-until-you-do-something-else" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An error stays until you do something else
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#long-text-elides-rather-than-pushing-the-readout-off-the-edge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Long text elides, rather than pushing the readout off the edge
       
     </span>
   </a>
@@ -2915,7 +3025,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0039-mouse-hit-test-drift-fix.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0062-the-status-bar-message-line.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2923,69 +3033,140 @@
   
 
 
-<h1 id="adr-0039-fix-mouse-clickhover-drift-on-styled-lines">ADR 0039: Fix mouse click/hover drift on styled lines<a class="headerlink" href="#adr-0039-fix-mouse-clickhover-drift-on-styled-lines" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0062-the-status-bar-message-line">ADR 0062: The status bar message line<a class="headerlink" href="#adr-0062-the-status-bar-message-line" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>User-reported bug: clicking (or hovering) further right on a line
-increasingly missed the character actually under the pointer, on
-lines with mixed syntax-highlight styling (e.g. bold keywords next to
-plain identifiers). This is the same class of bug ADR 0013 already
-fixed for the <em>caret</em> — assuming a fixed per-character pixel width
-instead of measuring what was actually rendered — just never fixed on
-the mouse-hit-testing side.</p>
-<p><code>EditorViewport::offsetForPoint()</code> (used by both <code>mousePressEvent</code> and
-the no-button branch of <code>mouseMoveEvent</code>, i.e. click, drag-select, and
-hover) computed the target column as <code>localX / m_charWidth</code>, a single
-project-wide average character width. Meanwhile <code>drawLine</code> and
-<code>xForColumn</code> — used for actually painting text and positioning the
-caret — measure each syntax-highlight run's real advance with
-<code>QFontMetrics::horizontalAdvance</code> on that run's actual text and font
-(<code>fontForCapture</code>/<code>metricsForCapture</code>), because bold/italic variants of
-even a "monospace" font don't reliably share the exact same advance as
-the regular weight. Any line with more than one highlight capture
-accumulates a small error per run boundary; far enough right on a long
-styled line, that error becomes visible as exactly what was reported —
-the pointer needing to move noticeably further than a character-width
-to advance the cursor by one character, or landing on the wrong one
-entirely.</p>
+<p>The editor had no way to say anything. An unconfigured language server,
+a <code>:</code> command that doesn't exist, a plugin that failed to load, a write
+that failed — all of it was <em>silence</em>, which reads as "broken" rather
+than as "not set up". That is exactly how an external tester concluded
+LSP didn't work in the packaged builds.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Added <code>EditorViewport::columnForX(lineStart, lineEnd, localX)</code>, the
-direct inverse of <code>xForColumn</code>: it walks the same per-run segmentation
-<code>xForColumn</code>/<code>drawLine</code> use, measuring each run's actual rendered
-width, and finds which column's glyph <code>localX</code> falls nearest to —
-rounding to the <em>nearest</em> codepoint boundary rather than flooring
-(same reasoning as ADR 0028's click-precision fix), and stepping by
-codepoint (using the existing <code>isUtf8ContinuationByte</code> helper) rather
-than by raw byte, so a multi-byte UTF-8 character is never measured as
-a partial, invalid byte sequence.</p>
-<p><code>offsetForPoint()</code> now calls <code>columnForX()</code> instead of dividing by
-<code>m_charWidth</code>. This also <em>removes</em> code, not just adds it: the
-separate post-hoc "snap forward past any continuation byte" loop
-<code>offsetForPoint()</code> used to need is now redundant — <code>columnForX()</code>
-already only ever returns a codepoint boundary.</p>
-<p><code>m_charWidth</code> itself is unchanged and still used elsewhere (horizontal
-scroll margin, the line-wrap continuation hint) — those are approximate
-by nature already, unlike hit-testing where the pointer needs to track
-a specific glyph.</p>
-<h3 id="verified-live-not-just-built">Verified live, not just built<a class="headerlink" href="#verified-live-not-just-built" title="Permanent link">&para;</a></h3>
-<p>Launched the real GUI against a <code>.c</code> file with a long line mixing bold
-keyword highlights and plain identifiers. Placed the caret at a known
-column via keyboard navigation (<code>End</code>, then <code>Left</code> N times),
-screenshotted its exact pixel position, then clicked at that exact
-pixel and confirmed the reported column matched — both near column 80
-on a ~100-column styled line and again near the line's end. Before
-this fix, <code>offsetForPoint</code>'s fixed-pitch math and <code>xForColumn</code>'s
-per-run measurement could only coincidentally agree; after, a mouse
-click and the caret's own rendered position resolve to the same
-character by construction, however far right on the line.</p>
+<h3 id="two-problems-not-one">Two problems, not one<a class="headerlink" href="#two-problems-not-one" title="Permanent link">&para;</a></h3>
+<p>Worth separating before building anything, because conflating them is
+how editors end up with toast spam.</p>
+<p><strong>State</strong> is continuously true or false — "a language server is
+running", "a build is in flight", "you are in Normal mode". The answer
+is wanted at a glance, at any moment. A message is the wrong shape for
+it: it fires once and is gone, so anyone who looked away can never find
+out. <strong>The tester's complaint was this kind</strong> — they didn't miss a
+message, there was nothing to look at.</p>
+<p><strong>Events</strong> happen at an instant and are stale a second later: saved,
+no matches, config reloaded, command not found.</p>
+<p>This ADR builds the second. State gets a persistent status-bar segment,
+next.</p>
+<h3 id="one-funnel">One funnel<a class="headerlink" href="#one-funnel" title="Permanent link">&para;</a></h3>
+<p>Everything the editor says goes through <code>EditorViewport::notify(level,
+text)</code>, which emits <code>messagePosted</code>; <code>MainWindow</code> owns the rendering.
+One place decides what a message looks like.</p>
+<p>This is the single most important decision here, and it is not about
+this feature: three ways of telling the user something becomes six
+within a month, all slightly different. That is precisely what happened
+with animation durations before ADR 0053 consolidated them, and the fix
+was more expensive than the rule would have been.</p>
+<p><code>notify()</code> is public, so panels — and eventually plugins — can reach it.
+A plugin that cannot say "that file isn't a thing" is a plugin that
+fails silently.</p>
+<h3 id="the-status-bar-not-toasts">The status bar, not toasts<a class="headerlink" href="#the-status-bar-not-toasts" title="Permanent link">&para;</a></h3>
+<p>The message occupies the free middle of the status bar, immediately
+right of the mode label. Mode and <code>Ln/Col</code> keep their places and never
+move.</p>
+<p>Floating toasts were rejected: they cover the text you are reading, they
+stack, and they are the most "app-like" chrome there is — in a project
+whose entire aesthetic is no lines, no boxes, state carried by opacity
+(ADR 0007, ADR 0022). The status bar is already there, already the place
+you look for state, and is what vim itself uses, in an editor that
+defaults to Vim mode.</p>
+<p>Messages replace each other rather than queueing. A queue means being
+told about something that happened several seconds ago, which is worse
+than missing it.</p>
+<h3 id="three-tiers-separated-by-dwell-not-by-colour">Three tiers, separated by dwell — not by colour<a class="headerlink" href="#three-tiers-separated-by-dwell-not-by-colour" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>rendering</th>
+<th>dwell</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Info</td>
+<td>text colour, one opacity tier down</td>
+<td>3s</td>
+</tr>
+<tr>
+<td>Warning</td>
+<td>full-strength text colour</td>
+<td>6s</td>
+</tr>
+<tr>
+<td>Error</td>
+<td><code>diagnostic_error</code></td>
+<td>until you do something else</td>
+</tr>
+</tbody>
+</table>
+<p>Info drops a tier because a confirmation you did not ask for should not
+shout as loudly as the mode label beside it — the same "secondary lines
+drop one tier" move the About panel and welcome screen already make
+(ADR 0055). A warning is a sentence you are meant to finish reading,
+usually saying the thing you just asked for did not happen, so it does
+not drop and it stays twice as long.</p>
+<p>Errors reuse the one non-monochrome colour the theme already sanctions,
+the same <code>diagnostic_error</code> as the gutter dot and the underline. No new
+hue enters the palette.</p>
+<h3 id="an-error-stays-until-you-do-something-else">An error stays until you do something else<a class="headerlink" href="#an-error-stays-until-you-do-something-else" title="Permanent link">&para;</a></h3>
+<p>Vim's rule, and the reasoning is not aesthetic: <strong>the one message you
+must not miss is the one saying a thing you asked for did not happen.</strong>
+A save that failed while you were looking at your other monitor is
+exactly how people lose work. So errors have no timeout.</p>
+<p>"Doing something else" is any cursor move or edit. <code>statusChanged</code>
+already fires on exactly those and on nothing that isn't the user
+(ADR 0023), so this needs no new signal and cannot miss a case a new one
+would. Sticky dismissal is armed one event-loop turn <em>after</em> the message
+appears, so the keystroke that caused the error cannot also dismiss it
+before it has been seen.</p>
+<p>Switching buffers clears the message too: one raised by the file you
+just left, sitting in the bar above a different file's text, reads as
+being about this one.</p>
+<h3 id="long-text-elides-rather-than-pushing-the-readout-off-the-edge">Long text elides, rather than pushing the readout off the edge<a class="headerlink" href="#long-text-elides-rather-than-pushing-the-readout-off-the-edge" title="Permanent link">&para;</a></h3>
+<p>A message with a long path elides in the middle, with the full string on
+hover. The alternative — letting the label grow — pushes <code>Ln/Col</code> off a
+narrow window, trading a permanent readout for a transient one.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Click, drag-select, and hover (LSP hover popup, completion popup
-positioning) all route through <code>offsetForPoint</code>, so all three are
-fixed together, not just the plain click case reported. No new O(line
-length) cost class was introduced beyond what already existed:
-<code>xForColumn</code> was already a linear scan over the line's runs for the
-caret's own position, and <code>columnForX</code> is the same shape.</p>
+<p>Five call sites wired, chosen so the thing is judgeable rather than
+theoretical: save success, save failure, unknown <code>:</code> command, no search
+matches, and config hot-reload.</p>
+<p>Two of those were silent bugs rather than missing features:</p>
+<ul>
+<li><strong>A failed write was indistinguishable from a successful one.</strong> The
+  dirty marker simply stayed. You found out that your file wasn't on
+  disk by noticing an asterisk that should have cleared.</li>
+<li><strong>A typo in a <code>:</code> command looked exactly like a command that ran and
+  did nothing</strong> — ADR 0025's deliberate silent no-op, which was the
+  right call when there was nowhere to say otherwise.</li>
+</ul>
+<p>Search reports "no matches" on Enter only, never while typing:
+incremental search passes through "no matches" on the way to almost
+every real query, and a message per keystroke is noise.</p>
+<p>Verified live: <code>saved notif.c</code> renders one tier below the mode label
+(192 vs 225 measured) and is gone by 4s; <code>unknown command: frobnicate</code>
+sits at full strength; <code>could not write ro.txt</code> renders red, survives
+several seconds untouched, and clears the instant <code>j</code> moves the cursor;
+switching tabs clears a message raised by the other buffer.</p>
+<p><code>ctest</code> 9/9, clean build, zero warnings.</p>
+<p>Deliberately not built here:</p>
+<ul>
+<li><strong><code>:messages</code> history</strong>, so a message you missed is recoverable. The
+  <code>OutputPanel</code> already exists as a docked, non-modal, streaming surface
+  and should grow a second mode rather than a new widget being invented.</li>
+<li><strong>The persistent LSP state segment</strong> — the actual fix for the tester's
+  report, and state rather than an event.</li>
+<li><strong>Desktop notifications.</strong> Wrong layer, new dependency, and an editor
+  interrupting your desktop to say "saved" is obnoxious.</li>
+</ul>
 
 
 
