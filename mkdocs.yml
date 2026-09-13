@@ -88,6 +88,7 @@ nav:
     - adr/0065-quick-open.md
     - adr/0066-project-wide-search.md
     - adr/0067-go-to-definition.md
+    - adr/0068-freeing-ctrl-o-and-ctrl-i.md
 
 theme:
   name: material

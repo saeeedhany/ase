@@ -92,6 +92,16 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         update();
         return;
     }
+    if (event->key() == Qt::Key_F1) {
+        /* The help key everywhere. It used to be Ctrl+/, which was a
+         * fine mnemonic and the wrong key: F1 is what people press
+         * without being told, and moving it also freed a Ctrl slot.
+         * See docs/adr/0068. */
+        if (m_helpPanel != nullptr) {
+            m_helpPanel->openHelp();
+        }
+        return;
+    }
     if (event->key() == Qt::Key_F12) {
         /* The universal editor binding for this, working in every mode
          * and whether or not Vim mode is on. Vim's own `gd` is wired in
@@ -170,6 +180,27 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         insertText(QByteArrayLiteral("\n"));
         break;
     default:
+        /* Alt is where the two panels that had to move went — About and
+         * Open — so Ctrl+O and Ctrl+I could go to Vim's jumplist, which
+         * has no alternative keys and is used constantly. A panel opened
+         * a few times a session can afford an unusual binding; a
+         * navigation key cannot. See docs/adr/0068. */
+        if ((event->modifiers() & Qt::AltModifier) && !(event->modifiers() & Qt::ControlModifier)) {
+            if (event->key() == Qt::Key_O) {
+                if (m_fileBrowser != nullptr) {
+                    m_fileBrowser->openFor(FileBrowserPanel::Mode::Open);
+                }
+                return;
+            }
+            if (event->key() == Qt::Key_I) {
+                if (m_aboutPanel != nullptr) {
+                    m_aboutPanel->openAbout();
+                }
+                return;
+            }
+            QWidget::keyPressEvent(event);
+            return;
+        }
         if (event->modifiers() & Qt::ControlModifier) {
             if (event->key() == Qt::Key_S) {
                 /* Ctrl+Shift+S always opens Save-As, even with a path
@@ -195,15 +226,11 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
                 }
                 return;
             }
-            if (event->key() == Qt::Key_O) {
+            if (event->key() == Qt::Key_O && (event->modifiers() & Qt::ShiftModifier)) {
                 /* Ctrl+Shift+O toggles the output panel directly,
-                 * without going through :output — Ctrl+O (no Shift)
-                 * keeps its existing meaning, Open. */
-                if (event->modifiers() & Qt::ShiftModifier) {
-                    toggleOutputPanel();
-                } else if (m_fileBrowser != nullptr) {
-                    m_fileBrowser->openFor(FileBrowserPanel::Mode::Open);
-                }
+                 * without going through :output. Plain Ctrl+O is Vim's
+                 * jump-back now; Open moved to Alt+O (docs/adr/0068). */
+                toggleOutputPanel();
                 return;
             }
             if (event->key() == Qt::Key_Semicolon) {
@@ -222,18 +249,6 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
             }
             if (event->key() == Qt::Key_Q) {
                 window()->close();
-                return;
-            }
-            if (event->key() == Qt::Key_Slash) {
-                if (m_helpPanel != nullptr) {
-                    m_helpPanel->openHelp();
-                }
-                return;
-            }
-            if (event->key() == Qt::Key_I) {
-                if (m_aboutPanel != nullptr) {
-                    m_aboutPanel->openAbout();
-                }
                 return;
             }
             if ((event->key() == Qt::Key_D || event->key() == Qt::Key_U) && vimModeActive() &&

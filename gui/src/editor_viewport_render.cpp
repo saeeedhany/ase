@@ -661,7 +661,7 @@ void EditorViewport::drawWelcomeOverlay(QPainter &painter) const {
 
     /* Identity block (centered) above, shortcuts (two aligned columns)
      * below. The shortcuts are a deliberately short list of what you
-     * cannot discover by poking around — Ctrl+/ is first because it is
+     * cannot discover by poking around — F1 is first because it is
      * the answer to every other question, and the rest are the things
      * you need before you can do anything at all: make a file, open
      * one, save it, and (since Vim mode is on by default now) the fact
@@ -672,10 +672,10 @@ void EditorViewport::drawWelcomeOverlay(QPainter &painter) const {
         QString key;
     };
     static const QVector<WelcomeInstruction> kInstructions = {
-        {QStringLiteral("All keyboard shortcuts"), QStringLiteral("Ctrl+/")},
+        {QStringLiteral("All keyboard shortcuts"), QStringLiteral("F1")},
         {QStringLiteral("Start typing (Vim: Normal mode)"), QStringLiteral("i")},
         {QStringLiteral("New file"), QStringLiteral("Ctrl+N")},
-        {QStringLiteral("Open a file"), QStringLiteral("Ctrl+O")},
+        {QStringLiteral("Open a file"), QStringLiteral("Alt+O")},
         {QStringLiteral("Save"), QStringLiteral("Ctrl+S")},
         {QStringLiteral("Command line"), QStringLiteral(":")},
     };

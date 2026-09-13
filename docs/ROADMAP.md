@@ -817,6 +817,12 @@ ADRs as each lands here going forward.
       way to jump *back* yet (vim's jumplist is on `Ctrl+O`, which is
       Open here — the collision ADR 0046 flagged). See
       [ADR 0067](adr/0067-go-to-definition.md).
+- [x] **Freed `Ctrl+O` and `Ctrl+I`** for Vim's jumplist by moving the
+      two panels that held them: the shortcut reference to `F1` (where it
+      belonged anyway), About to `Alt+I`, Open to `Alt+O`. A panel opened
+      a few times a session can afford an unusual binding; a navigation
+      key used constantly cannot. See
+      [ADR 0068](adr/0068-freeing-ctrl-o-and-ctrl-i.md).
 - [x] **v0.3.0-alpha**: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the `EditorViewport` split, the render hot-path

@@ -75,3 +75,4 @@ what changed.
 | [0065](0065-quick-open.md) | Quick open (`Ctrl+P`) — fuzzy file finding across the project |
 | [0066](0066-project-wide-search.md) | Project-wide search (`Ctrl+Shift+F`) |
 | [0067](0067-go-to-definition.md) | Go to definition (`gd` / `F12`) |
+| [0068](0068-freeing-ctrl-o-and-ctrl-i.md) | Freeing `Ctrl+O`/`Ctrl+I`: help to `F1`, About/Open to `Alt` |

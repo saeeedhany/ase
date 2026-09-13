@@ -19,7 +19,7 @@ class LetterBadge;
  * the rest — see docs/adr/0022 (the design system) and docs/adr/0026
  * (this panel, added directly in response to user feedback once the
  * keybinding scheme itself settled — this panel's whole reason to
- * exist is documenting that scheme). "?" badge, `Ctrl+/` opens it.
+ * exist is documenting that scheme). "?" badge, `F1` opens it.
  * Sections collapse, and a search field filters across every binding —
  * see docs/adr/0056. Shortcuts are the primary way this editor is
  * driven, so the reference is something you come back to and scan, not
