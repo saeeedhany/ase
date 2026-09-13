@@ -712,13 +712,21 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     }
     QChar qc = text.at(0);
 
-    /* Mid-"gg": resolved on the very next key, whatever it is. */
+    /* Mid-"g": resolved on the very next key, whatever it is. */
     if (m_vimPendingG) {
         m_vimPendingG = false;
         if (qc == QLatin1Char('g')) {
             int targetLine = (m_vimCount1 > 0) ? (m_vimCount1 - 1) : 0;
             vimPrepareLinewiseMotion();
             vimGotoLine(targetLine);
+        } else if (qc == QLatin1Char('d')) {
+            /* `gd` — vim's own go-to-definition key, here meaning the
+             * language server's answer rather than vim's local-declaration
+             * scan. Not a motion, so no operator can be pending against
+             * it; it jumps and that is all. See docs/adr/0067. */
+            resetVimPendingState();
+            goToDefinition();
+            return true;
         }
         vimNormalizeLinewiseSelection();
         resetVimPendingState();

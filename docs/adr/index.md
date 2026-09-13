@@ -74,3 +74,4 @@ what changed.
 | [0064](0064-gui-in-ci-and-a-test-suite-that-runs-in-release.md) | The GUI in CI, and a test suite that actually runs in Release |
 | [0065](0065-quick-open.md) | Quick open (`Ctrl+P`) — fuzzy file finding across the project |
 | [0066](0066-project-wide-search.md) | Project-wide search (`Ctrl+Shift+F`) |
+| [0067](0067-go-to-definition.md) | Go to definition (`gd` / `F12`) |

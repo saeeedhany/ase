@@ -163,6 +163,10 @@ public:
      * Runs synchronously — see docs/adr/0066 for the measured cost and
      * the caps that bound it. */
     void searchProject(const QString &needle);
+    /* `gd` / F12 — ask the language server where the symbol under the
+     * cursor is defined and jump there, in this buffer or another. See
+     * docs/adr/0067. */
+    void goToDefinition();
     /* Jump to a 1-based line, the way `:42` does. Public because a
      * project-search hit opens a file *and* needs to land on a line,
      * which the window arranges across two objects. */
@@ -243,6 +247,9 @@ public:
      * applyLspDiagnostics above — see docs/adr/0030. */
     void applyLspCompletion(const AseJsonValue *result, const char *error_message);
     void applyLspHover(const AseJsonValue *result, const char *error_message);
+    /* Parses the several shapes textDocument/definition can answer with
+     * (see docs/adr/0067) and jumps, or says why it can't. */
+    void applyLspDefinition(const AseJsonValue *result, const char *error_message);
 
     /* Brings the status bar in sync with the viewport's actual initial
      * state right after construction, instead of leaving main.cpp's
@@ -254,6 +261,11 @@ public:
 signals:
     /* Ctrl+O picked a file — the window turns this into a new buffer. */
     void fileOpenRequested(const QString &path);
+    /* Open `path` *and* land on a line — a definition in another file is
+     * both at once, and the two halves belong to different objects (the
+     * window owns the buffer list, the viewport owns the cursor). Line
+     * is 1-based. */
+    void fileOpenAtLineRequested(const QString &path, int line);
     /* Emitted from ensureCursorVisible() — every call site that already
      * calls it (every cursor move and every edit) gets this for free,
      * rather than annotating each one individually. 1-based line/column
@@ -760,6 +772,9 @@ private:
     AseLspClient *m_lspClient = nullptr;
     bool m_lspActivated = false; /* see onActivated() */
     LspState m_lspState = LspState::NotApplicable;
+    /* "c" or "cpp" — told to the server on didOpen, and empty for a file
+     * this editor starts no server for. */
+    QString m_lspLanguageId;
     /* The command's basename — `clangd`, not `/usr/bin/clangd`. What the
      * status bar shows, so it says which server rather than the generic
      * word "LSP". */

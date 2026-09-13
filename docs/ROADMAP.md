@@ -808,6 +808,15 @@ ADRs as each lands here going forward.
       disagree about what is in the project. Enter or a single click on
       a row opens that file at that line. See
       [ADR 0066](adr/0066-project-wide-search.md).
+- [x] **Go to definition (`gd` / `F12`)**: the request had existed in
+      `core/` since ADR 0011 with nothing in the GUI calling it. Both
+      bindings work, in-file and across files, and every way it can fail
+      now says why instead of the key appearing dead. The LSP language
+      gate grew to C++ on the way — it had been `.c`/`.h` only, so this
+      could not work on the editor's own sources. Named gap: there is no
+      way to jump *back* yet (vim's jumplist is on `Ctrl+O`, which is
+      Open here — the collision ADR 0046 flagged). See
+      [ADR 0067](adr/0067-go-to-definition.md).
 - [x] **v0.3.0-alpha**: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the `EditorViewport` split, the render hot-path
@@ -864,9 +873,10 @@ something else.
   project from one keystroke wants its own design pass (a preview, an
   undo story spanning buffers), not a ride-along on a read-only
   feature.
-- **The rest of LSP's useful half**: go-to-definition, find-references,
-  rename, document symbols. Diagnostics, completion and hover are wired
-  (ADR 0029/0030); the navigation half is what people actually miss.
+- **The rest of LSP's useful half**: ~~go-to-definition~~ (done,
+  [ADR 0067](adr/0067-go-to-definition.md)), find-references, rename,
+  document symbols — plus a **jumplist**, which go-to-definition makes
+  conspicuous: you can follow a name into a file and have no way back.
 - **Git gutter marks** — added/changed/deleted per line. Cheap next to
   the existing diagnostic-gutter machinery, and disproportionately useful.
 - **Session restore** — reopen the files, cursors, and scroll positions

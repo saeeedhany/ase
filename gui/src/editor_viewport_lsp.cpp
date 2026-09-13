@@ -66,6 +66,9 @@ void lspCompletionTrampoline(void *user_data, const AseJsonValue *result, const 
 void lspHoverTrampoline(void *user_data, const AseJsonValue *result, const char *error_message) {
     static_cast<EditorViewport *>(user_data)->applyLspHover(result, error_message);
 }
+void lspDefinitionTrampoline(void *user_data, const AseJsonValue *result, const char *error_message) {
+    static_cast<EditorViewport *>(user_data)->applyLspDefinition(result, error_message);
+}
 } // namespace
 
 /* Gated the same way Tree-sitter syntax highlighting already is
@@ -104,9 +107,43 @@ void EditorViewport::setLspState(LspState state) {
     emit lspStateChanged(m_lspState, m_lspServerName);
 }
 
+/*
+ * The LSP language id for a file, or an empty string when this editor
+ * would not start a server for it.
+ *
+ * C++ is here as well as C because clangd handles both and the gate not
+ * to was never really a decision — ADR 0029 wired up C and the list
+ * simply never grew. Keeping it C-only meant go-to-definition could not
+ * work on this editor's own sources, which is a strange thing to ship.
+ * Tree-sitter highlighting is a separate gate and still C-only; that one
+ * needs a grammar per language, this one does not.
+ *
+ * The id matters: telling a server `c` about a `.cpp` file makes it
+ * parse C++ as C, and the errors that produces look like your code is
+ * broken rather than like the editor lied.
+ */
+QString lspLanguageIdFor(const QString &path) {
+    QString suffix = QFileInfo(path).suffix().toLower();
+    if (suffix == QLatin1String("c")) {
+        return QStringLiteral("c");
+    }
+    if (suffix == QLatin1String("h")) {
+        /* Ambiguous by nature. `c` is the safer guess: clangd treats a
+         * C header as C++ when the compile database says so, and a C++
+         * header parsed as C fails loudly rather than silently. */
+        return QStringLiteral("c");
+    }
+    if (suffix == QLatin1String("cpp") || suffix == QLatin1String("cc") ||
+        suffix == QLatin1String("cxx") || suffix == QLatin1String("hpp") ||
+        suffix == QLatin1String("hh") || suffix == QLatin1String("hxx")) {
+        return QStringLiteral("cpp");
+    }
+    return QString();
+}
+
 void EditorViewport::startLspClientIfConfigured() {
-    QString suffix = QFileInfo(m_filePath).suffix().toLower();
-    if (suffix != QLatin1String("c") && suffix != QLatin1String("h")) {
+    m_lspLanguageId = lspLanguageIdFor(m_filePath);
+    if (m_lspLanguageId.isEmpty()) {
         /* Nothing to report for a file no server would be started for.
          * A permanently blank indicator on a .txt file is noise. */
         setLspState(LspState::NotApplicable);
@@ -155,7 +192,8 @@ void EditorViewport::startLspClientIfConfigured() {
     setLspState(LspState::Running);
 
     ase_lsp_client_set_diagnostics_callback(m_lspClient, lspDiagnosticsTrampoline, this);
-    ase_lsp_client_did_open(m_lspClient, m_lspUri.toUtf8().constData(), "c", m_cache.constData());
+    ase_lsp_client_did_open(m_lspClient, m_lspUri.toUtf8().constData(),
+                             m_lspLanguageId.toUtf8().constData(), m_cache.constData());
     m_lspVersion = 1;
 }
 
@@ -394,6 +432,101 @@ void EditorViewport::requestHoverNow() {
     pos.line = line;
     pos.character = columnForOffset(m_hoverPendingOffset, line);
     ase_lsp_client_request_hover(m_lspClient, m_lspUri.toUtf8().constData(), pos, lspHoverTrampoline, this);
+}
+
+
+/*
+ * Ask where the symbol under the cursor is defined.
+ *
+ * Unlike completion and hover, this is *asked for* rather than offered:
+ * it fires on a keystroke, so every reason it can't answer is worth
+ * saying out loud (docs/adr/0062's message line) instead of the
+ * keystroke appearing to do nothing.
+ */
+void EditorViewport::goToDefinition() {
+    if (m_lspClient == nullptr) {
+        /* The status bar segment already says which flavour of "no
+         * server" this is (docs/adr/0063); this says that *this
+         * keystroke* needed one. */
+        notify(NotifyLevel::Warning, QStringLiteral("no language server for this file"));
+        return;
+    }
+    if (m_cursors.isEmpty()) {
+        return;
+    }
+
+    size_t cursor = m_cursors[0];
+    int line = lineForOffset(cursor);
+    AseLspPosition pos;
+    pos.line = line;
+    pos.character = columnForOffset(cursor, line);
+    ase_lsp_client_request_definition(m_lspClient, m_lspUri.toUtf8().constData(), pos,
+                                       lspDefinitionTrampoline, this);
+}
+
+/*
+ * textDocument/definition answers in three shapes, and a server picks
+ * whichever it likes: a single Location, an array of Locations, or an
+ * array of LocationLinks (which name the target range `targetRange` /
+ * `targetSelectionRange` instead of `range`). clangd returns the array
+ * form; handling only that would work until it doesn't.
+ *
+ * Multiple results are not a picker yet — the first is taken. For C,
+ * "several definitions" is nearly always a declaration and its
+ * definition, and the server lists the one you want first.
+ */
+void EditorViewport::applyLspDefinition(const AseJsonValue *result, const char *error_message) {
+    if (error_message != nullptr) {
+        notify(NotifyLevel::Error, QString::fromUtf8(error_message));
+        return;
+    }
+
+    const AseJsonValue *location = result;
+    if (result != nullptr && ase_json_type(result) == ASE_JSON_ARRAY) {
+        if (ase_json_array_size(result) == 0) {
+            location = nullptr;
+        } else {
+            location = ase_json_array_get(result, 0);
+        }
+    }
+    if (location == nullptr || ase_json_type(location) != ASE_JSON_OBJECT) {
+        notify(NotifyLevel::Warning, QStringLiteral("no definition found"));
+        return;
+    }
+
+    /* Location vs LocationLink. */
+    const char *uri = ase_json_get_string(ase_json_object_get(location, "uri"));
+    const AseJsonValue *range = ase_json_object_get(location, "range");
+    if (uri == nullptr) {
+        uri = ase_json_get_string(ase_json_object_get(location, "targetUri"));
+        range = ase_json_object_get(location, "targetSelectionRange");
+        if (range == nullptr) {
+            range = ase_json_object_get(location, "targetRange");
+        }
+    }
+    const AseJsonValue *start = (range != nullptr) ? ase_json_object_get(range, "start") : nullptr;
+    if (uri == nullptr || start == nullptr) {
+        notify(NotifyLevel::Warning, QStringLiteral("no definition found"));
+        return;
+    }
+
+    int targetLine = static_cast<int>(ase_json_get_number(ase_json_object_get(start, "line"), 0)) + 1;
+    QString path = QUrl(QString::fromUtf8(uri)).toLocalFile();
+    if (path.isEmpty()) {
+        /* A non-file URI — a built-in, or something inside an archive.
+         * Nothing to open, and silence would look like a broken key. */
+        notify(NotifyLevel::Warning, QStringLiteral("definition is not in a file"));
+        return;
+    }
+
+    if (QFileInfo(path) == QFileInfo(m_filePath)) {
+        /* Already here: jump without asking the window to "open" a file
+         * that is on screen, which would otherwise just re-activate this
+         * buffer and lose the point of the animation. */
+        goToLine(targetLine);
+        return;
+    }
+    emit fileOpenAtLineRequested(path, targetLine);
 }
 
 void EditorViewport::applyLspHover(const AseJsonValue *result, const char *error_message) {

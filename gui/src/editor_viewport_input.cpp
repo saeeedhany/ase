@@ -92,6 +92,13 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         update();
         return;
     }
+    if (event->key() == Qt::Key_F12) {
+        /* The universal editor binding for this, working in every mode
+         * and whether or not Vim mode is on. Vim's own `gd` is wired in
+         * the Normal/Visual dispatch. See docs/adr/0067. */
+        goToDefinition();
+        return;
+    }
     m_desiredColumn = -1;
 
     if (vimModeActive() && m_vimMode != VimMode::Insert) {

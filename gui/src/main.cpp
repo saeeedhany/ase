@@ -354,6 +354,18 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
             });
     connect(viewport, &EditorViewport::fileOpenRequested, this,
             [this](const QString &path) { openBuffer(path); });
+    /* Go-to-definition landing in another file: the same two-object
+     * split as a search hit (docs/adr/0066), reached from the viewport
+     * instead of the output panel. */
+    connect(viewport, &EditorViewport::fileOpenAtLineRequested, this,
+            [this](const QString &path, int line) {
+                openBuffer(path);
+                EditorViewport *opened = activeViewport();
+                if (opened != nullptr) {
+                    opened->goToLine(line);
+                    opened->setFocus();
+                }
+            });
     /* Only the buffer you are looking at gets to speak — same rule the
      * status readout follows, and for the same reason: a message about a
      * file in another tab, with nothing naming that file, reads as a
