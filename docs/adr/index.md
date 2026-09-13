@@ -68,3 +68,4 @@ what changed.
 | [0058](0058-session-scoped-greeting-and-panel-carets.md) | The greeting belongs to the session; panel carets join the app |
 | [0059](0059-derived-dirty-state-paste-cursor-and-more-vim-motions.md) | Dirtiness derived from undo state; vim paste cursor; `{` `}` `Ctrl+U` `Ctrl+D` |
 | [0060](0060-linewise-operations-at-the-end-of-the-buffer.md) | Linewise operations at the end of the buffer (`dd` on the last line) |
+| [0061](0061-the-unnamed-register.md) | The unnamed register — `dd`+`p` works, and `x` stops eating your clipboard |

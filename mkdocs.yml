@@ -81,6 +81,7 @@ nav:
     - adr/0058-session-scoped-greeting-and-panel-carets.md
     - adr/0059-derived-dirty-state-paste-cursor-and-more-vim-motions.md
     - adr/0060-linewise-operations-at-the-end-of-the-buffer.md
+    - adr/0061-the-unnamed-register.md
 
 theme:
   name: material

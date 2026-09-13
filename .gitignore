@@ -66,3 +66,10 @@ packaging/arch/*.tar.gz
 # branch directly, nothing to commit here on main).
 .venv-docs/
 site/
+
+# Screenshots taken while verifying the GUI on a real display. They are
+# written next to whatever the working directory happened to be, and a
+# batch of them has been committed by accident once already — capture
+# them somewhere outside the repo, and if one does land here, git will
+# not pick it up.
+/*.png

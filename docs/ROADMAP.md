@@ -748,6 +748,15 @@ ADRs as each lands here going forward.
       Linewise ranges that end at the buffer's end now take the
       *preceding* newline, in one shared helper. See
       [ADR 0060](adr/0060-linewise-operations-at-the-end-of-the-buffer.md).
+- [x] **The unnamed register**: Vim mode had been using the system
+      clipboard as its only register, which got both halves wrong —
+      `d`/`x`/`c` filled nothing, so `dd` then `p` (the way you move a
+      line) did nothing, and the obvious fix would have made every `x`
+      destroy whatever you last copied from another application. There
+      is now a real unnamed register, shared across buffers, filled by
+      `y d c x` and read by `p`/`P`; the system clipboard is a separate
+      destination on `Ctrl+C`/`Ctrl+V`, which yank still mirrors into
+      (delete does not). See [ADR 0061](adr/0061-the-unnamed-register.md).
 - [x] **v0.3.0-alpha**: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the `EditorViewport` split, the render hot-path

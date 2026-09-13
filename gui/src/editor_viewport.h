@@ -425,9 +425,19 @@ private:
      * core/src/undo.c). Single-cursor by construction, so no highest-
      * offset-first loop is needed the way the multi-cursor primitives
      * above need one. */
-    void vimDeleteRange(size_t start, size_t end);
+    /* `linewise` says how the removed text should be *stored* in the
+     * unnamed register, not how it is removed: a linewise delete at the
+     * end of the buffer takes the newline *above* the lines
+     * (vimLinewiseDeleteStart), and that leading newline must not end up
+     * in the register or `p` would paste a blank line before the text.
+     * See docs/adr/0061. */
+    void vimDeleteRange(size_t start, size_t end, bool linewise = false);
+    /* Writes the unnamed register (gui/src/vim_register.h), normalising a
+     * linewise payload to whole newline-terminated lines whatever shape
+     * the range that produced it had. */
+    void vimSetRegister(const QByteArray &text, bool linewise);
     void vimYankRange(size_t start, size_t end, bool linewise);
-    void vimChangeRange(size_t start, size_t end);
+    void vimChangeRange(size_t start, size_t end, bool linewise = false);
     void vimDeleteLines(int startLine, int count);
     void vimYankLines(int startLine, int count);
     void vimPasteAfter();
@@ -762,7 +772,10 @@ private:
      * rather than leave blanks) — re-deriving the line from that offset
      * would read one line too far and compound on every motion. */
     int m_vimVisualCursorLine = 0;
-    bool m_vimLastYankWasLinewise = false; /* drives p/P placement */
+    /* Was: which kind the last yank was, kept per viewport alongside a
+     * clipboard-as-register model. Both are gone — the unnamed register
+     * carries its own linewise flag and is shared across buffers
+     * (gui/src/vim_register.h, docs/adr/0061). */
 
     /* Rendered (possibly still-easing) counterparts of m_scrollLine/X and
      * m_cursors — see docs/adr/0015. Equal to the logical values whenever

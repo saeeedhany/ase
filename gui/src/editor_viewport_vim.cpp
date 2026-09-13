@@ -1,6 +1,7 @@
 #include "editor_viewport.h"
 
 #include "editor_viewport_internal.h"
+#include "vim_register.h"
 
 #include "command_line.h"
 
@@ -427,8 +428,32 @@ void EditorViewport::vimApplyPendingOperatorLinewise(int startLine, int lineCoun
     }
 }
 
-void EditorViewport::vimDeleteRange(size_t start, size_t end) {
+/*
+ * Stores text in the unnamed register, normalising a linewise payload to
+ * "whole lines, each ending in a newline" regardless of how the range
+ * that produced it happened to be cut. Two cases need it: a delete at
+ * the end of the buffer takes the newline *above* the lines
+ * (vimLinewiseDeleteStart), and one on a last line with no trailing
+ * newline has none to take. Without this, `dd` on the last line would
+ * put "\nfoo" or "foo" in the register and `p` would paste a blank line
+ * or join onto the current one. See docs/adr/0061.
+ */
+void EditorViewport::vimSetRegister(const QByteArray &text, bool linewise) {
+    QByteArray payload = text;
+    if (linewise) {
+        if (payload.startsWith('\n')) {
+            payload.remove(0, 1);
+        }
+        if (!payload.endsWith('\n')) {
+            payload.append('\n');
+        }
+    }
+    VimRegister::unnamed().set(payload, linewise);
+}
+
+void EditorViewport::vimDeleteRange(size_t start, size_t end, bool linewise) {
     QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
+    vimSetRegister(removed, linewise);
     ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     if (ase_buffer_delete(m_buffer, start, end - start)) {
         ase_undo_record_delete(m_undo, start, removed.constData(), static_cast<size_t>(removed.size()));
@@ -453,19 +478,22 @@ void EditorViewport::vimYankRange(size_t start, size_t end, bool linewise) {
     /* Same end-of-buffer asymmetry as the delete above: a linewise yank
      * of the last line has no newline to take with it, and a register
      * of whole lines that doesn't end in one pastes as a fragment. */
-    if (linewise && !text.endsWith('\n')) {
-        text.append('\n');
-    }
-    QGuiApplication::clipboard()->setText(QString::fromUtf8(text));
-    m_vimLastYankWasLinewise = linewise;
+    vimSetRegister(text, linewise);
+    /* Yank also mirrors into the system clipboard, delete does not.
+     * Yank is the explicit "I want this text" gesture, so carrying it to
+     * other applications is what you meant; `x` and `d` are editing, and
+     * having them wipe what you last copied from a browser is exactly
+     * the destructive behaviour the unnamed register exists to avoid.
+     * See docs/adr/0061. */
+    QGuiApplication::clipboard()->setText(QString::fromUtf8(VimRegister::unnamed().text()));
     m_cursors[0] = start;
     m_selectionAnchors[0] = start;
     ensureCursorVisible();
     update();
 }
 
-void EditorViewport::vimChangeRange(size_t start, size_t end) {
-    vimDeleteRange(start, end);
+void EditorViewport::vimChangeRange(size_t start, size_t end, bool linewise) {
+    vimDeleteRange(start, end, linewise);
     m_vimMode = VimMode::Insert;
 }
 
@@ -485,6 +513,7 @@ void EditorViewport::vimDeleteLines(int startLine, int count) {
      * behind. Reported from real use. */
     start = vimLinewiseDeleteStart(start, end);
     QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
+    vimSetRegister(removed, true);
     ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     if (ase_buffer_delete(m_buffer, start, end - start)) {
         ase_undo_record_delete(m_undo, start, removed.constData(), static_cast<size_t>(removed.size()));
@@ -510,11 +539,8 @@ void EditorViewport::vimYankLines(int startLine, int count) {
      * last line of the buffer has none stored, and without this `yy`
      * there yanks an empty string (nothing at all, on an empty last
      * line) and the following `p` pastes nothing. */
-    if (!text.endsWith('\n')) {
-        text.append('\n');
-    }
-    QGuiApplication::clipboard()->setText(QString::fromUtf8(text));
-    m_vimLastYankWasLinewise = true;
+    vimSetRegister(text, true);
+    QGuiApplication::clipboard()->setText(QString::fromUtf8(VimRegister::unnamed().text()));
     size_t target = vimFirstNonBlank(startLine);
     m_cursors[0] = target;
     m_selectionAnchors[0] = target;
@@ -523,13 +549,19 @@ void EditorViewport::vimYankLines(int startLine, int count) {
 }
 
 void EditorViewport::vimPasteAfter() {
-    QString clip = QGuiApplication::clipboard()->text();
-    if (clip.isEmpty()) {
+    const VimRegister &reg = VimRegister::unnamed();
+    if (reg.isEmpty()) {
+        /* Nothing yanked or deleted yet this session. Deliberately does
+         * *not* fall back to the system clipboard: a `p` that means
+         * something different depending on whether you have deleted
+         * anything yet is worse than one that consistently means "the
+         * register". Ctrl+V pastes the clipboard, in any mode. */
         return;
     }
-    QByteArray bytes = clip.toUtf8();
+    QByteArray bytes = reg.text();
+    bool linewise = reg.isLinewise();
     size_t insertAt;
-    if (m_vimLastYankWasLinewise) {
+    if (linewise) {
         int line = lineForOffset(m_cursors[0]);
         insertAt = (line + 1 < m_lineStarts.size()) ? static_cast<size_t>(m_lineStarts[line + 1])
                                                      : static_cast<size_t>(m_cache.size());
@@ -574,7 +606,7 @@ void EditorViewport::vimPasteAfter() {
      * the middle of it. Linewise is the opposite and already right:
      * first non-blank of the first pasted line. Reported by an external
      * tester, who expected "the end" for both; see docs/adr/0059. */
-    size_t target = m_vimLastYankWasLinewise
+    size_t target = linewise
                         ? vimFirstNonBlank(lineForOffset(insertAt))
                         : vimPrevCharBoundary(insertAt + static_cast<size_t>(bytes.size()));
     m_cursors[0] = target;
@@ -584,13 +616,14 @@ void EditorViewport::vimPasteAfter() {
 }
 
 void EditorViewport::vimPasteBefore() {
-    QString clip = QGuiApplication::clipboard()->text();
-    if (clip.isEmpty()) {
+    const VimRegister &reg = VimRegister::unnamed();
+    if (reg.isEmpty()) {
         return;
     }
-    QByteArray bytes = clip.toUtf8();
-    size_t insertAt = m_vimLastYankWasLinewise ? static_cast<size_t>(m_lineStarts[lineForOffset(m_cursors[0])])
-                                                : m_cursors[0];
+    QByteArray bytes = reg.text();
+    bool linewise = reg.isLinewise();
+    size_t insertAt = linewise ? static_cast<size_t>(m_lineStarts[lineForOffset(m_cursors[0])])
+                               : m_cursors[0];
     ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     if (ase_buffer_insert(m_buffer, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()))) {
         ase_undo_record_insert(m_undo, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()));
@@ -603,7 +636,7 @@ void EditorViewport::vimPasteBefore() {
      * the middle of it. Linewise is the opposite and already right:
      * first non-blank of the first pasted line. Reported by an external
      * tester, who expected "the end" for both; see docs/adr/0059. */
-    size_t target = m_vimLastYankWasLinewise
+    size_t target = linewise
                         ? vimFirstNonBlank(lineForOffset(insertAt))
                         : vimPrevCharBoundary(insertAt + static_cast<size_t>(bytes.size()));
     m_cursors[0] = target;
@@ -796,7 +829,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
                 if (m_vimVisualLinewise) {
                     start = vimLinewiseDeleteStart(start, end);
                 }
-                vimDeleteRange(start, end);
+                vimDeleteRange(start, end, m_vimVisualLinewise);
                 if (m_vimVisualLinewise) {
                     /* vimDeleteRange leaves the cursor exactly where the
                      * range began, which after the adjustment above is
@@ -829,7 +862,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
                  * were, and swallowing the line break above would drop
                  * the insertion point onto the end of the previous
                  * line. */
-                vimChangeRange(selectionMinAt(0), selectionMaxAt(0));
+                vimChangeRange(selectionMinAt(0), selectionMaxAt(0), m_vimVisualLinewise);
             } else {
                 m_vimMode = VimMode::Insert;
             }
