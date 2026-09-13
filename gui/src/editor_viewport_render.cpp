@@ -215,8 +215,9 @@ void EditorViewport::paintEvent(QPaintEvent *) {
             /* Same alpha range as the bar caret — a capped, never-fully-
              * opaque block was tried (ADR 0047) and reverted per direct
              * feedback: it read as wrong, not as a considered choice.
-             * The knocked-out glyph drawn on top already guarantees
-             * legibility regardless of the block's opacity. */
+             * Legibility of the character underneath is handled by the
+             * knockout below, which follows this alpha rather than
+             * ignoring it (docs/adr/0071). */
             QColor blockColor = m_textColor;
             blockColor.setAlpha(caretAlpha);
             for (int i = 0; i < m_renderedCaretPos.size(); ++i) {
@@ -228,13 +229,32 @@ void EditorViewport::paintEvent(QPaintEvent *) {
                 painter.fillRect(QRectF(pos.x(), pos.y() + kCaretVerticalInset, width,
                                          m_lineHeight - 2 * kCaretVerticalInset),
                                   blockColor);
-                if (!glyph.isEmpty()) {
-                    /* Knocked out in the background color, terminal-
-                     * cursor style, so the character underneath stays
-                     * legible through the block regardless of the
-                     * block's own opacity — otherwise a block cursor
-                     * filled in the text's own color would just hide
-                     * whatever it lands on. */
+                /*
+                 * Knocked out in the background colour, terminal-cursor
+                 * style — but only while the block is opaque enough to
+                 * actually be hiding the text underneath it.
+                 *
+                 * This knockout used to be unconditional and fully
+                 * opaque, which erased the character for most of the
+                 * dim half of the blink: the block had faded to nearly
+                 * nothing while the background-coloured glyph was still
+                 * painted at full strength over the real text that
+                 * drawLine had already drawn. Measured: the character's
+                 * contrast against its own cell fell to 21/255 at the
+                 * trough, against 181 at the peak.
+                 *
+                 * Deliberately a threshold rather than fading the
+                 * knockout along with the block. Contrast between the
+                 * glyph and the cell behind it works out as
+                 * |1 - knockout - block| whatever the two alphas are, so
+                 * *any* continuous knockout ramp passes through zero
+                 * somewhere — a fading knockout just moves the invisible
+                 * moment to the middle of the cycle instead of the end.
+                 * A step keeps contrast at half or better at every point,
+                 * and puts the one switch where the cosine is moving
+                 * fastest and so dwells least. See docs/adr/0071.
+                 */
+                if (!glyph.isEmpty() && caretAlpha >= 128) {
                     painter.setFont(fontForCapture(capture));
                     painter.setPen(m_backgroundColor);
                     painter.drawText(QRectF(pos.x(), pos.y(), width, m_lineHeight),

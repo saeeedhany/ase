@@ -91,6 +91,7 @@ nav:
     - adr/0068-freeing-ctrl-o-and-ctrl-i.md
     - adr/0069-find-in-line-and-list-navigation.md
     - adr/0070-the-jumplist.md
+    - adr/0071-block-cursor-knockout-follows-its-block.md
 
 theme:
   name: material
