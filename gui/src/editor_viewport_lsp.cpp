@@ -519,6 +519,9 @@ void EditorViewport::applyLspDefinition(const AseJsonValue *result, const char *
         return;
     }
 
+    /* Recorded here, not when the request was sent: a lookup that found
+     * nothing must not leave a phantom entry in the history. */
+    recordJump();
     if (QFileInfo(path) == QFileInfo(m_filePath)) {
         /* Already here: jump without asking the window to "open" a file
          * that is on screen, which would otherwise just re-activate this

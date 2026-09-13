@@ -75,6 +75,11 @@ void FindBar::openFor(Mode mode) {
         m_findEdit->setText(selection);
     }
 
+    /* One jump per search, recorded where you *started* — incremental
+     * search moves the cursor on every keystroke, and a jumplist entry
+     * per keystroke would bury the position you actually want back. */
+    m_viewport->recordJump();
+
     setAnimated(m_viewport->animationsEnabled());
     openPanel();
     m_findEdit->setFocus();

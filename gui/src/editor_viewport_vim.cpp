@@ -822,6 +822,9 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         m_vimPendingG = false;
         if (qc == QLatin1Char('g')) {
             int targetLine = (m_vimCount1 > 0) ? (m_vimCount1 - 1) : 0;
+            if (m_vimPendingOperator == '\0') {
+                recordJump();
+            }
             vimPrepareLinewiseMotion();
             vimGotoLine(targetLine);
         } else if (qc == QLatin1Char('d')) {
@@ -899,6 +902,9 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     }
     if (c == 'G') {
         int targetLine = (m_vimCount1 > 0) ? (m_vimCount1 - 1) : static_cast<int>(m_lineStarts.size()) - 1;
+        if (m_vimPendingOperator == '\0') {
+            recordJump(); /* a jump; with an operator pending it is a range, not a move */
+        }
         vimPrepareLinewiseMotion();
         vimGotoLine(targetLine);
         vimNormalizeLinewiseSelection();
@@ -909,6 +915,12 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     }
     if (c == 'h' || c == 'l' || c == 'j' || c == 'k' || c == '0' || c == '^' || c == '$' || c == 'w' ||
         c == 'b' || c == 'e' || c == '{' || c == '}') {
+        if ((c == '{' || c == '}') && m_vimPendingOperator == '\0') {
+            /* Paragraph motions cross far enough to be worth coming back
+             * from; h/j/k/l/w/b/e deliberately are not — see
+             * docs/adr/0070 on what counts as a jump. */
+            recordJump();
+        }
         /* A pure motion (no operator resolved here) glides like every
          * other navigation in this app — arrows, Home/End — rather than
          * snapping. See docs/adr/0051. */

@@ -830,6 +830,14 @@ ADRs as each lands here going forward.
       operator (`df,` takes the comma). List navigation went into one
       shared helper rather than four copies of the same check. See
       [ADR 0069](adr/0069-find-in-line-and-list-navigation.md).
+- [x] **The jumplist (`Ctrl+O` / `Ctrl+I`)**: go-to-definition made this
+      impossible to ignore — you could follow a name into a file you did
+      not choose with no way back. Same list-plus-index shape as the undo
+      stack, owned by the window because jumps cross buffers, recording
+      only movements you could not have made with `h j k l`. Entries
+      carry a path as well as a buffer address, so a closed file is
+      reopened rather than skipped. See
+      [ADR 0070](adr/0070-the-jumplist.md).
 - [x] **v0.3.0-alpha**: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the `EditorViewport` split, the render hot-path

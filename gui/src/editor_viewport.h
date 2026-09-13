@@ -171,6 +171,18 @@ public:
      * project-search hit opens a file *and* needs to land on a line,
      * which the window arranges across two objects. */
     void goToLine(int oneBasedLine);
+    /* Like goToLine, but restoring an exact column rather than the first
+     * non-blank — what returning to a remembered position needs, since
+     * where you *were* is a column, not a line. */
+    void goToLineColumn(int oneBasedLine, int oneBasedColumn);
+    /* 1-based, for snapshotting into the jumplist. */
+    int cursorLine() const { return lineForOffset(m_cursors.isEmpty() ? 0 : m_cursors[0]) + 1; }
+    int cursorColumn() const;
+    /* "I am about to move somewhere you would not have reached with
+     * h/j/k/l." The window snapshots the current position when it hears
+     * this — see docs/adr/0070. Public so the panels that cause jumps
+     * (the find bar) can say so too. */
+    void recordJump() { emit jumpRecorded(); }
     /* The one way to say anything to the user. Public so panels and, in
      * time, plugins can reach it — a plugin that cannot report "that
      * file isn't a thing" is a plugin that fails silently. */
@@ -266,6 +278,10 @@ signals:
      * window owns the buffer list, the viewport owns the cursor). Line
      * is 1-based. */
     void fileOpenAtLineRequested(const QString &path, int line);
+    /* Emitted just before a jump, so the window can remember where the
+     * cursor was. Carries nothing: the window knows which viewport is
+     * active and asks it. */
+    void jumpRecorded();
     /* Emitted from ensureCursorVisible() — every call site that already
      * calls it (every cursor move and every edit) gets this for free,
      * rather than annotating each one individually. 1-based line/column

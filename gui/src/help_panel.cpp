@@ -70,6 +70,7 @@ QVector<HelpSection> helpSections() {
          {{"Ctrl+F", "Find"},
           {"Ctrl+Shift+F", "Search every file in the project"},
           {"F12", "Go to definition (needs a language server)"},
+          {"Ctrl+O / Ctrl+I", "Jump back / forward (also Alt+Left / Alt+Right)"},
           {"Ctrl+H", "Find and replace"},
           {"Enter / Shift+Enter", "Next / previous match"},
           {"Ctrl+Enter", "Replace all (from the replace field)"}}},

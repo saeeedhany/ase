@@ -70,6 +70,21 @@ public:
     /* Opens `path` as a new buffer, or switches to it if already open —
      * reopening a file you already have open should take you to it, not
      * give you a second copy to diverge from. */
+    /* One remembered position. The path is what survives a buffer being
+     * closed and reopened; the id is what identifies an *untitled*
+     * buffer, which has no path and cannot be reopened at all. See
+     * docs/adr/0070. */
+    struct JumpEntry {
+        QString path;
+        quintptr bufferId = 0;
+        int line = 1;
+        int column = 1;
+    };
+
+    void recordJump();
+    void jumpBy(int direction);
+    bool restoreJump(const JumpEntry &entry);
+
     void showMessage(NotifyLevel level, const QString &text);
     void showLspState(LspState state, const QString &serverName);
     void updateMessageElision();
@@ -123,6 +138,12 @@ private:
     bool m_messageSticky = false;
     bool m_messageStickyArmed = false;
     QVector<EditorViewport *> m_viewports;
+    /* A list plus a cursor into it — the same shape as the undo stack,
+     * including the rule that a new entry truncates everything after the
+     * current position. m_jumpIndex == m_jumps.size() means "at the
+     * present", with nothing to go forward to. */
+    QVector<JumpEntry> m_jumps;
+    int m_jumpIndex = 0;
 };
 
 /* QStatusBar defaults to a native, light OS-styled bar — jarring
@@ -249,6 +270,7 @@ MainWindow::MainWindow() {
      * two are joined here rather than either one reaching into the
      * other. See docs/adr/0066. */
     connect(m_outputPanel, &OutputPanel::hitActivated, this, [this](const QString &path, int line) {
+        recordJump();
         openBuffer(path);
         EditorViewport *viewport = activeViewport();
         if (viewport != nullptr) {
@@ -308,6 +330,20 @@ MainWindow::MainWindow() {
     connect(close, &QShortcut::activated, this, [this]() { closeBuffer(m_stack->currentIndex()); });
     auto *newFile = new QShortcut(QKeySequence(QStringLiteral("Ctrl+N")), this);
     connect(newFile, &QShortcut::activated, this, [this]() { newBuffer(); });
+
+    /* Vim's own jumplist keys, free since docs/adr/0068 moved Open and
+     * About off them, plus the Alt+arrow pair every browser and IDE
+     * uses — the same "two audiences" split as gd/F12. Window
+     * shortcuts, not viewport keys: the list spans buffers, so it
+     * belongs to the window that owns them. */
+    auto *jumpBack = new QShortcut(QKeySequence(QStringLiteral("Ctrl+O")), this);
+    connect(jumpBack, &QShortcut::activated, this, [this]() { jumpBy(-1); });
+    auto *jumpBackAlt = new QShortcut(QKeySequence(QStringLiteral("Alt+Left")), this);
+    connect(jumpBackAlt, &QShortcut::activated, this, [this]() { jumpBy(-1); });
+    auto *jumpForward = new QShortcut(QKeySequence(QStringLiteral("Ctrl+I")), this);
+    connect(jumpForward, &QShortcut::activated, this, [this]() { jumpBy(1); });
+    auto *jumpForwardAlt = new QShortcut(QKeySequence(QStringLiteral("Alt+Right")), this);
+    connect(jumpForwardAlt, &QShortcut::activated, this, [this]() { jumpBy(1); });
 }
 
 EditorViewport *MainWindow::activeViewport() const {
@@ -352,8 +388,14 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
                 showLspState(viewport->lspState(), viewport->lspServerName());
                 refreshBufferBar(); /* the name may have changed via Save-As */
             });
-    connect(viewport, &EditorViewport::fileOpenRequested, this,
-            [this](const QString &path) { openBuffer(path); });
+    connect(viewport, &EditorViewport::jumpRecorded, this, [this]() { recordJump(); });
+    connect(viewport, &EditorViewport::fileOpenRequested, this, [this](const QString &path) {
+        /* Opening a file from the browser or from Ctrl+P is a jump: it
+         * is the most common way to end up somewhere you want Ctrl+O to
+         * bring you back from. */
+        recordJump();
+        openBuffer(path);
+    });
     /* Go-to-definition landing in another file: the same two-object
      * split as a search hit (docs/adr/0066), reached from the viewport
      * instead of the output panel. */
@@ -396,6 +438,117 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
  * thing you are being told about happened several seconds ago, which is
  * worse than missing it. See docs/adr/0062.
  */
+/* Vim's is 100; no reason to disagree with a number that has been lived
+ * with for thirty years. */
+constexpr int kMaxJumps = 100;
+
+/*
+ * Snapshots where the cursor is, as the position to come *back* to.
+ *
+ * Called before a jump happens, never after — the whole list is "places
+ * I was", not "places I went".
+ */
+void MainWindow::recordJump() {
+    EditorViewport *viewport = activeViewport();
+    if (viewport == nullptr) {
+        return;
+    }
+
+    JumpEntry entry;
+    entry.path = viewport->filePath();
+    entry.bufferId = reinterpret_cast<quintptr>(viewport);
+    entry.line = viewport->cursorLine();
+    entry.column = viewport->cursorColumn();
+
+    /* Jumping away from a line you are already recorded on adds nothing
+     * — without this, `gd` twice on the same symbol puts two identical
+     * entries in the history and Ctrl+O appears to do nothing the first
+     * time. */
+    if (!m_jumps.isEmpty() && m_jumpIndex > 0) {
+        const JumpEntry &previous = m_jumps[m_jumpIndex - 1];
+        if (previous.bufferId == entry.bufferId && previous.line == entry.line) {
+            return;
+        }
+    }
+
+    /* A new jump abandons whatever you could have gone forward to,
+     * exactly as a new edit abandons the redo stack. */
+    m_jumps.resize(m_jumpIndex);
+    m_jumps.push_back(entry);
+    if (m_jumps.size() > kMaxJumps) {
+        m_jumps.removeFirst();
+    }
+    m_jumpIndex = m_jumps.size();
+}
+
+/*
+ * Ctrl+O / Ctrl+I. `direction` is -1 for back, +1 for forward.
+ *
+ * Going back from the present first records the present, so that
+ * Ctrl+I has somewhere to return to — vim does the same, and without it
+ * back is a one-way door.
+ */
+void MainWindow::jumpBy(int direction) {
+    EditorViewport *viewport = activeViewport();
+    if (viewport == nullptr) {
+        return;
+    }
+
+    if (direction < 0) {
+        if (m_jumpIndex <= 0) {
+            viewport->notify(NotifyLevel::Warning, QStringLiteral("no earlier position"));
+            return;
+        }
+        if (m_jumpIndex == m_jumps.size()) {
+            JumpEntry here;
+            here.path = viewport->filePath();
+            here.bufferId = reinterpret_cast<quintptr>(viewport);
+            here.line = viewport->cursorLine();
+            here.column = viewport->cursorColumn();
+            m_jumps.push_back(here);
+        }
+        m_jumpIndex--;
+    } else {
+        if (m_jumpIndex + 1 >= m_jumps.size()) {
+            viewport->notify(NotifyLevel::Warning, QStringLiteral("no later position"));
+            return;
+        }
+        m_jumpIndex++;
+    }
+
+    if (!restoreJump(m_jumps[m_jumpIndex])) {
+        /* The buffer is gone and cannot be reopened (an untitled one).
+         * Drop the entry rather than leaving a step that does nothing
+         * every time you pass over it. */
+        m_jumps.remove(m_jumpIndex);
+        m_jumpIndex = std::clamp(m_jumpIndex, 0, static_cast<int>(m_jumps.size()));
+        viewport->notify(NotifyLevel::Warning, QStringLiteral("that buffer is gone"));
+    }
+}
+
+bool MainWindow::restoreJump(const JumpEntry &entry) {
+    for (int i = 0; i < m_viewports.size(); ++i) {
+        if (reinterpret_cast<quintptr>(m_viewports[i]) == entry.bufferId) {
+            setActiveIndex(i);
+            m_viewports[i]->goToLineColumn(entry.line, entry.column);
+            m_viewports[i]->setFocus();
+            return true;
+        }
+    }
+    if (entry.path.isEmpty()) {
+        return false; /* an untitled buffer, closed: nothing to reopen */
+    }
+    /* Closed since, but it has a path — reopen it, as vim does. */
+    openBuffer(entry.path);
+    EditorViewport *opened = activeViewport();
+    if (opened == nullptr) {
+        return false;
+    }
+    opened->goToLineColumn(entry.line, entry.column);
+    opened->setFocus();
+    return true;
+}
+
 void MainWindow::showMessage(NotifyLevel level, const QString &text) {
     EditorViewport *viewport = activeViewport();
     if (viewport == nullptr) {

@@ -87,6 +87,7 @@ void EditorViewport::runCommand(const QString &command) {
         bool ok = false;
         int lineNumber = trimmed.toInt(&ok);
         if (ok && lineNumber > 0) {
+            recordJump();
             goToLine(lineNumber);
         } else if (!trimmed.isEmpty()) {
             if (!runPluginCommand(trimmed)) {
@@ -140,6 +141,24 @@ bool EditorViewport::runPluginCommand(const QString &name) {
     ensureCursorVisible();
     update();
     return true;
+}
+
+int EditorViewport::cursorColumn() const {
+    if (m_cursors.isEmpty()) {
+        return 1;
+    }
+    return columnForOffset(m_cursors[0], lineForOffset(m_cursors[0])) + 1;
+}
+
+void EditorViewport::goToLineColumn(int oneBasedLine, int oneBasedColumn) {
+    collapseToOneCursor();
+    size_t target = offsetForLineColumn(oneBasedLine - 1, oneBasedColumn - 1);
+    m_cursors[0] = target;
+    m_selectionAnchors[0] = target;
+    resetVimPendingState();
+    ensureCursorVisible();
+    resetCaretBlink();
+    update();
 }
 
 void EditorViewport::goToLine(int oneBasedLine) {
