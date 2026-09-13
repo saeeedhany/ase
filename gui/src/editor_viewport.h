@@ -379,6 +379,14 @@ private:
      * repeating the motion across a run of blank lines advances one at
      * a time as real vim does. Falls off to the end/start of the buffer
      * when there is no boundary left. See docs/adr/0059. */
+    /* A linewise range that runs to the end of the buffer contains no
+     * trailing '\n' to be removed along with it — there isn't one. Takes
+     * the *preceding* newline instead, which is what deletes the line
+     * rather than merely emptying it, and is what real vim does. Returns
+     * `start` unchanged for any range that doesn't end at the buffer's
+     * end, and for the first line (deleting everything is legitimate).
+     * See docs/adr/0060. */
+    size_t vimLinewiseDeleteStart(size_t start, size_t end) const;
     size_t vimParagraphForward(size_t pos) const;
     size_t vimParagraphBackward(size_t pos) const;
     bool vimLineIsEmpty(int line) const;

@@ -67,3 +67,4 @@ what changed.
 | [0057](0057-always-on-tab-strip-and-welcome-rework.md) | An always-present tab strip, and a welcome screen worth reading |
 | [0058](0058-session-scoped-greeting-and-panel-carets.md) | The greeting belongs to the session; panel carets join the app |
 | [0059](0059-derived-dirty-state-paste-cursor-and-more-vim-motions.md) | Dirtiness derived from undo state; vim paste cursor; `{` `}` `Ctrl+U` `Ctrl+D` |
+| [0060](0060-linewise-operations-at-the-end-of-the-buffer.md) | Linewise operations at the end of the buffer (`dd` on the last line) |

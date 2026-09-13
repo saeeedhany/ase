@@ -739,6 +739,15 @@ ADRs as each lands here going forward.
       taking over `Ctrl+D` in Normal/Visual only, the single deliberate
       exception to ADR 0046's mode-independent Ctrl chain. See
       [ADR 0059](adr/0059-derived-dirty-state-paste-cursor-and-more-vim-motions.md).
+- [x] **Linewise operations at the end of the buffer**: `dd` on the last
+      line did nothing at all — the range was built as "through the start
+      of the next line", and at the end of the buffer there is no next
+      line, so it came out zero-length. Same asymmetry emptied rather
+      than removed a non-empty last line, made `yy` there yank a
+      fragment, and left a blank line behind on a linewise Visual delete.
+      Linewise ranges that end at the buffer's end now take the
+      *preceding* newline, in one shared helper. See
+      [ADR 0060](adr/0060-linewise-operations-at-the-end-of-the-buffer.md).
 - [x] **v0.3.0-alpha**: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the `EditorViewport` split, the render hot-path

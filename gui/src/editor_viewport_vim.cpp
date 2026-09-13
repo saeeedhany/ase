@@ -441,8 +441,21 @@ void EditorViewport::vimDeleteRange(size_t start, size_t end) {
     update();
 }
 
+size_t EditorViewport::vimLinewiseDeleteStart(size_t start, size_t end) const {
+    if (end < static_cast<size_t>(m_cache.size()) || start == 0) {
+        return start;
+    }
+    return (m_cache[static_cast<int>(start) - 1] == '\n') ? start - 1 : start;
+}
+
 void EditorViewport::vimYankRange(size_t start, size_t end, bool linewise) {
     QByteArray text = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
+    /* Same end-of-buffer asymmetry as the delete above: a linewise yank
+     * of the last line has no newline to take with it, and a register
+     * of whole lines that doesn't end in one pastes as a fragment. */
+    if (linewise && !text.endsWith('\n')) {
+        text.append('\n');
+    }
     QGuiApplication::clipboard()->setText(QString::fromUtf8(text));
     m_vimLastYankWasLinewise = linewise;
     m_cursors[0] = start;
@@ -461,10 +474,16 @@ void EditorViewport::vimDeleteLines(int startLine, int count) {
     int endLine = std::clamp(startLine + count - 1, startLine, static_cast<int>(m_lineStarts.size()) - 1);
     size_t start = static_cast<size_t>(m_lineStarts[startLine]);
     /* Consume through the start of the line *after* endLine so the
-     * trailing newline goes with it too (leaves no blank line behind);
-     * on the buffer's last line, there's no following '\n' to eat. */
-    size_t end = (endLine + 1 < m_lineStarts.size()) ? static_cast<size_t>(m_lineStarts[endLine + 1])
-                                                      : static_cast<size_t>(m_cache.size());
+     * trailing newline goes with it too, leaving no blank line behind. */
+    bool throughLastLine = (endLine + 1 >= m_lineStarts.size());
+    size_t end = throughLastLine ? static_cast<size_t>(m_cache.size())
+                                 : static_cast<size_t>(m_lineStarts[endLine + 1]);
+    /* Without this, `dd` on the last line of a file that ends in a
+     * newline deleted a zero-length range and did nothing at all — the
+     * last line is empty, so its start already *is* the end of the
+     * buffer — and on a non-empty last line it left a stray blank line
+     * behind. Reported from real use. */
+    start = vimLinewiseDeleteStart(start, end);
     QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
     ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     if (ase_buffer_delete(m_buffer, start, end - start)) {
@@ -487,6 +506,13 @@ void EditorViewport::vimYankLines(int startLine, int count) {
     size_t end = (endLine + 1 < m_lineStarts.size()) ? static_cast<size_t>(m_lineStarts[endLine + 1])
                                                       : static_cast<size_t>(m_cache.size());
     QByteArray text = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
+    /* A linewise yank is always whole lines, newline included — the
+     * last line of the buffer has none stored, and without this `yy`
+     * there yanks an empty string (nothing at all, on an empty last
+     * line) and the following `p` pastes nothing. */
+    if (!text.endsWith('\n')) {
+        text.append('\n');
+    }
     QGuiApplication::clipboard()->setText(QString::fromUtf8(text));
     m_vimLastYankWasLinewise = true;
     size_t target = vimFirstNonBlank(startLine);
@@ -507,8 +533,21 @@ void EditorViewport::vimPasteAfter() {
         int line = lineForOffset(m_cursors[0]);
         insertAt = (line + 1 < m_lineStarts.size()) ? static_cast<size_t>(m_lineStarts[line + 1])
                                                      : static_cast<size_t>(m_cache.size());
-        if (insertAt == static_cast<size_t>(m_cache.size()) && !bytes.endsWith('\n')) {
-            bytes.append('\n');
+        if (insertAt == static_cast<size_t>(m_cache.size())) {
+            if (!bytes.endsWith('\n')) {
+                bytes.append('\n');
+            }
+            /* Pasting below the last line means appending, and a buffer
+             * that doesn't already end in a newline has no line break to
+             * append *after* — without one the pasted line runs onto the
+             * end of the last one ("a\nb" + `p` gave "a\nbb"). Trade the
+             * register's trailing newline for a leading one, so the
+             * result gains exactly one line rather than a joined line
+             * plus an empty one. */
+            if (!m_cache.isEmpty() && m_cache.back() != '\n') {
+                bytes.chop(1);
+                bytes.prepend('\n');
+            }
         }
     } else {
         /* At end-of-line, this editor's own cursor convention already
@@ -748,7 +787,27 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         case 'x':
         case 'd':
             if (hasSelectionAt(0)) {
-                vimDeleteRange(selectionMinAt(0), selectionMaxAt(0));
+                size_t start = selectionMinAt(0);
+                size_t end = selectionMaxAt(0);
+                /* A linewise Visual selection ending at the buffer's end
+                 * holds no trailing newline (there is none), so deleting
+                 * it emptied the last line instead of removing it — the
+                 * same asymmetry `dd` hit. */
+                if (m_vimVisualLinewise) {
+                    start = vimLinewiseDeleteStart(start, end);
+                }
+                vimDeleteRange(start, end);
+                if (m_vimVisualLinewise) {
+                    /* vimDeleteRange leaves the cursor exactly where the
+                     * range began, which after the adjustment above is
+                     * the newline *ending the previous line* — i.e.
+                     * visually past its last character. A linewise
+                     * delete lands on the first non-blank of the line
+                     * you end up on, as everywhere else in Vim mode. */
+                    size_t target = vimFirstNonBlank(lineForOffset(m_cursors[0]));
+                    m_cursors[0] = target;
+                    m_selectionAnchors[0] = target;
+                }
             }
             m_vimMode = VimMode::Normal;
             m_vimVisualLinewise = false;
@@ -765,6 +824,11 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
             break;
         case 'c':
             if (hasSelectionAt(0)) {
+                /* Deliberately *not* extended over the preceding newline
+                 * the way `d` is: `c` leaves you typing where the lines
+                 * were, and swallowing the line break above would drop
+                 * the insertion point onto the end of the previous
+                 * line. */
                 vimChangeRange(selectionMinAt(0), selectionMaxAt(0));
             } else {
                 m_vimMode = VimMode::Insert;
