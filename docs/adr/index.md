@@ -71,3 +71,4 @@ what changed.
 | [0061](0061-the-unnamed-register.md) | The unnamed register — `dd`+`p` works, and `x` stops eating your clipboard |
 | [0062](0062-the-status-bar-message-line.md) | The status bar message line — the editor can finally say things |
 | [0063](0063-language-server-state-in-the-status-bar.md) | Language-server state in the status bar |
+| [0064](0064-gui-in-ci-and-a-test-suite-that-runs-in-release.md) | The GUI in CI, and a test suite that actually runs in Release |

@@ -1,4 +1,4 @@
-#include <assert.h>
+#include "../../../core/tests/test_assert.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +16,7 @@ static void collect(void *user_data, AseHighlightSpan span) {
     if (list->count == list->capacity) {
         list->capacity = list->capacity == 0 ? 16 : list->capacity * 2;
         list->spans = (AseHighlightSpan *)realloc(list->spans, list->capacity * sizeof(AseHighlightSpan));
-        assert(list->spans != NULL);
+        CHECK(list->spans != NULL);
     }
     list->spans[list->count++] = span;
 }
@@ -40,7 +40,7 @@ static int has_span(const SpanList *list, const char *text, AseHighlightCapture 
 
 int main(void) {
     AseSyntax *syntax = ase_syntax_create_c();
-    assert(syntax != NULL);
+    CHECK(syntax != NULL);
 
     const char *source =
         "// greeting\n"
@@ -53,15 +53,15 @@ int main(void) {
     SpanList list = {0};
     ase_syntax_highlight(syntax, source, strlen(source), collect, &list);
 
-    assert(list.count > 0);
-    assert(has_span(&list, source, ASE_HL_COMMENT, "// greeting"));
-    assert(has_span(&list, source, ASE_HL_KEYWORD, "const"));
-    assert(has_span(&list, source, ASE_HL_KEYWORD, "return"));
-    assert(has_span(&list, source, ASE_HL_TYPE, "int"));
-    assert(has_span(&list, source, ASE_HL_TYPE, "char"));
-    assert(has_span(&list, source, ASE_HL_STRING, "\"hello\""));
-    assert(has_span(&list, source, ASE_HL_NUMBER, "42"));
-    assert(has_span(&list, source, ASE_HL_NUMBER, "0"));
+    CHECK(list.count > 0);
+    CHECK(has_span(&list, source, ASE_HL_COMMENT, "// greeting"));
+    CHECK(has_span(&list, source, ASE_HL_KEYWORD, "const"));
+    CHECK(has_span(&list, source, ASE_HL_KEYWORD, "return"));
+    CHECK(has_span(&list, source, ASE_HL_TYPE, "int"));
+    CHECK(has_span(&list, source, ASE_HL_TYPE, "char"));
+    CHECK(has_span(&list, source, ASE_HL_STRING, "\"hello\""));
+    CHECK(has_span(&list, source, ASE_HL_NUMBER, "42"));
+    CHECK(has_span(&list, source, ASE_HL_NUMBER, "0"));
 
     free(list.spans);
     ase_syntax_destroy(syntax);

@@ -33,4 +33,60 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
-  # TODO: add a gui job once Phase 2 lands (needs a Qt6 install step per OS).
+  # The GUI, built against the OLDEST Qt this project ships against.
+  #
+  # ubuntu-22.04 is not an arbitrary runner choice: it is the AppImage's
+  # own build base (packaging/README.md, docs/adr/0045), and it ships
+  # Qt 6.2 — the floor gui/CMakeLists.txt asks for. debian:bookworm's
+  # 6.4 sits between that and whatever a dev machine has.
+  #
+  # This job exists because of a specific failure: a Qt 6.6-only call
+  # (QList::assign) reached main and stayed there through several
+  # rounds of work with BOTH packages unbuildable, because every build
+  # in between was native on a rolling-release machine with Qt 6.10 and
+  # nothing ever compiled the GUI anywhere else. It was found by a human
+  # cutting a release. See the addendum to docs/adr/0045.
+  gui-qt-floor:
+    name: gui (Qt 6.2 floor, ubuntu-22.04)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt6
+        run: |
+          sudo apt-get update -qq
+          # libgl-dev matters even though nothing here uses OpenGL
+          # directly: some of Qt6's own CMake package-config files
+          # transitively require finding it, and without it
+          # find_package(Qt6 COMPONENTS Widgets) fails outright.
+          # build-essential is already on the runner image; naming it
+          # anyway keeps this job runnable in a bare ubuntu:22.04
+          # container, which is how it gets tested before it is trusted.
+          sudo apt-get install -y -qq --no-install-recommends \
+            build-essential cmake qt6-base-dev libgl-dev
+      - name: Configure
+        run: cmake -B build -DASE_BUILD_GUI=ON -DASE_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      # Linking proves the API exists; it does not prove the app starts.
+      # A missing plugin, a bad resource path or a constructor that
+      # throws all link perfectly and then die on launch — so actually
+      # launch it, headless, and require that it is still alive when the
+      # timeout fires.
+      - name: Smoke test (headless launch)
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          printf 'int main(void) { return 0; }\n' > smoke.c
+          set +e
+          timeout --signal=TERM 15 ./build/gui/ase_gui smoke.c
+          status=$?
+          set -e
+          # 124: timeout had to kill it, i.e. it was still running.
+          # 143: it took the SIGTERM and exited cleanly.
+          if [ "$status" -ne 124 ] && [ "$status" -ne 143 ]; then
+            echo "ase_gui exited on its own with status $status — it should still have been running"
+            exit 1
+          fi
+          echo "ase_gui stayed up"

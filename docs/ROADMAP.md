@@ -778,6 +778,18 @@ ADRs as each lands here going forward.
       diagnostic colour when one was configured but failed or died
       (noticed within a second, on the existing config-reload timer).
       See [ADR 0063](adr/0063-language-server-state-in-the-status-bar.md).
+- [x] **The GUI in CI, and a test suite that runs in Release**: CI had
+      built `-DASE_BUILD_GUI=OFF` on every job since Phase 1, which is
+      why a Qt 6.6-only call could sit on `main` with both packages
+      unbuildable until a human cut a release. There is now a job
+      building the GUI on `ubuntu-22.04` (Qt 6.2 — the AppImage's own
+      base) and launching it headless. It immediately found something
+      worse: every test used `assert()`, which `NDEBUG` compiles out of
+      Release builds, so **263 checks evaluated to nothing** and the 122
+      that wrapped calls with side effects took the calls with them —
+      three suites segfaulted, the rest passed while testing nothing.
+      All of them are now an always-evaluated `CHECK()`. See
+      [ADR 0064](adr/0064-gui-in-ci-and-a-test-suite-that-runs-in-release.md).
 - [x] **v0.3.0-alpha**: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the `EditorViewport` split, the render hot-path

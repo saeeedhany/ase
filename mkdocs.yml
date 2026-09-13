@@ -84,6 +84,7 @@ nav:
     - adr/0061-the-unnamed-register.md
     - adr/0062-the-status-bar-message-line.md
     - adr/0063-language-server-state-in-the-status-bar.md
+    - adr/0064-gui-in-ci-and-a-test-suite-that-runs-in-release.md
 
 theme:
   name: material

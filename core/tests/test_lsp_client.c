@@ -1,4 +1,4 @@
-#include <assert.h>
+#include "test_assert.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,7 +62,7 @@ static void test_missing_server_returns_null(void) {
      * crash. */
     const char *command[] = {"/this/path/does/not/exist/ase_fake_lsp", NULL};
     AseLspClient *client = ase_lsp_client_start(command, NULL);
-    assert(client == NULL);
+    CHECK(client == NULL);
 }
 
 static void test_full_lifecycle(void) {
@@ -71,26 +71,26 @@ static void test_full_lifecycle(void) {
 
 #if defined(_WIN32)
     /* Documented v1 limitation — see docs/adr/0011, decision 6. */
-    assert(client == NULL);
+    CHECK(client == NULL);
     (void)poll_until;
     (void)on_diagnostics;
     (void)on_result;
 #else
-    assert(client != NULL);
-    assert(ase_lsp_client_is_alive(client));
+    CHECK(client != NULL);
+    CHECK(ase_lsp_client_is_alive(client));
 
     DiagnosticsCapture diag_capture;
     memset(&diag_capture, 0, sizeof(diag_capture));
     ase_lsp_client_set_diagnostics_callback(client, on_diagnostics, &diag_capture);
 
-    assert(ase_lsp_client_did_open(client, "file:///fake.txt", "plaintext", "hello world"));
+    CHECK(ase_lsp_client_did_open(client, "file:///fake.txt", "plaintext", "hello world"));
     poll_until(client, &diag_capture.called, 1000000);
-    assert(diag_capture.called);
-    assert(strcmp(diag_capture.uri, "file:///fake.txt") == 0);
-    assert(diag_capture.count == 1);
-    assert(strcmp(diag_capture.first_message, "fake diagnostic") == 0);
-    assert(diag_capture.first.severity == 1);
-    assert(diag_capture.first.end.character == 5);
+    CHECK(diag_capture.called);
+    CHECK(strcmp(diag_capture.uri, "file:///fake.txt") == 0);
+    CHECK(diag_capture.count == 1);
+    CHECK(strcmp(diag_capture.first_message, "fake diagnostic") == 0);
+    CHECK(diag_capture.first.severity == 1);
+    CHECK(diag_capture.first.end.character == 5);
 
     /* didChange must actually reach the server and refresh diagnostics
      * — the documented gap this phase exists to close ("results go
@@ -100,39 +100,39 @@ static void test_full_lifecycle(void) {
      * really sent and really dispatched, not just that some stale
      * callback fired again. */
     diag_capture.called = false;
-    assert(ase_lsp_client_did_change(client, "file:///fake.txt", 2, "hello world, fixed"));
+    CHECK(ase_lsp_client_did_change(client, "file:///fake.txt", 2, "hello world, fixed"));
     poll_until(client, &diag_capture.called, 1000000);
-    assert(diag_capture.called);
-    assert(diag_capture.count == 0);
+    CHECK(diag_capture.called);
+    CHECK(diag_capture.count == 0);
 
     ResultCapture completion_capture;
     memset(&completion_capture, 0, sizeof(completion_capture));
     AseLspPosition pos;
     pos.line = 0;
     pos.character = 0;
-    assert(ase_lsp_client_request_completion(client, "file:///fake.txt", pos, on_result, &completion_capture));
+    CHECK(ase_lsp_client_request_completion(client, "file:///fake.txt", pos, on_result, &completion_capture));
     poll_until(client, &completion_capture.called, 1000000);
-    assert(completion_capture.called);
-    assert(!completion_capture.had_error);
-    assert(strstr(completion_capture.result_text, "fake_completion_item") != NULL);
+    CHECK(completion_capture.called);
+    CHECK(!completion_capture.had_error);
+    CHECK(strstr(completion_capture.result_text, "fake_completion_item") != NULL);
 
     ResultCapture definition_capture;
     memset(&definition_capture, 0, sizeof(definition_capture));
-    assert(ase_lsp_client_request_definition(client, "file:///fake.txt", pos, on_result, &definition_capture));
+    CHECK(ase_lsp_client_request_definition(client, "file:///fake.txt", pos, on_result, &definition_capture));
     poll_until(client, &definition_capture.called, 1000000);
-    assert(definition_capture.called);
-    assert(!definition_capture.had_error);
-    assert(strstr(definition_capture.result_text, "file:///fake.txt") != NULL);
+    CHECK(definition_capture.called);
+    CHECK(!definition_capture.had_error);
+    CHECK(strstr(definition_capture.result_text, "file:///fake.txt") != NULL);
 
     ResultCapture hover_capture;
     memset(&hover_capture, 0, sizeof(hover_capture));
-    assert(ase_lsp_client_request_hover(client, "file:///fake.txt", pos, on_result, &hover_capture));
+    CHECK(ase_lsp_client_request_hover(client, "file:///fake.txt", pos, on_result, &hover_capture));
     poll_until(client, &hover_capture.called, 1000000);
-    assert(hover_capture.called);
-    assert(!hover_capture.had_error);
-    assert(strstr(hover_capture.result_text, "fake hover text") != NULL);
+    CHECK(hover_capture.called);
+    CHECK(!hover_capture.had_error);
+    CHECK(strstr(hover_capture.result_text, "fake hover text") != NULL);
 
-    assert(ase_lsp_client_is_alive(client));
+    CHECK(ase_lsp_client_is_alive(client));
     ase_lsp_client_stop(client);
 #endif
 }

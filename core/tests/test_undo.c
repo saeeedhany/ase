@@ -1,4 +1,4 @@
-#include <assert.h>
+#include "test_assert.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,15 +8,15 @@
 
 static void expect_content(AseBuffer *buf, const char *expected) {
     size_t len = strlen(expected);
-    assert(ase_buffer_length(buf) == len);
+    CHECK(ase_buffer_length(buf) == len);
 
     char *actual = (char *)malloc(len + 1);
-    assert(actual != NULL);
+    CHECK(actual != NULL);
     size_t copied = ase_buffer_get_text(buf, 0, len, actual);
     actual[len] = '\0';
 
-    assert(copied == len);
-    assert(memcmp(actual, expected, len) == 0);
+    CHECK(copied == len);
+    CHECK(memcmp(actual, expected, len) == 0);
     free(actual);
 }
 
@@ -51,18 +51,18 @@ static void test_single_insert_undo_redo(void) {
     do_insert(buf, undo, &cursor, "hi", 2);
     ase_undo_end_group(undo, &cursor, 1);
     expect_content(buf, "hi");
-    assert(cursor == 2);
+    CHECK(cursor == 2);
 
     size_t *cursors = NULL;
     size_t count = 0;
-    assert(ase_undo_undo(undo, buf, &cursors, &count));
+    CHECK(ase_undo_undo(undo, buf, &cursors, &count));
     expect_content(buf, "");
-    assert(count == 1 && cursors[0] == 0);
+    CHECK(count == 1 && cursors[0] == 0);
     free(cursors);
 
-    assert(ase_undo_redo(undo, buf, &cursors, &count));
+    CHECK(ase_undo_redo(undo, buf, &cursors, &count));
     expect_content(buf, "hi");
-    assert(count == 1 && cursors[0] == 2);
+    CHECK(count == 1 && cursors[0] == 2);
     free(cursors);
 
     ase_undo_destroy(undo);
@@ -82,18 +82,18 @@ static void test_single_delete_undo_redo(void) {
     do_backspace(buf, undo, &cursor);
     ase_undo_end_group(undo, &cursor, 1);
     expect_content(buf, "ab");
-    assert(cursor == 2);
+    CHECK(cursor == 2);
 
     size_t *cursors = NULL;
     size_t count = 0;
-    assert(ase_undo_undo(undo, buf, &cursors, &count));
+    CHECK(ase_undo_undo(undo, buf, &cursors, &count));
     expect_content(buf, "abc");
-    assert(count == 1 && cursors[0] == 3);
+    CHECK(count == 1 && cursors[0] == 3);
     free(cursors);
 
-    assert(ase_undo_redo(undo, buf, &cursors, &count));
+    CHECK(ase_undo_redo(undo, buf, &cursors, &count));
     expect_content(buf, "ab");
-    assert(count == 1 && cursors[0] == 2);
+    CHECK(count == 1 && cursors[0] == 2);
     free(cursors);
 
     ase_undo_destroy(undo);
@@ -106,7 +106,7 @@ static void test_single_delete_undo_redo(void) {
 static void test_grouped_multi_cursor_undo(void) {
     AseBuffer *buf = ase_buffer_create();
     AseUndoStack *undo = ase_undo_create();
-    assert(ase_buffer_insert(buf, 0, "aabb", 4));
+    CHECK(ase_buffer_insert(buf, 0, "aabb", 4));
 
     size_t cursors_before[2] = {2, 4}; /* between the a's-and-b's, and at the end */
     ase_undo_begin_group(undo, cursors_before, 2);
@@ -122,14 +122,14 @@ static void test_grouped_multi_cursor_undo(void) {
 
     size_t *cursors = NULL;
     size_t count = 0;
-    assert(ase_undo_undo(undo, buf, &cursors, &count));
+    CHECK(ase_undo_undo(undo, buf, &cursors, &count));
     expect_content(buf, "aabb");
-    assert(count == 2 && cursors[0] == 2 && cursors[1] == 4);
+    CHECK(count == 2 && cursors[0] == 2 && cursors[1] == 4);
     free(cursors);
 
-    assert(ase_undo_redo(undo, buf, &cursors, &count));
+    CHECK(ase_undo_redo(undo, buf, &cursors, &count));
     expect_content(buf, "aaXbbY");
-    assert(count == 2);
+    CHECK(count == 2);
     free(cursors);
 
     ase_undo_destroy(undo);
@@ -147,8 +147,8 @@ static void test_redo_cleared_by_new_edit(void) {
 
     size_t *cursors = NULL;
     size_t count = 0;
-    assert(ase_undo_undo(undo, buf, &cursors, &count));
-    assert(count == 1);
+    CHECK(ase_undo_undo(undo, buf, &cursors, &count));
+    CHECK(count == 1);
     cursor = cursors[0];
     free(cursors);
     expect_content(buf, "");
@@ -159,7 +159,7 @@ static void test_redo_cleared_by_new_edit(void) {
     ase_undo_end_group(undo, &cursor, 1);
     expect_content(buf, "b");
 
-    assert(!ase_undo_redo(undo, buf, &cursors, &count));
+    CHECK(!ase_undo_redo(undo, buf, &cursors, &count));
 
     ase_undo_destroy(undo);
     ase_buffer_destroy(buf);
@@ -177,7 +177,7 @@ static void test_noop_group_is_not_pushed(void) {
 
     size_t *cursors = NULL;
     size_t count = 0;
-    assert(!ase_undo_undo(undo, buf, &cursors, &count));
+    CHECK(!ase_undo_undo(undo, buf, &cursors, &count));
 
     ase_undo_destroy(undo);
     ase_buffer_destroy(buf);
@@ -194,11 +194,11 @@ static void test_undo_past_beginning_is_noop(void) {
 
     size_t *cursors = NULL;
     size_t count = 0;
-    assert(ase_undo_undo(undo, buf, &cursors, &count));
+    CHECK(ase_undo_undo(undo, buf, &cursors, &count));
     free(cursors);
 
     /* Nothing left to undo -- must not crash, must report false. */
-    assert(!ase_undo_undo(undo, buf, &cursors, &count));
+    CHECK(!ase_undo_undo(undo, buf, &cursors, &count));
     expect_content(buf, "");
 
     ase_undo_destroy(undo);
@@ -221,18 +221,18 @@ static void test_state_id_returns_after_undo(void) {
     ase_undo_begin_group(undo, &cursor, 1);
     do_insert(buf, undo, &cursor, " ", 1);
     ase_undo_end_group(undo, &cursor, 1);
-    assert(ase_undo_state_id(undo) != saved);
+    CHECK(ase_undo_state_id(undo) != saved);
 
     size_t *cursors = NULL;
     size_t count = 0;
-    assert(ase_undo_undo(undo, buf, &cursors, &count));
+    CHECK(ase_undo_undo(undo, buf, &cursors, &count));
     free(cursors);
     /* Back to the saved content -- so back to the saved id. */
-    assert(ase_undo_state_id(undo) == saved);
+    CHECK(ase_undo_state_id(undo) == saved);
 
-    assert(ase_undo_redo(undo, buf, &cursors, &count));
+    CHECK(ase_undo_redo(undo, buf, &cursors, &count));
     free(cursors);
-    assert(ase_undo_state_id(undo) != saved);
+    CHECK(ase_undo_state_id(undo) != saved);
 
     ase_undo_destroy(undo);
     ase_buffer_destroy(buf);
@@ -254,7 +254,7 @@ static void test_state_id_is_not_a_group_count(void) {
 
     size_t *cursors = NULL;
     size_t count = 0;
-    assert(ase_undo_undo(undo, buf, &cursors, &count));
+    CHECK(ase_undo_undo(undo, buf, &cursors, &count));
     free(cursors);
 
     cursor = 0;
@@ -263,7 +263,7 @@ static void test_state_id_is_not_a_group_count(void) {
     ase_undo_end_group(undo, &cursor, 1);
 
     expect_content(buf, "b");
-    assert(ase_undo_state_id(undo) != after_first);
+    CHECK(ase_undo_state_id(undo) != after_first);
 
     ase_undo_destroy(undo);
     ase_buffer_destroy(buf);
@@ -277,7 +277,7 @@ static void test_state_id_unchanged_by_noop_group(void) {
     size_t before = ase_undo_state_id(undo);
     ase_undo_begin_group(undo, &cursor, 1);
     ase_undo_end_group(undo, &cursor, 1);
-    assert(ase_undo_state_id(undo) == before);
+    CHECK(ase_undo_state_id(undo) == before);
 
     ase_undo_destroy(undo);
 }

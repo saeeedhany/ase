@@ -1,4 +1,4 @@
-#include <assert.h>
+#include "test_assert.h"
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -27,16 +27,16 @@ static bool exited(void *arg) {
 static void test_echo_output(void) {
     const char *command[] = {"/bin/echo", "hello from ase_process", NULL};
     AseProcess *process = ase_process_spawn(command, NULL);
-    assert(process != NULL);
+    CHECK(process != NULL);
 
-    assert(poll_until(exited, process, 2000));
-    assert(ase_process_exit_code(process) == 0);
+    CHECK(poll_until(exited, process, 2000));
+    CHECK(ase_process_exit_code(process) == 0);
 
     char buf[256];
     long n = ase_process_read(process, buf, sizeof(buf) - 1);
-    assert(n > 0);
+    CHECK(n > 0);
     buf[n] = '\0';
-    assert(strstr(buf, "hello from ase_process") != NULL);
+    CHECK(strstr(buf, "hello from ase_process") != NULL);
 
     ase_process_destroy(process);
 }
@@ -44,10 +44,10 @@ static void test_echo_output(void) {
 static void test_exit_code_nonzero(void) {
     const char *command[] = {"/bin/sh", "-c", "exit 7", NULL};
     AseProcess *process = ase_process_spawn(command, NULL);
-    assert(process != NULL);
+    CHECK(process != NULL);
 
-    assert(poll_until(exited, process, 2000));
-    assert(ase_process_exit_code(process) == 7);
+    CHECK(poll_until(exited, process, 2000));
+    CHECK(ase_process_exit_code(process) == 7);
 
     ase_process_destroy(process);
 }
@@ -55,14 +55,14 @@ static void test_exit_code_nonzero(void) {
 static void test_cwd(void) {
     const char *command[] = {"/bin/pwd", NULL};
     AseProcess *process = ase_process_spawn(command, "/tmp");
-    assert(process != NULL);
+    CHECK(process != NULL);
 
-    assert(poll_until(exited, process, 2000));
-    assert(ase_process_exit_code(process) == 0);
+    CHECK(poll_until(exited, process, 2000));
+    CHECK(ase_process_exit_code(process) == 0);
 
     char buf[256];
     long n = ase_process_read(process, buf, sizeof(buf) - 1);
-    assert(n > 0);
+    CHECK(n > 0);
     buf[n] = '\0';
     /* /tmp is a symlink to /private/tmp on macOS, and plain /bin/pwd
      * (invoked directly, no shell, so no logical $PWD to fall back to)
@@ -72,9 +72,9 @@ static void test_cwd(void) {
      * realpath() resolves the same way pwd's getcwd() does, so
      * comparing against that instead holds on every platform. */
     char resolved_tmp[PATH_MAX];
-    assert(realpath("/tmp", resolved_tmp) != NULL);
+    CHECK(realpath("/tmp", resolved_tmp) != NULL);
     size_t resolved_len = strlen(resolved_tmp);
-    assert(strncmp(buf, resolved_tmp, resolved_len) == 0);
+    CHECK(strncmp(buf, resolved_tmp, resolved_len) == 0);
 
     ase_process_destroy(process);
 }
@@ -82,10 +82,10 @@ static void test_cwd(void) {
 static void test_write_roundtrip(void) {
     const char *command[] = {"/bin/cat", NULL};
     AseProcess *process = ase_process_spawn(command, NULL);
-    assert(process != NULL);
+    CHECK(process != NULL);
 
     const char *message = "round trip through cat\n";
-    assert(ase_process_write(process, message, strlen(message)));
+    CHECK(ase_process_write(process, message, strlen(message)));
 
     char buf[256];
     long total = 0;
@@ -99,8 +99,8 @@ static void test_write_roundtrip(void) {
         usleep(10 * 1000);
         elapsed += 10;
     }
-    assert(total == (long)strlen(message));
-    assert(memcmp(buf, message, (size_t)total) == 0);
+    CHECK(total == (long)strlen(message));
+    CHECK(memcmp(buf, message, (size_t)total) == 0);
 
     ase_process_destroy(process);
 }
@@ -112,18 +112,18 @@ static void test_bad_command_exits_nonzero(void) {
      * _exit(127) on execvp failure already follows). */
     const char *command[] = {"/no/such/executable-ase-test", NULL};
     AseProcess *process = ase_process_spawn(command, NULL);
-    assert(process != NULL);
+    CHECK(process != NULL);
 
-    assert(poll_until(exited, process, 2000));
-    assert(ase_process_exit_code(process) == 127);
+    CHECK(poll_until(exited, process, 2000));
+    CHECK(ase_process_exit_code(process) == 127);
 
     ase_process_destroy(process);
 }
 
 static void test_null_command_rejected(void) {
-    assert(ase_process_spawn(NULL, NULL) == NULL);
+    CHECK(ase_process_spawn(NULL, NULL) == NULL);
     const char *empty[] = {NULL};
-    assert(ase_process_spawn(empty, NULL) == NULL);
+    CHECK(ase_process_spawn(empty, NULL) == NULL);
 }
 
 /* The bug this covers: a real LSP server logs to stderr, and if that
@@ -136,25 +136,25 @@ static void test_stderr_merge_toggle(void) {
     const char *command[] = {"/bin/sh", "-c", "echo to-stdout; echo to-stderr 1>&2", NULL};
 
     AseProcess *merged = ase_process_spawn_ex(command, NULL, true);
-    assert(merged != NULL);
-    assert(poll_until(exited, merged, 2000));
+    CHECK(merged != NULL);
+    CHECK(poll_until(exited, merged, 2000));
     char merged_buf[256];
     long merged_n = ase_process_read(merged, merged_buf, sizeof(merged_buf) - 1);
-    assert(merged_n > 0);
+    CHECK(merged_n > 0);
     merged_buf[merged_n] = '\0';
-    assert(strstr(merged_buf, "to-stdout") != NULL);
-    assert(strstr(merged_buf, "to-stderr") != NULL);
+    CHECK(strstr(merged_buf, "to-stdout") != NULL);
+    CHECK(strstr(merged_buf, "to-stderr") != NULL);
     ase_process_destroy(merged);
 
     AseProcess *separated = ase_process_spawn_ex(command, NULL, false);
-    assert(separated != NULL);
-    assert(poll_until(exited, separated, 2000));
+    CHECK(separated != NULL);
+    CHECK(poll_until(exited, separated, 2000));
     char separated_buf[256];
     long separated_n = ase_process_read(separated, separated_buf, sizeof(separated_buf) - 1);
-    assert(separated_n > 0);
+    CHECK(separated_n > 0);
     separated_buf[separated_n] = '\0';
-    assert(strstr(separated_buf, "to-stdout") != NULL);
-    assert(strstr(separated_buf, "to-stderr") == NULL);
+    CHECK(strstr(separated_buf, "to-stdout") != NULL);
+    CHECK(strstr(separated_buf, "to-stderr") == NULL);
     ase_process_destroy(separated);
 }
 
