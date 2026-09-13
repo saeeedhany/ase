@@ -62,6 +62,9 @@ public:
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
+    /* The results list has focus, so its keys never reach this widget's
+     * own handler — Ctrl+J/K and Escape are caught here instead. */
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 signals:
     /* A results row was picked. The window opens the file and jumps —

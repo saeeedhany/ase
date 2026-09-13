@@ -3,6 +3,7 @@
 #include "editor_viewport.h"
 #include "fuzzy_match.h"
 #include "letter_badge.h"
+#include "list_navigation.h"
 #include "project_files.h"
 #include "smooth_line_edit.h"
 #include "scrollbar_style.h"
@@ -548,11 +549,10 @@ bool FileBrowserPanel::eventFilter(QObject *watched, QEvent *event) {
             }
             return true;
         }
-        if (keyEvent->key() == Qt::Key_Down || keyEvent->key() == Qt::Key_Up) {
+        if (int step = listnav::delta(keyEvent); step != 0) {
             /* Handled uniformly for both widgets (not just forwarded
              * from the filter field) so a filtered-out row is never
              * reachable via the keyboard from either one. */
-            int step = (keyEvent->key() == Qt::Key_Down) ? 1 : -1;
             int next = nextVisibleRow(m_listWidget->currentRow(), step);
             if (next >= 0) {
                 m_listWidget->setCurrentRow(next);

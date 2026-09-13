@@ -111,6 +111,7 @@ QVector<HelpSection> helpSections() {
          {{"(automatic)", "Diagnostics, and completion while typing"},
           {"&uarr; &darr;", "Move through completions"},
           {"Enter / Tab", "Accept completion"},
+          {"Ctrl+J / Ctrl+K", "Move down / up any list (completion, panels)"},
           {"Esc", "Dismiss completion"},
           {"(automatic)", "Hover info when the pointer rests on a symbol"}}},
 

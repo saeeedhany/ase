@@ -5,6 +5,7 @@
 #include "completion_popup.h"
 #include "file_browser_panel.h"
 #include "find_bar.h"
+#include "list_navigation.h"
 #include "help_panel.h"
 
 #include <algorithm>
@@ -34,13 +35,14 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
      * which itself retriggers a fresh completion request via
      * refreshCache(). */
     if (m_completionPopup != nullptr && m_completionPopup->isShowingPopup()) {
+        /* Ctrl+J/K as well as the arrows — see gui/src/list_navigation.h.
+         * Checked before the switch because it is a modifier
+         * combination, not a bare key. */
+        if (int delta = listnav::delta(event); delta != 0) {
+            m_completionPopup->moveSelection(delta);
+            return;
+        }
         switch (event->key()) {
-        case Qt::Key_Up:
-            m_completionPopup->moveSelection(-1);
-            return;
-        case Qt::Key_Down:
-            m_completionPopup->moveSelection(1);
-            return;
         case Qt::Key_Escape:
             dismissCompletion();
             return;

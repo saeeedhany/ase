@@ -3,6 +3,7 @@
 #include "editor_viewport.h"
 #include "scrollbar_style.h"
 #include "smooth_scroll.h"
+#include "list_navigation.h"
 #include "translucent_bar.h"
 
 #include <QFontDatabase>
@@ -59,6 +60,7 @@ OutputPanel::OutputPanel(EditorViewport *viewport, QWidget *parent) : QWidget(pa
     m_results->hide();
     layout->addWidget(m_results);
     installSmoothScroll(m_results, m_viewport);
+    m_results->installEventFilter(this);
     connect(m_results, &QListWidget::itemActivated, this,
             [this](QListWidgetItem *item) { activateRow(item); });
     /* Single click too: a results list is something you skim and poke
@@ -159,6 +161,29 @@ void OutputPanel::appendText(const QString &text) {
 
 void OutputPanel::clear() {
     m_text->clear();
+}
+
+bool OutputPanel::eventFilter(QObject *watched, QEvent *event) {
+    if (watched == m_results && event->type() == QEvent::KeyPress) {
+        auto *keyEvent = static_cast<QKeyEvent *>(event);
+        if (keyEvent->key() == Qt::Key_Escape && m_viewport != nullptr) {
+            m_viewport->setFocus();
+            return true;
+        }
+        /* The arrows already work here (QListWidget handles them); this
+         * is only about Ctrl+J/K, which it does not — see
+         * gui/src/list_navigation.h. */
+        if (keyEvent->modifiers() & Qt::ControlModifier) {
+            if (int delta = listnav::delta(keyEvent); delta != 0) {
+                int next = m_results->currentRow() + delta;
+                if (next >= 0 && next < m_results->count()) {
+                    m_results->setCurrentRow(next);
+                }
+                return true;
+            }
+        }
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 /* Escape gives the editor its focus back without hiding the results —
