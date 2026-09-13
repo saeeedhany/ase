@@ -58,6 +58,7 @@ void EditorViewport::resetVimPendingState() {
     m_vimCount2 = 0;
     m_vimPendingOperator = '\0';
     m_vimPendingG = false;
+    m_vimPendingFind = '\0';
 }
 
 /* '\n' counts as Blank, not its own class — the key trick that makes
@@ -167,6 +168,93 @@ bool EditorViewport::vimLineIsEmpty(int line) const {
      * a line of spaces is part of the paragraph, and treating it as a
      * boundary would stop `}` in places that look like text. */
     return end <= start;
+}
+
+/*
+ * `f`/`t` search forward on this line, `F`/`T` backward; `t`/`T` stop
+ * one character short of the target ("till" rather than "find"). Vim
+ * confines all four to the cursor's own line, which is the property
+ * that makes them safe to fire without looking: the worst case is
+ * nothing happens.
+ *
+ * A count repeats the search — `3fx` is the third x — and the whole
+ * thing fails as a unit: if there is no third x, the cursor does not
+ * move to the second. Vim behaves the same way, and a partial jump
+ * would be worse than none.
+ */
+/*
+ * Moves to what `f`/`F`/`t`/`T` found, or applies a pending operator
+ * over the span — `df,` deletes through the comma, which is most of why
+ * these motions are worth having.
+ *
+ * The operator range is *inclusive* of the character landed on when
+ * searching forward: vim's f is an inclusive motion, unlike w. Backward
+ * it runs from the target up to (not including) where the cursor was,
+ * which is the same rule seen from the other end.
+ */
+void EditorViewport::vimApplyFindInLine(char command, char target, int count) {
+    size_t before = m_cursors[0];
+    size_t after = vimFindInLine(command, target, count);
+    if (after == before) {
+        /* Not on this line. Vim beeps; this does nothing, which in an
+         * editor with no bell is the same statement. */
+        resetVimPendingState();
+        return;
+    }
+
+    if (m_vimPendingOperator != '\0') {
+        bool forward = (command == 'f' || command == 't');
+        size_t start = forward ? before : after;
+        size_t end = forward ? vimNextCharBoundary(after) : before;
+        vimApplyPendingOperatorCharwise(start, end);
+        return;
+    }
+
+    m_cursors[0] = after;
+    if (m_vimMode != VimMode::Visual) {
+        m_selectionAnchors[0] = after;
+    }
+    vimNormalizeLinewiseSelection();
+    resetVimPendingState();
+    ensureCursorVisible();
+    resetCaretBlink();
+    update();
+}
+
+size_t EditorViewport::vimFindInLine(char command, char target, int count) const {
+    size_t cursor = m_cursors[0];
+    int line = lineForOffset(cursor);
+    int lineStart = m_lineStarts[line];
+    int lineEnd = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : m_cache.size();
+
+    bool forward = (command == 'f' || command == 't');
+    bool till = (command == 't' || command == 'T');
+    int at = static_cast<int>(cursor);
+
+    for (int n = 0; n < count; ++n) {
+        /* `t` starts one further out than `f`, or a repeat would find
+         * the character it is already sitting next to and never move. */
+        int from = at + (forward ? 1 : -1);
+        if (till && n > 0) {
+            from += forward ? 1 : -1;
+        }
+        int found = -1;
+        for (int i = from; forward ? (i < lineEnd) : (i >= lineStart); i += forward ? 1 : -1) {
+            if (i >= lineStart && i < lineEnd && m_cache[i] == target) {
+                found = i;
+                break;
+            }
+        }
+        if (found < 0) {
+            return cursor; /* no such character: the whole motion is a no-op */
+        }
+        at = found;
+    }
+
+    if (till) {
+        at += forward ? -1 : 1;
+    }
+    return static_cast<size_t>(std::clamp(at, lineStart, lineEnd));
 }
 
 size_t EditorViewport::vimParagraphForward(size_t pos) const {
@@ -712,6 +800,23 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     }
     QChar qc = text.at(0);
 
+    /* Mid-`f`/`F`/`t`/`T`: this key *is* the target, whatever it is —
+     * digits and operator letters included, so `f3` and `fd` search for
+     * '3' and 'd' rather than being read as a count or an operator. */
+    if (m_vimPendingFind != '\0') {
+        char command = m_vimPendingFind;
+        m_vimPendingFind = '\0';
+        char target = qc.toLatin1();
+        if (target == '\0') {
+            resetVimPendingState(); /* non-Latin1 target: nothing to search for */
+            return true;
+        }
+        m_vimLastFindCommand = command;
+        m_vimLastFindTarget = target;
+        vimApplyFindInLine(command, target, std::max(1, m_vimCount1) * std::max(1, m_vimCount2));
+        return true;
+    }
+
     /* Mid-"g": resolved on the very next key, whatever it is. */
     if (m_vimPendingG) {
         m_vimPendingG = false;
@@ -759,6 +864,33 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
             m_commandLine->openCommandLine();
         }
         resetVimPendingState();
+        return true;
+    }
+    if (c == 'f' || c == 'F' || c == 't' || c == 'T') {
+        /* The target character comes next; any pending count is kept so
+         * `3fx` still means the third x. */
+        m_vimPendingFind = c;
+        return true;
+    }
+    if (c == ';' || c == ',') {
+        if (m_vimLastFindCommand == '\0') {
+            resetVimPendingState();
+            return true;
+        }
+        /* `,` is the same search in the other direction — vim's own
+         * pairing, and the reason this is stored as a command letter
+         * rather than a direction flag. */
+        char command = m_vimLastFindCommand;
+        if (c == ',') {
+            switch (command) {
+            case 'f': command = 'F'; break;
+            case 'F': command = 'f'; break;
+            case 't': command = 'T'; break;
+            case 'T': command = 't'; break;
+            default: break;
+            }
+        }
+        vimApplyFindInLine(command, m_vimLastFindTarget, count);
         return true;
     }
     if (c == 'g') {

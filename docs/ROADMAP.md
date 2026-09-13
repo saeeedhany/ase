@@ -823,6 +823,13 @@ ADRs as each lands here going forward.
       a few times a session can afford an unusual binding; a navigation
       key used constantly cannot. See
       [ADR 0068](adr/0068-freeing-ctrl-o-and-ctrl-i.md).
+- [x] **Find-in-line (`f F t T ; ,`) and `Ctrl+J`/`Ctrl+K` in every
+      list**: two requests that are the same request underneath — not
+      leaving the home row. The find motions are line-confined like
+      vim's, take counts that fail as a unit, and are inclusive under an
+      operator (`df,` takes the comma). List navigation went into one
+      shared helper rather than four copies of the same check. See
+      [ADR 0069](adr/0069-find-in-line-and-list-navigation.md).
 - [x] **v0.3.0-alpha**: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the `EditorViewport` split, the render hot-path

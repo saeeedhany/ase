@@ -457,6 +457,16 @@ private:
      * end, and for the first line (deleting everything is legitimate).
      * See docs/adr/0060. */
     size_t vimLinewiseDeleteStart(size_t start, size_t end) const;
+    /* `f`/`F`/`t`/`T` within the cursor's own line — vim's find-char
+     * motions never cross a line boundary, which is what makes them
+     * safe to fire blind. Returns the cursor's position unchanged when
+     * the character isn't there, so a miss is a no-op rather than a
+     * jump somewhere surprising. `command` is the letter; `target` the
+     * character searched for. See docs/adr/0069. */
+    size_t vimFindInLine(char command, char target, int count) const;
+    /* Moves to what vimFindInLine() found, or applies a pending
+     * operator over the span (`df,`). */
+    void vimApplyFindInLine(char command, char target, int count);
     size_t vimParagraphForward(size_t pos) const;
     size_t vimParagraphBackward(size_t pos) const;
     bool vimLineIsEmpty(int line) const;
@@ -843,6 +853,13 @@ private:
     char m_vimPendingOperator = '\0';     /* 'd' / 'y' / 'c', or '\0' */
     int m_vimCount2 = 0;                  /* count typed after the operator */
     bool m_vimPendingG = false;           /* mid-"gg" sequence */
+    /* Mid-`f`/`F`/`t`/`T`: the operator letter itself, waiting for the
+     * character to search for. '\0' when nothing is pending. */
+    char m_vimPendingFind = '\0';
+    /* The last f/F/t/T, so `;` can repeat it and `,` reverse it — vim
+     * remembers this per window and across lines, not per line. */
+    char m_vimLastFindCommand = '\0';
+    char m_vimLastFindTarget = '\0';
     /* Shift+V — Visual mode selecting whole lines. Kept as a flag on
      * VimMode::Visual rather than a fourth mode: every operator, motion
      * and render path already works off the selection range, so linewise

@@ -76,3 +76,4 @@ what changed.
 | [0066](0066-project-wide-search.md) | Project-wide search (`Ctrl+Shift+F`) |
 | [0067](0067-go-to-definition.md) | Go to definition (`gd` / `F12`) |
 | [0068](0068-freeing-ctrl-o-and-ctrl-i.md) | Freeing `Ctrl+O`/`Ctrl+I`: help to `F1`, About/Open to `Alt` |
+| [0069](0069-find-in-line-and-list-navigation.md) | Vim's `f`/`t` find-in-line, and `Ctrl+J`/`Ctrl+K` in every list |

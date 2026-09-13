@@ -29,7 +29,7 @@ afford an unusual binding; a navigation key used constantly cannot.**
 | Keyboard shortcuts | `Ctrl+/` | **`F1`** |
 | About | `Ctrl+I` | **`Alt+I`** |
 | Open file | `Ctrl+O` | **`Alt+O`** |
-| Jump back / forward | — | **`Ctrl+O` / `Ctrl+I`** (ADR 0069) |
+| Jump back / forward | — | **`Ctrl+O` / `Ctrl+I`** (ADR 0070) |
 
 `F1` is not a consolation prize: it is *the* help key, the one people
 press without being told, and the panel should have been there from the
@@ -63,7 +63,7 @@ so that if `Alt+O` turns out to be awkward — tiling window managers
 often claim `Alt` — it can be reverted without unpicking a feature.
 Verified on this machine's WM: `F1` opens the shortcuts panel, `Alt+O`
 the file browser, `Alt+I` About, and `Ctrl+O` now does nothing at all,
-which is exactly the state ADR 0069 needs.
+which is exactly the state the jumplist needs (ADR 0070).
 
 The welcome screen and the shortcut reference both list the new keys;
 they were the two places that would otherwise teach the old ones.

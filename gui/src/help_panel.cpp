@@ -84,6 +84,7 @@ QVector<HelpSection> helpSections() {
           {"h j k l / w b e", "Move by character / word"},
           {"0 / ^ / $", "Column 0 / first non-blank / line end"},
           {"{ / }", "Previous / next blank line"},
+          {"f F t T / ; ,", "Find a character in this line / repeat, reverse"},
           {"Ctrl+U / Ctrl+D", "Half a screen up / down"},
           {"gg / G / 3j", "First line / last line / with a count"},
           {"gd", "Go to definition"},
