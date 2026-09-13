@@ -5,6 +5,7 @@
 #include "translucent_bar.h"
 
 #include <QString>
+#include <QStringList>
 
 class QLabel;
 class SmoothLineEdit;
@@ -27,7 +28,13 @@ class LetterBadge;
  */
 class FileBrowserPanel : public FloatingPanel {
 public:
-    enum class Mode { Open, SaveAs };
+    /* QuickOpen (Ctrl+P) rides in this panel rather than getting a class
+     * of its own: it is the same badge, field, list, sliding highlight,
+     * theming and Enter/Escape handling, differing only in where the
+     * entries come from and how they are filtered. A second widget would
+     * have been ~200 duplicated lines that then drift apart visually.
+     * See docs/adr/0065. */
+    enum class Mode { Open, SaveAs, QuickOpen };
 
     explicit FileBrowserPanel(EditorViewport *viewport);
 
@@ -55,6 +62,14 @@ private:
      * the placeholder to `dir`'s own name (not the full path — you
      * search for a file by name, you don't read/edit a path string). */
     void setDirectory(const QString &dir);
+    /* QuickOpen's equivalent of setDirectory(): finds the project root,
+     * walks it once, and fills the list with every file in it, relative
+     * to that root. */
+    void setProjectRoot(const QString &startDir);
+    /* Re-sorts the list by fuzzy score against `query` and keeps the
+     * best kMaxQuickOpenRows — QuickOpen's answer to applyFilter(),
+     * which only hides rows and cannot reorder them. */
+    void applyQuickOpenFilter(const QString &query);
     /* Hides list rows that don't match `query` (case-insensitive
      * substring; ".." always stays visible) and selects the first
      * remaining match, so Enter picks whatever's fluently highlighted
@@ -88,6 +103,11 @@ private:
     EditorViewport *m_viewport;
     Mode m_mode = Mode::Open;
     QString m_currentDir;
+    /* Collected once per Ctrl+P, then filtered in memory on every
+     * keystroke — walking the tree per keystroke would be the obvious
+     * way to make this feel slow. */
+    QStringList m_projectFiles;
+    bool m_projectFilesTruncated = false;
 
     LetterBadge *m_badge;
     QLabel *m_pathLabel;

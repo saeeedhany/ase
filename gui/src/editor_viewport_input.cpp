@@ -178,6 +178,16 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
                 }
                 return;
             }
+            if (event->key() == Qt::Key_P) {
+                /* Ctrl+P — open any file in the project by typing part
+                 * of its name, rather than walking there a directory at
+                 * a time. Same panel as Ctrl+O in a different mode; see
+                 * docs/adr/0065. */
+                if (m_fileBrowser != nullptr) {
+                    m_fileBrowser->openFor(FileBrowserPanel::Mode::QuickOpen);
+                }
+                return;
+            }
             if (event->key() == Qt::Key_O) {
                 /* Ctrl+Shift+O toggles the output panel directly,
                  * without going through :output — Ctrl+O (no Shift)

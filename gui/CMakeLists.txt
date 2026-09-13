@@ -46,6 +46,7 @@ add_executable(ase_gui
     src/file_browser_panel.cpp
     src/command_line.cpp
     src/output_panel.cpp
+    src/project_files.cpp
     src/help_panel.cpp
     src/about_panel.cpp
     src/floating_panel.cpp

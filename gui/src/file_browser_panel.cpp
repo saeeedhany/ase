@@ -1,10 +1,14 @@
 #include "file_browser_panel.h"
 
 #include "editor_viewport.h"
+#include "fuzzy_match.h"
 #include "letter_badge.h"
+#include "project_files.h"
 #include "smooth_line_edit.h"
 #include "scrollbar_style.h"
 #include "smooth_scroll.h"
+
+#include <algorithm>
 
 #include <QDir>
 #include <QFileInfo>
@@ -21,6 +25,21 @@
 
 #include "motion.h"
 #include <QVBoxLayout>
+
+namespace {
+
+/* A hard stop on the walk, not a suggestion: this runs on the UI thread,
+ * and Ctrl+P in a home directory must not freeze the editor. Generous
+ * enough that no real project reaches it — anything that size wants a
+ * persistent index rather than a walk. */
+constexpr int kQuickOpenFileCap = 20000;
+
+/* Rows actually put into the list. You never look past the first
+ * handful, and rebuilding thousands of QListWidgetItems on every
+ * keystroke is exactly the per-frame work docs/adr/0053 was about. */
+constexpr int kMaxQuickOpenRows = 200;
+
+} // namespace
 
 FileBrowserPanel::FileBrowserPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport(viewport) {
     QWidget *content = contentWidget();
@@ -78,7 +97,9 @@ FileBrowserPanel::FileBrowserPanel(EditorViewport *viewport) : FloatingPanel(vie
 void FileBrowserPanel::openFor(Mode mode) {
     m_mode = mode;
     refreshTheme();
-    m_badge->setLetter(mode == Mode::Open ? QLatin1Char('O') : QLatin1Char('S'));
+    m_badge->setLetter((mode == Mode::Open)     ? QLatin1Char('O')
+                       : (mode == Mode::SaveAs) ? QLatin1Char('S')
+                                                : QLatin1Char('P'));
 
     /* Must happen before setDirectory() populates the list — see
      * FloatingPanel::revealForSetup()'s doc comment. */
@@ -86,7 +107,11 @@ void FileBrowserPanel::openFor(Mode mode) {
 
     QString filePath = m_viewport->filePath();
     QString startDir = filePath.isEmpty() ? QDir::currentPath() : QFileInfo(filePath).absolutePath();
-    setDirectory(startDir);
+    if (mode == Mode::QuickOpen) {
+        setProjectRoot(startDir);
+    } else {
+        setDirectory(startDir);
+    }
 
     if (mode == Mode::SaveAs && !filePath.isEmpty()) {
         m_filterEdit->setText(QFileInfo(filePath).fileName());
@@ -256,7 +281,77 @@ void FileBrowserPanel::setDirectory(const QString &dir) {
     moveRowHighlight(m_listWidget->currentRow(), false);
 }
 
+/*
+ * Ctrl+P's listing: every file in the project, once, relative to its
+ * root. The root is the enclosing git checkout if there is one, else
+ * the directory you are in — "the project" is a repository when you
+ * have one, and a folder when you don't.
+ */
+void FileBrowserPanel::setProjectRoot(const QString &startDir) {
+    m_currentDir = project::rootFor(startDir);
+    m_projectFiles = project::collect(m_currentDir, kQuickOpenFileCap, &m_projectFilesTruncated);
+
+    QString label = QDir(m_currentDir).dirName();
+    m_filterEdit->setPlaceholderText(label.isEmpty() ? QStringLiteral("/") : label);
+    m_filterEdit->clear();
+
+    QString shown = m_currentDir;
+    QString home = QDir::homePath();
+    if (shown == home || shown.startsWith(home + QLatin1Char('/'))) {
+        shown = QLatin1Char('~') + shown.mid(home.size());
+    }
+    /* Says how many files are in play, and admits it when the walk was
+     * cut short — a listing that silently stops at a cap is a listing
+     * that lies about what you can open. */
+    m_pathLabel->setText(m_projectFilesTruncated
+                             ? QStringLiteral("%1 — first %2 files").arg(shown).arg(m_projectFiles.size())
+                             : QStringLiteral("%1 — %2 files").arg(shown).arg(m_projectFiles.size()));
+
+    applyQuickOpenFilter(QString());
+}
+
+/*
+ * Unlike applyFilter(), this *reorders*: the whole value of a fuzzy
+ * finder is that the file you meant is first, and hiding rows in a
+ * fixed alphabetical order cannot do that. So the list is rebuilt from
+ * the scored candidates each time, capped at kMaxQuickOpenRows.
+ */
+void FileBrowserPanel::applyQuickOpenFilter(const QString &query) {
+    QString needle = query.trimmed();
+    needle.remove(QLatin1Char(' '));
+
+    QVector<QPair<int, const QString *>> scored;
+    scored.reserve(m_projectFiles.size());
+    for (const QString &candidate : m_projectFiles) {
+        int score = 0;
+        if (fuzzy::match(needle, candidate, &score)) {
+            scored.push_back({score, &candidate});
+        }
+    }
+    /* Stable, so equal scores keep the walk's alphabetical order rather
+     * than shuffling under you as you type. */
+    std::stable_sort(scored.begin(), scored.end(),
+                     [](const QPair<int, const QString *> &a, const QPair<int, const QString *> &b) {
+                         return a.first > b.first;
+                     });
+
+    m_listWidget->clear();
+    int shown = std::min(static_cast<int>(scored.size()), kMaxQuickOpenRows);
+    for (int i = 0; i < shown; ++i) {
+        m_listWidget->addItem(*scored[i].second);
+    }
+    if (m_listWidget->count() > 0) {
+        m_listWidget->setCurrentRow(0);
+    } else {
+        moveRowHighlight(-1, false);
+    }
+}
+
 void FileBrowserPanel::applyFilter(const QString &query) {
+    if (m_mode == Mode::QuickOpen) {
+        applyQuickOpenFilter(query);
+        return;
+    }
     QString needle = query.trimmed().toLower();
     int firstMatch = -1;
     for (int row = 0; row < m_listWidget->count(); ++row) {
@@ -279,6 +374,13 @@ void FileBrowserPanel::applyFilter(const QString &query) {
 }
 
 void FileBrowserPanel::activateEntry(const QString &name) {
+    if (m_mode == Mode::QuickOpen) {
+        /* Entries are paths relative to the project root, and every one
+         * of them is a file — there is nothing to navigate into. */
+        m_viewport->requestOpenFile(QDir(m_currentDir).filePath(name));
+        hideBar();
+        return;
+    }
     if (name == QLatin1String("..")) {
         QDir parent(m_currentDir);
         parent.cdUp();
@@ -306,6 +408,16 @@ void FileBrowserPanel::activateEntry(const QString &name) {
 }
 
 void FileBrowserPanel::confirmCurrent() {
+    if (m_mode == Mode::QuickOpen) {
+        /* The field is a query, never a path: in this mode `src/ed` is
+         * something to match against, not a file to create. */
+        QListWidgetItem *item = m_listWidget->currentItem();
+        if (item != nullptr) {
+            activateEntry(item->text());
+        }
+        return;
+    }
+
     QString typed = m_filterEdit->text().trimmed();
 
     /* A typed path wins over the list selection in *both* modes. This

@@ -60,6 +60,7 @@ QVector<HelpSection> helpSections() {
          {{"Ctrl+N", "New file"},
           {"(the + at the right of the tab strip)", "New file"},
           {"Ctrl+O", "Open"},
+          {"Ctrl+P", "Open any file in the project by name"},
           {"Ctrl+S", "Save"},
           {"Ctrl+Shift+S", "Save as"},
           {"Ctrl+Tab / Ctrl+Shift+Tab", "Next / previous buffer"},

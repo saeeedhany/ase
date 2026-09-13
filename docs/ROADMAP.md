@@ -790,6 +790,14 @@ ADRs as each lands here going forward.
       three suites segfaulted, the rest passed while testing nothing.
       All of them are now an always-evaluated `CHECK()`. See
       [ADR 0064](adr/0064-gui-in-ci-and-a-test-suite-that-runs-in-release.md).
+- [x] **Quick open (`Ctrl+P`)**: multiple buffers landed in ADR 0054,
+      but the only way to *get* one was the directory-at-a-time browser.
+      `Ctrl+P` walks the project (the enclosing git checkout, or the
+      current folder), fuzzy-matches as you type, and ranks by
+      consecutive runs, word boundaries, basename hits and brevity —
+      `edvim` finds `editor_viewport_vim.cpp` first. Rides in the
+      existing panel as a third mode rather than duplicating it. See
+      [ADR 0065](adr/0065-quick-open.md).
 - [x] **v0.3.0-alpha**: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the `EditorViewport` split, the render hot-path
@@ -842,7 +850,9 @@ something else.
   EXTENSIBILITY.md, recommendation 4.
 - **Project-wide search** (ripgrep-shaped: search, jump to hit, replace
   across files), reusing the existing find infrastructure and results
-  panel.
+  panel — and now also `project::collect()` and the quick-open panel
+  from [ADR 0065](adr/0065-quick-open.md), which is most of the
+  machinery.
 - **The rest of LSP's useful half**: go-to-definition, find-references,
   rename, document symbols. Diagnostics, completion and hover are wired
   (ADR 0029/0030); the navigation half is what people actually miss.

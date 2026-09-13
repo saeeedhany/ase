@@ -85,6 +85,7 @@ nav:
     - adr/0062-the-status-bar-message-line.md
     - adr/0063-language-server-state-in-the-status-bar.md
     - adr/0064-gui-in-ci-and-a-test-suite-that-runs-in-release.md
+    - adr/0065-quick-open.md
 
 theme:
   name: material
