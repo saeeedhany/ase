@@ -156,6 +156,68 @@ size_t EditorViewport::vimWordBackward(size_t pos) const {
     return pos;
 }
 
+bool EditorViewport::vimLineIsEmpty(int line) const {
+    if (line < 0 || line >= m_lineStarts.size()) {
+        return true;
+    }
+    int start = m_lineStarts[line];
+    int end = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : m_cache.size();
+    /* Zero-length only. Vim's paragraph boundary is an *empty* line —
+     * a line of spaces is part of the paragraph, and treating it as a
+     * boundary would stop `}` in places that look like text. */
+    return end <= start;
+}
+
+size_t EditorViewport::vimParagraphForward(size_t pos) const {
+    int line = lineForOffset(pos);
+    for (int i = line + 1; i < m_lineStarts.size(); ++i) {
+        if (vimLineIsEmpty(i)) {
+            return static_cast<size_t>(m_lineStarts[i]);
+        }
+    }
+    return static_cast<size_t>(m_cache.size());
+}
+
+size_t EditorViewport::vimParagraphBackward(size_t pos) const {
+    int line = lineForOffset(pos);
+    for (int i = line - 1; i >= 0; --i) {
+        if (vimLineIsEmpty(i)) {
+            return static_cast<size_t>(m_lineStarts[i]);
+        }
+    }
+    return 0;
+}
+
+/*
+ * Vim moves the cursor and the viewport together here: half a screen of
+ * lines each, so the cursor stays on the same screen row and the text
+ * slides under it. Scrolling without moving the cursor (what the wheel
+ * does) or moving without scrolling (what every other motion does, via
+ * ensureCursorVisible) would both read as a different gesture.
+ */
+void EditorViewport::vimHalfPageMotion(int direction) {
+    if (m_lineHeight <= 0 || m_lineStarts.isEmpty()) {
+        return;
+    }
+    int visibleLines = std::max(1, height() / m_lineHeight);
+    int half = std::max(1, visibleLines / 2);
+    int maxLine = static_cast<int>(m_lineStarts.size()) - 1;
+    int line = lineForOffset(m_cursors[0]);
+    int delta = std::clamp(line + direction * half, 0, maxLine) - line;
+    if (delta == 0) {
+        return;
+    }
+
+    m_scrollLine = std::clamp(m_scrollLine + delta, 0, maxLine);
+    /* Through the shared vertical-move path, so the remembered column
+     * behaves exactly as it does for j/k and the arrows. */
+    moveCursorVerticallyAt(0, delta, m_vimMode == VimMode::Visual);
+    vimNormalizeLinewiseSelection();
+    ensureCursorVisible(); /* corrects only if the two ended up out of step */
+    resetCaretBlink();
+    update();
+}
+
 size_t EditorViewport::vimFirstNonBlank(int line) const {
     line = std::clamp(line, 0, static_cast<int>(m_lineStarts.size()) - 1);
     int start = m_lineStarts[line];
@@ -240,6 +302,22 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
                 }
                 break;
             }
+            case '}': {
+                size_t target = vimParagraphForward(m_cursors[0]);
+                m_cursors[0] = target;
+                if (!visual) {
+                    m_selectionAnchors[0] = target;
+                }
+                break;
+            }
+            case '{': {
+                size_t target = vimParagraphBackward(m_cursors[0]);
+                m_cursors[0] = target;
+                if (!visual) {
+                    m_selectionAnchors[0] = target;
+                }
+                break;
+            }
             default:
                 return;
             }
@@ -283,6 +361,12 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
                 break;
             case 'b':
                 after = vimWordBackward(after);
+                break;
+            case '}':
+                after = vimParagraphForward(after);
+                break;
+            case '{':
+                after = vimParagraphBackward(after);
                 break;
             case 'e':
                 /* Inclusive of the char the motion itself lands on —
@@ -352,7 +436,6 @@ void EditorViewport::vimDeleteRange(size_t start, size_t end) {
     m_cursors[0] = start;
     m_selectionAnchors[0] = start;
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
-    m_dirty = true;
     refreshCache();
     ensureCursorVisible();
     update();
@@ -388,7 +471,6 @@ void EditorViewport::vimDeleteLines(int startLine, int count) {
         ase_undo_record_delete(m_undo, start, removed.constData(), static_cast<size_t>(removed.size()));
     }
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
-    m_dirty = true;
     refreshCache();
     int newLine = std::clamp(startLine, 0, static_cast<int>(m_lineStarts.size()) - 1);
     size_t target = vimFirstNonBlank(newLine);
@@ -446,9 +528,16 @@ void EditorViewport::vimPasteAfter() {
         ase_undo_record_insert(m_undo, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()));
     }
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
-    m_dirty = true;
     refreshCache();
-    size_t target = m_vimLastYankWasLinewise ? vimFirstNonBlank(lineForOffset(insertAt)) : insertAt;
+    /* Charwise paste leaves the cursor on the *last* character of what
+     * was pasted, not the first — real vim's rule, and the one that
+     * makes a second `p` continue the text rather than re-paste into
+     * the middle of it. Linewise is the opposite and already right:
+     * first non-blank of the first pasted line. Reported by an external
+     * tester, who expected "the end" for both; see docs/adr/0059. */
+    size_t target = m_vimLastYankWasLinewise
+                        ? vimFirstNonBlank(lineForOffset(insertAt))
+                        : vimPrevCharBoundary(insertAt + static_cast<size_t>(bytes.size()));
     m_cursors[0] = target;
     m_selectionAnchors[0] = target;
     ensureCursorVisible();
@@ -468,9 +557,16 @@ void EditorViewport::vimPasteBefore() {
         ase_undo_record_insert(m_undo, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()));
     }
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
-    m_dirty = true;
     refreshCache();
-    size_t target = m_vimLastYankWasLinewise ? vimFirstNonBlank(lineForOffset(insertAt)) : insertAt;
+    /* Charwise paste leaves the cursor on the *last* character of what
+     * was pasted, not the first — real vim's rule, and the one that
+     * makes a second `p` continue the text rather than re-paste into
+     * the middle of it. Linewise is the opposite and already right:
+     * first non-blank of the first pasted line. Reported by an external
+     * tester, who expected "the end" for both; see docs/adr/0059. */
+    size_t target = m_vimLastYankWasLinewise
+                        ? vimFirstNonBlank(lineForOffset(insertAt))
+                        : vimPrevCharBoundary(insertAt + static_cast<size_t>(bytes.size()));
     m_cursors[0] = target;
     m_selectionAnchors[0] = target;
     ensureCursorVisible();
@@ -487,7 +583,6 @@ void EditorViewport::vimOpenLineAbove() {
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     m_cursors[0] = at;
     m_selectionAnchors[0] = at;
-    m_dirty = true;
     refreshCache();
     ensureCursorVisible();
     update();
@@ -601,7 +696,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         return true;
     }
     if (c == 'h' || c == 'l' || c == 'j' || c == 'k' || c == '0' || c == '^' || c == '$' || c == 'w' ||
-        c == 'b' || c == 'e') {
+        c == 'b' || c == 'e' || c == '{' || c == '}') {
         /* A pure motion (no operator resolved here) glides like every
          * other navigation in this app — arrows, Home/End — rather than
          * snapping. See docs/adr/0051. */

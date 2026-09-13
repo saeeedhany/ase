@@ -205,6 +205,83 @@ static void test_undo_past_beginning_is_noop(void) {
     ase_buffer_destroy(buf);
 }
 
+
+/*
+ * The whole point of the state id: it answers "is the buffer what it
+ * was when I last looked?", which a set-on-edit flag cannot, because an
+ * edit and its undo cancel out.
+ */
+static void test_state_id_returns_after_undo(void) {
+    AseBuffer *buf = ase_buffer_create();
+    AseUndoStack *undo = ase_undo_create();
+    size_t cursor = 0;
+
+    size_t saved = ase_undo_state_id(undo); /* pretend a save here */
+
+    ase_undo_begin_group(undo, &cursor, 1);
+    do_insert(buf, undo, &cursor, " ", 1);
+    ase_undo_end_group(undo, &cursor, 1);
+    assert(ase_undo_state_id(undo) != saved);
+
+    size_t *cursors = NULL;
+    size_t count = 0;
+    assert(ase_undo_undo(undo, buf, &cursors, &count));
+    free(cursors);
+    /* Back to the saved content -- so back to the saved id. */
+    assert(ase_undo_state_id(undo) == saved);
+
+    assert(ase_undo_redo(undo, buf, &cursors, &count));
+    free(cursors);
+    assert(ase_undo_state_id(undo) != saved);
+
+    ase_undo_destroy(undo);
+    ase_buffer_destroy(buf);
+}
+
+/*
+ * Undo one group, commit a different one, and a *count* of groups is
+ * back where it started while the content is not. The id must not be.
+ */
+static void test_state_id_is_not_a_group_count(void) {
+    AseBuffer *buf = ase_buffer_create();
+    AseUndoStack *undo = ase_undo_create();
+    size_t cursor = 0;
+
+    ase_undo_begin_group(undo, &cursor, 1);
+    do_insert(buf, undo, &cursor, "a", 1);
+    ase_undo_end_group(undo, &cursor, 1);
+    size_t after_first = ase_undo_state_id(undo);
+
+    size_t *cursors = NULL;
+    size_t count = 0;
+    assert(ase_undo_undo(undo, buf, &cursors, &count));
+    free(cursors);
+
+    cursor = 0;
+    ase_undo_begin_group(undo, &cursor, 1);
+    do_insert(buf, undo, &cursor, "b", 1);
+    ase_undo_end_group(undo, &cursor, 1);
+
+    expect_content(buf, "b");
+    assert(ase_undo_state_id(undo) != after_first);
+
+    ase_undo_destroy(undo);
+    ase_buffer_destroy(buf);
+}
+
+/* A group that recorded nothing is not a state change. */
+static void test_state_id_unchanged_by_noop_group(void) {
+    AseUndoStack *undo = ase_undo_create();
+    size_t cursor = 0;
+
+    size_t before = ase_undo_state_id(undo);
+    ase_undo_begin_group(undo, &cursor, 1);
+    ase_undo_end_group(undo, &cursor, 1);
+    assert(ase_undo_state_id(undo) == before);
+
+    ase_undo_destroy(undo);
+}
+
 int main(void) {
     test_single_insert_undo_redo();
     test_single_delete_undo_redo();
@@ -212,6 +289,9 @@ int main(void) {
     test_redo_cleared_by_new_edit();
     test_noop_group_is_not_pushed();
     test_undo_past_beginning_is_noop();
+    test_state_id_returns_after_undo();
+    test_state_id_is_not_a_group_count();
+    test_state_id_unchanged_by_noop_group();
 
     printf("all undo tests passed\n");
     return 0;

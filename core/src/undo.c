@@ -20,6 +20,12 @@ typedef struct {
     size_t count;
     size_t capacity;
 
+    /* Identifies the buffer state this group *produces*, so "is the
+     * buffer still what it was when it was saved?" is one comparison
+     * rather than a content scan. Assigned once, on commit, and never
+     * reused -- see the state-id contract in undo.h. */
+    size_t seq;
+
     size_t *cursors_before;
     size_t cursors_before_count;
     size_t *cursors_after;
@@ -37,6 +43,12 @@ struct AseUndoStack {
 
     UndoGroup pending;
     bool has_pending;
+
+    /* next_seq only ever increases; current_seq names the state the
+     * buffer is in right now (0 = the state the stack was created in,
+     * i.e. the file as loaded). */
+    size_t next_seq;
+    size_t current_seq;
 };
 
 static size_t *dup_cursors(const size_t *cursors, size_t count) {
@@ -155,6 +167,10 @@ void ase_undo_end_group(AseUndoStack *stack, const size_t *cursors, size_t curso
         memset(&stack->pending, 0, sizeof(UndoGroup));
         return;
     }
+    stack->next_seq++;
+    stack->pending.seq = stack->next_seq;
+    stack->current_seq = stack->pending.seq;
+
     stack->undo_stack[stack->undo_count] = stack->pending;
     stack->undo_count++;
     memset(&stack->pending, 0, sizeof(UndoGroup));
@@ -229,6 +245,11 @@ bool ase_undo_undo(AseUndoStack *stack, AseBuffer *buffer, size_t **out_cursors,
     }
 
     stack->undo_count--;
+    /* The state we just landed in is the one the group below produced
+     * -- or the original loaded state if there is nothing below. Set
+     * before the redo-push below, which has a failure path of its own
+     * that must not skip this. */
+    stack->current_seq = (stack->undo_count > 0) ? stack->undo_stack[stack->undo_count - 1].seq : 0;
 
     *out_cursors = dup_cursors(group.cursors_before, group.cursors_before_count);
     *out_count = group.cursors_before_count;
@@ -265,6 +286,7 @@ bool ase_undo_redo(AseUndoStack *stack, AseBuffer *buffer, size_t **out_cursors,
     }
 
     stack->redo_count--;
+    stack->current_seq = group.seq;
 
     *out_cursors = dup_cursors(group.cursors_after, group.cursors_after_count);
     *out_count = group.cursors_after_count;
@@ -276,4 +298,8 @@ bool ase_undo_redo(AseUndoStack *stack, AseBuffer *buffer, size_t **out_cursors,
     stack->undo_stack[stack->undo_count] = group;
     stack->undo_count++;
     return true;
+}
+
+size_t ase_undo_state_id(const AseUndoStack *stack) {
+    return (stack == NULL) ? 0 : stack->current_seq;
 }

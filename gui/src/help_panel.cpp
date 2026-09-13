@@ -48,7 +48,7 @@ QVector<HelpSection> helpSections() {
          {{"&larr; &rarr; &uarr; &darr;", "Move cursor"},
           {"Shift + arrow", "Extend selection"},
           {"Home / End", "Line start / end"},
-          {"Ctrl+D", "Select next occurrence"}}},
+          {"Ctrl+D", "Select next occurrence (Insert mode / Vim off)"}}},
 
         {"Editing", nullptr,
          {{"Backspace / Delete", "Delete character or selection"},
@@ -80,6 +80,8 @@ QVector<HelpSection> helpSections() {
           {"I / A / o / O", "Insert at line start / end, open line below / above"},
           {"h j k l / w b e", "Move by character / word"},
           {"0 / ^ / $", "Column 0 / first non-blank / line end"},
+          {"{ / }", "Previous / next blank line"},
+          {"Ctrl+U / Ctrl+D", "Half a screen up / down"},
           {"gg / G / 3j", "First line / last line / with a count"},
           {"v / V", "Visual / visual line mode"},
           {"o", "Jump to the other end of the selection"},

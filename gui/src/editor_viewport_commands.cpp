@@ -17,9 +17,24 @@ void EditorViewport::save() {
         return;
     }
     if (ase_buffer_save_to_file(m_buffer, m_filePath.toUtf8().constData())) {
-        m_dirty = false;
+        /* What is on disk is now this exact state — remember which one
+         * it was, and every later "is this dirty?" is that comparison.
+         * See docs/adr/0059. */
+        m_savedStateId = ase_undo_state_id(m_undo);
+        m_historyDiscardedWhileDirty = false;
         ensureCursorVisible(); /* pushes the cleared dirty flag (and title) through statusChanged */
     }
+}
+
+/*
+ * Derived from the buffer's actual state, never latched: an edit and its
+ * undo return the stack to the id recorded at save, and the file is
+ * correctly clean again. The one thing a state id cannot describe is a
+ * discarded history (see runPluginCommand), which is why that flag
+ * exists at all rather than being folded in.
+ */
+bool EditorViewport::isDirty() const {
+    return m_historyDiscardedWhileDirty || ase_undo_state_id(m_undo) != m_savedStateId;
 }
 
 /* Sets the save target then defers to save() itself, so dirty-clearing
@@ -86,10 +101,16 @@ void EditorViewport::runPluginCommand(const QString &name) {
         return; /* no such command — same silent no-op as any other unknown `:` word */
     }
 
+    /* A plugin edits the buffer directly, with no undo entries for what
+     * it did — so the history is thrown away rather than left pointing
+     * at offsets that no longer mean anything. That resets the state id
+     * to "as loaded" for a buffer that plainly isn't, and this is the
+     * one case the id alone cannot express: say so explicitly. */
     ase_undo_destroy(m_undo);
     m_undo = ase_undo_create();
+    m_savedStateId = 0;
+    m_historyDiscardedWhileDirty = true;
 
-    m_dirty = true;
     collapseToOneCursor();
     refreshCache();
     /* The buffer may have shrunk under the cursor. */

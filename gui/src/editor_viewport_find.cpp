@@ -147,7 +147,6 @@ void EditorViewport::replaceAllMatches(const QByteArray &replacement) {
     m_cursors = {0};
     m_selectionAnchors = {0};
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
-    m_dirty = true;
     refreshCache(); /* recomputes m_matches too */
     m_currentMatch = m_matches.isEmpty() ? -1 : 0;
     ensureCursorVisible();

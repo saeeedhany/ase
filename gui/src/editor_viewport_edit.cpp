@@ -184,7 +184,6 @@ void EditorViewport::cutSelection() {
     }
     normalizeCursors();
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
-    m_dirty = true;
     refreshCache();
     ensureCursorVisible();
     snapAnimationToTarget();
@@ -233,7 +232,6 @@ void EditorViewport::insertText(const QByteArray &bytes) {
     }
     normalizeCursors();
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
-    m_dirty = true;
     refreshCache();
 }
 
@@ -266,7 +264,6 @@ void EditorViewport::deleteBackward() {
     }
     normalizeCursors();
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
-    m_dirty = true;
     refreshCache();
 }
 
@@ -310,7 +307,6 @@ void EditorViewport::deleteForward() {
     }
     normalizeCursors();
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
-    m_dirty = true;
     refreshCache();
 }
 
@@ -523,7 +519,7 @@ void EditorViewport::ensureCursorVisible() {
             break;
         }
     }
-    emit statusChanged(line + 1, col + 1, m_dirty, modeLabel);
+    emit statusChanged(line + 1, col + 1, isDirty(), modeLabel);
 }
 
 /* Shared by undo()/redo(): apply the cursor snapshot the undo stack
@@ -548,11 +544,11 @@ void EditorViewport::applyUndoResult(size_t *cursors, size_t count) {
         m_selectionAnchors.push_back(0);
     }
 
-    /* Any undo/redo marks dirty — simpler than tracking the exact saved
-     * stack position, an acceptable v1 gap (docs/adr/0023) since the
-     * common case (undo back to a saved state, still see the dirty
-     * marker) is a minor cosmetic paper cut, not a data-loss risk. */
-    m_dirty = true;
+    /* Nothing to set here any more: dirtiness is derived from the undo
+     * stack's state id, so undoing back to the saved state reports
+     * clean by construction. This is where the old set-on-every-edit
+     * flag was wrong — it marked a file modified for being *touched*,
+     * not for differing from disk. See docs/adr/0059. */
     refreshCache();
     ensureCursorVisible();
     resetCaretBlink();

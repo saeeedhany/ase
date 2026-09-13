@@ -219,6 +219,22 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
                 }
                 return;
             }
+            if ((event->key() == Qt::Key_D || event->key() == Qt::Key_U) && vimModeActive() &&
+                m_vimMode != VimMode::Insert) {
+                /* The one place Vim mode *takes over* an existing
+                 * Ctrl shortcut rather than adding one. ADR 0046 set
+                 * out to keep the whole Ctrl chain mode-independent,
+                 * and that holds everywhere else — but Ctrl+D is
+                 * half-a-screen-down to anyone with vim in their
+                 * fingers, and having it fan out multi-cursors in
+                 * Normal mode is the kind of surprise that costs more
+                 * than the rule saves. Only in Normal/Visual: Insert
+                 * mode and `vim_mode = false` keep multi-cursor
+                 * Ctrl+D untouched, which is where multi-cursor
+                 * editing actually happens. See docs/adr/0059. */
+                vimHalfPageMotion(event->key() == Qt::Key_D ? 1 : -1);
+                return;
+            }
             if (event->key() == Qt::Key_D) {
                 addCursorAtNextOccurrence();
                 return;

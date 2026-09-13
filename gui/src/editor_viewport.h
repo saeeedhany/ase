@@ -122,7 +122,7 @@ public:
     QString filePath() const { return m_filePath; }
     /* For the quit-with-unsaved-changes confirmation — see main.cpp's
      * MainWindow::closeEvent and docs/adr/0044. */
-    bool isDirty() const { return m_dirty; }
+    bool isDirty() const;
     /* Ctrl+O no longer replaces this viewport's contents in place — with
      * multiple buffers (docs/adr/0054) the window opens the file as its
      * own buffer instead, so FileBrowserPanel routes through here and
@@ -373,6 +373,21 @@ private:
      * line's own end offset if the whole line is blank. Vim's `^`/`gg`/
      * `G`/`dd`-family land here, not at column 0. */
     size_t vimFirstNonBlank(int line) const;
+    /* `}` / `{` — the next/previous *empty* line (a paragraph boundary
+     * in vim's sense: truly zero-length, not merely whitespace-only),
+     * starting the scan from the line after/before the cursor's, so
+     * repeating the motion across a run of blank lines advances one at
+     * a time as real vim does. Falls off to the end/start of the buffer
+     * when there is no boundary left. See docs/adr/0059. */
+    size_t vimParagraphForward(size_t pos) const;
+    size_t vimParagraphBackward(size_t pos) const;
+    bool vimLineIsEmpty(int line) const;
+    /* Ctrl+D / Ctrl+U — half a screen down/up, scrolling the view by the
+     * same amount so the cursor keeps its row on screen rather than the
+     * text appearing to jump under a stationary caret. `direction` is
+     * +1 (down) or -1 (up). Extends the selection in Visual mode, like
+     * every other motion. */
+    void vimHalfPageMotion(int direction);
     /* `gg`/`G` — line is 0-based, clamped; moves to vimFirstNonBlank of
      * that line, or, if an operator is pending, applies it linewise
      * over the span between the current line and `line` instead. */
@@ -389,7 +404,7 @@ private:
      * runs, undoing the parking described above. Paired with
      * vimNormalizeLinewiseSelection() after. No-op unless linewise. */
     void vimPrepareLinewiseMotion();
-    /* Applies motion `m` (one of h l j k 0 ^ $ w b e) `count` times from
+    /* Applies motion `m` (one of h l j k 0 ^ $ w b e { }) `count` times from
      * the cursor. With no operator pending, moves the cursor directly
      * (extend = Visual mode). With one pending, computes the resulting
      * range/lines and applies it via vimApplyPendingOperator{Charwise,
@@ -586,10 +601,20 @@ private:
     AseBuffer *m_buffer;
     QString m_filePath;
     AseUndoStack *m_undo;
-    /* Set true by every mutating op (including undo/redo — a v1
-     * simplification, not tracking the exact saved stack position, see
-     * docs/adr/0023), cleared by a successful save(). */
-    bool m_dirty = false;
+    /* The undo state id (see core/include/ase/undo.h) as of the last
+     * successful save — 0 meaning "as loaded from disk". isDirty() is
+     * this compared against the stack's current id, so it is *derived*
+     * from the buffer's actual state rather than latched by whoever
+     * touched it last: edit, undo it, and the file is clean again,
+     * which is what the file on disk actually says. Replaces the
+     * set-on-every-mutation flag ADR 0023 shipped and ADR 0059
+     * retires. */
+    size_t m_savedStateId = 0;
+    /* The one case a state id cannot describe: a plugin command mutates
+     * the buffer behind our back and the undo history is thrown away
+     * (runPluginCommand), so the fresh stack's id says "as loaded" for
+     * a buffer that isn't. Set there, cleared by save(). */
+    bool m_historyDiscardedWhileDirty = false;
 
     AseConfig *m_config = nullptr;
     QString m_configPath;

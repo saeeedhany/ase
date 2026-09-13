@@ -726,6 +726,19 @@ ADRs as each lands here going forward.
       text field draws the editor's own gliding, breathing caret instead
       of Qt's hard blink, closing the gap ADR 0028 left open. See
       [ADR 0058](adr/0058-session-scoped-greeting-and-panel-carets.md).
+- [x] **Derived dirty state, vim paste position, four more motions**: from
+      external testing. "Is this file modified?" is now a comparison
+      against the undo stack's state id rather than a flag set by
+      whoever touched the buffer last — type a space, undo it, and the
+      file is correctly clean again, where before it stayed marked
+      modified until saved. Charwise `p`/`P` leave the cursor on the
+      last pasted character, as real vim does (linewise was already
+      correct and was left alone). New: `{`/`}` paragraph motions,
+      composable with operators, and `Ctrl+U`/`Ctrl+D` half-screen
+      motions that move cursor and viewport together — the latter
+      taking over `Ctrl+D` in Normal/Visual only, the single deliberate
+      exception to ADR 0046's mode-independent Ctrl chain. See
+      [ADR 0059](adr/0059-derived-dirty-state-paste-cursor-and-more-vim-motions.md).
 - [x] **v0.3.0-alpha**: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the `EditorViewport` split, the render hot-path

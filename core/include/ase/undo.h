@@ -63,6 +63,23 @@ bool ase_undo_undo(AseUndoStack *stack, AseBuffer *buffer, size_t **out_cursors,
  * there's nothing to redo. */
 bool ase_undo_redo(AseUndoStack *stack, AseBuffer *buffer, size_t **out_cursors, size_t *out_count);
 
+/*
+ * Identifies the buffer state the stack is currently in.
+ *
+ * A fresh stack is state 0 -- "the file as it was loaded". Every
+ * committed group produces a new state with an id that is never reused,
+ * and undo/redo move between existing states rather than creating new
+ * ones. So two observations of this value are equal if and only if the
+ * buffer content is the same, which is what "does this file have
+ * unsaved changes?" actually asks: a caller records the id at save time
+ * and compares. An edit-then-undo returns to the saved id and is
+ * correctly reported as clean, which a set-on-edit flag can never do.
+ *
+ * Deliberately not a group count: undoing one group and typing a
+ * different one lands on the same count with different content.
+ */
+size_t ase_undo_state_id(const AseUndoStack *stack);
+
 #ifdef __cplusplus
 }
 #endif
