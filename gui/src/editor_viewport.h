@@ -88,6 +88,32 @@ class HoverPanel;
  * centered overlay, since you want to watch it stream while still
  * looking at your code, not glance-act-dismiss it.
  */
+/*
+ * What the language server is doing, for the status bar's own segment —
+ * see docs/adr/0063.
+ *
+ * This is *state*, not an event: continuously true, wanted at a glance,
+ * and useless as a message that fires once and is gone. The thing an
+ * external tester could not find out — "is there a language server here
+ * at all?" — is answered by looking, at any moment.
+ */
+enum class LspState {
+    /* Not a file this editor would start a server for. Shows nothing:
+     * an indicator that is permanently blank for .txt files is just
+     * noise with extra steps. */
+    NotApplicable,
+    /* `lsp_command` isn't set. Worth saying, quietly — this is the
+     * state every packaged install starts in, and the one that reads as
+     * "LSP is broken" when nothing says otherwise. */
+    Unconfigured,
+    Running,
+    /* Configured, but the server never came up — a missing binary, or a
+     * handshake that timed out. */
+    Failed,
+    /* Came up, then went away. */
+    Stopped,
+};
+
 class EditorViewport : public QWidget {
     Q_OBJECT
 
@@ -136,6 +162,10 @@ public:
      * time, plugins can reach it — a plugin that cannot report "that
      * file isn't a thing" is a plugin that fails silently. */
     void notify(NotifyLevel level, const QString &text) { emit messagePosted(level, text); }
+    /* So the window can paint the right thing when you switch to a
+     * buffer whose state changed while you were looking elsewhere. */
+    LspState lspState() const { return m_lspState; }
+    QString lspServerName() const { return m_lspServerName; }
     /* Called by MainWindow when this viewport becomes the visible buffer.
      * Starts the language server on first activation rather than in the
      * constructor, so opening ten files doesn't spawn ten clangd
@@ -225,6 +255,9 @@ signals:
      * the rendering so there is exactly one place that decides what a
      * message looks like. See gui/src/notification.h and docs/adr/0062. */
     void messagePosted(NotifyLevel level, const QString &text);
+    /* Emitted only on an actual change, so the status bar isn't
+     * repainting a label that says the same thing 80 times a minute. */
+    void lspStateChanged(LspState state, const QString &serverName);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -548,6 +581,13 @@ private:
      * Tree-sitter highlighting already uses), or the server fails to
      * start/handshake. */
     void startLspClientIfConfigured();
+    /* Sets m_lspState and emits, but only when it actually changed. */
+    void setLspState(LspState state);
+    /* Polled alongside the config file: a server that dies after a good
+     * start (crash, OOM-kill, someone's `pkill clangd`) otherwise leaves
+     * the editor reporting a language server that isn't there, which is
+     * worse than reporting none. */
+    void checkLspAlive();
     /* m_lspPollTimer's slot. */
     void pollLsp();
     /* Called from refreshCache() — the one choke point every edit
@@ -710,6 +750,11 @@ private:
      * start) — every LSP-touching method already checks that first. */
     AseLspClient *m_lspClient = nullptr;
     bool m_lspActivated = false; /* see onActivated() */
+    LspState m_lspState = LspState::NotApplicable;
+    /* The command's basename — `clangd`, not `/usr/bin/clangd`. What the
+     * status bar shows, so it says which server rather than the generic
+     * word "LSP". */
+    QString m_lspServerName;
     QString m_lspUri;
     int m_lspVersion = 1; /* didOpen implicitly sends version 1; didChange starts at 2 */
     QTimer *m_lspPollTimer;

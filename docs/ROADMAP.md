@@ -769,6 +769,15 @@ ADRs as each lands here going forward.
       same thread: a `:messages` history, and a persistent status-bar
       segment for language-server *state* (which is what the packaged
       LSP complaint actually needs).
+- [x] **Language-server state in the status bar**: closes the external
+      report that LSP "doesn't work in the packages". It wasn't a
+      packaging bug — `lsp_command` ships commented out, and nothing
+      anywhere distinguished "not configured" from "binary missing" from
+      "working". A segment beside the cursor position now names the
+      running server, says `no lsp` when there is none, and turns the
+      diagnostic colour when one was configured but failed or died
+      (noticed within a second, on the existing config-reload timer).
+      See [ADR 0063](adr/0063-language-server-state-in-the-status-bar.md).
 - [x] **v0.3.0-alpha**: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the `EditorViewport` split, the render hot-path

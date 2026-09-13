@@ -73,7 +73,13 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     m_blinkTimer->start(motion::kTickMs); /* the heartbeat every frame-driven value steps on */
 
     m_configTimer = new QTimer(this);
-    connect(m_configTimer, &QTimer::timeout, this, [this]() { checkConfigReload(); });
+    connect(m_configTimer, &QTimer::timeout, this, [this]() {
+        checkConfigReload();
+        /* Same beat rather than a second timer: both are "has something
+         * outside this process changed under us?", and one timer is one
+         * thing to reason about. */
+        checkLspAlive();
+    });
     m_configTimer->start(750); /* see docs/adr/0008, decision 4 */
 
     m_compilePollTimer = new QTimer(this);

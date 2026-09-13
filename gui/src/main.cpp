@@ -71,6 +71,8 @@ public:
      * reopening a file you already have open should take you to it, not
      * give you a second copy to diverge from. */
     void showMessage(NotifyLevel level, const QString &text);
+    void showLspState(LspState state, const QString &serverName);
+    void updateMessageElision();
     void clearStickyMessage();
     void hideMessage();
     void openBuffer(const QString &path);
@@ -84,6 +86,7 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private:
     EditorViewport *activeViewport() const;
@@ -101,6 +104,11 @@ private:
     /* The message area — see showMessage() and docs/adr/0062. Shares the
      * bar with the mode label rather than replacing it: losing NORMAL
      * because a file got saved would be a bad trade. */
+    /* Language-server state — see docs/adr/0063. Permanent, unlike the
+     * message beside it: the question it answers ("is there a server
+     * here?") is asked at arbitrary later moments, not when something
+     * happens. */
+    QLabel *m_lspLabel = nullptr;
     QLabel *m_messageLabel = nullptr;
     QGraphicsOpacityEffect *m_messageOpacity = nullptr;
     QPropertyAnimation *m_messageFade = nullptr;
@@ -108,6 +116,10 @@ private:
     /* An error stays up until you do something else — see
      * clearStickyMessage(). Armed one event-loop turn after it is shown,
      * so the very keystroke that produced it cannot also dismiss it. */
+    /* The message as given, before elision — the elided form has to be
+     * recomputed whenever the bar's width changes, and that cannot be
+     * done from a string that has already had its middle removed. */
+    QString m_messageFullText;
     bool m_messageSticky = false;
     bool m_messageStickyArmed = false;
     QVector<EditorViewport *> m_viewports;
@@ -126,6 +138,49 @@ void applyStatusBarTheme(QMainWindow &window, QLabel *modeLabel, QLabel *statusL
     window.statusBar()->setAutoFillBackground(true);
     modeLabel->setPalette(pal);
     statusLabel->setPalette(pal);
+}
+
+/* Text for each state, and whether it is worth your attention.
+ *
+ * A working server is named, not announced: `clangd` sitting dim beside
+ * the cursor position answers "is one running?" without ever competing
+ * with the file for attention. The failure states are the only ones that
+ * take the error colour, because they are the only ones you might need
+ * to act on. "No server configured" is deliberately quiet but *present*
+ * — every packaged install starts there (`lsp_command` ships commented
+ * out), and a blank status bar is exactly what made that read as broken.
+ */
+QString lspLabelText(LspState state, const QString &serverName) {
+    switch (state) {
+    case LspState::NotApplicable:
+        return QString();
+    case LspState::Unconfigured:
+        return QStringLiteral("no lsp");
+    case LspState::Running:
+        return serverName;
+    case LspState::Failed:
+        return QStringLiteral("%1 failed").arg(serverName);
+    case LspState::Stopped:
+        return QStringLiteral("%1 stopped").arg(serverName);
+    }
+    return QString();
+}
+
+/* Slack left around the message so it never butts up against the
+ * position readout: the label's own margin, plus the status bar's
+ * spacing either side of it. */
+constexpr int kMessageGutter = 32;
+
+QColor lspLabelColor(LspState state, EditorViewport *viewport) {
+    if (state == LspState::Failed || state == LspState::Stopped) {
+        return viewport->diagnosticErrorColor();
+    }
+    QColor color = viewport->textColor();
+    /* Two tiers below the position readout. This is reference
+     * information you go looking for, not something being said to you —
+     * it should be findable and otherwise invisible. */
+    color.setAlpha(state == LspState::Running ? 120 : 150);
+    return color;
 }
 
 /* Info and warnings are the status bar's own text colour — the
@@ -219,6 +274,13 @@ MainWindow::MainWindow() {
     m_messageTimer->setSingleShot(true);
     connect(m_messageTimer, &QTimer::timeout, this, [this]() { hideMessage(); });
     statusBar()->addWidget(m_messageLabel, 1);
+    /* addPermanentWidget appends right-to-left in call order, so this
+     * lands immediately left of the position readout: chrome about the
+     * file, then chrome about the cursor. */
+    m_lspLabel = new QLabel();
+    m_lspLabel->setTextFormat(Qt::PlainText);
+    m_lspLabel->setContentsMargins(0, 0, 12, 0);
+    statusBar()->addPermanentWidget(m_lspLabel);
     m_statusLabel = new QLabel(QStringLiteral("Ln 1, Col 1"));
     statusBar()->addPermanentWidget(m_statusLabel);
 
@@ -275,6 +337,7 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
                                             .arg(dirty ? QStringLiteral(" *") : QString()));
                 setWindowTitle(windowTitleFor(viewport->filePath(), dirty));
                 applyStatusBarTheme(*this, m_modeLabel, m_statusLabel, viewport);
+                showLspState(viewport->lspState(), viewport->lspServerName());
                 refreshBufferBar(); /* the name may have changed via Save-As */
             });
     connect(viewport, &EditorViewport::fileOpenRequested, this,
@@ -283,6 +346,12 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
      * status readout follows, and for the same reason: a message about a
      * file in another tab, with nothing naming that file, reads as a
      * message about this one. */
+    connect(viewport, &EditorViewport::lspStateChanged, this,
+            [this, viewport](LspState state, const QString &serverName) {
+                if (viewport == activeViewport()) {
+                    showLspState(state, serverName);
+                }
+            });
     connect(viewport, &EditorViewport::messagePosted, this,
             [this, viewport](NotifyLevel level, const QString &text) {
                 if (viewport == activeViewport()) {
@@ -312,12 +381,9 @@ void MainWindow::showMessage(NotifyLevel level, const QString &text) {
     QPalette pal = m_messageLabel->palette();
     pal.setColor(QPalette::WindowText, messageColorFor(level, viewport));
     m_messageLabel->setPalette(pal);
-    /* Elided here rather than by the layout, so a long path shortens the
-     * message instead of squeezing Ln/Col off the end of the bar. */
-    QFontMetrics metrics(m_messageLabel->font());
-    int room = std::max(80, m_messageLabel->width());
-    m_messageLabel->setText(metrics.elidedText(text, Qt::ElideMiddle, room));
+    m_messageFullText = text;
     m_messageLabel->setToolTip(text);
+    updateMessageElision();
 
     m_messageFade->stop();
     m_messageFade->setStartValue(m_messageOpacity->opacity());
@@ -339,6 +405,7 @@ void MainWindow::showMessage(NotifyLevel level, const QString &text) {
 }
 
 void MainWindow::hideMessage() {
+    m_messageFullText.clear();
     m_messageSticky = false;
     m_messageStickyArmed = false;
     m_messageTimer->stop();
@@ -364,6 +431,53 @@ void MainWindow::clearStickyMessage() {
     if (m_messageSticky && m_messageStickyArmed) {
         hideMessage();
     }
+}
+
+/*
+ * A long message shortens itself rather than squeezing Ln/Col off the
+ * end of the bar.
+ *
+ * Measured against what the bar has *left* — and recomputed on every
+ * resize, because the first message of a session is posted while the
+ * window is still being built (the language server starts on the first
+ * buffer's activation, before show()), when the status bar's width is
+ * a meaningless default. Eliding once, at post time, cut early messages
+ * down to a few characters on a window that had plenty of room.
+ */
+void MainWindow::updateMessageElision() {
+    if (m_messageFullText.isEmpty()) {
+        m_messageLabel->clear();
+        return;
+    }
+    QFontMetrics metrics(m_messageLabel->font());
+    int taken = m_modeLabel->sizeHint().width() + m_lspLabel->sizeHint().width() +
+                m_statusLabel->sizeHint().width();
+    int room = std::max(120, statusBar()->width() - taken - kMessageGutter);
+    m_messageLabel->setText(metrics.elidedText(m_messageFullText, Qt::ElideMiddle, room));
+}
+
+void MainWindow::resizeEvent(QResizeEvent *event) {
+    QMainWindow::resizeEvent(event);
+    updateMessageElision();
+}
+
+void MainWindow::showLspState(LspState state, const QString &serverName) {
+    EditorViewport *viewport = activeViewport();
+    if (viewport == nullptr) {
+        return;
+    }
+    QString text = lspLabelText(state, serverName);
+    QColor color = lspLabelColor(state, viewport);
+    /* Called on every statusChanged as well as on real transitions, so
+     * that a config hot-reload's new theme reaches this label too —
+     * hence the guard: no palette churn on every keystroke. */
+    if (text == m_lspLabel->text() && color == m_lspLabel->palette().color(QPalette::WindowText)) {
+        return;
+    }
+    QPalette pal = m_lspLabel->palette();
+    pal.setColor(QPalette::WindowText, color);
+    m_lspLabel->setPalette(pal);
+    m_lspLabel->setText(text);
 }
 
 void MainWindow::openBuffer(const QString &path) {
@@ -404,6 +518,10 @@ void MainWindow::setActiveIndex(int index) {
      * file. Switching buffers clears it. */
     hideMessage();
     EditorViewport *viewport = m_viewports[index];
+    /* Each buffer has its own server (docs/adr/0054), so this follows the
+     * file you are looking at, exactly like the title and the position
+     * readout do. */
+    showLspState(viewport->lspState(), viewport->lspServerName());
     m_outputPanel->setViewport(viewport);
     viewport->onActivated(); /* focuses, and starts its LSP the first time */
     refreshBufferBar();

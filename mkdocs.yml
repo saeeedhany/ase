@@ -83,6 +83,7 @@ nav:
     - adr/0060-linewise-operations-at-the-end-of-the-buffer.md
     - adr/0061-the-unnamed-register.md
     - adr/0062-the-status-bar-message-line.md
+    - adr/0063-language-server-state-in-the-status-bar.md
 
 theme:
   name: material

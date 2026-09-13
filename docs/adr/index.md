@@ -70,3 +70,4 @@ what changed.
 | [0060](0060-linewise-operations-at-the-end-of-the-buffer.md) | Linewise operations at the end of the buffer (`dd` on the last line) |
 | [0061](0061-the-unnamed-register.md) | The unnamed register — `dd`+`p` works, and `x` stops eating your clipboard |
 | [0062](0062-the-status-bar-message-line.md) | The status bar message line — the editor can finally say things |
+| [0063](0063-language-server-state-in-the-status-bar.md) | Language-server state in the status bar |

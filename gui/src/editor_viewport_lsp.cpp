@@ -93,15 +93,37 @@ void EditorViewport::onActivated() {
     startLspClientIfConfigured();
 }
 
+/* Emits only on a real transition — the liveness poll calls this every
+ * 750ms and the status bar should not be repainting a label that says
+ * the same thing. */
+void EditorViewport::setLspState(LspState state) {
+    if (m_lspState == state) {
+        return;
+    }
+    m_lspState = state;
+    emit lspStateChanged(m_lspState, m_lspServerName);
+}
+
 void EditorViewport::startLspClientIfConfigured() {
     QString suffix = QFileInfo(m_filePath).suffix().toLower();
     if (suffix != QLatin1String("c") && suffix != QLatin1String("h")) {
+        /* Nothing to report for a file no server would be started for.
+         * A permanently blank indicator on a .txt file is noise. */
+        setLspState(LspState::NotApplicable);
         return;
     }
     const char *lspCommand = ase_config_get_string(m_config, "lsp_command");
     if (lspCommand == nullptr || m_filePath.isEmpty()) {
+        /* The state every packaged install starts in: `lsp_command` ships
+         * commented out (core/src/config.c), so a C file opens with no
+         * diagnostics, no completion and — until this — nothing anywhere
+         * saying why. That silence is what an external tester read as
+         * "LSP doesn't work in the packages". See docs/adr/0063. */
+        m_lspServerName.clear();
+        setLspState(LspState::Unconfigured);
         return;
     }
+    m_lspServerName = QFileInfo(QString::fromLocal8Bit(lspCommand)).fileName();
 
     const char *argv[] = {lspCommand, nullptr};
     /* QUrl::fromLocalFile on a *relative* path (e.g. the editor was
@@ -115,12 +137,37 @@ void EditorViewport::startLspClientIfConfigured() {
     m_lspUri = QUrl::fromLocalFile(QFileInfo(m_filePath).absoluteFilePath()).toString();
     m_lspClient = ase_lsp_client_start(argv, nullptr);
     if (m_lspClient == nullptr) {
+        /* Either the binary isn't there or the handshake timed out —
+         * ase_lsp_client_start doesn't distinguish, and from here the
+         * difference doesn't change what you'd do about it. Said once as
+         * an event *and* left standing in the status bar: the message
+         * catches you now, the segment answers "why are there no
+         * diagnostics?" ten minutes later. */
+        setLspState(LspState::Failed);
+        /* The message says what to *do*; the segment says what *is*.
+         * Saying the same words twice, once transiently and once
+         * permanently, would read as a duplicate rather than as two
+         * layers. */
+        notify(NotifyLevel::Error,
+               QStringLiteral("%1 not found — check lsp_command").arg(m_lspServerName));
         return;
     }
+    setLspState(LspState::Running);
 
     ase_lsp_client_set_diagnostics_callback(m_lspClient, lspDiagnosticsTrampoline, this);
     ase_lsp_client_did_open(m_lspClient, m_lspUri.toUtf8().constData(), "c", m_cache.constData());
     m_lspVersion = 1;
+}
+
+void EditorViewport::checkLspAlive() {
+    if (m_lspState != LspState::Running || m_lspClient == nullptr) {
+        return;
+    }
+    if (ase_lsp_client_is_alive(m_lspClient)) {
+        return;
+    }
+    setLspState(LspState::Stopped);
+    notify(NotifyLevel::Error, QStringLiteral("%1 stopped — no diagnostics").arg(m_lspServerName));
 }
 
 void EditorViewport::pollLsp() {
