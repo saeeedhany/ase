@@ -43,26 +43,21 @@ void ase_syntax_destroy(AseSyntax *syntax);
 
 typedef void (*AseHighlightCallback)(void *user_data, AseHighlightSpan span);
 
-/* Parses `text` (len bytes) from scratch and invokes `callback` once per
- * highlight span found, in the order Tree-sitter's query engine returns
- * them (not guaranteed sorted by start offset — see docs/adr/0007,
- * decision 5, on why this isn't incremental). `text` need not be
- * NUL-terminated. */
 /*
- * Spans for the bytes in [start_byte, end_byte) only.
+ * Spans for the bytes in [start_byte, end_byte) only, in whatever order
+ * the query engine returns them. `text` need not be NUL-terminated.
  *
- * The parse is always of the whole text — a syntax tree of half a file
- * is not a syntax tree — but the *query* that turns the tree into spans
- * is the expensive half at scale, and an editor only ever draws a
- * screenful. Measured on a 10,800-line file: 64ms for the whole file
- * against roughly a millisecond for a window. See docs/adr/0072.
+ * The parse always covers the whole text; only the query is windowed.
+ * See docs/adr/0072.
  *
- * Callers that pass the whole range get exactly what ase_syntax_highlight
- * gives them; it is now a wrapper around this.
+ * `syntax` is stateful: it keeps the last tree and a copy of the text it
+ * was parsed from, so it costs memory per handle and is only incremental
+ * when successive texts are related. One handle per document.
  */
 void ase_syntax_highlight_range(AseSyntax *syntax, const char *text, size_t len, size_t start_byte,
                                  size_t end_byte, AseHighlightCallback callback, void *user_data);
 
+/* ase_syntax_highlight_range over [0, len). */
 void ase_syntax_highlight(AseSyntax *syntax, const char *text, size_t len,
                            AseHighlightCallback callback, void *user_data);
 
