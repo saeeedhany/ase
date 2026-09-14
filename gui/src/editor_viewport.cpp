@@ -181,6 +181,13 @@ void EditorViewport::visibleByteRange(int *startByte, int *endByte) const {
     *endByte = (lastLine < lineCount) ? m_lineStarts[lastLine] : static_cast<int>(m_cache.size());
 }
 
+void EditorViewport::ensureCaptureWindowForViewport() {
+    int startByte = 0;
+    int endByte = 0;
+    visibleByteRange(&startByte, &endByte);
+    ensureCaptureWindow(startByte, endByte, false);
+}
+
 void EditorViewport::ensureCaptureWindow(int startByte, int endByte, bool force) {
     if (m_syntax == nullptr || m_cache.isEmpty()) {
         return;
@@ -200,10 +207,10 @@ void EditorViewport::ensureCaptureWindow(int startByte, int endByte, bool force)
                                 static_cast<size_t>(windowStart), static_cast<size_t>(windowEnd),
                                 collectHighlightSpan, &m_highlights);
 
-    /* Only the window is cleared and refilled. Bytes outside it keep
-     * whatever a previous window left there, which nothing reads:
-     * capturesForLine is only ever called for lines inside the window
-     * this function just guaranteed. */
+    /* Only the window is cleared and refilled. Bytes outside keep what
+     * an earlier window left, so an off-window read returns plausible
+     * but wrong widths rather than failing — callers must bring the
+     * window to their lines first. */
     for (int i = windowStart; i < windowEnd; ++i) {
         m_captureAt[i] = static_cast<uint8_t>(ASE_HL_NONE);
     }

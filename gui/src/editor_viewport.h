@@ -328,9 +328,12 @@ private:
      * Cheap enough to call from paintEvent, which is what keeps
      * scrolling correct without a whole-file query per keystroke. */
     void ensureCaptureWindow(int startByte, int endByte, bool force);
-    /* Byte range of the lines currently on screen, for the two callers
-     * that need to know what to highlight. */
+    /* Byte range of the lines on screen, from m_renderedScrollLine — the
+     * frame about to be drawn, not the settled target. */
     void visibleByteRange(int *startByte, int *endByte) const;
+    /* Brings m_captureAt up to date for what is on screen. Call after
+     * any change to m_renderedScrollLine, before reading captures. */
+    void ensureCaptureWindowForViewport();
     void drawLine(QPainter &painter, int start, int end, int y);
     QFont fontForCapture(AseHighlightCapture capture) const;
     QColor colorForCapture(AseHighlightCapture capture) const;

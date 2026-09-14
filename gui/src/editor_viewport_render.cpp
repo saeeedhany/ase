@@ -12,7 +12,6 @@
 
 #include <QFontMetrics>
 #include <QPainter>
-#include <cstdio>
 #include <QPainterPath>
 #include <QPixmap>
 
@@ -69,17 +68,10 @@ void EditorViewport::paintEvent(QPaintEvent *) {
     int visibleLines = std::max(1, height() / m_lineHeight + 2);
     int lastLine = std::min(firstLine + visibleLines, static_cast<int>(m_lineStarts.size()));
 
-    /* The syntax query runs over a window around what is visible, not
-     * over the whole file (docs/adr/0072) — so the window has to be
-     * made to cover these lines before any of them are drawn. A no-op
-     * whenever the previous window already reaches this far, which
-     * ordinary scrolling usually does. */
-    {
-        int firstByte = 0;
-        int lastByte = 0;
-        visibleByteRange(&firstByte, &lastByte);
-        ensureCaptureWindow(firstByte, lastByte, false);
-    }
+    /* Normally a no-op: updateAnimation() already did this for the
+     * scroll position it settled on. Kept because drawing is what
+     * actually requires it. See docs/adr/0072. */
+    ensureCaptureWindowForViewport();
 
     /* Everything from here to restore() draws in "local" (document)
      * coordinates — the translate folds in the gutter offset, horizontal
@@ -355,6 +347,10 @@ void EditorViewport::updateAnimation() {
     double deltaX = m_scrollX - m_renderedScrollX;
     m_renderedScrollX += (std::abs(deltaX) < 0.5) ? deltaX : deltaX * kEaseFactor;
 
+    /* The easing above moved the viewport; the window must follow before
+     * caretTargetFor() measures against it. */
+    ensureCaptureWindowForViewport();
+
     if (m_renderedCaretPos.size() != m_cursors.size()) {
         /* Cursor count just changed (added/removed) — snap to targets
          * this frame rather than gliding from a mismatched old array. */
@@ -411,6 +407,9 @@ void EditorViewport::resetCaretBlink() {
 void EditorViewport::snapAnimationToTarget() {
     m_renderedScrollLine = m_scrollLine;
     m_renderedScrollX = m_scrollX;
+    /* As in updateAnimation(), but with no easing afterwards to correct
+     * a bad measurement. */
+    ensureCaptureWindowForViewport();
     m_renderedCaretPos.resize(m_cursors.size());
     for (int i = 0; i < m_cursors.size(); ++i) {
         m_renderedCaretPos[i] = caretTargetFor(m_cursors[i]);

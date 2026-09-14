@@ -489,6 +489,12 @@ void EditorViewport::ensureCursorVisible() {
     int lineStart = m_lineStarts[line];
     int lineEnd = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
     int col = columnForOffset(cursor, line);
+    /* xForColumn needs captures for this line, and visibleByteRange()
+     * can't supply them: it answers from m_renderedScrollLine, which
+     * after a jump hasn't eased here yet. Measuring outside the window
+     * reads the ASE_HL_NONE fill, which lands in m_scrollX below and is
+     * never recomputed. */
+    ensureCaptureWindow(lineStart, lineEnd, false);
     int caretX = xForColumn(lineStart, lineEnd, col);
 
     int textAreaWidth = std::max(1, width() - gutterWidth());
