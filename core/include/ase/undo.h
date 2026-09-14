@@ -11,13 +11,11 @@ extern "C" {
 #endif
 
 /*
- * Records edit intent (offset + the bytes inserted/removed), not buffer
- * snapshots, on top of an AseBuffer -- the diff-based design ADR 0005
- * anticipated when it picked a piece table. See docs/adr/0018.
+ * Records edit intent (offset plus the bytes inserted or removed), not
+ * buffer snapshots. See docs/adr/0018.
  *
- * A "group" is one user-visible action: a single keystroke that fans out
- * across N multi-cursors is still one group, undoing/redoing all of it
- * together. Groups may not nest.
+ * A group is one user-visible action: a keystroke fanning out across N
+ * cursors is still one group. Groups may not nest.
  */
 
 typedef struct AseUndoStack AseUndoStack;
@@ -25,22 +23,17 @@ typedef struct AseUndoStack AseUndoStack;
 AseUndoStack *ase_undo_create(void);
 void ase_undo_destroy(AseUndoStack *stack);
 
-/* Opens a new group, snapshotting the caller's current cursor offsets
- * (copied in) so an undo of this group can restore them. Ignored if a
- * group is already open. */
+/* Snapshots the caller's cursor offsets so undo can restore them.
+ * Ignored if a group is already open. */
 void ase_undo_begin_group(AseUndoStack *stack, const size_t *cursors, size_t cursor_count);
 
-/* Closes the open group, snapshotting the caller's cursor offsets as they
- * stand after the edit (for redo to restore). A group with zero recorded
- * entries (every cursor's operation was a no-op) is discarded rather than
- * pushed -- there's nothing to undo, and an empty keystroke shouldn't
- * clear redo history. Ignored if no group is open. */
+/* Snapshots the post-edit cursor offsets for redo. An empty group is
+ * discarded, not pushed: an empty keystroke must not clear redo
+ * history. Ignored if no group is open. */
 void ase_undo_end_group(AseUndoStack *stack, const size_t *cursors, size_t cursor_count);
 
-/* Records that `len` bytes of `text` were just inserted at `offset` --
- * call right after the matching successful ase_buffer_insert. Must be
- * called between begin_group/end_group; a zero-length insert or a call
- * outside an open group is silently ignored. */
+/* Call right after a successful ase_buffer_insert, inside a group. A
+ * zero-length insert or a call outside a group is ignored. */
 void ase_undo_record_insert(AseUndoStack *stack, size_t offset, const char *text, size_t len);
 
 /* Records that `len` bytes of `text` were just deleted from `offset` --
@@ -64,19 +57,14 @@ bool ase_undo_undo(AseUndoStack *stack, AseBuffer *buffer, size_t **out_cursors,
 bool ase_undo_redo(AseUndoStack *stack, AseBuffer *buffer, size_t **out_cursors, size_t *out_count);
 
 /*
- * Identifies the buffer state the stack is currently in.
+ * Identifies the buffer state the stack is in. A fresh stack is 0, "as
+ * loaded"; every committed group produces a new, never-reused id, and
+ * undo/redo move between existing states. Two observations are equal
+ * iff the content is, so a caller records the id at save and compares
+ * — an edit-then-undo correctly reports clean.
  *
- * A fresh stack is state 0 -- "the file as it was loaded". Every
- * committed group produces a new state with an id that is never reused,
- * and undo/redo move between existing states rather than creating new
- * ones. So two observations of this value are equal if and only if the
- * buffer content is the same, which is what "does this file have
- * unsaved changes?" actually asks: a caller records the id at save time
- * and compares. An edit-then-undo returns to the saved id and is
- * correctly reported as clean, which a set-on-edit flag can never do.
- *
- * Deliberately not a group count: undoing one group and typing a
- * different one lands on the same count with different content.
+ * Deliberately not a group count: undoing one group and typing another
+ * lands on the same count with different content.
  */
 size_t ase_undo_state_id(const AseUndoStack *stack);
 

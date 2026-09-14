@@ -23,9 +23,7 @@ extern "C" {
 #include "ase/undo.h"
 }
 
-/* GUI-side copy of one AseLspDiagnostic — the core struct's `message`
- * is a borrowed pointer, only valid during the diagnostics callback,
- * so it can't be stored as-is. See docs/adr/0029. */
+/* The core struct's `message` is only valid during the callback. */
 struct GuiDiagnostic {
     int startLine;
     int startChar;
@@ -35,22 +33,16 @@ struct GuiDiagnostic {
     QString message;
 };
 
-/* Animated focus state for one diagnostic line — see docs/adr/0041.
- * `reveal` is the current eased 0..1 value (wipe fraction across the
- * diagnostic underline's own span, brightness fraction for the gutter
- * dot); `target` is 1 while the cursor sits on `line`, else 0. Entries
- * are removed once settled at target 0 — see updateDiagnosticLineHighlights(). */
+/* `reveal` eases toward `target`, which is 1 while the cursor is on
+ * `line`. Settled-at-zero entries are dropped. See docs/adr/0041. */
 struct DiagnosticLineHighlight {
     int line = -1;
     double reveal = 0.0;
     double target = 0.0;
 };
 
-/* GUI-side, decoupled from CompletionPopup::Item the same way
- * GuiDiagnostic is decoupled from AseLspDiagnostic — parsed straight
- * out of the raw completion JSON in applyCompletionResult(), then
- * converted to CompletionPopup::Item right before handing them to the
- * popup. See docs/adr/0030. */
+/* Parsed from completion JSON; converted to CompletionPopup::Item at
+ * the last moment. See docs/adr/0030. */
 struct GuiCompletionItem {
     QString label;
     QString insertText;
@@ -69,49 +61,18 @@ class CompletionPopup;
 class HoverPanel;
 
 /*
- * Custom-painted text viewport: fills the whole window, no chrome of its
- * own. Owns the AseBuffer it renders — see docs/adr/0002 for why this
- * class, not the core, holds Qt-specific state. Known v1 shortcuts (full-
- * buffer mirroring, byte-level cursor, no IME) are documented in
- * docs/adr/0006, not repeated here. Multi-cursor, the opt-in caret-fade
- * animation, and the accessibility pass are documented in docs/adr/0012.
- * The keyboard/mouse selection model is documented in docs/adr/0019.
- * The find/replace bar (gui/src/find_bar.h) is documented in
- * docs/adr/0021 — this class owns the actual search/replace logic,
- * FindBar is just the input widget calling into it. Status bar, dirty
- * tracking, and Open/Save-As (gui/src/file_browser_panel.h) are
- * documented in docs/adr/0023 — same "this class owns the logic, the
- * FloatingPanel is just the input widget" split. The command line and
- * :compile (gui/src/command_line.h, gui/src/output_panel.h) are
- * documented in docs/adr/0025, same split again — OutputPanel is the
- * one exception to "FloatingPanel": it's a docked panel, not a
- * centered overlay, since you want to watch it stream while still
- * looking at your code, not glance-act-dismiss it.
+ * Custom-painted text viewport, owning the AseBuffer it renders. The
+ * panels floating over it are input widgets only; the logic lives here.
+ * See docs/adr/0002, 0006, 0012, 0019, 0021, 0023, 0025.
  */
-/*
- * What the language server is doing, for the status bar's own segment —
- * see docs/adr/0063.
- *
- * This is *state*, not an event: continuously true, wanted at a glance,
- * and useless as a message that fires once and is gone. The thing an
- * external tester could not find out — "is there a language server here
- * at all?" — is answered by looking, at any moment.
- */
+
+/* For the status bar's language-server segment. See docs/adr/0063. */
 enum class LspState {
-    /* Not a file this editor would start a server for. Shows nothing:
-     * an indicator that is permanently blank for .txt files is just
-     * noise with extra steps. */
-    NotApplicable,
-    /* `lsp_command` isn't set. Worth saying, quietly — this is the
-     * state every packaged install starts in, and the one that reads as
-     * "LSP is broken" when nothing says otherwise. */
-    Unconfigured,
+    NotApplicable, /* not a file we'd start a server for; shows nothing */
+    Unconfigured,  /* lsp_command isn't set */
     Running,
-    /* Configured, but the server never came up — a missing binary, or a
-     * handshake that timed out. */
-    Failed,
-    /* Came up, then went away. */
-    Stopped,
+    Failed,        /* never came up: missing binary, or handshake timeout */
+    Stopped,       /* came up, then went away */
 };
 
 class EditorViewport : public QWidget {
@@ -121,123 +82,73 @@ public:
     EditorViewport(AseBuffer *buffer, QString filePath, QWidget *parent = nullptr);
     ~EditorViewport() override;
 
-    /* Wires this viewport to the FindBar/FileBrowserPanel instances
-     * floating over it (see main.cpp) — plain pointers, not signal/slot
-     * connections (neither declares its own Qt signals; they call back
-     * into this class's public methods directly). */
+    /* Plain pointers, not signals — the panels call back into this
+     * class directly. */
     void setFindBar(FindBar *bar) { m_findBar = bar; }
     void setFileBrowser(FileBrowserPanel *panel) { m_fileBrowser = panel; }
     void setCommandLine(CommandLine *panel) { m_commandLine = panel; }
-    /* Not a FloatingPanel (see the class comment) — still wired the
-     * same plain-pointer way. */
     void setOutputPanel(OutputPanel *panel) { m_outputPanel = panel; }
     void setHelpPanel(HelpPanel *panel) { m_helpPanel = panel; }
     void setAboutPanel(AboutPanel *panel) { m_aboutPanel = panel; }
     void setCompletionPopup(CompletionPopup *popup) { m_completionPopup = popup; }
     void setHoverPanel(HoverPanel *panel) { m_hoverPanel = panel; }
 
-    /* Called by CommandLine on Enter — see docs/adr/0025. `:w`/`:q`/
-     * `:compile`/`:output` (toggles the output panel); anything else is
-     * a silent no-op, matching the plugin host's existing "skip, don't
-     * crash" tolerance (ADR 0009) rather than an error message for a
-     * typo. */
+    /* :w/:q/:compile/:output; an unknown command is a silent no-op.
+     * See docs/adr/0025. */
     void runCommand(const QString &command);
-    /* `:name` dispatch into the plugin command registry — see
-     * docs/adr/0054. Checked after every built-in, so plugins can't
-     * shadow one. */
-    /* Returns false when no plugin registered that name, so the caller
-     * can say so rather than the command vanishing silently. */
+    /* :name dispatch into the plugin registry, checked after every
+     * built-in so plugins can't shadow one. False if unregistered. */
     bool runPluginCommand(const QString &name);
 
     QString filePath() const { return m_filePath; }
-    /* For the quit-with-unsaved-changes confirmation — see main.cpp's
-     * MainWindow::closeEvent and docs/adr/0044. */
     bool isDirty() const;
-    /* Ctrl+O no longer replaces this viewport's contents in place — with
-     * multiple buffers (docs/adr/0054) the window opens the file as its
-     * own buffer instead, so FileBrowserPanel routes through here and
-     * MainWindow decides. */
     void requestOpenFile(const QString &path) { emit fileOpenRequested(path); }
-    /* Ctrl+Shift+F's other half: walks the project (the same file list
-     * Ctrl+P uses) for `needle` and hands the hits to the output panel.
-     * Runs synchronously — see docs/adr/0066 for the measured cost and
-     * the caps that bound it. */
+    /* Synchronous; see docs/adr/0066 for the caps that bound it. */
     void searchProject(const QString &needle);
-    /* `gd` / F12 — ask the language server where the symbol under the
-     * cursor is defined and jump there, in this buffer or another. See
-     * docs/adr/0067. */
     void goToDefinition();
-    /* Jump to a 1-based line, the way `:42` does. Public because a
-     * project-search hit opens a file *and* needs to land on a line,
-     * which the window arranges across two objects. */
     void goToLine(int oneBasedLine);
-    /* Like goToLine, but restoring an exact column rather than the first
-     * non-blank — what returning to a remembered position needs, since
-     * where you *were* is a column, not a line. */
+    /* Restores an exact column rather than the first non-blank. */
     void goToLineColumn(int oneBasedLine, int oneBasedColumn);
-    /* 1-based, for snapshotting into the jumplist. */
+    /* 1-based. */
     int cursorLine() const { return lineForOffset(m_cursors.isEmpty() ? 0 : m_cursors[0]) + 1; }
     int cursorColumn() const;
-    /* "I am about to move somewhere you would not have reached with
-     * h/j/k/l." The window snapshots the current position when it hears
-     * this — see docs/adr/0070. Public so the panels that cause jumps
-     * (the find bar) can say so too. */
+    /* "About to move somewhere h/j/k/l wouldn't reach" — the window
+     * snapshots the position. See docs/adr/0070. */
     void recordJump() { emit jumpRecorded(); }
-    /* The one way to say anything to the user. Public so panels and, in
-     * time, plugins can reach it — a plugin that cannot report "that
-     * file isn't a thing" is a plugin that fails silently. */
+    /* The one way to say anything to the user. */
     void notify(NotifyLevel level, const QString &text) { emit messagePosted(level, text); }
-    /* So the window can paint the right thing when you switch to a
-     * buffer whose state changed while you were looking elsewhere. */
     LspState lspState() const { return m_lspState; }
     QString lspServerName() const { return m_lspServerName; }
-    /* Called by MainWindow when this viewport becomes the visible buffer.
-     * Starts the language server on first activation rather than in the
-     * constructor, so opening ten files doesn't spawn ten clangd
-     * processes for the nine you never looked at. See docs/adr/0054. */
+    /* Starts the language server on first activation, not in the
+     * constructor — ten open files shouldn't spawn ten servers. */
     void onActivated();
-    /* Arms the welcome greeting on this buffer. Called by MainWindow for
-     * the startup buffer only, and only when the editor was launched
-     * with no file — a viewport cannot work that out for itself, since
-     * "no path" is equally true of a Ctrl+N buffer opened an hour into a
-     * session, which must not be greeted. See docs/adr/0058. */
+    /* Only MainWindow can know this: a pathless Ctrl+N buffer opened
+     * mid-session must not be greeted. See docs/adr/0058. */
     void armWelcomeGreeting() { m_welcomeEligible = true; }
-    /* Sets m_filePath then goes through the normal save() path (so
-     * dirty-clearing and the statusChanged emit happen exactly once,
-     * not duplicated here). Called by FileBrowserPanel on Ctrl+Shift+S. */
     void saveAs(const QString &path);
 
-    /* Theme accessors for FloatingPanel-based chrome (FindBar today,
-     * more later) — see docs/adr/0022. That chrome has no AseConfig
-     * access of its own, so it always reaches colors/settings through
-     * these rather than duplicating config parsing. */
+    /* Panel chrome has no AseConfig of its own and reaches theme
+     * through these. See docs/adr/0022. */
     QColor backgroundColor() const { return m_backgroundColor; }
     QColor textColor() const { return m_textColor; }
     QColor selectionColor() const { return m_selectionColor; }
     QColor panelBackgroundColor() const { return m_panelBackgroundColor; }
-    /* Derived, not configured — a low-alpha tint of the text color, so
-     * a floating panel's border never needs its own config key. */
+    /* Derived, so a panel border needs no config key of its own. */
     QColor panelBorderColor() const {
         QColor c = m_textColor;
         c.setAlpha(60);
         return c;
     }
-    /* Derived: a lightened, fully opaque variant of the background —
-     * lets an input field inside a floating panel read as a distinct
-     * control without introducing a new hue. */
+    /* Derived: distinct control, no new hue. */
     QColor panelFieldColor() const {
         QColor c = m_backgroundColor;
         c.setAlpha(255);
         return c.lighter(130);
     }
     bool animationsEnabled() const { return m_animationsEnabled; }
-    /* The theme's error colour, already used by the diagnostic underline
-     * and gutter dot — reused for error messages so the status bar
-     * introduces no new hue (docs/adr/0007, docs/adr/0062). */
+    /* Reused for error messages, so no new hue. */
     QColor diagnosticErrorColor() const { return m_diagnosticErrorColor; }
-    /* So chrome that labels the text (the buffer bar) can sit at the
-     * same visual weight as the text itself, and follow Ctrl+=/Ctrl+-
-     * with it. See docs/adr/0056. */
+    /* So chrome can match the text's weight and follow Ctrl+=/Ctrl+-. */
     QFont editorFont() const { return m_font; }
 
     /* Called by FindBar; see docs/adr/0021. */
@@ -249,51 +160,29 @@ public:
     void replaceCurrentMatch(const QByteArray &replacement);
     void replaceAllMatches(const QByteArray &replacement);
 
-    /* Public only so the AseLspClient diagnostics-callback trampoline (a
-     * free function in editor_viewport.cpp — C callbacks can't be member
-     * functions) can reach it; not meant to be called from elsewhere.
-     * Copies the borrowed AseLspDiagnostic array into m_diagnostics and
-     * repaints. See docs/adr/0029. */
+    /* These three are public only for the C callback trampolines in
+     * editor_viewport.cpp; nothing else should call them. */
     void applyLspDiagnostics(const char *uri, const AseLspDiagnostic *diagnostics, size_t count);
-    /* Same "public only for the trampoline" reasoning as
-     * applyLspDiagnostics above — see docs/adr/0030. */
     void applyLspCompletion(const AseJsonValue *result, const char *error_message);
     void applyLspHover(const AseJsonValue *result, const char *error_message);
-    /* Parses the several shapes textDocument/definition can answer with
-     * (see docs/adr/0067) and jumps, or says why it can't. */
     void applyLspDefinition(const AseJsonValue *result, const char *error_message);
 
-    /* Brings the status bar in sync with the viewport's actual initial
-     * state right after construction, instead of leaving main.cpp's
-     * QLabel showing its hardcoded construction-time text until the
-     * first keystroke. Public only for that one call site — everywhere
-     * else already reaches this indirectly via a cursor move or edit. */
+    /* One call site, right after construction. */
     void emitInitialStatus() { ensureCursorVisible(); }
 
 signals:
-    /* Ctrl+O picked a file — the window turns this into a new buffer. */
     void fileOpenRequested(const QString &path);
-    /* Open `path` *and* land on a line — a definition in another file is
-     * both at once, and the two halves belong to different objects (the
-     * window owns the buffer list, the viewport owns the cursor). Line
-     * is 1-based. */
+    /* 1-based line. The window owns the buffer list, this owns the
+     * cursor, and a definition in another file needs both. */
     void fileOpenAtLineRequested(const QString &path, int line);
-    /* Emitted just before a jump, so the window can remember where the
-     * cursor was. Carries nothing: the window knows which viewport is
-     * active and asks it. */
+    /* Carries nothing: the window knows which viewport is active. */
     void jumpRecorded();
-    /* Emitted from ensureCursorVisible() — every call site that already
-     * calls it (every cursor move and every edit) gets this for free,
-     * rather than annotating each one individually. 1-based line/column
-     * for display. See docs/adr/0023. `modeLabel` is "NORMAL"/"INSERT"/
-     * "VISUAL" when Vim mode is on, empty otherwise — see docs/adr/0046. */
+    /* From ensureCursorVisible(), so every cursor move and edit gets it
+     * for free. 1-based; modeLabel is empty when Vim mode is off. */
     void statusChanged(int line, int column, bool dirty, const QString &modeLabel);
-    /* Everything the editor has to say, on one signal — the window owns
-     * the rendering so there is exactly one place that decides what a
-     * message looks like. See gui/src/notification.h and docs/adr/0062. */
+    /* Everything the editor says, on one signal. See docs/adr/0062. */
     void messagePosted(NotifyLevel level, const QString &text);
-    /* Emitted only on an actual change, so the status bar isn't
-     * repainting a label that says the same thing 80 times a minute. */
+    /* Only on an actual change. */
     void lspStateChanged(LspState state, const QString &serverName);
 
 protected:
@@ -309,24 +198,15 @@ private:
     void loadConfig();
     void applyConfig();
     void checkConfigReload();
-    /* Rebuilds m_font/m_metrics/m_boldMetrics/m_lineHeight/m_charWidth
-     * for m_fontFamily at `pointSize`, without touching config at all —
-     * shared by applyConfig() (config-driven) and the runtime Ctrl+=/
-     * Ctrl+-/Ctrl+0 font-size shortcuts below. See docs/adr/0050. */
+    /* Rebuilds the font and its cached metrics; touches no config. */
     void rebuildFont(int pointSize);
-    /* Ctrl+=/Ctrl+- — live, in-session font-size zoom, independent of
-     * config.ase (a config-file edit/hot-reload doesn't clear an active
-     * override; Ctrl+0 is the only way back to the configured size).
-     * Clamped to [kMinFontSize, kMaxFontSize]. */
+    /* Ctrl+=/Ctrl+-. A hot-reload doesn't clear an active override;
+     * Ctrl+0 is the only way back to the configured size. */
     void adjustFontSize(int delta);
-    /* Ctrl+0 — clears the override and rebuilds at config's own
-     * font_size. A no-op if there's no active override. */
     void resetFontSize();
     void refreshCache();
-    /* Makes sure m_captureAt covers [startByte, endByte), re-running the
-     * syntax query over a generous window around it if it does not.
-     * Cheap enough to call from paintEvent, which is what keeps
-     * scrolling correct without a whole-file query per keystroke. */
+    /* Re-runs the syntax query over a padded window only when the one
+     * it holds doesn't cover [startByte, endByte). */
     void ensureCaptureWindow(int startByte, int endByte, bool force);
     /* Byte range of the lines on screen, from m_renderedScrollLine — the
      * frame about to be drawn, not the settled target. */
@@ -337,55 +217,31 @@ private:
     void drawLine(QPainter &painter, int start, int end, int y);
     QFont fontForCapture(AseHighlightCapture capture) const;
     QColor colorForCapture(AseHighlightCapture capture) const;
-    /* Cached per applyConfig() call, not reconstructed per run per paint
-     * — QFontMetrics construction isn't free, and drawLine/xForColumn
-     * were doing it for every styled run on every visible line, every
-     * frame. See docs/adr/0017. */
+    /* Cached per applyConfig(): QFontMetrics construction isn't free
+     * and this was running per styled run per frame. */
     const QFontMetrics &metricsForCapture(AseHighlightCapture capture) const;
     QVector<AseHighlightCapture> capturesForLine(int start, int end) const;
-    /* Exact pixel x of `column` within [lineStart, lineEnd), measured the
-     * same way drawLine actually renders (per-run, with that run's real
-     * font) rather than assumed via column * m_charWidth — see
-     * docs/adr/0013's caret-drift fix. */
+    /* Measured per-run with each run's real font, not assumed via
+     * column * m_charWidth. See docs/adr/0013. */
     int xForColumn(int lineStart, int lineEnd, int column) const;
-    /* Inverse of xForColumn: which column's rendered glyph a local x
-     * coordinate falls nearest to, measured the same per-run way — see
-     * docs/adr/0039's fix for the mouse-side counterpart of the
-     * docs/adr/0013 caret-drift bug. */
+    /* Inverse, measured the same way. See docs/adr/0039. */
     int columnForX(int lineStart, int lineEnd, int localX) const;
 
-    /* 0 when line numbers are off; otherwise measured (not assumed —
-     * see docs/adr/0014) from the widest line-number string actually
-     * needed. */
+    /* 0 when line numbers are off; otherwise measured, not assumed. */
     int gutterWidth() const;
     QString gutterLabelForLine(int line, int cursorLine) const;
 
-    /* Eases m_renderedScrollLine/X and m_renderedCaretPos toward their
-     * logical targets (m_scrollLine/X, m_cursors) by one step. Called
-     * from the top of paintEvent, not the timer, so it's never stale
-     * relative to what's about to be drawn — see docs/adr/0015. When
-     * animations are off, snaps rendered state to the target instead
-     * of easing (today's instant behavior, preserved). */
+    /* One easing step. Called from paintEvent, not the timer, so it is
+     * never stale relative to what is about to be drawn. */
     void updateAnimation();
-    /* Where cursor's caret should render right now, in widget pixel
-     * space, given the *current* (possibly still-easing) scroll
-     * position — not its final settled position. */
+    /* Against the current, possibly still-easing scroll position. */
     QPointF caretTargetFor(size_t cursor) const;
-    /* Forces the caret solid-visible and restarts the idle countdown
-     * that both the hard blink's toggle and the animated fade's phase
-     * are measured from — call on every cursor-moving action (key or
-     * mouse) so the caret never blinks/fades away mid-use, in either
-     * mode, and only resumes once activity actually stops. See
-     * docs/adr/0016 and docs/adr/0017. */
+    /* Call on every cursor-moving action so the caret never fades
+     * mid-use. See docs/adr/0016, docs/adr/0017. */
     void resetCaretBlink();
-    /* Forces m_renderedScrollLine/X and every m_renderedCaretPos entry
-     * to their exact logical target, bypassing the easing in
-     * updateAnimation() for this one update. Called after a text edit
-     * (typing/deleting), even with animations on — gliding to keep up
-     * with fast, repeated small jumps just shows up as a caret that
-     * can't keep pace with typing, which is a "the editor is slow"
-     * feeling with the wrong cause. Navigation (arrows, click, Ctrl+D)
-     * keeps the glide. See docs/adr/0017. */
+    /* Bypasses the easing for one update. Used after an edit, even with
+     * animations on: a caret gliding behind fast typing reads as the
+     * editor being slow. Navigation keeps the glide. */
     void snapAnimationToTarget();
 
     /* All of these act on every cursor in m_cursors (a single cursor is
@@ -446,19 +302,14 @@ private:
     void cutSelection();
     void pasteClipboard();
 
-    /* Vim mode (Phase 1) — see docs/adr/0046. Operates on the primary
-     * (last) cursor only: handleVimNormalOrVisualKey() collapses to one
-     * cursor the moment any Vim key is pressed, so a stray Ctrl+D
-     * fan-out self-corrects rather than needing its own special case.
-     * true means the key was claimed (including "swallowed, did
-     * nothing" for an unrecognized key while in Normal/Visual mode);
-     * false means the caller's own switch/Ctrl-chain should still
-     * handle it (arrows, Home/End, every Ctrl+ combo). */
+    /* Single-cursor: any Vim key collapses to one cursor first. Returns
+     * true if the key was claimed (an unrecognised key in Normal/Visual
+     * is swallowed), false to let the caller's own chain handle it.
+     * See docs/adr/0046. */
     enum class VimMode { Insert, Normal, Visual };
     bool vimModeActive() const { return m_vimModeEnabled; }
     bool handleVimNormalOrVisualKey(QKeyEvent *event);
-    /* Three-class word model (Blank/Word/Punct) — see the .cpp doc
-     * comment on vimClassifyAt for why '\n' counts as Blank. */
+    /* '\n' counts as Blank — see vimClassifyAt in the .cpp. */
     enum class VimCharClass { Blank, Word, Punct };
     VimCharClass vimClassifyAt(size_t pos) const;
     size_t vimNextCharBoundary(size_t pos) const;
@@ -466,82 +317,43 @@ private:
     size_t vimWordForward(size_t pos) const;
     size_t vimWordEnd(size_t pos) const;
     size_t vimWordBackward(size_t pos) const;
-    /* Byte offset of the first non-blank character on `line`, or the
-     * line's own end offset if the whole line is blank. Vim's `^`/`gg`/
-     * `G`/`dd`-family land here, not at column 0. */
+    /* First non-blank on `line`, or its end if entirely blank. */
     size_t vimFirstNonBlank(int line) const;
-    /* `}` / `{` — the next/previous *empty* line (a paragraph boundary
-     * in vim's sense: truly zero-length, not merely whitespace-only),
-     * starting the scan from the line after/before the cursor's, so
-     * repeating the motion across a run of blank lines advances one at
-     * a time as real vim does. Falls off to the end/start of the buffer
-     * when there is no boundary left. See docs/adr/0059. */
-    /* A linewise range that runs to the end of the buffer contains no
-     * trailing '\n' to be removed along with it — there isn't one. Takes
-     * the *preceding* newline instead, which is what deletes the line
-     * rather than merely emptying it, and is what real vim does. Returns
-     * `start` unchanged for any range that doesn't end at the buffer's
-     * end, and for the first line (deleting everything is legitimate).
-     * See docs/adr/0060. */
+    /* A linewise range at the buffer's end has no trailing '\n' to
+     * remove, so take the preceding one instead — that deletes the line
+     * rather than emptying it. See docs/adr/0060. */
     size_t vimLinewiseDeleteStart(size_t start, size_t end) const;
-    /* `f`/`F`/`t`/`T` within the cursor's own line — vim's find-char
-     * motions never cross a line boundary, which is what makes them
-     * safe to fire blind. Returns the cursor's position unchanged when
-     * the character isn't there, so a miss is a no-op rather than a
-     * jump somewhere surprising. `command` is the letter; `target` the
-     * character searched for. See docs/adr/0069. */
+    /* Never crosses a line. A miss returns the cursor unchanged.
+     * See docs/adr/0069. */
     size_t vimFindInLine(char command, char target, int count) const;
-    /* Moves to what vimFindInLine() found, or applies a pending
-     * operator over the span (`df,`). */
     void vimApplyFindInLine(char command, char target, int count);
     size_t vimParagraphForward(size_t pos) const;
     size_t vimParagraphBackward(size_t pos) const;
     bool vimLineIsEmpty(int line) const;
-    /* Ctrl+D / Ctrl+U — half a screen down/up, scrolling the view by the
-     * same amount so the cursor keeps its row on screen rather than the
-     * text appearing to jump under a stationary caret. `direction` is
-     * +1 (down) or -1 (up). Extends the selection in Visual mode, like
-     * every other motion. */
+    /* Scrolls by the same amount, so the cursor keeps its row on
+     * screen. `direction` is +1 or -1. */
     void vimHalfPageMotion(int direction);
-    /* `gg`/`G` — line is 0-based, clamped; moves to vimFirstNonBlank of
-     * that line, or, if an operator is pending, applies it linewise
-     * over the span between the current line and `line` instead. */
+    /* 0-based and clamped. Applies a pending operator linewise instead
+     * of moving, if one is pending. */
     void vimGotoLine(int line);
-    /* Clears count1/count2/pendingOperator/pendingG — called after
-     * every fully-resolved Vim command (whether it did something or
-     * was an invalid/unrecognized combo) so state never leaks into the
-     * next keystroke. */
+    /* After every resolved command, so state never leaks into the next
+     * keystroke. */
     void resetVimPendingState();
-    /* Re-snaps the Visual selection to whole lines after a motion, when
-     * Shift+V linewise Visual is active. A no-op otherwise. */
     void vimNormalizeLinewiseSelection();
-    /* Puts the real cursor back on m_vimVisualCursorLine before a motion
-     * runs, undoing the parking described above. Paired with
-     * vimNormalizeLinewiseSelection() after. No-op unless linewise. */
+    /* Paired with vimNormalizeLinewiseSelection(). No-op unless
+     * linewise. */
     void vimPrepareLinewiseMotion();
-    /* Applies motion `m` (one of h l j k 0 ^ $ w b e { }) `count` times from
-     * the cursor. With no operator pending, moves the cursor directly
-     * (extend = Visual mode). With one pending, computes the resulting
-     * range/lines and applies it via vimApplyPendingOperator{Charwise,
-     * Linewise} instead — never moves the cursor itself in that case. */
+    /* With an operator pending this computes a range and applies it
+     * rather than moving the cursor. */
     void vimExecuteMotion(char m, int count);
-    /* Operator mutations — each opens exactly one ase_undo_begin_group/
-     * end_group pair around direct buffer+undo-record calls (never
-     * through insertText()/deleteBackward() as batch entrypoints, which
-     * would each try to open their own — groups can't nest, see
-     * core/src/undo.c). Single-cursor by construction, so no highest-
-     * offset-first loop is needed the way the multi-cursor primitives
-     * above need one. */
-    /* `linewise` says how the removed text should be *stored* in the
-     * unnamed register, not how it is removed: a linewise delete at the
-     * end of the buffer takes the newline *above* the lines
-     * (vimLinewiseDeleteStart), and that leading newline must not end up
-     * in the register or `p` would paste a blank line before the text.
-     * See docs/adr/0061. */
+    /* Each opens exactly one undo group around direct buffer calls,
+     * never through insertText()/deleteBackward() — groups can't nest.
+     *
+     * `linewise` says how the text is *stored* in the register, not how
+     * it is removed: a linewise delete at the buffer's end takes the
+     * newline above, which must not reach the register or `p` pastes a
+     * blank line. See docs/adr/0061. */
     void vimDeleteRange(size_t start, size_t end, bool linewise = false);
-    /* Writes the unnamed register (gui/src/vim_register.h), normalising a
-     * linewise payload to whole newline-terminated lines whatever shape
-     * the range that produced it had. */
     void vimSetRegister(const QByteArray &text, bool linewise);
     void vimYankRange(size_t start, size_t end, bool linewise);
     void vimChangeRange(size_t start, size_t end, bool linewise = false);
@@ -549,69 +361,35 @@ private:
     void vimYankLines(int startLine, int count);
     void vimPasteAfter();
     void vimPasteBefore();
-    /* Dispatches m_vimPendingOperator ('d'/'y'/'c') to the matching
-     * vim*Range/vim*Lines call, then resetVimPendingState() — the one
-     * place a resolved operator+motion actually commits. */
+    /* The one place a resolved operator+motion commits. */
     void vimApplyPendingOperatorCharwise(size_t start, size_t end);
     void vimApplyPendingOperatorLinewise(int startLine, int lineCount);
-    /* 'O' — opens a blank line *above* the cursor's line and lands the
-     * cursor on it. Not just moveCursorHomeAt + insertText("\n"): that
-     * would insert the newline *after* the cursor's new position,
-     * landing the cursor one line too low (on the original line, now
-     * pushed down) instead of on the new blank line above it — needs
-     * the raw buffer+undo calls so the cursor can be placed explicitly
-     * rather than wherever insertText's normal "advance past what was
-     * inserted" semantics would put it. */
+    /* Raw buffer calls, not moveCursorHomeAt + insertText("\n"): that
+     * lands the cursor a line too low. */
     void vimOpenLineAbove();
-    /* The Normal-mode block cursor's glyph — the character it should
-     * visually "fill," measured/styled the same run-aware way
-     * drawLine/xForColumn are (docs/adr/0013), not a fixed m_charWidth.
-     * Returns an empty string (and *width = m_charWidth) when there's
-     * no real character to cover — end of line or buffer, where this
-     * editor's own cursor convention already sits *at* the newline
-     * byte rather than "on" a character (the named fidelity gap, see
-     * docs/adr/0046). See docs/adr/0047. */
+    /* Empty string (and *width = m_charWidth) where there is no real
+     * character to cover — end of line or buffer. See docs/adr/0047. */
     QString vimBlockGlyphAt(size_t cursor, int *width, AseHighlightCapture *capture) const;
 
-    /* Fills the pixel rect(s) for [start, end) across visual lines
-     * [firstLine, lastLine), one rect per line — the same per-line
-     * splitting/xForColumn measurement the selection highlight used
-     * before this phase, now shared with the find/replace-match
-     * highlight too. See docs/adr/0019, docs/adr/0021. */
+    /* One rect per visual line. Shared by selection and match
+     * highlighting. */
     void highlightRange(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
                          const QColor &color) const;
-    /* A thin straight underline across [start, end), one per visual line
-     * spanned — same per-line splitting as highlightRange, but a stroked
-     * line instead of a filled rect. Was a wavy zigzag (docs/adr/0029);
-     * now dim by default, brightening with a left-to-right wipe while
-     * the cursor sits on that line — see docs/adr/0041. */
+    /* Dim by default, brightening with a left-to-right wipe while the
+     * cursor is on that line. See docs/adr/0041. */
     void drawDiagnosticUnderline(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
                                   const QColor &color) const;
 
-    /* Centered logo + a few essential shortcuts, shown over an empty
-     * buffer — see docs/adr/0042. Painted last (on top of everything
-     * else, though there's nothing else to paint when the buffer is
-     * actually empty) in absolute widget coordinates, independent of
-     * scroll/gutter, at m_welcomeOverlayOpacity. */
+    /* Absolute widget coordinates, independent of scroll/gutter.
+     * See docs/adr/0042. */
     void drawWelcomeOverlay(QPainter &painter) const;
-    /* Called every frame from updateAnimation(), unconditionally — same
-     * "always live, transition smoothness is opt-in" convention
-     * updateDiagnosticLineHighlights() already uses. Eases (or snaps)
-     * m_welcomeOverlayOpacity toward 1 while m_cache is empty, else
-     * toward 0 — so it fades in on an empty buffer (including at
-     * launch) and fades back out the moment there's anything typed,
-     * reappearing if it's all deleted again, regardless of whether
-     * that got saved in between. */
+    /* Eases toward 1 while m_cache is empty, else toward 0. */
     void updateWelcomeOverlayOpacity();
 
-    /* Find/replace — see docs/adr/0021. Plain substring, ASCII-
-     * case-insensitive (QByteArray::toLower() is ASCII-only; documented
-     * v1 simplification). */
+    /* Plain substring, ASCII-case-insensitive. See docs/adr/0021. */
     void recomputeMatches();
     void notifyNoMatches();
-    /* Moves to m_matches[index] (wrapping either direction), selecting
-     * its range like any other selection — replaceCurrentMatch then
-     * just reuses insertText's existing selection-replace path. */
+    /* Wraps either direction, selecting the range like any other. */
     void jumpToMatch(int index);
     int nearestMatchAtOrAfter(size_t offset) const;
 
@@ -626,102 +404,54 @@ private:
      * streaming its output. A no-op (reports why) if no file is open,
      * no build_command is configured, or a build is already running. */
     void compile();
-    /* m_compilePollTimer's slot: drains whatever output is currently
-     * available into the output panel, and stops itself once the
-     * process has exited. */
+    /* Drains available output; stops itself once the process exits. */
     void pollCompile();
     /* Shared by Ctrl+Shift+O and `:output` — see docs/adr/0025. */
     void toggleOutputPanel();
 
-    /* LSP diagnostics — see docs/adr/0029. Reads `lsp_command` from
-     * config (no default) at construction time; a no-op (m_lspClient
-     * stays null) if unconfigured, the file isn't .c/.h (same gate
-     * Tree-sitter highlighting already uses), or the server fails to
-     * start/handshake. */
+    /* No-op if lsp_command is unset, the file isn't .c/.h, or the
+     * server fails to start. See docs/adr/0029. */
     void startLspClientIfConfigured();
-    /* Sets m_lspState and emits, but only when it actually changed. */
+    /* Emits only when the state actually changed. */
     void setLspState(LspState state);
-    /* Polled alongside the config file: a server that dies after a good
-     * start (crash, OOM-kill, someone's `pkill clangd`) otherwise leaves
-     * the editor reporting a language server that isn't there, which is
-     * worse than reporting none. */
+    /* A server that dies after a good start otherwise leaves the editor
+     * reporting one that isn't there. */
     void checkLspAlive();
-    /* m_lspPollTimer's slot. */
     void pollLsp();
-    /* Called from refreshCache() — the one choke point every edit
-     * already passes through — so results never go stale after the
-     * first edit, the gap this phase exists to close. A no-op if no
-     * LSP client is running. */
+    /* From refreshCache(), the choke point every edit passes through. */
     void sendLspDidChange();
     QColor colorForSeverity(int severity) const;
-    /* Worst (lowest-numbered) severity among any diagnostic spanning
-     * `line`, or 0 if none — shared by the line-highlight and gutter-dot
-     * passes so the O(lines * diagnostics) scan (see docs/adr/0029) only
-     * has one implementation. */
+    /* Lowest-numbered severity spanning `line`, or 0. */
     int worstSeverityForLine(int line) const;
-    /* Current eased 0..1 focus value for `line`'s highlight, or 0 if it
-     * has no entry in m_diagnosticLineHighlights (never focused, or
-     * fully settled back to unfocused). See docs/adr/0041. */
     double diagnosticRevealForLine(int line) const;
-    /* Called every frame from updateAnimation(), unconditionally (even
-     * with animations off, where it just snaps reveal to target
-     * instantly — same convention paintEvent's gutter current-line-
-     * number brightness already uses). Sets target = 1 for whichever
-     * line the primary cursor is on, if that line has a diagnostic, and
-     * 0 for every other tracked line; eases (or snaps) each entry's
-     * reveal toward its target; drops entries once settled at 0. */
+    /* Targets 1 for the cursor's line, 0 for every other tracked line,
+     * then eases and drops entries settled at 0. */
     void updateDiagnosticLineHighlights();
 
-    /* Automatic completion — see docs/adr/0030. Called at the end of
-     * refreshCache(), the same choke point sendLspDidChange() uses, so
-     * it re-evaluates after every edit. Shows/refreshes/dismisses the
-     * popup based on whether the byte immediately before the single,
-     * non-selecting cursor looks like something worth completing
-     * (an identifier character, or a member-access trigger — '.' or
-     * the '>' of "->"); any other context dismisses whatever's open
-     * instead of firing a request, so the popup doesn't appear after
-     * every space or newline. */
+    /* Fires only when the byte before the cursor is an identifier
+     * character or a member-access trigger; anything else dismisses,
+     * so the popup doesn't appear after every space. See docs/adr/0030. */
     void requestCompletionIfAppropriate();
     void applyCompletionResult(const AseJsonValue *result);
-    /* Replaces [m_completionPrefixStart, cursor) with the popup's
-     * selected item's insertText, reusing insertText()'s own "replace
-     * the active selection" path via a temporary single-cursor
-     * selection — then dismisses. Only meaningful while the popup is
-     * showing (Enter/Tab call this; both are checked against
-     * m_completionPopup->isShowingPopup() first). */
+    /* Only meaningful while the popup is showing. */
     void acceptCompletion();
     void dismissCompletion();
-    /* Scans backward from `offset` while bytes are ASCII identifier
-     * characters — the same byte-level "ASCII v1 simplification" this
-     * codebase already applies to LSP character offsets (docs/adr/0029),
-     * used here to find where a completion replacement should start. */
+    /* Scans back over ASCII identifier bytes. */
     size_t completionPrefixStart(size_t offset) const;
 
-    /* Mouse-hover info (textDocument/hover) — see docs/adr/0030. */
-    /* Called from mouseMoveEvent whenever the pointer moves with no
-     * button held. Leaves an already-shown tooltip alone if the mouse
-     * is still within the word range it covers; otherwise dismisses it
-     * and (re)starts m_hoverTimer's pause-before-request delay. */
+    /* Leaves a shown tooltip alone while the pointer stays within the
+     * word it covers; otherwise dismisses and restarts the delay. */
     void scheduleHoverRequest(const QPoint &viewportPos);
-    /* m_hoverTimer's single-shot slot: fires the actual request once
-     * the pointer has paused for the delay. */
     void requestHoverNow();
     void applyHoverResult(const AseJsonValue *result);
     void dismissHover();
 
-    /* True while any of the five FloatingPanel-derived modal popups
-     * (Find, File browser, Command line, Help, About — the design
-     * system ADR 0022 describes; the Output panel is deliberately not
-     * one of these, see setOutputPanel's comment) is open. Guards
-     * keyPressEvent/mousePressEvent/mouseMoveEvent/wheelEvent so the
-     * document underneath is fully inert while one is up. See
-     * docs/adr/0044. */
+    /* Guards the input handlers so the document is inert while a modal
+     * panel is up. The output panel is deliberately not one. */
     bool isModalPanelOpen() const;
 
-    /* Ctrl+Z / Ctrl+Shift+Z — see docs/adr/0018. Both restore m_cursors
-     * from the undo stack's recorded snapshot rather than deriving a
-     * position, refreshCache(), and snapAnimationToTarget() so the edit
-     * (like typing) renders instantly, not glided. */
+    /* Restore cursors from the stack's snapshot rather than deriving
+     * them, and render instantly. See docs/adr/0018. */
     void undo();
     void redo();
     void applyUndoResult(size_t *cursors, size_t count);
@@ -734,19 +464,12 @@ private:
     AseBuffer *m_buffer;
     QString m_filePath;
     AseUndoStack *m_undo;
-    /* The undo state id (see core/include/ase/undo.h) as of the last
-     * successful save — 0 meaning "as loaded from disk". isDirty() is
-     * this compared against the stack's current id, so it is *derived*
-     * from the buffer's actual state rather than latched by whoever
-     * touched it last: edit, undo it, and the file is clean again,
-     * which is what the file on disk actually says. Replaces the
-     * set-on-every-mutation flag ADR 0023 shipped and ADR 0059
-     * retires. */
+    /* Undo state id at the last save; 0 means "as loaded". isDirty()
+     * compares against the current id, so undoing an edit makes the
+     * file clean again. See docs/adr/0059. */
     size_t m_savedStateId = 0;
-    /* The one case a state id cannot describe: a plugin command mutates
-     * the buffer behind our back and the undo history is thrown away
-     * (runPluginCommand), so the fresh stack's id says "as loaded" for
-     * a buffer that isn't. Set there, cleared by save(). */
+    /* The case an id can't describe: a plugin mutated the buffer and
+     * the history was discarded, so a fresh stack reads "as loaded". */
     bool m_historyDiscardedWhileDirty = false;
 
     AseConfig *m_config = nullptr;
@@ -761,23 +484,14 @@ private:
     bool m_animationsEnabled = false;
 
     AseSyntax *m_syntax = nullptr; /* null for unsupported file types — see docs/adr/0007 */
-    /* The one command registry Lua scripts and native plugins both feed
-     * (docs/adr/0009). Loaded from <config dir>/plugins/ at startup;
-     * reached via an unrecognised `:name` on the command line. See
-     * docs/adr/0054. */
+    /* Loaded from <config dir>/plugins/; reached via `:name`. */
     AsePluginHost *m_pluginHost = nullptr;
 
     QVector<AseHighlightSpan> m_highlights;
-    /* m_highlights flattened to one capture byte per buffer byte, rebuilt
-     * once per edit in refreshCache() — the form every render-path lookup
-     * actually wants. Parallel to m_cache, same "mirror it once, index it
-     * cheaply" trade m_cache/m_lineStarts already make (docs/adr/0006);
-     * uint8_t rather than the enum keeps it 1 byte per buffer byte. See
-     * docs/adr/0053. */
+    /* m_highlights flattened to one byte per buffer byte — the form
+     * every render lookup wants. See docs/adr/0053. */
     QVector<uint8_t> m_captureAt;
-    /* The byte range m_captureAt is actually valid for. Highlighting is
-     * computed for a window around what is on screen rather than for the
-     * whole file — see ensureCaptureWindow() and docs/adr/0072. */
+    /* The range m_captureAt is valid for. See docs/adr/0072. */
     int m_captureWindowStart = 0;
     int m_captureWindowEnd = 0;
 
@@ -785,17 +499,12 @@ private:
     QVector<int> m_lineStarts;
 
     QVector<size_t> m_cursors {0}; /* always non-empty, sorted ascending, de-duplicated */
-    /* Index-aligned with m_cursors, same size always — see docs/adr/0019.
-     * m_selectionAnchors[i] == m_cursors[i] means cursor i has no active
-     * selection; otherwise the range is [min, max) of the pair. */
+    /* Index-aligned with m_cursors. Equal entries mean no selection;
+     * otherwise the range is [min, max) of the pair. */
     QVector<size_t> m_selectionAnchors {0};
 
-    /* Find/replace state — see docs/adr/0021. m_findNeedle empty means
-     * no active search (the bar is closed, or its field is empty).
-     * Kept in the *original* case: comparison lower-cases fresh copies
-     * of both needle and haystack on every recompute, but the matched
-     * byte range's length always equals m_findNeedle's own length
-     * (ASCII-only case folding never changes a byte's length). */
+    /* Empty means no active search. Kept in original case; ASCII case
+     * folding never changes a byte's length. See docs/adr/0021. */
     QByteArray m_findNeedle;
     QVector<size_t> m_matches;
     int m_currentMatch = -1;
@@ -808,54 +517,31 @@ private:
     AseProcess *m_compileProcess = nullptr;
     QTimer *m_compilePollTimer;
 
-    /* LSP — see docs/adr/0029. m_lspClient null means no LSP for this
-     * buffer (unconfigured, wrong file type, or the server failed to
-     * start) — every LSP-touching method already checks that first. */
+    /* Null means no LSP for this buffer; every LSP method checks. */
     AseLspClient *m_lspClient = nullptr;
     bool m_lspActivated = false; /* see onActivated() */
     LspState m_lspState = LspState::NotApplicable;
-    /* "c" or "cpp" — told to the server on didOpen, and empty for a file
-     * this editor starts no server for. */
-    QString m_lspLanguageId;
-    /* The command's basename — `clangd`, not `/usr/bin/clangd`. What the
-     * status bar shows, so it says which server rather than the generic
-     * word "LSP". */
-    QString m_lspServerName;
+    QString m_lspLanguageId; /* "c" or "cpp"; empty if no server */
+    QString m_lspServerName; /* basename, for the status bar */
     QString m_lspUri;
     int m_lspVersion = 1; /* didOpen implicitly sends version 1; didChange starts at 2 */
     QTimer *m_lspPollTimer;
     QVector<GuiDiagnostic> m_diagnostics;
     QColor m_diagnosticErrorColor;
     QColor m_diagnosticWarningColor;
-    /* The two deliberate departures from ADR 0007's "one font color"
-     * pillar — see docs/adr/0048. Defaults match the values baked into
-     * ase_config_create_default() (core/src/config.c) so a config
-     * predating this feature (missing these keys) still renders them
-     * correctly rather than falling back to some other placeholder. */
+    /* The two departures from ADR 0007's one-font-colour pillar. These
+     * defaults must match ase_config_create_default(). */
     QColor m_syntaxTypeColor {0x68, 0x9d, 0x6a};
     QColor m_syntaxStringColor {0xd7, 0x99, 0x21};
-    /* At most a couple of entries alive at once in practice — one
-     * wiping in on the newly-focused line, one wiping back out on the
-     * line that just lost focus. See docs/adr/0041. */
+    /* A couple of entries at most: one wiping in, one wiping out. */
     QVector<DiagnosticLineHighlight> m_diagnosticLineHighlights;
 
-    /* Completion — see docs/adr/0030. m_completionPopup null means no
-     * popup wired up (shouldn't happen once main.cpp runs, but every
-     * call site checks anyway, same defensiveness as the other panel
-     * pointers). No request-sequence tracking: a request is fast and
-     * local, so an out-of-order response is rare and, since nothing is
-     * ever auto-inserted, at worst shows a one-keystroke-stale list
-     * that the very next response corrects — documented v1
-     * simplification. */
+    /* No request-sequence tracking: an out-of-order response can only
+     * show a one-keystroke-stale list, which the next one corrects. */
     CompletionPopup *m_completionPopup = nullptr;
     size_t m_completionPrefixStart = 0;
-    /* Set by acceptCompletion() right before its insertText() call,
-     * which (via refreshCache()) would otherwise immediately retrigger
-     * requestCompletionIfAppropriate() and reopen a popup showing the
-     * very item just accepted — real editors don't reopen the list the
-     * instant you've accepted from it. Consumed (and cleared) by the
-     * very next requestCompletionIfAppropriate() call, so it only ever
-     * suppresses that one, immediately-following request. */
+    /* Set by acceptCompletion(), consumed by the very next trigger:
+     * accepting an item must not reopen the list on it. */
     bool m_suppressNextCompletionTrigger = false;
 
     /* Hover — see docs/adr/0030. */
@@ -863,10 +549,8 @@ private:
     QTimer *m_hoverTimer;
     QPoint m_hoverPendingPos;     /* viewport-local pixel pos the pending/last request was for */
     size_t m_hoverPendingOffset = 0;
-    /* The buffer range the *currently shown* tooltip covers — lets
-     * scheduleHoverRequest tell "still hovering the same word, leave it
-     * alone" from "moved to a new word, restart the delay" without
-     * needing the server's own range until a response actually arrives. */
+    /* What the shown tooltip covers, so scheduleHoverRequest can tell
+     * "same word" from "moved" without the server's range. */
     size_t m_hoverShownRangeStart = 0;
     size_t m_hoverShownRangeEnd = 0;
 
@@ -875,56 +559,34 @@ private:
     int m_desiredColumn = -1; /* sticky column — single-cursor mode only, see docs/adr/0012 */
     QString m_lineNumberMode = QStringLiteral("absolute"); /* "off" / "absolute" / "relative" */
 
-    /* Vim mode (Phase 1) — see docs/adr/0046. m_vimModeEnabled comes
-     * from config (default off, like animations); m_vimMode default
-     * Insert makes "off" and "on but in Insert" identical everywhere
-     * except the one keyPressEvent gate that checks vimModeActive(). */
+    /* Defaulting m_vimMode to Insert makes "off" and "on, in Insert"
+     * identical everywhere but the keyPressEvent gate. */
     bool m_vimModeEnabled = false;
     VimMode m_vimMode = VimMode::Insert;
     int m_vimCount1 = 0;                  /* count typed before an operator/motion */
     char m_vimPendingOperator = '\0';     /* 'd' / 'y' / 'c', or '\0' */
     int m_vimCount2 = 0;                  /* count typed after the operator */
     bool m_vimPendingG = false;           /* mid-"gg" sequence */
-    /* Mid-`f`/`F`/`t`/`T`: the operator letter itself, waiting for the
-     * character to search for. '\0' when nothing is pending. */
-    char m_vimPendingFind = '\0';
-    /* The last f/F/t/T, so `;` can repeat it and `,` reverse it — vim
-     * remembers this per window and across lines, not per line. */
+    char m_vimPendingFind = '\0'; /* awaiting the char to search for */
+    /* Last f/F/t/T, for `;` and `,`. Per window, not per line. */
     char m_vimLastFindCommand = '\0';
     char m_vimLastFindTarget = '\0';
-    /* Shift+V — Visual mode selecting whole lines. Kept as a flag on
-     * VimMode::Visual rather than a fourth mode: every operator, motion
-     * and render path already works off the selection range, so linewise
-     * only has to keep that range snapped to line bounds. m_vimVisualAnchorLine
-     * is the line V started on, so the selection can grow either way
-     * from it. See docs/adr/0056. */
+    /* A flag on Visual, not a fourth mode: everything already works
+     * off the selection range. See docs/adr/0056. */
     bool m_vimVisualLinewise = false;
     int m_vimVisualAnchorLine = 0;
-    /* The line the cursor logically sits on while linewise. Tracked
-     * separately because normalizing parks the real cursor at the *start
-     * of the following line* (so the selection includes the trailing
-     * newline, which is what makes a linewise delete remove whole lines
-     * rather than leave blanks) — re-deriving the line from that offset
-     * would read one line too far and compound on every motion. */
+    /* Tracked separately: normalizing parks the real cursor at the
+     * start of the *next* line, so re-deriving would read one too far
+     * and compound on every motion. */
     int m_vimVisualCursorLine = 0;
-    /* Was: which kind the last yank was, kept per viewport alongside a
-     * clipboard-as-register model. Both are gone — the unnamed register
-     * carries its own linewise flag and is shared across buffers
-     * (gui/src/vim_register.h, docs/adr/0061). */
 
-    /* Rendered (possibly still-easing) counterparts of m_scrollLine/X and
-     * m_cursors — see docs/adr/0015. Equal to the logical values whenever
-     * animations are off or nothing is moving. */
+    /* Easing counterparts of m_scrollLine/X and m_cursors. */
     double m_renderedScrollLine = 0.0;
     double m_renderedScrollX = 0.0;
     QVector<QPointF> m_renderedCaretPos;
 
-    /* Typing pop-in — see docs/adr/0049. A short-lived visual-only
-     * record: [start, start+length) just got inserted and should render
-     * scaling/fading in from elapsedTicks == 0 instead of appearing at
-     * full size immediately. Only ever populated when animations are
-     * enabled (see insertText()); ages out (and is defensively dropped
-     * if it no longer fits inside m_cache) in updateAnimation(). */
+    /* Visual only: [start, start+length) just got inserted and scales
+     * in. Populated only with animations on. See docs/adr/0049. */
     struct TypingAnimation {
         size_t start;
         size_t length;
@@ -933,38 +595,25 @@ private:
     QVector<TypingAnimation> m_typingAnimations;
     /* Eased 0..1 — see docs/adr/0042. */
     double m_welcomeOverlayOpacity = 0.0;
-    /* The welcome overlay is a greeting, not a state display: it belongs
-     * to "you just opened the editor with nothing to edit", and to
-     * nothing else. Not to "this buffer happens to be empty", and not
-     * to a new buffer made with Ctrl+N mid-session — you are already
-     * working, and being greeted again is the editor losing its place.
-     * So it is armed from outside, by the window, for the startup
-     * buffer only (armWelcomeGreeting), and disarmed permanently the
-     * first time anything is typed. See docs/adr/0058. */
+    /* A greeting, not a state display — armed by the window for the
+     * startup buffer only, disarmed on the first keystroke. */
     bool m_welcomeEligible = false;
 
     QFont m_font;
-    /* Remembered from config's font_family so rebuildFont() (shared by
-     * applyConfig() and the runtime font-size shortcuts, docs/adr/0050)
-     * can rebuild m_font without re-reading config every time. */
+    /* So rebuildFont() needn't re-read config. */
     QString m_fontFamily;
-    /* 0 = no runtime override, follow config's font_size normally;
-     * otherwise the live-adjusted point size from Ctrl+=/Ctrl+-,
-     * cleared back to 0 by Ctrl+0. See docs/adr/0050. */
+    /* 0 = follow config's font_size; otherwise the Ctrl+=/Ctrl+- size. */
     int m_fontSizeOverride = 0;
     int m_lineHeight = 0;
     int m_charWidth = 0;
-    /* One QFontMetrics per capture-style variant actually used, cached
-     * in applyConfig() — see docs/adr/0017. */
+    /* One per capture-style variant, cached in applyConfig(). */
     QFontMetrics m_metrics {m_font};
     QFontMetrics m_boldMetrics {m_font};
 
     QTimer *m_blinkTimer;
     bool m_caretVisible = true;
-    /* Ticks since the last cursor-moving action. Drives both the hard
-     * blink's toggle and the animated fade's phase (docs/adr/0017) — a
-     * single counter, reset to 0 by resetCaretBlink(), so "stay visible
-     * while active" holds for either mode without special-casing. */
+    /* Ticks since the last cursor-moving action; drives both the hard
+     * blink and the fade. */
     int m_idleTicks = 0;
 };
 

@@ -15,11 +15,8 @@
 #include <QWheelEvent>
 
 void EditorViewport::keyPressEvent(QKeyEvent *event) {
-    /* A modal panel already has keyboard focus in the normal case, so
-     * this doesn't usually even get reached while one is open — this
-     * is the defense-in-depth half of docs/adr/0044's isolation fix,
-     * guaranteeing no keystroke edits the document underneath
-     * regardless of any focus-routing edge case. */
+    /* Belt-and-braces: a modal panel normally holds focus anyway, but
+     * no focus-routing edge case may edit the document beneath. */
     if (isModalPanelOpen()) {
         QWidget::keyPressEvent(event);
         return;
@@ -28,16 +25,10 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
     resetCaretBlink();
     dismissHover();
 
-    /* Completion popup interception — see docs/adr/0030. Takes priority
-     * over the Up/Down/Escape handling below and over Key_Return's
-     * normal "insert a newline" case further down; any other key
-     * (including plain typing) falls through to the normal handling,
-     * which itself retriggers a fresh completion request via
-     * refreshCache(). */
+    /* Takes priority over Up/Down/Escape/Return below; anything else
+     * falls through and retriggers a fresh request. */
     if (m_completionPopup != nullptr && m_completionPopup->isShowingPopup()) {
-        /* Ctrl+J/K as well as the arrows — see gui/src/list_navigation.h.
-         * Checked before the switch because it is a modifier
-         * combination, not a bare key. */
+        /* Before the switch: a modifier combination, not a bare key. */
         if (int delta = listnav::delta(event); delta != 0) {
             m_completionPopup->moveSelection(delta);
             return;
@@ -72,17 +63,14 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
     }
     if (event->key() == Qt::Key_Escape) {
         if (vimModeActive() && m_vimMode == VimMode::Insert) {
-            /* Leaving Insert steps back one column, same as real vim —
-             * only when not already at column 0, so Escape on an empty
-             * or just-Home'd line doesn't try to move left of it. */
+            /* Steps back a column, as vim does, unless already at 0. */
             if (m_cursors[0] > static_cast<size_t>(m_lineStarts[lineForOffset(m_cursors[0])])) {
                 moveCursorLeftAt(0, false);
             }
             m_vimMode = VimMode::Normal;
             resetVimPendingState();
         } else if (vimModeActive()) {
-            /* From Normal or Visual: drop any pending operator/count and
-             * any Visual-mode selection, stay/return to Normal. */
+            /* Drop any pending operator/count and selection. */
             resetVimPendingState();
             collapseToOneCursor();
             m_vimMode = VimMode::Normal;
@@ -95,19 +83,14 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         return;
     }
     if (event->key() == Qt::Key_F1) {
-        /* The help key everywhere. It used to be Ctrl+/, which was a
-         * fine mnemonic and the wrong key: F1 is what people press
-         * without being told, and moving it also freed a Ctrl slot.
-         * See docs/adr/0068. */
+        /* F1 is what people press without being told. */
         if (m_helpPanel != nullptr) {
             m_helpPanel->openHelp();
         }
         return;
     }
     if (event->key() == Qt::Key_F12) {
-        /* The universal editor binding for this, working in every mode
-         * and whether or not Vim mode is on. Vim's own `gd` is wired in
-         * the Normal/Visual dispatch. See docs/adr/0067. */
+        /* Works in every mode; vim's `gd` is wired separately. */
         goToDefinition();
         return;
     }
@@ -117,9 +100,7 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         if (handleVimNormalOrVisualKey(event)) {
             return;
         }
-        /* Falls through only for keys Vim doesn't claim (arrows, Home/
-         * End, every Ctrl/Alt/Meta combo) — the switch/Ctrl-chain below
-         * handles those exactly as it does with Vim mode off. */
+        /* Falls through only for keys Vim doesn't claim. */
     }
     switch (event->key()) {
     case Qt::Key_Left:
@@ -138,34 +119,17 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         deleteBackward();
         break;
     case Qt::Key_Delete:
-        /* Real vim gives Delete no default Normal-mode meaning either —
-         * see docs/adr/0046. Reachable here at all only because Delete
-         * isn't part of Vim's own recognized key set (handleVimNormal-
-         * OrVisualKey returns false for it), by design. */
+        /* Vim gives Delete no Normal-mode meaning either. */
         if (vimModeActive() && m_vimMode != VimMode::Insert) {
             break;
         }
         deleteForward();
         break;
     case Qt::Key_Tab:
-        /* Qt::Key_Tab's event->text() is "\t", a control character —
-         * QChar::isPrint() is false for it, so it fell through to the
-         * default branch below and out to QWidget::keyPressEvent
-         * (Qt's default focus-traversal handling), meaning it did
-         * nothing at all: a real, reported gap, not a deliberate
-         * omission. Inserts 4 spaces, not a literal tab byte:
-         * drawLine/xForColumn measure each run with plain
-         * QFontMetrics::horizontalAdvance (no QTextLayout, no tab-stop
-         * expansion), so a raw '\t' would measure at ~0 width and
-         * render as an invisible non-indent — a soft tab renders
-         * correctly with the exact same per-glyph measurement every
-         * other character already uses, and is simplicity keeping with
-         * the byte-level column model (docs/adr/0012) rather than
-         * adding tab-stop-aware rendering for one key. Completion-popup
-         * Tab-to-accept is intercepted earlier in this function and
-         * never reaches here. See docs/adr/0031. Real vim gives Tab no
-         * default Normal-mode meaning either — see docs/adr/0046 — so
-         * this is skipped while Vim mode is on and not in Insert. */
+        /* Four spaces, not a literal tab: the render path measures
+         * each run with horizontalAdvance and no tab-stop expansion, so
+         * a raw '\t' would measure ~0 wide and show as no indent at
+         * all. See docs/adr/0031. */
         if (vimModeActive() && m_vimMode != VimMode::Insert) {
             break;
         }
@@ -173,20 +137,15 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         break;
     case Qt::Key_Return:
     case Qt::Key_Enter:
-        /* Real vim gives Enter no default Normal-mode meaning either —
-         * see docs/adr/0046 — so this is skipped while Vim mode is on
-         * and not in Insert. */
+        /* Vim gives Enter no Normal-mode meaning either. */
         if (vimModeActive() && m_vimMode != VimMode::Insert) {
             break;
         }
         insertText(QByteArrayLiteral("\n"));
         break;
     default:
-        /* Alt is where the two panels that had to move went — About and
-         * Open — so Ctrl+O and Ctrl+I could go to Vim's jumplist, which
-         * has no alternative keys and is used constantly. A panel opened
-         * a few times a session can afford an unusual binding; a
-         * navigation key cannot. See docs/adr/0068. */
+        /* About and Open moved here so Ctrl+O/Ctrl+I could go to the
+         * jumplist, which has no alternative keys. */
         if ((event->modifiers() & Qt::AltModifier) && !(event->modifiers() & Qt::ControlModifier)) {
             if (event->key() == Qt::Key_O) {
                 if (m_fileBrowser != nullptr) {

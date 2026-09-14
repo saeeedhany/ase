@@ -29,15 +29,12 @@
 
 namespace {
 
-/* A hard stop on the walk, not a suggestion: this runs on the UI thread,
- * and Ctrl+P in a home directory must not freeze the editor. Generous
- * enough that no real project reaches it — anything that size wants a
- * persistent index rather than a walk. */
+/* A hard stop: this walks on the UI thread, and Ctrl+P in a home
+ * directory must not freeze the editor. */
 constexpr int kQuickOpenFileCap = 20000;
 
-/* Rows actually put into the list. You never look past the first
- * handful, and rebuilding thousands of QListWidgetItems on every
- * keystroke is exactly the per-frame work docs/adr/0053 was about. */
+/* You never look past the first handful, and rebuilding thousands of
+ * items per keystroke is real work. */
 constexpr int kMaxQuickOpenRows = 200;
 
 } // namespace
@@ -59,11 +56,8 @@ FileBrowserPanel::FileBrowserPanel(EditorViewport *viewport) : FloatingPanel(vie
     pathRow->addWidget(m_filterEdit);
     layout->addLayout(pathRow);
 
-    /* Every familiar file dialog tells you which directory you are in.
-     * This one only ever showed the directory's *name* as a
-     * placeholder, which vanished the moment you typed — so while
-     * filtering, the one piece of context you needed was gone. See
-     * docs/adr/0055. */
+    /* The directory used to be a placeholder, which vanished as soon
+     * as you typed — losing the context you needed while filtering. */
     m_pathLabel = new QLabel(content);
     m_pathLabel->setTextInteractionFlags(Qt::NoTextInteraction);
     layout->addWidget(m_pathLabel);
@@ -74,11 +68,9 @@ FileBrowserPanel::FileBrowserPanel(EditorViewport *viewport) : FloatingPanel(vie
     layout->addWidget(m_listWidget);
     installSmoothScroll(m_listWidget, m_viewport); /* see docs/adr/0031 */
 
-    /* A plain flat bar, child of the list's viewport, sliding between
-     * rows on an animation instead of relying on the native (instant,
-     * OS-styled) selection rect — see docs/adr/0024. The native
-     * highlight is made invisible in refreshTheme() (Highlight ==
-     * Base) so the two never compete. */
+    /* Slides between rows instead of the native instant selection
+     * rect, which refreshTheme() makes invisible so they don't
+     * compete. */
     m_rowHighlight = new TranslucentBar(m_listWidget->viewport());
     m_rowHighlight->hide();
     m_rowHighlightAnim = new QPropertyAnimation(m_rowHighlight, "geometry", this);
@@ -89,8 +81,7 @@ FileBrowserPanel::FileBrowserPanel(EditorViewport *viewport) : FloatingPanel(vie
 
     connect(m_filterEdit, &QLineEdit::textChanged, this, [this](const QString &text) { applyFilter(text); });
     connect(m_listWidget, &QListWidget::currentRowChanged, this, [this](int row) { moveRowHighlight(row, true); });
-    /* itemActivated stays for double-click only — keyboard Return is
-     * handled directly in eventFilter, see its comment for why. */
+    /* Double-click only; Return is handled in eventFilter. */
     connect(m_listWidget, &QListWidget::itemActivated, this,
             [this](QListWidgetItem *item) { activateEntry(item->text()); });
 }
@@ -102,8 +93,7 @@ void FileBrowserPanel::openFor(Mode mode) {
                        : (mode == Mode::SaveAs) ? QLatin1Char('S')
                                                 : QLatin1Char('P'));
 
-    /* Must happen before setDirectory() populates the list — see
-     * FloatingPanel::revealForSetup()'s doc comment. */
+    /* Before setDirectory() populates the list — see revealForSetup(). */
     revealForSetup();
 
     QString filePath = m_viewport->filePath();
@@ -143,9 +133,8 @@ void FileBrowserPanel::refreshTheme() {
 
     m_filterEdit->applyPanelTheme(m_viewport);
 
-    /* Highlight == Base so the native selection rect renders invisible
-     * — the animated m_rowHighlight bar is the only visible highlight,
-     * see the constructor's comment. */
+    /* Highlight == Base hides the native rect, leaving m_rowHighlight
+     * as the only visible one. */
     QPalette listPalette = m_listWidget->palette();
     listPalette.setColor(QPalette::Base, m_viewport->panelFieldColor());
     listPalette.setColor(QPalette::Text, m_viewport->textColor());
@@ -153,14 +142,9 @@ void FileBrowserPanel::refreshTheme() {
     listPalette.setColor(QPalette::HighlightedText, m_viewport->textColor());
     m_listWidget->setPalette(listPalette);
 
-    /* Reuses the exact translucent tone text selection already uses in
-     * the editor itself — one consistent "this is highlighted" color
-     * across the whole app, not a new one invented for this list. */
-    /* Derived from the text color rather than reusing the editor's
-     * selection color: that one is tuned for text sitting on the editor
-     * background, and over the panel's lighter field it came out muddy
-     * rather than lit. Low alpha so the row's text stays the brightest
-     * thing in it. */
+    /* Derived from the text colour, not the editor's selection colour:
+     * that one is tuned for the editor background and came out muddy
+     * over the panel's lighter field. */
     QColor rowTint = m_viewport->textColor();
     rowTint.setAlpha(38);
     m_rowHighlight->setColor(rowTint);
@@ -171,9 +155,7 @@ void FileBrowserPanel::refreshTheme() {
     QColor handleHover = m_viewport->textColor();
     handleHover.setAlpha(170);
     m_listWidget->setStyleSheet(thinScrollBarStyleSheet(handle, handleHover));
-    /* Same trap every other QLabel in this app hit: the default palette
-     * ignores the theme and renders black. One tier down, since the path
-     * is context, not the thing you are acting on. */
+    /* The default QLabel palette ignores the theme and renders black. */
     QColor pathColor = m_viewport->textColor();
     pathColor.setAlpha(140);
     QPalette pathPal = m_pathLabel->palette();
@@ -182,9 +164,7 @@ void FileBrowserPanel::refreshTheme() {
 
 }
 
-/* Dotfiles excluded (no QDir::Hidden in the filter) and no toggle to
- * show them — v1 simplification, matching this project's tolerance for
- * a documented, undoable-later scope cut over a half-built option. */
+/* Dotfiles excluded, with no toggle — v1 simplification. */
 QString FileBrowserPanel::expandUser(const QString &path) {
     if (path == QLatin1String("~")) {
         return QDir::homePath();
@@ -250,13 +230,9 @@ void FileBrowserPanel::setDirectory(const QString &dir) {
     for (const QFileInfo &info : entries) {
         m_listWidget->addItem(info.isDir() ? info.fileName() + QLatin1Char('/') : info.fileName());
     }
-    /* A freshly populated (and, on first open, still-hidden) list
-     * doesn't have real row geometry yet — Qt defers that layout pass.
-     * Forcing it synchronously here, before setCurrentRow/scrollToTop/
-     * visualRect all (correctly) depend on it, avoids a real bug this
-     * had otherwise: the top row(s) rendering as scrolled out of view
-     * in the very first open, and the highlight bar landing on a
-     * garbage rect. See docs/adr/0024. */
+    /* Qt defers row geometry, and setCurrentRow/scrollToTop/visualRect
+     * all depend on it — without forcing it here the first open
+     * rendered scrolled out of view with a garbage highlight rect. */
     m_listWidget->doItemsLayout();
     if (m_listWidget->count() > 0) {
         m_listWidget->setCurrentRow(0);
@@ -266,12 +242,8 @@ void FileBrowserPanel::setDirectory(const QString &dir) {
     moveRowHighlight(m_listWidget->currentRow(), false);
 }
 
-/*
- * Ctrl+P's listing: every file in the project, once, relative to its
- * root. The root is the enclosing git checkout if there is one, else
- * the directory you are in — "the project" is a repository when you
- * have one, and a folder when you don't.
- */
+/* Every file in the project, relative to its root: the enclosing git
+ * checkout if there is one, else the current directory. */
 void FileBrowserPanel::setProjectRoot(const QString &startDir) {
     m_currentDir = project::rootFor(startDir);
     m_projectFiles = project::collect(m_currentDir, kQuickOpenFileCap, &m_projectFilesTruncated);
@@ -285,9 +257,8 @@ void FileBrowserPanel::setProjectRoot(const QString &startDir) {
     if (shown == home || shown.startsWith(home + QLatin1Char('/'))) {
         shown = QLatin1Char('~') + shown.mid(home.size());
     }
-    /* Says how many files are in play, and admits it when the walk was
-     * cut short — a listing that silently stops at a cap is a listing
-     * that lies about what you can open. */
+    /* Admits when the walk was cut short: a listing that silently
+     * stops at a cap lies about what you can open. */
     m_pathLabel->setText(m_projectFilesTruncated
                              ? QStringLiteral("%1 — first %2 files").arg(shown).arg(m_projectFiles.size())
                              : QStringLiteral("%1 — %2 files").arg(shown).arg(m_projectFiles.size()));
@@ -295,12 +266,8 @@ void FileBrowserPanel::setProjectRoot(const QString &startDir) {
     applyQuickOpenFilter(QString());
 }
 
-/*
- * Unlike applyFilter(), this *reorders*: the whole value of a fuzzy
- * finder is that the file you meant is first, and hiding rows in a
- * fixed alphabetical order cannot do that. So the list is rebuilt from
- * the scored candidates each time, capped at kMaxQuickOpenRows.
- */
+/* Unlike applyFilter(), this reorders — a fuzzy finder's whole value
+ * is that the file you meant is first. */
 void FileBrowserPanel::applyQuickOpenFilter(const QString &query) {
     QString needle = query.trimmed();
     needle.remove(QLatin1Char(' '));
@@ -313,8 +280,7 @@ void FileBrowserPanel::applyQuickOpenFilter(const QString &query) {
             scored.push_back({score, &candidate});
         }
     }
-    /* Stable, so equal scores keep the walk's alphabetical order rather
-     * than shuffling under you as you type. */
+    /* Stable, so equal scores don't shuffle as you type. */
     std::stable_sort(scored.begin(), scored.end(),
                      [](const QPair<int, const QString *> &a, const QPair<int, const QString *> &b) {
                          return a.first > b.first;
@@ -360,8 +326,7 @@ void FileBrowserPanel::applyFilter(const QString &query) {
 
 void FileBrowserPanel::activateEntry(const QString &name) {
     if (m_mode == Mode::QuickOpen) {
-        /* Entries are paths relative to the project root, and every one
-         * of them is a file — there is nothing to navigate into. */
+        /* Every entry is a file; there is nothing to navigate into. */
         m_viewport->requestOpenFile(QDir(m_currentDir).filePath(name));
         hideBar();
         return;
@@ -385,8 +350,7 @@ void FileBrowserPanel::activateEntry(const QString &name) {
         m_viewport->requestOpenFile(fullPath);
         hideBar();
     } else {
-        /* Fills the field rather than saving immediately — a stray
-         * double-click shouldn't silently overwrite a file. */
+        /* Fills the field: a stray double-click must not overwrite. */
         m_filterEdit->setText(cleanName);
         m_filterEdit->setFocus();
     }
@@ -394,8 +358,7 @@ void FileBrowserPanel::activateEntry(const QString &name) {
 
 void FileBrowserPanel::confirmCurrent() {
     if (m_mode == Mode::QuickOpen) {
-        /* The field is a query, never a path: in this mode `src/ed` is
-         * something to match against, not a file to create. */
+        /* Here the field is a query, never a path. */
         QListWidgetItem *item = m_listWidget->currentItem();
         if (item != nullptr) {
             activateEntry(item->text());
@@ -405,10 +368,7 @@ void FileBrowserPanel::confirmCurrent() {
 
     QString typed = m_filterEdit->text().trimmed();
 
-    /* A typed path wins over the list selection in *both* modes. This
-     * used to be Save-As-only: in Open, typing a path just filtered the
-     * listing to nothing and Enter did something unrelated, which is
-     * the main reason this panel felt unfamiliar. See docs/adr/0055. */
+    /* A typed path wins over the list selection in both modes. */
     if (looksLikePath(typed)) {
         QString resolved = expandUser(typed);
         if (!QDir::isAbsolutePath(resolved)) {
@@ -420,8 +380,7 @@ void FileBrowserPanel::confirmCurrent() {
             return;
         }
         if (m_mode == Mode::Open) {
-            /* A path that doesn't exist yet is fine — opening a new file
-             * by name is a normal editor action (docs/adr/0006). */
+            /* Opening a not-yet-existing file by name is normal. */
             m_viewport->requestOpenFile(resolved);
             hideBar();
             return;
@@ -437,9 +396,7 @@ void FileBrowserPanel::confirmCurrent() {
     if (m_mode == Mode::Open) {
         QListWidgetItem *item = m_listWidget->currentItem();
         if (item == nullptr || item->isHidden()) {
-            /* Nothing matched the filter — treat what was typed as a new
-             * file name in this directory rather than doing nothing at
-             * all, which is what it used to do. */
+            /* Nothing matched: treat it as a new file name here. */
             if (!typed.isEmpty()) {
                 m_viewport->requestOpenFile(QDir(m_currentDir).filePath(typed));
                 hideBar();
@@ -458,8 +415,7 @@ void FileBrowserPanel::confirmCurrent() {
         setDirectory(resolved);
         return;
     }
-    /* Silently clobbering an existing file is the one genuinely
-     * dangerous thing this panel could do, and it did it. */
+    /* The one genuinely dangerous thing this panel can do. */
     if (QFileInfo::exists(resolved) && !confirmOverwrite(resolved)) {
         return;
     }
@@ -499,21 +455,14 @@ void FileBrowserPanel::moveRowHighlight(int row, bool animate) {
     m_rowHighlightAnim->start();
 }
 
-/* Return is handled here for *both* widgets, not left to their native
- * Return handling (QLineEdit's returnPressed signal / QListWidget's own
- * Return-triggers-itemActivated) — an event filter runs *before* the
- * target's own handling, so returning true here fully consumes the key
- * press before Qt's native path ever sees it. This isn't stylistic:
- * relying on the native signals had a real, reproducible bug (see
- * docs/adr/0023) — activateEntry()/confirmCurrent() can end in
- * hideBar(), which moves keyboard focus to the viewport synchronously,
- * from inside the very key-press handling still in progress, and Qt's
- * native dispatch went on to redeliver that same key press to the
- * newly-focused EditorViewport afterward.
+/* Return is consumed here for both widgets rather than via their
+ * native signals: activating can end in hideBar(), which moves focus
+ * to the viewport synchronously, and Qt then redelivered the same key
+ * press to it. An event filter runs first, so returning true stops
+ * that. See docs/adr/0023.
  *
- * Up/Down in the filter field are forwarded to the list (skipping
- * filtered-out rows) so typing-to-filter and arrow-to-pick compose the
- * way a quick-open/fuzzy-find field normally does — see docs/adr/0024. */
+ * Up/Down in the filter field forward to the list, skipping filtered-
+ * out rows. */
 bool FileBrowserPanel::eventFilter(QObject *watched, QEvent *event) {
     if (event->type() == QEvent::KeyPress && (watched == m_filterEdit || watched == m_listWidget)) {
         auto *keyEvent = static_cast<QKeyEvent *>(event);
@@ -534,9 +483,7 @@ bool FileBrowserPanel::eventFilter(QObject *watched, QEvent *event) {
             return true;
         }
         if (int step = listnav::delta(keyEvent); step != 0) {
-            /* Handled uniformly for both widgets (not just forwarded
-             * from the filter field) so a filtered-out row is never
-             * reachable via the keyboard from either one. */
+            /* Both widgets, so a filtered-out row is never reachable. */
             int next = nextVisibleRow(m_listWidget->currentRow(), step);
             if (next >= 0) {
                 m_listWidget->setCurrentRow(next);

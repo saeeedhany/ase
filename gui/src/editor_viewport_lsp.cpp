@@ -13,11 +13,8 @@
 #include <QUrl>
 
 namespace {
-/* One piece of a hover response's `contents`: either a plain string, or
- * an object carrying a "value" string (covers both MarkupContent
- * {kind, value} and the legacy single-MarkedString {language, value}
- * shape) — see docs/adr/0030. Anything else yields an empty piece,
- * silently dropped by extractHoverText below. */
+/* A plain string, or an object with a "value" — covers MarkupContent
+ * and legacy MarkedString. Anything else yields an empty piece. */
 QString extractHoverPiece(const AseJsonValue *value) {
     if (value == nullptr) {
         return QString();
@@ -33,10 +30,8 @@ QString extractHoverPiece(const AseJsonValue *value) {
     return QString();
 }
 
-/* `contents` may be a single piece or (legacy MarkedString[]) an array
- * of them — joined with a blank line between, same as most editors
- * render multi-part hover. No markdown rendering (v1 simplification,
- * see docs/adr/0030) — shown as plain wrapped text either way. */
+/* One piece or an array of them, joined by a blank line. No markdown
+ * rendering; plain wrapped text either way. */
 QString extractHoverText(const AseJsonValue *contents) {
     if (contents == nullptr) {
         return QString();
@@ -71,22 +66,10 @@ void lspDefinitionTrampoline(void *user_data, const AseJsonValue *result, const 
 }
 } // namespace
 
-/* Gated the same way Tree-sitter syntax highlighting already is
- * (.c/.h suffix) — a language server for anything else would need a
- * per-language command mapping this v1 doesn't attempt. No default for
- * `lsp_command` (config.c) — unconfigured means no LSP for this
- * session, not a guess at which server is installed. Called from both
- * the constructor and openFile() (which stops any previous client
- * first — see its own call site) — so switching files always talks to
- * a fresh server against the right document. Editing `lsp_command`
- * itself mid-session and hot-reloading is still a documented v1 gap:
- * that only takes effect on the next file open, see docs/adr/0029. */
-/* One-shot: the first time this buffer is actually shown. Keeping the
- * server alive afterwards (rather than stopping it on switch-away) is
- * deliberate — restarting clangd costs a reindex, which would make
- * switching buffers feel slow, and switching is the common action. The
- * real fix for "N visited C files means N servers" is one project-wide
- * server handling several didOpen documents; see docs/ROADMAP.md. */
+/* One-shot, the first time this buffer is shown. The server is kept
+ * alive on switch-away: restarting clangd costs a reindex, and
+ * switching is the common action. One project-wide server is the real
+ * fix for N files meaning N servers. See docs/adr/0029. */
 void EditorViewport::onActivated() {
     setFocus();
     if (m_lspActivated) {
@@ -96,9 +79,7 @@ void EditorViewport::onActivated() {
     startLspClientIfConfigured();
 }
 
-/* Emits only on a real transition — the liveness poll calls this every
- * 750ms and the status bar should not be repainting a label that says
- * the same thing. */
+/* Only on a real transition: the liveness poll runs every 750ms. */
 void EditorViewport::setLspState(LspState state) {
     if (m_lspState == state) {
         return;
@@ -107,30 +88,20 @@ void EditorViewport::setLspState(LspState state) {
     emit lspStateChanged(m_lspState, m_lspServerName);
 }
 
-/*
- * The LSP language id for a file, or an empty string when this editor
- * would not start a server for it.
+/* Empty when this editor would start no server. C++ is included
+ * because clangd handles both and highlighting's C-only gate is a
+ * separate one (it needs a grammar per language; this does not).
  *
- * C++ is here as well as C because clangd handles both and the gate not
- * to was never really a decision — ADR 0029 wired up C and the list
- * simply never grew. Keeping it C-only meant go-to-definition could not
- * work on this editor's own sources, which is a strange thing to ship.
- * Tree-sitter highlighting is a separate gate and still C-only; that one
- * needs a grammar per language, this one does not.
- *
- * The id matters: telling a server `c` about a `.cpp` file makes it
- * parse C++ as C, and the errors that produces look like your code is
- * broken rather than like the editor lied.
- */
+ * The id matters: telling a server `c` about a `.cpp` file makes the
+ * resulting errors look like your code is broken. */
 QString lspLanguageIdFor(const QString &path) {
     QString suffix = QFileInfo(path).suffix().toLower();
     if (suffix == QLatin1String("c")) {
         return QStringLiteral("c");
     }
     if (suffix == QLatin1String("h")) {
-        /* Ambiguous by nature. `c` is the safer guess: clangd treats a
-         * C header as C++ when the compile database says so, and a C++
-         * header parsed as C fails loudly rather than silently. */
+        /* `c` is the safer guess: a C++ header parsed as C fails
+         * loudly rather than silently. */
         return QStringLiteral("c");
     }
     if (suffix == QLatin1String("cpp") || suffix == QLatin1String("cc") ||
@@ -144,18 +115,14 @@ QString lspLanguageIdFor(const QString &path) {
 void EditorViewport::startLspClientIfConfigured() {
     m_lspLanguageId = lspLanguageIdFor(m_filePath);
     if (m_lspLanguageId.isEmpty()) {
-        /* Nothing to report for a file no server would be started for.
-         * A permanently blank indicator on a .txt file is noise. */
+        /* A permanently blank indicator on a .txt file is noise. */
         setLspState(LspState::NotApplicable);
         return;
     }
     const char *lspCommand = ase_config_get_string(m_config, "lsp_command");
     if (lspCommand == nullptr || m_filePath.isEmpty()) {
-        /* The state every packaged install starts in: `lsp_command` ships
-         * commented out (core/src/config.c), so a C file opens with no
-         * diagnostics, no completion and — until this — nothing anywhere
-         * saying why. That silence is what an external tester read as
-         * "LSP doesn't work in the packages". See docs/adr/0063. */
+        /* Every packaged install starts here, since lsp_command ships
+         * commented out. The silence read as "LSP is broken". */
         m_lspServerName.clear();
         setLspState(LspState::Unconfigured);
         return;
@@ -163,27 +130,16 @@ void EditorViewport::startLspClientIfConfigured() {
     m_lspServerName = QFileInfo(QString::fromLocal8Bit(lspCommand)).fileName();
 
     const char *argv[] = {lspCommand, nullptr};
-    /* QUrl::fromLocalFile on a *relative* path (e.g. the editor was
-     * launched as `ase_gui file.c` from a shell, not `ase_gui
-     * /abs/path/file.c`) produces a malformed URI — real servers
-     * (clangd included) reject it outright ("unresolvable URI"),
-     * silently breaking every LSP feature. QFileInfo::absoluteFilePath
-     * resolves against the current working directory first, matching
-     * how the shell itself resolved the relative path at launch. See
-     * docs/adr/0032. */
+    /* QUrl::fromLocalFile on a relative path yields a URI clangd
+     * rejects outright, silently breaking every LSP feature. */
     m_lspUri = QUrl::fromLocalFile(QFileInfo(m_filePath).absoluteFilePath()).toString();
     m_lspClient = ase_lsp_client_start(argv, nullptr);
     if (m_lspClient == nullptr) {
-        /* Either the binary isn't there or the handshake timed out —
-         * ase_lsp_client_start doesn't distinguish, and from here the
-         * difference doesn't change what you'd do about it. Said once as
-         * an event *and* left standing in the status bar: the message
-         * catches you now, the segment answers "why are there no
-         * diagnostics?" ten minutes later. */
+        /* Missing binary or timed-out handshake; indistinguishable
+         * here, and the fix is the same either way. */
         setLspState(LspState::Failed);
-        /* The message says what to *do*; the segment says what *is*.
-         * Saying the same words twice, once transiently and once
-         * permanently, would read as a duplicate rather than as two
+        /* The message says what to do; the segment says what is.
+         * Identical wording would read as a duplicate rather than as two
          * layers. */
         notify(NotifyLevel::Error,
                QStringLiteral("%1 not found — check lsp_command").arg(m_lspServerName));

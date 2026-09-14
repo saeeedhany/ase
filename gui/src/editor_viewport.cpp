@@ -32,11 +32,8 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 
     loadConfig();
 
-    /* Real vim starts in Normal mode, not Insert — a one-time startup
-     * decision made here, not inside applyConfig() itself (which also
-     * runs on every config hot-reload; doing it there would yank an
-     * actively-typing user back to Normal just because config.ase's
-     * mtime changed for some unrelated edit). See docs/adr/0050. */
+    /* Here, not in applyConfig(): that also runs on hot-reload, and
+     * would yank a typing user back to Normal. */
     if (m_vimModeEnabled) {
         m_vimMode = VimMode::Normal;
     }
@@ -50,11 +47,7 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 
     m_undo = ase_undo_create();
 
-    /* Plugins live next to config.ase, in <config dir>/plugins/. A
-     * missing directory is not an error (the host returns 0 loaded), so
-     * there's nothing to configure for anyone who has no plugins — same
-     * "unconfigured is a normal state, not a failure" stance the LSP and
-     * build commands already take. See docs/adr/0054. */
+    /* <config dir>/plugins/. A missing directory is not an error. */
     m_pluginHost = ase_plugin_host_create();
     if (m_pluginHost != nullptr && !m_configPath.isEmpty()) {
         QString pluginDir = QFileInfo(m_configPath).dir().filePath(QStringLiteral("plugins"));
@@ -76,9 +69,8 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     m_configTimer = new QTimer(this);
     connect(m_configTimer, &QTimer::timeout, this, [this]() {
         checkConfigReload();
-        /* Same beat rather than a second timer: both are "has something
-         * outside this process changed under us?", and one timer is one
-         * thing to reason about. */
+        /* Same beat rather than a second timer: both ask whether
+         * something outside the process changed. */
         checkLspAlive();
     });
     m_configTimer->start(750); /* see docs/adr/0008, decision 4 */
@@ -89,12 +81,9 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     m_lspPollTimer = new QTimer(this);
     connect(m_lspPollTimer, &QTimer::timeout, this, [this]() { pollLsp(); });
     m_lspPollTimer->start(200); /* non-blocking poll, same shape as config-reload/compile-output polling */
-    /* The server itself starts on first activation, not here — see
-     * onActivated() and docs/adr/0054. */
+    /* The server starts on first activation — see onActivated(). */
 
-    /* Needed for mouseMoveEvent to fire with no button held — hover
-     * (docs/adr/0030) has to track the pointer passively, not just
-     * during a drag. */
+    /* So mouseMoveEvent fires with no button held, for hover. */
     setMouseTracking(true);
     m_hoverTimer = new QTimer(this);
     m_hoverTimer->setSingleShot(true);
@@ -118,12 +107,8 @@ void EditorViewport::refreshCache() {
         ase_buffer_get_text(m_buffer, 0, len, m_cache.data());
     }
 
-    /* memchr, not a byte loop: this runs on every keystroke over the
-     * whole buffer, and the obvious loop measured 8.2ms on a 276KB file
-     * — more than the incremental syntax parse it sits next to.
-     * resize(0) rather than clear() so the vector keeps its capacity
-     * between keystrokes instead of reallocating from nothing each
-     * time. See docs/adr/0072. */
+    /* memchr, not a byte loop: the obvious loop measured 8.2ms on a
+     * 276KB file, per keystroke. resize(0) keeps the capacity. */
     m_lineStarts.resize(0);
     m_lineStarts.reserve(m_cache.size() / 24 + 16);
     m_lineStarts.push_back(0);
@@ -142,11 +127,8 @@ void EditorViewport::refreshCache() {
     /* Sized here, filled by ensureCaptureWindow() for the part that is
      * about to be drawn. */
     m_captureAt.fill(static_cast<uint8_t>(ASE_HL_NONE), m_cache.size());
-    /* Recomputed now rather than left invalid until the next paint:
-     * xForColumn() measures runs with each capture's own font, and it is
-     * called from the animation tick as well as from painting, so a
-     * window that is empty between an edit and the next frame would put
-     * the caret a pixel or two off. */
+    /* Now, not at the next paint: xForColumn() also runs on the
+     * animation tick, and an empty window misplaces the caret. */
     m_captureWindowStart = 0;
     m_captureWindowEnd = 0;
     int visibleStart = 0;
@@ -159,19 +141,10 @@ void EditorViewport::refreshCache() {
     requestCompletionIfAppropriate();
 }
 
-/*
- * Fills m_captureAt for the bytes about to be drawn, re-running the
- * syntax query only when the window it already holds does not cover
- * them.
- *
- * Highlighting used to be computed for the entire file on every
- * keystroke: 14,402 spans and 64ms on a 10,800-line file, to draw about
- * forty lines. The parse still covers the whole file — a syntax tree of
- * half a file is not a syntax tree — but the query that turns it into
- * spans now runs over a window, and the window is padded generously so
- * that ordinary scrolling does not re-run it every frame. See
- * docs/adr/0072.
- */
+/* Whole-file highlighting cost 14,402 spans and 64ms on a 10,800-line
+ * file to draw forty lines. The parse still covers everything; only the
+ * query is windowed, padded so ordinary scrolling doesn't re-run it.
+ * See docs/adr/0072. */
 void EditorViewport::visibleByteRange(int *startByte, int *endByte) const {
     int lineCount = static_cast<int>(m_lineStarts.size());
     int firstLine = std::clamp(static_cast<int>(m_renderedScrollLine), 0, std::max(0, lineCount - 1));
@@ -196,8 +169,7 @@ void EditorViewport::ensureCaptureWindow(int startByte, int endByte, bool force)
         return;
     }
 
-    /* Roughly a screenful either side, so paging up and down mostly
-     * lands inside what is already computed. */
+    /* About a screenful either side, so paging usually stays inside. */
     int pad = std::max(4096, (endByte - startByte) * 2);
     int windowStart = std::max(0, startByte - pad);
     int windowEnd = std::min(static_cast<int>(m_cache.size()), endByte + pad);
@@ -244,27 +216,15 @@ size_t EditorViewport::offsetForLineColumn(int line, int column) const {
 }
 
 size_t EditorViewport::offsetForPoint(const QPoint &pos) const {
-    /* Uses the *rendered* (possibly still-easing) scroll position, not
-     * the logical target — a click during an active scroll animation
-     * has to map against what's actually on screen right now. See
-     * docs/adr/0015. The vertical fractional part is ignored (floor
-     * only) — a sub-line-height miss mid-animation is a transient,
-     * approximate case, consistent with docs/adr/0013's click-precision
-     * philosophy. */
+    /* The rendered, still-easing position: a click during a scroll has
+     * to map against what is on screen now. */
     int line = static_cast<int>(std::floor(m_renderedScrollLine)) + pos.y() / std::max(1, m_lineHeight);
     line = std::clamp(line, 0, static_cast<int>(m_lineStarts.size()) - 1);
-    /* Shifted by the gutter and horizontal scroll (docs/adr/0014) to land
-     * in the same local coordinate space paintEvent's translate uses. */
+    /* Into the same local space paintEvent's translate uses. */
     int localX = std::max(0, static_cast<int>(pos.x() - gutterWidth() + m_renderedScrollX));
-    /* columnForX measures each run's actual rendered width the same way
-     * drawLine paints it, rather than assuming column * m_charWidth. That
-     * fixed-pitch assumption used to live here directly and drifted
-     * further from the real character the further right a click/hover
-     * landed on a line — the mouse-side counterpart of the caret-drift
-     * bug docs/adr/0013 already fixed for the caret itself. See
-     * docs/adr/0039. columnForX already rounds to the nearest column
-     * (docs/adr/0028) and already snaps to a codepoint boundary, so no
-     * separate continuation-byte fixup is needed here anymore. */
+    /* columnForX measures runs as drawLine paints them, and already
+     * rounds to the nearest column and snaps to a codepoint boundary —
+     * so no continuation-byte fixup is needed here. */
     int lineStart = m_lineStarts[line];
     int lineEnd =
         (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());

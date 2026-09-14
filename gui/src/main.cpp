@@ -37,17 +37,14 @@ extern "C" {
 }
 
 namespace {
-/* Shared by the initial title and every statusChanged-driven update —
- * see docs/adr/0023. */
+
 QString windowTitleFor(const QString &filePath, bool dirty) {
     QString name = filePath.isEmpty() ? QStringLiteral("untitled") : filePath;
     return (dirty ? QStringLiteral("%1 [modified] — Absolute Simple Editor") : QStringLiteral("%1 — Absolute Simple Editor"))
         .arg(name);
 }
 
-/* Just the file name for the buffer bar — the full path is already in
- * the window title, and a bar of long paths would defeat the point of
- * keeping it minimal (docs/adr/0054). */
+/* Name only; the full path is already in the window title. */
 QString bufferLabelFor(const QString &filePath) {
     if (filePath.isEmpty()) {
         return QStringLiteral("untitled");
@@ -55,25 +52,15 @@ QString bufferLabelFor(const QString &filePath) {
     return QFileInfo(filePath).fileName();
 }
 
-/*
- * The window: owns the open buffers, one EditorViewport each, stacked so
- * exactly one is visible. See docs/adr/0054 for why a viewport per buffer
- * rather than one viewport swapping documents.
- *
- * Also still the quit-confirmation owner (docs/adr/0044) — now asking
- * about every dirty buffer, not just the visible one.
- */
+/* Owns the open buffers, one EditorViewport each, stacked so exactly
+ * one is visible. See docs/adr/0054, docs/adr/0044. */
 class MainWindow : public QMainWindow {
 public:
     MainWindow();
 
-    /* Opens `path` as a new buffer, or switches to it if already open —
-     * reopening a file you already have open should take you to it, not
-     * give you a second copy to diverge from. */
-    /* One remembered position. The path is what survives a buffer being
-     * closed and reopened; the id is what identifies an *untitled*
-     * buffer, which has no path and cannot be reopened at all. See
-     * docs/adr/0070. */
+    /* Opens `path`, or switches to it if already open. */
+    /* The path survives close-and-reopen; the id identifies an untitled
+     * buffer, which has neither. See docs/adr/0070. */
     struct JumpEntry {
         QString path;
         quintptr bufferId = 0;
@@ -91,12 +78,9 @@ public:
     void clearStickyMessage();
     void hideMessage();
     void openBuffer(const QString &path);
-    /* Ctrl+N — an empty, pathless buffer. Saving it routes through
-     * Save-As, since save() already sends an empty path there
-     * (docs/adr/0006). */
+    /* Ctrl+N. Saving routes through Save-As, since the path is empty. */
     void newBuffer();
-    /* Returns the viewport it created, which main() needs so it can
-     * arm the welcome greeting on the startup buffer. */
+    /* Returns the viewport, so main() can arm the welcome greeting. */
     EditorViewport *addBuffer(AseBuffer *buffer, const QString &path);
 
 protected:
@@ -116,41 +100,30 @@ private:
     OutputPanel *m_outputPanel = nullptr;
     QLabel *m_modeLabel = nullptr;
     QLabel *m_statusLabel = nullptr;
-    /* The message area — see showMessage() and docs/adr/0062. Shares the
-     * bar with the mode label rather than replacing it: losing NORMAL
-     * because a file got saved would be a bad trade. */
-    /* Language-server state — see docs/adr/0063. Permanent, unlike the
-     * message beside it: the question it answers ("is there a server
-     * here?") is asked at arbitrary later moments, not when something
-     * happens. */
+    /* Shares the bar with the mode label rather than replacing it. */
+    /* Permanent, unlike the message beside it: it answers a question
+     * asked at arbitrary moments, not when something happens. */
     QLabel *m_lspLabel = nullptr;
     QLabel *m_messageLabel = nullptr;
     QGraphicsOpacityEffect *m_messageOpacity = nullptr;
     QPropertyAnimation *m_messageFade = nullptr;
     QTimer *m_messageTimer = nullptr;
-    /* An error stays up until you do something else — see
-     * clearStickyMessage(). Armed one event-loop turn after it is shown,
-     * so the very keystroke that produced it cannot also dismiss it. */
-    /* The message as given, before elision — the elided form has to be
-     * recomputed whenever the bar's width changes, and that cannot be
-     * done from a string that has already had its middle removed. */
+    /* Armed one event-loop turn late, so the keystroke that produced
+     * the error cannot also dismiss it. */
+    /* Pre-elision, since the elided form is recomputed on every resize
+     * and cannot be derived from an already-elided string. */
     QString m_messageFullText;
     bool m_messageSticky = false;
     bool m_messageStickyArmed = false;
     QVector<EditorViewport *> m_viewports;
-    /* A list plus a cursor into it — the same shape as the undo stack,
-     * including the rule that a new entry truncates everything after the
-     * current position. m_jumpIndex == m_jumps.size() means "at the
-     * present", with nothing to go forward to. */
+    /* Same shape as the undo stack: a new entry truncates everything
+     * after the cursor. index == size() means "at the present". */
     QVector<JumpEntry> m_jumps;
     int m_jumpIndex = 0;
 };
 
-/* QStatusBar defaults to a native, light OS-styled bar — jarring
- * against this app's dark, minimal palette, same problem the floating
- * panels' native-white QLineEdits had (docs/adr/0022). Re-applied on
- * every statusChanged (see below), so a hot-reloaded config color
- * reaches the status bar too, not just the editor. See docs/adr/0024. */
+/* QStatusBar defaults to a native light bar. Re-applied on every
+ * statusChanged, so a hot-reloaded colour reaches it too. */
 void applyStatusBarTheme(QMainWindow &window, QLabel *modeLabel, QLabel *statusLabel, EditorViewport *viewport) {
     QPalette pal = window.statusBar()->palette();
     pal.setColor(QPalette::Window, viewport->backgroundColor());
@@ -161,16 +134,9 @@ void applyStatusBarTheme(QMainWindow &window, QLabel *modeLabel, QLabel *statusL
     statusLabel->setPalette(pal);
 }
 
-/* Text for each state, and whether it is worth your attention.
- *
- * A working server is named, not announced: `clangd` sitting dim beside
- * the cursor position answers "is one running?" without ever competing
- * with the file for attention. The failure states are the only ones that
- * take the error colour, because they are the only ones you might need
- * to act on. "No server configured" is deliberately quiet but *present*
- * — every packaged install starts there (`lsp_command` ships commented
- * out), and a blank status bar is exactly what made that read as broken.
- */
+/* A working server is named, not announced. Only the failure states
+ * take the error colour. "No server configured" stays quiet but
+ * present — a blank bar is what read as broken. */
 QString lspLabelText(LspState state, const QString &serverName) {
     switch (state) {
     case LspState::NotApplicable:
@@ -187,9 +153,7 @@ QString lspLabelText(LspState state, const QString &serverName) {
     return QString();
 }
 
-/* Slack left around the message so it never butts up against the
- * position readout: the label's own margin, plus the status bar's
- * spacing either side of it. */
+/* So the message never butts against the position readout. */
 constexpr int kMessageGutter = 32;
 
 QColor lspLabelColor(LspState state, EditorViewport *viewport) {
@@ -197,24 +161,14 @@ QColor lspLabelColor(LspState state, EditorViewport *viewport) {
         return viewport->diagnosticErrorColor();
     }
     QColor color = viewport->textColor();
-    /* Two tiers below the position readout. This is reference
-     * information you go looking for, not something being said to you —
-     * it should be findable and otherwise invisible. */
+    /* Reference information, not something being said to you. */
     color.setAlpha(state == LspState::Running ? 120 : 150);
     return color;
 }
 
-/* Info and warnings are the status bar's own text colour — the
- * one-font-colour pillar (docs/adr/0007) — separated by how long they
- * linger, not by hue. Info drops one opacity tier, the same "this line
- * is secondary" move the About panel and welcome screen already use
- * (docs/adr/0055): a confirmation you did not need should not shout as
- * loudly as the mode label it sits beside. A warning is something you
- * are meant to read, so it does not drop.
- *
- * Errors are the exception the theme already sanctions:
- * `diagnostic_error`, the same colour as the gutter dot and the
- * underline, so nothing new enters the palette. */
+/* Info and warnings share the bar's text colour, separated by how long
+ * they linger rather than by hue; info drops one opacity tier. Errors
+ * reuse diagnostic_error, so no new colour enters the palette. */
 QColor messageColorFor(NotifyLevel level, EditorViewport *viewport) {
     if (level == NotifyLevel::Error) {
         return viewport->diagnosticErrorColor();
@@ -226,14 +180,8 @@ QColor messageColorFor(NotifyLevel level, EditorViewport *viewport) {
     return color;
 }
 
-/* How long a message sits before fading, in milliseconds.
- *
- * Info is a glance: long enough to catch if you look down, short enough
- * that it is gone before it becomes furniture. A warning is a sentence
- * you are meant to finish reading, and it is usually telling you the
- * thing you just asked for did not happen.
- *
- * An error does not time out at all — see clearStickyMessage(). */
+/* Milliseconds before fading. Info is a glance, a warning is a
+ * sentence; an error does not time out at all. */
 int messageHoldFor(NotifyLevel level) {
     switch (level) {
     case NotifyLevel::Info:
@@ -247,11 +195,8 @@ int messageHoldFor(NotifyLevel level) {
 }
 
 MainWindow::MainWindow() {
-    /* The buffer bar sits above the editor and the output panel below it
-     * — both plain layout rows, not floating chrome. OutputPanel is
-     * shared across buffers rather than one per viewport: it shows the
-     * result of the last :compile, which is a property of the window,
-     * not of whichever file you happen to be looking at. */
+    /* Plain layout rows, not floating chrome. One output panel for the
+     * window: the last :compile is a window property, not a file's. */
     auto *central = new QWidget(this);
     auto *centralLayout = new QVBoxLayout(central);
     centralLayout->setContentsMargins(0, 0, 0, 0);
@@ -265,10 +210,8 @@ MainWindow::MainWindow() {
 
     m_outputPanel = new OutputPanel(nullptr, central);
     centralLayout->addWidget(m_outputPanel);
-    /* A search hit is a file *and* a line, and opening the file is the
-     * window's job while landing on the line is the viewport's — so the
-     * two are joined here rather than either one reaching into the
-     * other. See docs/adr/0066. */
+    /* Opening the file is the window's job, landing on the line the
+     * viewport's, so the two are joined here. */
     connect(m_outputPanel, &OutputPanel::hitActivated, this, [this](const QString &path, int line) {
         recordJump();
         openBuffer(path);
@@ -285,17 +228,12 @@ MainWindow::MainWindow() {
     connect(m_bufferBar, &BufferBar::newBufferRequested, this, [this]() { newBuffer(); });
 
     statusBar()->setSizeGripEnabled(false);
-    /* addWidget (not addPermanentWidget) puts this in the status bar's
-     * left-aligned message area, separate from statusLabel's own
-     * right-aligned permanent slot below. Empty whenever Vim mode is
-     * off (docs/adr/0046), so it takes no visible space for anyone who
-     * hasn't opted in. */
+    /* addWidget, so it lands in the left-aligned message area. Empty
+     * when Vim mode is off, taking no space. */
     m_modeLabel = new QLabel();
     statusBar()->addWidget(m_modeLabel);
-    /* Also addWidget, so it sits immediately right of the mode label and
-     * grows into the free middle of the bar — the space that was doing
-     * nothing. Elided rather than allowed to push the position readout
-     * off the edge on a narrow window. */
+    /* Grows into the free middle of the bar; elided rather than
+     * pushing the position readout off the edge. */
     m_messageLabel = new QLabel();
     m_messageLabel->setTextFormat(Qt::PlainText);
     m_messageLabel->setContentsMargins(8, 0, 0, 0);
@@ -308,9 +246,8 @@ MainWindow::MainWindow() {
     m_messageTimer->setSingleShot(true);
     connect(m_messageTimer, &QTimer::timeout, this, [this]() { hideMessage(); });
     statusBar()->addWidget(m_messageLabel, 1);
-    /* addPermanentWidget appends right-to-left in call order, so this
-     * lands immediately left of the position readout: chrome about the
-     * file, then chrome about the cursor. */
+    /* addPermanentWidget appends right-to-left, so this lands left of
+     * the position readout. */
     m_lspLabel = new QLabel();
     m_lspLabel->setTextFormat(Qt::PlainText);
     m_lspLabel->setContentsMargins(0, 0, 12, 0);
@@ -318,10 +255,8 @@ MainWindow::MainWindow() {
     m_statusLabel = new QLabel(QStringLiteral("Ln 1, Col 1"));
     statusBar()->addPermanentWidget(m_statusLabel);
 
-    /* Window-level shortcuts, deliberately not part of EditorViewport's
-     * own Ctrl-chain: they act on the *window's* buffer list, not on the
-     * text. Qt dispatches shortcuts before the focus widget's key
-     * handler, so Ctrl+Tab never reaches the viewport's Tab case. */
+    /* Window-level, not viewport keys: they act on the buffer list.
+     * Qt dispatches these before the focus widget sees them. */
     auto *next = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Tab")), this);
     connect(next, &QShortcut::activated, this, [this]() { cycleBuffer(1); });
     auto *prev = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+Tab")), this);
@@ -331,11 +266,7 @@ MainWindow::MainWindow() {
     auto *newFile = new QShortcut(QKeySequence(QStringLiteral("Ctrl+N")), this);
     connect(newFile, &QShortcut::activated, this, [this]() { newBuffer(); });
 
-    /* Vim's own jumplist keys, free since docs/adr/0068 moved Open and
-     * About off them, plus the Alt+arrow pair every browser and IDE
-     * uses — the same "two audiences" split as gd/F12. Window
-     * shortcuts, not viewport keys: the list spans buffers, so it
-     * belongs to the window that owns them. */
+    /* Window shortcuts: the jumplist spans buffers. */
     auto *jumpBack = new QShortcut(QKeySequence(QStringLiteral("Ctrl+O")), this);
     connect(jumpBack, &QShortcut::activated, this, [this]() { jumpBy(-1); });
     auto *jumpBackAlt = new QShortcut(QKeySequence(QStringLiteral("Alt+Left")), this);
@@ -354,20 +285,14 @@ EditorViewport *MainWindow::activeViewport() const {
 EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
     auto *viewport = new EditorViewport(buffer, path);
 
-    /* FindBar, FileBrowserPanel, CommandLine, Help and About are all
-     * FloatingPanels: children of *this* viewport, not layout rows, each
-     * centering itself over its own host (docs/adr/0022). So every
-     * buffer gets its own set — they're inert until shown, and sharing
-     * one across viewports would mean a panel floating over the wrong
-     * parent. */
+    /* FloatingPanels centre over their own host, so each buffer needs
+     * its own set. Inert until shown. See docs/adr/0022. */
     viewport->setFindBar(new FindBar(viewport));
     viewport->setFileBrowser(new FileBrowserPanel(viewport));
     viewport->setCommandLine(new CommandLine(viewport));
     viewport->setHelpPanel(new HelpPanel(viewport));
     viewport->setAboutPanel(new AboutPanel(viewport));
-    /* Not FloatingPanels either — see completion_popup.h/hover_panel.h.
-     * Both track the caret/pointer and refresh far more often than a
-     * glance-act-dismiss chrome window. */
+    /* Not FloatingPanels: both track the caret and refresh constantly. */
     viewport->setCompletionPopup(new CompletionPopup(viewport));
     viewport->setHoverPanel(new HoverPanel(viewport));
     viewport->setOutputPanel(m_outputPanel);
@@ -390,15 +315,11 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
             });
     connect(viewport, &EditorViewport::jumpRecorded, this, [this]() { recordJump(); });
     connect(viewport, &EditorViewport::fileOpenRequested, this, [this](const QString &path) {
-        /* Opening a file from the browser or from Ctrl+P is a jump: it
-         * is the most common way to end up somewhere you want Ctrl+O to
-         * bring you back from. */
+        /* Opening a file is a jump. */
         recordJump();
         openBuffer(path);
     });
-    /* Go-to-definition landing in another file: the same two-object
-     * split as a search hit (docs/adr/0066), reached from the viewport
-     * instead of the output panel. */
+    /* Same split as a search hit, reached from the viewport. */
     connect(viewport, &EditorViewport::fileOpenAtLineRequested, this,
             [this](const QString &path, int line) {
                 openBuffer(path);
@@ -442,12 +363,8 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
  * with for thirty years. */
 constexpr int kMaxJumps = 100;
 
-/*
- * Snapshots where the cursor is, as the position to come *back* to.
- *
- * Called before a jump happens, never after — the whole list is "places
- * I was", not "places I went".
- */
+/* Snapshots where the cursor is, as the place to come back to. Called
+ * before a jump, never after. */
 void MainWindow::recordJump() {
     EditorViewport *viewport = activeViewport();
     if (viewport == nullptr) {
@@ -460,10 +377,8 @@ void MainWindow::recordJump() {
     entry.line = viewport->cursorLine();
     entry.column = viewport->cursorColumn();
 
-    /* Jumping away from a line you are already recorded on adds nothing
-     * — without this, `gd` twice on the same symbol puts two identical
-     * entries in the history and Ctrl+O appears to do nothing the first
-     * time. */
+    /* Without this, `gd` twice on one symbol records two identical
+     * entries and the first Ctrl+O appears to do nothing. */
     if (!m_jumps.isEmpty() && m_jumpIndex > 0) {
         const JumpEntry &previous = m_jumps[m_jumpIndex - 1];
         if (previous.bufferId == entry.bufferId && previous.line == entry.line) {
@@ -471,8 +386,7 @@ void MainWindow::recordJump() {
         }
     }
 
-    /* A new jump abandons whatever you could have gone forward to,
-     * exactly as a new edit abandons the redo stack. */
+    /* A new jump abandons the forward history, as an edit does redo. */
     m_jumps.resize(m_jumpIndex);
     m_jumps.push_back(entry);
     if (m_jumps.size() > kMaxJumps) {
@@ -481,13 +395,8 @@ void MainWindow::recordJump() {
     m_jumpIndex = m_jumps.size();
 }
 
-/*
- * Ctrl+O / Ctrl+I. `direction` is -1 for back, +1 for forward.
- *
- * Going back from the present first records the present, so that
- * Ctrl+I has somewhere to return to — vim does the same, and without it
- * back is a one-way door.
- */
+/* `direction` is -1 for back, +1 for forward. Going back from the
+ * present records it first, or back is a one-way door. */
 void MainWindow::jumpBy(int direction) {
     EditorViewport *viewport = activeViewport();
     if (viewport == nullptr) {
@@ -517,9 +426,7 @@ void MainWindow::jumpBy(int direction) {
     }
 
     if (!restoreJump(m_jumps[m_jumpIndex])) {
-        /* The buffer is gone and cannot be reopened (an untitled one).
-         * Drop the entry rather than leaving a step that does nothing
-         * every time you pass over it. */
+        /* Gone and unreopenable; drop it rather than leave a dead step. */
         m_jumps.remove(m_jumpIndex);
         m_jumpIndex = std::clamp(m_jumpIndex, 0, static_cast<int>(m_jumps.size()));
         viewport->notify(NotifyLevel::Warning, QStringLiteral("that buffer is gone"));
@@ -574,9 +481,8 @@ void MainWindow::showMessage(NotifyLevel level, const QString &text) {
         m_messageTimer->start(hold + motion::kChrome);
     } else {
         m_messageTimer->stop();
-        /* Next turn, not now: the keystroke that caused this error is
-         * still being delivered, and anything it emits on its way out
-         * would otherwise dismiss the error before it was read. */
+        /* Next turn: the keystroke that caused this is still being
+         * delivered and would dismiss it on its way out. */
         QTimer::singleShot(0, this, [this]() { m_messageStickyArmed = true; });
     }
 }
@@ -592,35 +498,19 @@ void MainWindow::hideMessage() {
     m_messageFade->start();
 }
 
-/*
- * Vim's rule: an error sits on the message line until you do something
- * else, then it is gone. "Something else" here is any cursor move or
- * edit — statusChanged already fires on exactly those and on nothing
- * that isn't the user (docs/adr/0023), so this needs no new signal and
- * cannot miss a case that one would.
- *
- * The alternative, letting an error time out like the other tiers, was
- * rejected: the one message you must not miss is the one saying a thing
- * you asked for did not happen, and a save that failed while you were
- * looking elsewhere is exactly how people lose work.
- */
+/* An error sits there until you do something else — any cursor move or
+ * edit, which is exactly what statusChanged already fires on. Timing
+ * errors out was rejected: a failed save missed while looking elsewhere
+ * is how people lose work. */
 void MainWindow::clearStickyMessage() {
     if (m_messageSticky && m_messageStickyArmed) {
         hideMessage();
     }
 }
 
-/*
- * A long message shortens itself rather than squeezing Ln/Col off the
- * end of the bar.
- *
- * Measured against what the bar has *left* — and recomputed on every
- * resize, because the first message of a session is posted while the
- * window is still being built (the language server starts on the first
- * buffer's activation, before show()), when the status bar's width is
- * a meaningless default. Eliding once, at post time, cut early messages
- * down to a few characters on a window that had plenty of room.
- */
+/* Elides rather than squeezing Ln/Col off the bar. Recomputed on every
+ * resize: the first message of a session is posted before show(), when
+ * the bar's width is still a meaningless default. */
 void MainWindow::updateMessageElision() {
     if (m_messageFullText.isEmpty()) {
         m_messageLabel->clear();
@@ -645,9 +535,8 @@ void MainWindow::showLspState(LspState state, const QString &serverName) {
     }
     QString text = lspLabelText(state, serverName);
     QColor color = lspLabelColor(state, viewport);
-    /* Called on every statusChanged as well as on real transitions, so
-     * that a config hot-reload's new theme reaches this label too —
-     * hence the guard: no palette churn on every keystroke. */
+    /* Called on every statusChanged so a hot-reloaded theme reaches
+     * this label; the guard keeps it off the keystroke path. */
     if (text == m_lspLabel->text() && color == m_lspLabel->palette().color(QPalette::WindowText)) {
         return;
     }
@@ -665,9 +554,7 @@ void MainWindow::openBuffer(const QString &path) {
         }
     }
 
-    /* Missing/unreadable files start empty with `path` kept as the save
-     * target — opening a not-yet-existing file by name is a normal
-     * editor action, not an error (docs/adr/0006). */
+    /* Missing files start empty, keeping `path` as the save target. */
     AseBuffer *buffer = ase_buffer_create_from_file(path.toUtf8().constData());
     if (buffer == nullptr) {
         buffer = ase_buffer_create();
@@ -690,20 +577,16 @@ void MainWindow::setActiveIndex(int index) {
         return;
     }
     m_stack->setCurrentIndex(index);
-    /* A message raised by the buffer you just left, still sitting in the
-     * bar over a different file's text, reads as being about *this*
-     * file. Switching buffers clears it. */
+    /* A message from the buffer you just left would read as being
+     * about this one. */
     hideMessage();
     EditorViewport *viewport = m_viewports[index];
-    /* Each buffer has its own server (docs/adr/0054), so this follows the
-     * file you are looking at, exactly like the title and the position
-     * readout do. */
+    /* Each buffer has its own server, so this follows the visible file. */
     showLspState(viewport->lspState(), viewport->lspServerName());
     m_outputPanel->setViewport(viewport);
     viewport->onActivated(); /* focuses, and starts its LSP the first time */
     refreshBufferBar();
-    /* Pushes this buffer's own line/col/dirty/mode into the status bar
-     * and title through the same statusChanged path every edit uses —
+    /* Through the same statusChanged path every edit uses, so there is
      * no second copy of the formatting. */
     viewport->emitInitialStatus();
 }
@@ -712,9 +595,8 @@ void MainWindow::closeBuffer(int index) {
     if (index < 0 || index >= m_viewports.size()) {
         return;
     }
-    /* Closing the last buffer is closing the window — going through
-     * close() rather than deleting it keeps the unsaved-changes
-     * confirmation in exactly one place (closeEvent below). */
+    /* close(), not delete, so the unsaved-changes confirmation stays in
+     * one place. */
     if (m_viewports.size() == 1) {
         close();
         return;
@@ -745,10 +627,8 @@ void MainWindow::refreshBufferBar() {
     QVector<BufferBar::Item> items;
     items.reserve(m_viewports.size());
     for (EditorViewport *viewport : m_viewports) {
-        /* The viewport pointer is a stable, unique handle for as long as
-         * the buffer is open — exactly what tab identity needs, and
-         * unlike the display name it cannot collide (every `+` buffer is
-         * called "untitled"). See docs/adr/0057. */
+        /* A stable unique handle; display names collide (every new
+         * buffer is "untitled"). */
         items.push_back({reinterpret_cast<quintptr>(viewport), bufferLabelFor(viewport->filePath()),
                           viewport->isDirty()});
     }
@@ -760,15 +640,9 @@ void MainWindow::refreshBufferBar() {
     m_bufferBar->setEntries(items, m_stack->currentIndex());
 }
 
-/* Every confirm in this window goes through here so they all look like
- * the rest of the app rather than like the OS. A plain
- * QMessageBox::question/warning() renders with the native palette and a
- * colored icon — jarring against this app's flat, dark, single-accent
- * chrome (docs/adr/0022's panels, the re-themed QStatusBar above), and
- * a reported complaint the first time it shipped (docs/adr/0044). Built
- * manually so a stylesheet can be applied before showing; NoIcon drops
- * the colored triangle, consistent with the "one font color" pillar
- * (docs/adr/0007). */
+/* Built manually rather than QMessageBox::question(), so a stylesheet
+ * can be applied before showing — the native palette and coloured icon
+ * were a reported complaint. See docs/adr/0044. */
 bool MainWindow::confirmDiscard(const QString &message) {
     EditorViewport *themeSource = activeViewport();
     if (themeSource == nullptr) {
@@ -831,20 +705,12 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
-    /* The app's logo (gui/resources/ase.png, bundled via Qt resources
-     * — see gui/resources/resources.qrc) as the window/taskbar icon,
-     * and shown again inside the About panel. See docs/adr/0027. */
+    /* Bundled via Qt resources; reused in the About panel. */
     app.setWindowIcon(QIcon(QStringLiteral(":/ase.png")));
 
-    /* Kept as the floor for any *native* caret in the app. The panel
-     * fields no longer have one — they are SmoothLineEdits now, drawing
-     * the editor's own gliding, breathing caret (docs/adr/0058), which
-     * is what this line was an approximation of: ADR 0028 could only
-     * match the blink *rate* through this one global lever, and said
-     * so. Anything native that appears later (a Qt dialog, a widget
-     * nobody has restyled yet) still blinks on the editor's cadence
-     * rather than the platform's ~1000ms default, which is the whole
-     * reason to keep it. */
+    /* The panel fields draw their own caret now, but anything native
+     * appearing later still blinks on the editor's cadence rather than
+     * the platform's ~1000ms default. */
     app.setCursorFlashTime(720);
 
     QString filePath;
@@ -854,10 +720,7 @@ int main(int argc, char *argv[]) {
         filePath = QString::fromLocal8Bit(argv[1]);
         buffer = ase_buffer_create_from_file(argv[1]);
         if (buffer == nullptr) {
-            /* Doesn't exist yet, or couldn't be read — start empty and
-             * keep filePath as the Ctrl+S save target, like a plain-text
-             * editor opening a new file by name. v1 doesn't distinguish
-             * "new file" from "read error"; see docs/adr/0006. */
+            /* v1 doesn't distinguish "new file" from "read error". */
             buffer = ase_buffer_create();
         }
     } else {
@@ -870,13 +733,9 @@ int main(int argc, char *argv[]) {
 
     MainWindow window;
     window.resize(900, 650);
-    /* Creating the first buffer also sets the title, status bar and
-     * bar through the same path every later buffer takes. The one thing
-     * that *is* special about it: being launched with no file at all is
-     * the only situation the welcome greeting belongs to, and that fact
-     * lives here, where argv is read. A pathless buffer made later with
-     * Ctrl+N looks identical to the viewport and must not be greeted —
-     * you are already working by then. See docs/adr/0058. */
+    /* Launching with no file is the only situation the welcome
+     * greeting belongs to, and only here is that knowable: a Ctrl+N
+     * buffer looks identical to the viewport. See docs/adr/0058. */
     EditorViewport *first = window.addBuffer(buffer, filePath);
     if (filePath.isEmpty()) {
         first->armWelcomeGreeting();

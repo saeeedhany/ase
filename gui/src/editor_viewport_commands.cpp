@@ -6,13 +6,10 @@
 #include "project_search.h"
 
 namespace {
-/* Shared with quick open's own cap in spirit, kept separate in fact:
- * this one bounds a *search*, which reads every file it lists, so the
- * ceiling that matters is different from the one on a name listing.
- * See docs/adr/0066. */
+/* Separate from quick open's cap: this one bounds a search, which
+ * reads every file it lists. */
 constexpr int kProjectFileCap = 20000;
-/* Enough to be useful, few enough that the list stays navigable and the
- * search stops early on a query like "e". */
+/* Few enough that the search stops early on a query like "e". */
 constexpr int kProjectSearchHitCap = 1000;
 } // namespace
 
@@ -20,9 +17,7 @@ constexpr int kProjectSearchHitCap = 1000;
 #include <QFileInfo>
 #include <QTimer>
 
-/* Empty m_filePath (launched with no file, or a fresh openFile that
- * failed to read one) routes to the Save-As panel instead of silently
- * doing nothing — the one gap ADR 0006 flagged as deferred. */
+/* An empty path routes to Save-As rather than silently doing nothing. */
 void EditorViewport::save() {
     if (m_filePath.isEmpty()) {
         if (m_fileBrowser != nullptr) {
@@ -31,16 +26,12 @@ void EditorViewport::save() {
         return;
     }
     if (!ase_buffer_save_to_file(m_buffer, m_filePath.toUtf8().constData())) {
-        /* A failed write used to be indistinguishable from a successful
-         * one: the dirty marker simply stayed, and the file you thought
-         * you had saved was not on disk. */
+        /* A failed write was indistinguishable from a successful one. */
         notify(NotifyLevel::Error, QStringLiteral("could not write %1").arg(QFileInfo(m_filePath).fileName()));
         return;
     }
     {
-        /* What is on disk is now this exact state — remember which one
-         * it was, and every later "is this dirty?" is that comparison.
-         * See docs/adr/0059. */
+        /* Every later dirty check is a comparison against this id. */
         m_savedStateId = ase_undo_state_id(m_undo);
         m_historyDiscardedWhileDirty = false;
         ensureCursorVisible(); /* pushes the cleared dirty flag (and title) through statusChanged */
@@ -48,20 +39,14 @@ void EditorViewport::save() {
     }
 }
 
-/*
- * Derived from the buffer's actual state, never latched: an edit and its
- * undo return the stack to the id recorded at save, and the file is
- * correctly clean again. The one thing a state id cannot describe is a
- * discarded history (see runPluginCommand), which is why that flag
- * exists at all rather than being folded in.
- */
+/* Derived, never latched: an edit and its undo return the stack to the
+ * id recorded at save. A discarded history is the one case an id
+ * cannot describe, hence the flag. */
 bool EditorViewport::isDirty() const {
     return m_historyDiscardedWhileDirty || ase_undo_state_id(m_undo) != m_savedStateId;
 }
 
-/* Sets the save target then defers to save() itself, so dirty-clearing
- * and the statusChanged emit (title included, via filePath()) happen
- * in exactly one place rather than being duplicated here. */
+/* Defers to save(), so dirty-clearing happens in one place. */
 void EditorViewport::saveAs(const QString &path) {
     m_filePath = path;
     save();
@@ -78,12 +63,9 @@ void EditorViewport::runCommand(const QString &command) {
     } else if (trimmed == QLatin1String("output")) {
         toggleOutputPanel();
     } else {
-        /* :<digits> — jump to that 1-based line. Not gated on vim_mode:
-         * a generically useful command line addition, and the first one
-         * to take an argument rather than match an exact string — see
-         * docs/adr/0046. Reuses vimGotoLine (safe regardless of vim_mode:
-         * no operator can be pending here since ex-commands don't go
-         * through Vim's own key dispatch at all). */
+        /* Not gated on vim_mode. vimGotoLine is safe either way: no
+         * operator can be pending, since ex-commands bypass Vim's own
+         * key dispatch. */
         bool ok = false;
         int lineNumber = trimmed.toInt(&ok);
         if (ok && lineNumber > 0) {
@@ -94,27 +76,18 @@ void EditorViewport::runCommand(const QString &command) {
                 notify(NotifyLevel::Warning, QStringLiteral("unknown command: %1").arg(trimmed));
             }
         }
-        /* Neither a known word, a line number, nor a registered plugin
-         * command. Silence here (docs/adr/0025) meant a typo in a `:`
-         * command looked exactly like a command that ran and did
-         * nothing — say which word wasn't understood. */
+        /* Silence made a typo look like a command that ran and did
+         * nothing. */
     }
 }
 
-/* `:name` for any command a Lua script or native plugin registered.
- * Checked last, so a plugin can't shadow a built-in. See docs/adr/0054.
+/* Checked last, so a plugin can't shadow a built-in.
  *
- * A plugin command is handed the raw AseBuffer and edits it directly —
- * it does not go through insertText()/the undo primitives, because the
- * ABI has no way to (docs/adr/0009 registers `void(AseBuffer*, void*)`
- * and nothing more). That leaves every offset already recorded in the
- * undo stack potentially stale, and undoing against stale offsets
- * corrupts the buffer rather than merely doing the wrong thing. So the
- * undo history is dropped outright after a successful plugin command:
- * losing history is a visible, understandable cost; silent corruption
- * is not. Routing plugin edits through undo properly needs the wider
- * plugin context described in docs/EXTENSIBILITY.md, and is the main
- * reason that widening is worth doing. */
+ * A plugin edits the raw AseBuffer directly — the ABI offers no way to
+ * go through the undo primitives — which leaves every recorded offset
+ * potentially stale, and undoing against stale offsets corrupts the
+ * buffer. So the history is dropped after a successful command: losing
+ * it is a visible cost, silent corruption is not. See docs/adr/0054. */
 bool EditorViewport::runPluginCommand(const QString &name) {
     if (m_pluginHost == nullptr) {
         return false;
@@ -123,11 +96,8 @@ bool EditorViewport::runPluginCommand(const QString &name) {
         return false; /* no such command — the caller reports it */
     }
 
-    /* A plugin edits the buffer directly, with no undo entries for what
-     * it did — so the history is thrown away rather than left pointing
-     * at offsets that no longer mean anything. That resets the state id
-     * to "as loaded" for a buffer that plainly isn't, and this is the
-     * one case the id alone cannot express: say so explicitly. */
+    /* Discarding history resets the state id to "as loaded" for a
+     * buffer that isn't — the one case the id cannot express. */
     ase_undo_destroy(m_undo);
     m_undo = ase_undo_create();
     m_savedStateId = 0;
@@ -171,12 +141,9 @@ void EditorViewport::goToLine(int oneBasedLine) {
 }
 
 /*
- * Ctrl+Shift+F. Same file list as Ctrl+P, so a search can never find a
- * hit in a file quick open refuses to show — see docs/adr/0066.
- *
- * Synchronous, like the quick-open walk: this repository searches in a
- * few milliseconds, and the caps (file count, file size, hit count)
- * bound the worst case rather than a thread doing it.
+ * Same file list as Ctrl+P, so a search can never hit a file quick open
+ * refuses to show. Synchronous: the caps bound the worst case rather
+ * than a thread doing it. See docs/adr/0066.
  */
 void EditorViewport::searchProject(const QString &needle) {
     if (m_outputPanel == nullptr) {

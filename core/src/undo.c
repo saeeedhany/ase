@@ -5,10 +5,8 @@
 
 typedef struct {
     size_t offset;
-    /* An entry is either an insert (inserted set, removed NULL) or a
-     * delete (removed set, inserted NULL) -- never both, since
-     * record_insert/record_delete each append one entry. No separate
-     * "kind" tag is needed; undo/redo just check which side is set. */
+    /* Either an insert or a delete, never both, so no kind tag is
+     * needed: undo/redo check which side is set. */
     char *inserted;
     size_t inserted_len;
     char *removed;
@@ -20,10 +18,8 @@ typedef struct {
     size_t count;
     size_t capacity;
 
-    /* Identifies the buffer state this group *produces*, so "is the
-     * buffer still what it was when it was saved?" is one comparison
-     * rather than a content scan. Assigned once, on commit, and never
-     * reused -- see the state-id contract in undo.h. */
+    /* The state this group produces. Assigned on commit, never
+     * reused -- see the contract in undo.h. */
     size_t seq;
 
     size_t *cursors_before;
@@ -44,9 +40,8 @@ struct AseUndoStack {
     UndoGroup pending;
     bool has_pending;
 
-    /* next_seq only ever increases; current_seq names the state the
-     * buffer is in right now (0 = the state the stack was created in,
-     * i.e. the file as loaded). */
+    /* next_seq only increases; current_seq is the state the buffer is
+     * in now, 0 being as loaded. */
     size_t next_seq;
     size_t current_seq;
 };
@@ -147,9 +142,8 @@ void ase_undo_end_group(AseUndoStack *stack, const size_t *cursors, size_t curso
     stack->has_pending = false;
 
     if (stack->pending.count == 0) {
-        /* Every cursor's operation in this group was a no-op (e.g.
-         * Backspace at offset 0) -- nothing to undo, and a no-op
-         * keystroke shouldn't wipe redo history. */
+        /* Every operation was a no-op, and a no-op keystroke must not
+         * wipe redo history. */
         group_free(&stack->pending);
         memset(&stack->pending, 0, sizeof(UndoGroup));
         return;
@@ -158,8 +152,7 @@ void ase_undo_end_group(AseUndoStack *stack, const size_t *cursors, size_t curso
     stack->pending.cursors_after = dup_cursors(cursors, cursor_count);
     stack->pending.cursors_after_count = cursor_count;
 
-    /* A real new edit invalidates redo history -- standard undo/redo
-     * semantics. */
+    /* A new edit invalidates redo history. */
     clear_redo(stack);
 
     if (!groups_ensure_capacity(&stack->undo_stack, stack->undo_count, &stack->undo_capacity)) {
@@ -227,13 +220,9 @@ bool ase_undo_undo(AseUndoStack *stack, AseBuffer *buffer, size_t **out_cursors,
 
     UndoGroup group = stack->undo_stack[stack->undo_count - 1];
 
-    /* Entries were recorded in the exact order they were applied
-     * (highest-cursor-offset-first within the group, per the existing
-     * multi-cursor discipline in EditorViewport -- see docs/adr/0012).
-     * Each entry's offset is only guaranteed valid in the buffer state
-     * that existed right before *that* entry was applied, so unwinding
-     * must walk in the exact reverse of application order -- last
-     * applied, undone first -- not grouped by offset. */
+    /* Each entry's offset is only valid in the state right before that
+     * entry was applied, so unwinding must walk in exact reverse of
+     * application order, not grouped by offset. */
     for (size_t i = group.count; i-- > 0;) {
         UndoEntry *entry = &group.entries[i];
         if (entry->inserted_len > 0) {
@@ -245,19 +234,15 @@ bool ase_undo_undo(AseUndoStack *stack, AseBuffer *buffer, size_t **out_cursors,
     }
 
     stack->undo_count--;
-    /* The state we just landed in is the one the group below produced
-     * -- or the original loaded state if there is nothing below. Set
-     * before the redo-push below, which has a failure path of its own
-     * that must not skip this. */
+    /* Set before the redo-push, whose failure path must not skip it. */
     stack->current_seq = (stack->undo_count > 0) ? stack->undo_stack[stack->undo_count - 1].seq : 0;
 
     *out_cursors = dup_cursors(group.cursors_before, group.cursors_before_count);
     *out_count = group.cursors_before_count;
 
     if (!groups_ensure_capacity(&stack->redo_stack, stack->redo_count, &stack->redo_capacity)) {
-        /* The undo itself already succeeded (the buffer is reverted);
-         * losing the ability to redo this one group is a fallback, not
-         * a failure to report. */
+        /* The undo already succeeded; losing this one redo is a
+         * fallback, not a failure to report. */
         group_free(&group);
         return true;
     }
@@ -273,8 +258,7 @@ bool ase_undo_redo(AseUndoStack *stack, AseBuffer *buffer, size_t **out_cursors,
 
     UndoGroup group = stack->redo_stack[stack->redo_count - 1];
 
-    /* Reapply in the original forward order -- the order already proven
-     * to keep every entry's recorded offset valid (docs/adr/0012). */
+    /* Forward order, which keeps every recorded offset valid. */
     for (size_t i = 0; i < group.count; i++) {
         UndoEntry *entry = &group.entries[i];
         if (entry->removed_len > 0) {

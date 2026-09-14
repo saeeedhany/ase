@@ -14,38 +14,25 @@ class EditorViewport;
 class TranslucentBar;
 
 /*
- * :compile's output — see docs/adr/0025. Deliberately *not* a
- * FloatingPanel: Find/Replace/Open/Save-As/the command line are all
- * "glance at it, act, dismiss" overlays that make sense centered on
- * top of your code, but you want to watch a build stream while still
- * looking at (and jumping back into) your code, not have it float over
- * it. A plain docked panel instead — a real layout row below
- * EditorViewport in main.cpp, not a child of it. Starts hidden until
- * the first :compile; toggleable after via `:output`.
+ * :compile's output. Deliberately not a FloatingPanel: you watch a
+ * build stream while still looking at your code, rather than having it
+ * float over it. A docked layout row below EditorViewport, hidden until
+ * the first :compile and toggled by `:output`.
  *
- * A small seam marker (m_divider, a short TranslucentBar — not a
- * full-width rule) sits at this panel's own top edge, so it shows and
- * hides together with the panel itself with no extra wiring — see
- * docs/adr/0027. It's deliberately tiny: the user's own words were
- * "not even half a line," a quiet mark that this is a distinct panel,
- * not a heavy divider that would undercut the "reads as part of the
- * editor" simplicity they said they still want to keep.
+ * m_divider is a short seam marker at the top edge, so it shows and
+ * hides with the panel and needs no wiring. See docs/adr/0025.
  */
 class OutputPanel : public QWidget {
     Q_OBJECT
 
 public:
-    /* Two things live here, and they are the same shape: output you read
-     * while looking at your code. `:compile` streams text; a project
-     * search fills a list you pick from. Whichever is showing, the other
-     * is hidden — see docs/adr/0066. */
+    /* :compile streams text; a project search fills a list. Whichever
+     * shows, the other is hidden. */
     enum class Mode { Output, SearchResults };
     explicit OutputPanel(EditorViewport *viewport, QWidget *parent = nullptr);
 
-    /* One output panel is shared by every buffer (it shows the last
-     * :compile, which belongs to the window, not to a file), so it gets
-     * re-pointed at whichever viewport is active to pull theme colors
-     * from. See docs/adr/0054. */
+    /* Shared by every buffer, so it is re-pointed at the active
+     * viewport to pull theme colours. */
     void setViewport(EditorViewport *viewport);
 
     /* Switches to the results list and fills it. `root` is kept so an
@@ -54,21 +41,18 @@ public:
                             const project::SearchResult &result);
 
     void appendLine(const QString &text);
-    /* No implied newline — used for streamed process output, which
-     * arrives in arbitrary-sized chunks, not line-at-a-time. */
+    /* No implied newline: process output arrives in arbitrary chunks. */
     void appendText(const QString &text);
     void clear();
     void refreshTheme();
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
-    /* The results list has focus, so its keys never reach this widget's
-     * own handler — Ctrl+J/K and Escape are caught here instead. */
+    /* The results list has focus, so its keys are caught here. */
     bool eventFilter(QObject *watched, QEvent *event) override;
 
 signals:
-    /* A results row was picked. The window opens the file and jumps —
-     * this panel deliberately knows nothing about buffers. */
+    /* The window opens the file; this panel knows nothing of buffers. */
     void hitActivated(const QString &absolutePath, int line);
 
 private:

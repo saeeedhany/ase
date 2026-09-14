@@ -45,12 +45,8 @@ FloatingPanel::FloatingPanel(QWidget *host) : QWidget(host), m_host(host) {
         motion::apply(anim, motion::kChrome);
     }
 
-    /* Only ever animating m_snapshot (a plain image-filled QLabel with
-     * no children of its own), never this panel's real `geometry` or
-     * its content's layout — so every frame is just a scaled pixmap
-     * blit, not a live QVBoxLayout/QListWidget relayout. That relayout
-     * cost was a real, reported jank in the previous design. See
-     * docs/adr/0024. */
+    /* Animates m_snapshot only, never the real geometry, so each frame
+     * is a scaled pixmap blit rather than a live relayout. */
     connect(m_animGroup, &QParallelAnimationGroup::finished, this, [this]() {
         if (m_opacityEffect->opacity() >= 0.999) {
             /* Finished opening: swap back to the real, interactive
@@ -114,10 +110,8 @@ void FloatingPanel::setDragHandle(QWidget *handle) {
     }
 }
 
-/* Forces contentWidget()'s geometry (and its layout's child geometry)
- * to match `this` panel's own rect *right now*, synchronously — plain
- * setGeometry()/layout invalidation alone only schedules that for the
- * next event-loop pass. See docs/adr/0024. */
+/* Synchronously: plain setGeometry() only schedules the layout for the
+ * next event-loop pass. */
 void FloatingPanel::syncContentGeometry() {
     m_content->setGeometry(rect());
     if (m_content->layout() != nullptr) {
@@ -131,16 +125,9 @@ void FloatingPanel::resizeEvent(QResizeEvent *event) {
     m_snapshot->setGeometry(rect());
 }
 
-/* Resizes to target, raises, shows both this panel and contentWidget(),
- * and re-syncs content geometry *after* that show — contentWidget()'s
- * show() here is its subtree's first real show, which can trigger Qt's
- * own first-show auto-sizing on a freshly-visible child (observed with
- * QListWidget specifically), overriding whatever correct geometry was
- * already assigned before it, even though geometry() read correctly
- * right up until that call. Re-syncing immediately after is what
- * actually makes it stick — see docs/adr/0024. Safe to call more than
- * once (e.g. openPanel() also calls it): every step here is idempotent
- * once geometry has actually settled. */
+/* Re-syncs geometry *after* the show: that first show can trigger Qt's
+ * own auto-sizing on a freshly-visible child, overriding correct
+ * geometry that read fine right up until then. Idempotent. */
 void FloatingPanel::revealForSetup() {
     setGeometry(targetGeometry());
     raise();

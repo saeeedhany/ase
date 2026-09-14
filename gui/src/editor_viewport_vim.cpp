@@ -13,14 +13,11 @@
 #include <QKeyEvent>
 
 /* ------------------------------------------------------------- Vim mode */
-/* Phase 1 — see docs/adr/0046. Everything below operates on m_cursors[0]
- * only; handleVimNormalOrVisualKey() collapses to one cursor the moment
- * any Vim key is pressed. */
+/* Everything below operates on m_cursors[0] only; any Vim key
+ * collapses to one cursor first. See docs/adr/0046. */
 
-/* Anchor and cursor are pushed out to the *outer* edges of the two lines
- * involved, in whichever order they currently sit, so d/y/c and the
- * selection highlight all see exactly the whole lines — none of them
- * need to know linewise Visual exists. See docs/adr/0056. */
+/* Pushes anchor and cursor to the outer edges of the two lines, so
+ * nothing downstream needs to know linewise Visual exists. */
 void EditorViewport::vimPrepareLinewiseMotion() {
     if (!m_vimVisualLinewise || m_vimMode != VimMode::Visual) {
         return;
@@ -61,9 +58,8 @@ void EditorViewport::resetVimPendingState() {
     m_vimPendingFind = '\0';
 }
 
-/* '\n' counts as Blank, not its own class — the key trick that makes
- * w/b/e cross line boundaries with zero special-casing, matching real
- * vim's "a blank line acts like whitespace" model. */
+/* '\n' counts as Blank, which is what lets w/b/e cross lines with no
+ * special-casing. */
 EditorViewport::VimCharClass EditorViewport::vimClassifyAt(size_t pos) const {
     char c = m_cache[static_cast<int>(pos)];
     if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
@@ -164,40 +160,21 @@ bool EditorViewport::vimLineIsEmpty(int line) const {
     }
     int start = m_lineStarts[line];
     int end = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : m_cache.size();
-    /* Zero-length only. Vim's paragraph boundary is an *empty* line —
-     * a line of spaces is part of the paragraph, and treating it as a
-     * boundary would stop `}` in places that look like text. */
+    /* Zero-length only: a line of spaces is part of the paragraph. */
     return end <= start;
 }
 
-/*
- * `f`/`t` search forward on this line, `F`/`T` backward; `t`/`T` stop
- * one character short of the target ("till" rather than "find"). Vim
- * confines all four to the cursor's own line, which is the property
- * that makes them safe to fire without looking: the worst case is
- * nothing happens.
+/* `t`/`T` stop one short of the target. A count fails as a unit: no
+ * third x means no move at all, not a move to the second.
  *
- * A count repeats the search — `3fx` is the third x — and the whole
- * thing fails as a unit: if there is no third x, the cursor does not
- * move to the second. Vim behaves the same way, and a partial jump
- * would be worse than none.
- */
-/*
- * Moves to what `f`/`F`/`t`/`T` found, or applies a pending operator
- * over the span — `df,` deletes through the comma, which is most of why
- * these motions are worth having.
- *
- * The operator range is *inclusive* of the character landed on when
- * searching forward: vim's f is an inclusive motion, unlike w. Backward
- * it runs from the target up to (not including) where the cursor was,
- * which is the same rule seen from the other end.
- */
+ * The operator range is inclusive of the character landed on when
+ * searching forward, exclusive of the cursor's old position going
+ * backward. See docs/adr/0069. */
 void EditorViewport::vimApplyFindInLine(char command, char target, int count) {
     size_t before = m_cursors[0];
     size_t after = vimFindInLine(command, target, count);
     if (after == before) {
-        /* Not on this line. Vim beeps; this does nothing, which in an
-         * editor with no bell is the same statement. */
+        /* Not on this line; a miss is a no-op. */
         resetVimPendingState();
         return;
     }
@@ -232,8 +209,7 @@ size_t EditorViewport::vimFindInLine(char command, char target, int count) const
     int at = static_cast<int>(cursor);
 
     for (int n = 0; n < count; ++n) {
-        /* `t` starts one further out than `f`, or a repeat would find
-         * the character it is already sitting next to and never move. */
+        /* One further out than `f`, or a repeat never moves. */
         int from = at + (forward ? 1 : -1);
         if (till && n > 0) {
             from += forward ? 1 : -1;
@@ -277,13 +253,8 @@ size_t EditorViewport::vimParagraphBackward(size_t pos) const {
     return 0;
 }
 
-/*
- * Vim moves the cursor and the viewport together here: half a screen of
- * lines each, so the cursor stays on the same screen row and the text
- * slides under it. Scrolling without moving the cursor (what the wheel
- * does) or moving without scrolling (what every other motion does, via
- * ensureCursorVisible) would both read as a different gesture.
- */
+/* Cursor and viewport move together, so the cursor keeps its screen
+ * row and the text slides under it. */
 void EditorViewport::vimHalfPageMotion(int direction) {
     if (m_lineHeight <= 0 || m_lineStarts.isEmpty()) {
         return;
@@ -298,8 +269,8 @@ void EditorViewport::vimHalfPageMotion(int direction) {
     }
 
     m_scrollLine = std::clamp(m_scrollLine + delta, 0, maxLine);
-    /* Through the shared vertical-move path, so the remembered column
-     * behaves exactly as it does for j/k and the arrows. */
+    /* Shared vertical-move path, so the sticky column behaves as for
+     * j/k. */
     moveCursorVerticallyAt(0, delta, m_vimMode == VimMode::Visual);
     vimNormalizeLinewiseSelection();
     ensureCursorVisible(); /* corrects only if the two ended up out of step */
@@ -414,9 +385,8 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
         return;
     }
 
-    /* Operator pending — j/k span whole lines; everything else is an
-     * exact byte range from `before` to wherever `count` applications
-     * of the motion land. */
+    /* Operator pending: j/k span whole lines, everything else an exact
+     * byte range. */
     if (m == 'j' || m == 'k') {
         int beforeLine = lineForOffset(before);
         int deltaLines = (m == 'j') ? count : -count;
@@ -458,9 +428,7 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
                 after = vimParagraphBackward(after);
                 break;
             case 'e':
-                /* Inclusive of the char the motion itself lands on —
-                 * "d/y/c to the end of this word" removes that last
-                 * character too, unlike a plain 'e' cursor move. */
+                /* Inclusive of the landed-on char, unlike a plain 'e'. */
                 after = vimNextCharBoundary(vimWordEnd(after));
                 break;
             default:
@@ -505,9 +473,7 @@ void EditorViewport::vimApplyPendingOperatorLinewise(int startLine, int lineCoun
         vimYankLines(startLine, lineCount);
         break;
     case 'c':
-        /* Real vim leaves one blank line and enters insert there; v1
-         * simplification (documented, docs/adr/0046) — just delete the
-         * lines and enter insert at the resulting cursor position. */
+        /* Real vim leaves a blank line here; v1 simplification. */
         vimDeleteLines(startLine, lineCount);
         m_vimMode = VimMode::Insert;
         break;
@@ -516,16 +482,9 @@ void EditorViewport::vimApplyPendingOperatorLinewise(int startLine, int lineCoun
     }
 }
 
-/*
- * Stores text in the unnamed register, normalising a linewise payload to
- * "whole lines, each ending in a newline" regardless of how the range
- * that produced it happened to be cut. Two cases need it: a delete at
- * the end of the buffer takes the newline *above* the lines
- * (vimLinewiseDeleteStart), and one on a last line with no trailing
- * newline has none to take. Without this, `dd` on the last line would
- * put "\nfoo" or "foo" in the register and `p` would paste a blank line
- * or join onto the current one. See docs/adr/0061.
- */
+/* Normalises a linewise payload to whole newline-terminated lines,
+ * however the range was cut. Without it, `dd` on the last line stores
+ * "\nfoo" or "foo" and `p` pastes a blank line or joins. */
 void EditorViewport::vimSetRegister(const QByteArray &text, bool linewise) {
     QByteArray payload = text;
     if (linewise) {
@@ -563,16 +522,11 @@ size_t EditorViewport::vimLinewiseDeleteStart(size_t start, size_t end) const {
 
 void EditorViewport::vimYankRange(size_t start, size_t end, bool linewise) {
     QByteArray text = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
-    /* Same end-of-buffer asymmetry as the delete above: a linewise yank
-     * of the last line has no newline to take with it, and a register
-     * of whole lines that doesn't end in one pastes as a fragment. */
+    /* A linewise yank of the last line has no newline to take, and
+     * would paste as a fragment. */
     vimSetRegister(text, linewise);
-    /* Yank also mirrors into the system clipboard, delete does not.
-     * Yank is the explicit "I want this text" gesture, so carrying it to
-     * other applications is what you meant; `x` and `d` are editing, and
-     * having them wipe what you last copied from a browser is exactly
-     * the destructive behaviour the unnamed register exists to avoid.
-     * See docs/adr/0061. */
+    /* Yank mirrors to the system clipboard; delete does not. Deleting
+     * should not wipe what you last copied elsewhere. */
     QGuiApplication::clipboard()->setText(QString::fromUtf8(VimRegister::unnamed().text()));
     m_cursors[0] = start;
     m_selectionAnchors[0] = start;
@@ -589,16 +543,12 @@ void EditorViewport::vimDeleteLines(int startLine, int count) {
     startLine = std::clamp(startLine, 0, static_cast<int>(m_lineStarts.size()) - 1);
     int endLine = std::clamp(startLine + count - 1, startLine, static_cast<int>(m_lineStarts.size()) - 1);
     size_t start = static_cast<size_t>(m_lineStarts[startLine]);
-    /* Consume through the start of the line *after* endLine so the
-     * trailing newline goes with it too, leaving no blank line behind. */
+    /* Through the start of the next line, so no blank is left behind. */
     bool throughLastLine = (endLine + 1 >= m_lineStarts.size());
     size_t end = throughLastLine ? static_cast<size_t>(m_cache.size())
                                  : static_cast<size_t>(m_lineStarts[endLine + 1]);
-    /* Without this, `dd` on the last line of a file that ends in a
-     * newline deleted a zero-length range and did nothing at all — the
-     * last line is empty, so its start already *is* the end of the
-     * buffer — and on a non-empty last line it left a stray blank line
-     * behind. Reported from real use. */
+    /* Without this, `dd` on the last line of a newline-terminated file
+     * deletes a zero-length range and does nothing. */
     start = vimLinewiseDeleteStart(start, end);
     QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
     vimSetRegister(removed, true);
@@ -623,10 +573,8 @@ void EditorViewport::vimYankLines(int startLine, int count) {
     size_t end = (endLine + 1 < m_lineStarts.size()) ? static_cast<size_t>(m_lineStarts[endLine + 1])
                                                       : static_cast<size_t>(m_cache.size());
     QByteArray text = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
-    /* A linewise yank is always whole lines, newline included — the
-     * last line of the buffer has none stored, and without this `yy`
-     * there yanks an empty string (nothing at all, on an empty last
-     * line) and the following `p` pastes nothing. */
+    /* The last line stores no newline, so without this `yy` there
+     * yanks an empty string and `p` pastes nothing. */
     vimSetRegister(text, true);
     QGuiApplication::clipboard()->setText(QString::fromUtf8(VimRegister::unnamed().text()));
     size_t target = vimFirstNonBlank(startLine);
@@ -639,11 +587,8 @@ void EditorViewport::vimYankLines(int startLine, int count) {
 void EditorViewport::vimPasteAfter() {
     const VimRegister &reg = VimRegister::unnamed();
     if (reg.isEmpty()) {
-        /* Nothing yanked or deleted yet this session. Deliberately does
-         * *not* fall back to the system clipboard: a `p` that means
-         * something different depending on whether you have deleted
-         * anything yet is worse than one that consistently means "the
-         * register". Ctrl+V pastes the clipboard, in any mode. */
+        /* Deliberately no clipboard fallback: `p` always means the
+         * register. Ctrl+V pastes the clipboard. */
         return;
     }
     QByteArray bytes = reg.text();
@@ -657,13 +602,9 @@ void EditorViewport::vimPasteAfter() {
             if (!bytes.endsWith('\n')) {
                 bytes.append('\n');
             }
-            /* Pasting below the last line means appending, and a buffer
-             * that doesn't already end in a newline has no line break to
-             * append *after* — without one the pasted line runs onto the
-             * end of the last one ("a\nb" + `p` gave "a\nbb"). Trade the
-             * register's trailing newline for a leading one, so the
-             * result gains exactly one line rather than a joined line
-             * plus an empty one. */
+            /* A buffer not ending in a newline has nothing to append
+             * after ("a\nb" + p gave "a\nbb"). Trade the trailing
+             * newline for a leading one. */
             if (!m_cache.isEmpty() && m_cache.back() != '\n') {
                 bytes.chop(1);
                 bytes.prepend('\n');
@@ -753,11 +694,9 @@ QString EditorViewport::vimBlockGlyphAt(size_t cursor, int *width, AseHighlightC
     int lineStart = m_lineStarts[line];
     int lineEnd = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
     int col = columnForOffset(cursor, line);
-    /* vimNextCharBoundary steps by codepoint, not by byte, so a
-     * multi-byte UTF-8 character under the cursor is measured/drawn
-     * whole rather than split mid-sequence. At end of line/buffer it
-     * returns `cursor` unchanged (nothing to step past), which is
-     * exactly the "no real character here" signal below. */
+    /* Steps by codepoint, so a multi-byte character is measured whole.
+     * Returns `cursor` unchanged at end of line, which is the "no real
+     * character here" signal below. */
     size_t glyphEnd = vimNextCharBoundary(cursor);
     int endCol = std::min(static_cast<int>(glyphEnd) - lineStart, lineEnd - lineStart);
     if (endCol <= col) {
@@ -772,12 +711,9 @@ QString EditorViewport::vimBlockGlyphAt(size_t cursor, int *width, AseHighlightC
     return QString::fromUtf8(m_cache.constData() + lineStart + col, endCol - col);
 }
 
-/* Top-level Normal/Visual key dispatcher — see docs/adr/0046 for the
- * full state-machine table. Returns true for every key Vim claims,
- * including "recognized but currently invalid, swallowed" cases;
- * false only for keys outside Vim's alphabet entirely (arrows, Home/
- * End, every Ctrl/Alt/Meta combo, function keys), which the caller's
- * own switch/Ctrl-chain still handles unmodified. */
+/* Returns true for every key Vim claims, including invalid-but-
+ * swallowed ones; false only for keys outside its alphabet. See
+ * docs/adr/0046 for the state table. */
 bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     if (event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) {
         return false;
@@ -800,9 +736,8 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     }
     QChar qc = text.at(0);
 
-    /* Mid-`f`/`F`/`t`/`T`: this key *is* the target, whatever it is —
-     * digits and operator letters included, so `f3` and `fd` search for
-     * '3' and 'd' rather than being read as a count or an operator. */
+    /* This key is the target, whatever it is: `f3` and `fd` search for
+     * '3' and 'd', not a count or an operator. */
     if (m_vimPendingFind != '\0') {
         char command = m_vimPendingFind;
         m_vimPendingFind = '\0';
@@ -828,10 +763,8 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
             vimPrepareLinewiseMotion();
             vimGotoLine(targetLine);
         } else if (qc == QLatin1Char('d')) {
-            /* `gd` — vim's own go-to-definition key, here meaning the
-             * language server's answer rather than vim's local-declaration
-             * scan. Not a motion, so no operator can be pending against
-             * it; it jumps and that is all. See docs/adr/0067. */
+            /* The language server's answer, not vim's local scan. Not
+             * a motion, so no operator can be pending. */
             resetVimPendingState();
             goToDefinition();
             return true;
@@ -843,8 +776,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         return true;
     }
 
-    /* Counts. A bare '0' (no count typed yet) is the "column 0" motion,
-     * not a digit — matches real vim. */
+    /* A bare '0' is the column-0 motion, not a digit. */
     if (qc.isDigit()) {
         int d = qc.digitValue();
         int &count = (m_vimPendingOperator != '\0') ? m_vimCount2 : m_vimCount1;
@@ -858,11 +790,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     int count = std::max(1, m_vimCount1) * std::max(1, m_vimCount2);
 
     if (c == ':') {
-        /* Real vim's own ex-command-line trigger — bare `:` (Shift+;
-         * on most layouts), not the app-wide Ctrl+; (which still works
-         * everywhere, Vim mode or not — see docs/adr/0025). Only live
-         * here, in Normal/Visual dispatch: Insert mode still needs `:`
-         * to type as a literal character. */
+        /* Normal/Visual only: Insert still needs `:` as a literal. */
         if (m_commandLine != nullptr) {
             m_commandLine->openCommandLine();
         }
@@ -870,8 +798,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         return true;
     }
     if (c == 'f' || c == 'F' || c == 't' || c == 'T') {
-        /* The target character comes next; any pending count is kept so
-         * `3fx` still means the third x. */
+        /* Keeps the pending count, so `3fx` is still the third x. */
         m_vimPendingFind = c;
         return true;
     }
@@ -880,9 +807,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
             resetVimPendingState();
             return true;
         }
-        /* `,` is the same search in the other direction — vim's own
-         * pairing, and the reason this is stored as a command letter
-         * rather than a direction flag. */
+        /* Same search, reversed — why this is stored as a letter. */
         char command = m_vimLastFindCommand;
         if (c == ',') {
             switch (command) {
@@ -916,14 +841,11 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     if (c == 'h' || c == 'l' || c == 'j' || c == 'k' || c == '0' || c == '^' || c == '$' || c == 'w' ||
         c == 'b' || c == 'e' || c == '{' || c == '}') {
         if ((c == '{' || c == '}') && m_vimPendingOperator == '\0') {
-            /* Paragraph motions cross far enough to be worth coming back
-             * from; h/j/k/l/w/b/e deliberately are not — see
-             * docs/adr/0070 on what counts as a jump. */
+            /* Far enough to be worth coming back from; h/j/k/l are
+             * deliberately not. See docs/adr/0070. */
             recordJump();
         }
-        /* A pure motion (no operator resolved here) glides like every
-         * other navigation in this app — arrows, Home/End — rather than
-         * snapping. See docs/adr/0051. */
+        /* A pure motion glides, like every other navigation here. */
         vimPrepareLinewiseMotion();
         vimExecuteMotion(c, count);
         vimNormalizeLinewiseSelection();
@@ -936,9 +858,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     if (m_vimMode == VimMode::Visual) {
         switch (c) {
         case 'v':
-            /* v inside linewise Visual drops back to charwise rather
-             * than leaving Visual — matches real vim, where the two
-             * Visual flavours toggle between each other. */
+            /* v in linewise Visual drops to charwise, not out. */
             if (m_vimVisualLinewise) {
                 m_vimVisualLinewise = false;
             } else {
@@ -959,9 +879,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
             }
             break;
         case 'o': {
-            /* Jump to the other end of the selection, keeping it — lets
-             * you fix the end you didn't mean to extend without
-             * reselecting from scratch. */
+            /* Other end of the selection, keeping it. */
             std::swap(m_cursors[0], m_selectionAnchors[0]);
             if (m_vimVisualLinewise) {
                 std::swap(m_vimVisualAnchorLine, m_vimVisualCursorLine);
@@ -974,21 +892,15 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
             if (hasSelectionAt(0)) {
                 size_t start = selectionMinAt(0);
                 size_t end = selectionMaxAt(0);
-                /* A linewise Visual selection ending at the buffer's end
-                 * holds no trailing newline (there is none), so deleting
-                 * it emptied the last line instead of removing it — the
-                 * same asymmetry `dd` hit. */
+                /* No trailing newline at the buffer's end, so this
+                 * emptied the last line instead of removing it. */
                 if (m_vimVisualLinewise) {
                     start = vimLinewiseDeleteStart(start, end);
                 }
                 vimDeleteRange(start, end, m_vimVisualLinewise);
                 if (m_vimVisualLinewise) {
-                    /* vimDeleteRange leaves the cursor exactly where the
-                     * range began, which after the adjustment above is
-                     * the newline *ending the previous line* — i.e.
-                     * visually past its last character. A linewise
-                     * delete lands on the first non-blank of the line
-                     * you end up on, as everywhere else in Vim mode. */
+                    /* The range began on the previous line's newline,
+                     * so land on the first non-blank instead. */
                     size_t target = vimFirstNonBlank(lineForOffset(m_cursors[0]));
                     m_cursors[0] = target;
                     m_selectionAnchors[0] = target;
@@ -999,8 +911,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
             break;
         case 'y':
             if (hasSelectionAt(0)) {
-                /* A linewise yank pastes as whole new lines, so p/P need
-                 * to be told which kind this was. */
+                /* p/P need to know which kind this was. */
                 vimYankRange(selectionMinAt(0), selectionMaxAt(0), m_vimVisualLinewise);
             }
             collapseToOneCursor();
@@ -1009,11 +920,8 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
             break;
         case 'c':
             if (hasSelectionAt(0)) {
-                /* Deliberately *not* extended over the preceding newline
-                 * the way `d` is: `c` leaves you typing where the lines
-                 * were, and swallowing the line break above would drop
-                 * the insertion point onto the end of the previous
-                 * line. */
+                /* Not extended over the preceding newline as `d` is, or
+                 * the insertion point lands on the previous line. */
                 vimChangeRange(selectionMinAt(0), selectionMaxAt(0), m_vimVisualLinewise);
             } else {
                 m_vimMode = VimMode::Insert;
@@ -1045,9 +953,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     }
 
     if (m_vimPendingOperator != '\0') {
-        /* An operator is pending but this key is neither the same
-         * operator repeated nor a recognized motion — an invalid
-         * combo. Real vim also just does nothing here. */
+        /* Operator pending, but this is neither a repeat nor a motion. */
         resetVimPendingState();
         return true;
     }

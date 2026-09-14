@@ -13,24 +13,14 @@ class QVariantAnimation;
 class QWheelEvent;
 
 /*
- * The open-buffer tab strip along the top of the window — see
- * docs/adr/0054 and docs/adr/0056.
+ * The open-buffer tab strip. Deliberately not a QTabBar: native tab
+ * widgets draw frames, separators and hover plates this app has
+ * nowhere else. A tab is a filename, a close mark, and a dot when
+ * unsaved.
  *
- * Deliberately not a QTabBar. Every native tab widget draws frames,
- * separators, a selected-tab lip and a hover plate, none of which this
- * app has anywhere else — the chrome language here is "no lines, state
- * carried by opacity" (docs/adr/0007's one-font-color pillar,
- * docs/adr/0022's panels). A tab is a filename, a close mark, and a dot
- * only when that buffer has unsaved changes.
- *
- * Everything that can move, moves smoothly. Tab slots are a *fixed*
- * width regardless of which one is active (the close mark fades in
- * rather than taking space), so switching tabs never reflows the strip;
- * and every layout change — opening, closing, switching — is
- * interpolated from where things were to where they now belong, so a new
- * tab visibly slides out of the one it was opened from instead of
- * appearing fully formed. See docs/adr/0056 for why the earlier
- * version felt jumpy.
+ * Tab slots are a fixed width whichever is active, so switching never
+ * reflows the strip, and every layout change interpolates from where
+ * things were. See docs/adr/0054, docs/adr/0056.
  */
 class BufferBar : public QWidget {
     Q_OBJECT
@@ -39,15 +29,9 @@ public:
     explicit BufferBar(QWidget *parent = nullptr);
 
     struct Item {
-        /* Stable, unique per open buffer for as long as it lives. Tabs
-         * used to be matched across layouts by *name*, which silently
-         * broke the moment two shared one — and every buffer opened with
-         * `+` is called "untitled", so it broke immediately and often.
-         * A new untitled matched an older one and so never animated in;
-         * closing one found another "untitled" still open, concluded
-         * nothing had been removed, and skipped the close animation
-         * entirely. Two files with the same basename in different
-         * directories would have done the same. See docs/adr/0057. */
+        /* Matching by name broke as soon as two tabs shared one, which
+         * every "untitled" buffer does: a new one matched an older and
+         * never animated in. */
         quintptr id = 0;
         QString name;
         bool dirty = false;
@@ -55,11 +39,8 @@ public:
 
     void setEntries(const QVector<Item> &items, int activeIndex);
 
-    /* Pulled from EditorViewport's config-driven theme, like every other
-     * piece of chrome — re-applied on config hot-reload so an edited
-     * config.ase reaches this too (docs/adr/0024). The font comes from
-     * the editor so tabs sit at the same visual weight as the text they
-     * label, and follow Ctrl+=/Ctrl+- with it. */
+    /* From the editor's theme, re-applied on hot-reload. The font
+     * comes from the editor so tabs match the text they label. */
     void setColors(const QColor &background, const QColor &text);
     void setBaseFont(const QFont &font);
 
@@ -78,24 +59,19 @@ protected:
     QSize sizeHint() const override;
 
 private:
-    /* Where a tab belongs once everything has settled. Rendering
-     * interpolates between `fromX` and `x` by m_transition, so the same
-     * mechanism covers opening, closing and switching. */
+    /* Where a tab belongs once settled; rendering interpolates from
+     * `fromX` by m_transition. */
     struct Tab {
         quintptr id = 0;
         QString name;
         bool dirty = false;
         double x = 0.0;     /* settled left edge */
         double fromX = 0.0; /* left edge it is animating out of */
-        /* Actual 0..255 alpha to start from, not a 0..1 "how active"
-         * value — a new tab must be able to start genuinely invisible,
-         * which the old encoding could not express. */
+        /* Real 0..255 alpha, so a new tab can start fully invisible. */
         double fromAlpha = 255.0;
         double width = 0.0;
-        /* A tab that has been closed but is still on screen, collapsing
-         * back into the one it leaves focus to — the exact reverse of
-         * how it arrived. Dropped once the animation lands; never
-         * hit-testable meanwhile. */
+        /* Closed but still on screen, collapsing into the tab it
+         * leaves focus to. Never hit-testable. */
         bool closing = false;
     };
 

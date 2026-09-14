@@ -15,29 +15,19 @@
 #include <QVBoxLayout>
 
 namespace {
-/* Maintained by hand, not generated from the keybinding dispatch code
- * — see the class doc comment. Two-column rows via a plain HTML table;
- * no explicit colors in the markup so it inherits the QLabel's own
- * palette (refreshTheme() sets that), keeping this consistent with the
- * "one font color" pillar the rest of the app already follows. */
-/* Section -> rows of (keys, what it does). Rendered by buildHelpHtml()
- * below rather than written as one long HTML literal: the literal had
- * drifted badly out of date (no Vim mode, no buffers, no font zoom) —
- * partly because adding a row meant hand-writing four tags, which is
- * exactly the kind of friction that stops people updating docs. A table
- * of data is something you can actually keep honest.
+/* Section -> rows of (keys, what it does), rendered by buildHelpHtml().
+ * Data rather than an HTML literal: the literal drifted badly out of
+ * date, because adding a row meant hand-writing four tags.
  *
- * Still maintained by hand, not generated from the keybinding dispatch
- * — see the class doc comment for why. */
+ * Maintained by hand, not generated from the keybinding dispatch — see
+ * the class doc comment. */
 struct HelpRow {
     const char *keys;
     const char *description;
 };
 struct HelpSection {
     const char *title;
-    /* Sections the user has to opt into are worth saying so, rather than
-     * leaving someone hunting for a key that does nothing on their
-     * setup. nullptr when it always applies. */
+    /* nullptr when the section always applies. */
     const char *note;
     QVector<HelpRow> rows;
 };
@@ -134,12 +124,9 @@ HelpPanel::HelpPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_view
     layout->setContentsMargins(10, 8, 10, 8);
     layout->setSpacing(6);
 
-    /* A real QWidget, not just a QHBoxLayout added directly to `layout`
-     * — installEventFilter (setDragHandle's mechanism) needs an actual
-     * widget to watch. The badge and title are marked transparent to
-     * mouse events so a press anywhere across the bar reaches this
-     * widget and starts a drag, not just a press on the badge itself
-     * (docs/adr/0031's original, narrower handle) — see docs/adr/0044. */
+    /* A real widget, since installEventFilter needs one to watch. The
+     * badge and title are transparent to mouse events, so a press
+     * anywhere on the bar starts a drag. */
     auto *headerBar = new QWidget(content);
     auto *headerRow = new QHBoxLayout(headerBar);
     headerRow->setContentsMargins(0, 0, 0, 0);
@@ -157,9 +144,7 @@ HelpPanel::HelpPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_view
     layout->addWidget(headerBar);
     setDragHandle(headerBar);
 
-    /* Shortcuts are how this editor is driven, so this panel is
-     * something you come back to and scan — not read once. A search
-     * field over every binding beats scrolling a wall of text. */
+    /* This panel is scanned repeatedly, not read once. */
     m_search = new SmoothLineEdit(content);
     m_search->setFrame(false);
     m_search->setPlaceholderText(QStringLiteral("Search shortcuts"));
@@ -195,10 +180,8 @@ void HelpPanel::openHelp() {
     m_search->setFocus();
 }
 
-/* One header row plus one rows-label per section. The rows are a small
- * rich-text table rather than a widget per row: a section is shown or
- * hidden as a unit and its rows never need individual interaction, so
- * two widgets per section is the cheaper shape that still collapses. */
+/* Two widgets per section: a section collapses as a unit and its rows
+ * never need individual interaction. */
 void HelpPanel::buildSections() {
     const QVector<HelpSection> data = helpSections();
     for (const HelpSection &source : data) {
@@ -245,11 +228,9 @@ void HelpPanel::setSectionExpanded(int index, bool expanded) {
     restyleSections();
 }
 
-/* Case-insensitive match against either column, plus the section title
- * so "vim" finds the whole Vim block. A section with no surviving rows
- * disappears entirely rather than sitting there as an empty heading, and
- * searching force-expands whatever still matches — collapsed state is a
- * browsing preference, not something that should hide results. */
+/* Matches either column plus the section title, so "vim" finds the
+ * whole block. Searching force-expands matches: collapsed state is a
+ * browsing preference, not a filter. */
 void HelpPanel::applySearch(const QString &query) {
     QString needle = query.trimmed().toLower();
     for (Section &section : m_sections) {
@@ -285,11 +266,8 @@ void HelpPanel::refreshTheme() {
     badgeFill.setAlpha(220);
     m_badge->setColors(badgeFill, m_viewport->backgroundColor());
 
-    /* QLabel's default palette text color doesn't follow this app's
-     * custom dark theme at all — it rendered black regardless of
-     * background, a real bug found by actually looking at a
-     * screenshot. Every QLabel in this panel needs its palette set
-     * explicitly; m_title was the one missed the first time around. */
+    /* QLabel's default palette renders black whatever the background,
+     * so every label here needs its palette set explicitly. */
     QPalette pal = m_title->palette();
     pal.setColor(QPalette::WindowText, m_viewport->textColor());
     m_title->setPalette(pal);
@@ -303,11 +281,8 @@ void HelpPanel::refreshTheme() {
     scrollPal.setColor(QPalette::Window, m_viewport->panelFieldColor());
     m_scrollArea->setPalette(scrollPal);
     m_scrollArea->setAutoFillBackground(true);
-    /* The scroll area's *widget* needs the theme too. It used to be the
-     * rich-text body, which inherited it; now it is a plain container,
-     * and without this it painted Qt's default near-white behind
-     * everything — which made the cream description column effectively
-     * invisible while the colours themselves were perfectly correct. */
+    /* The scroll area's widget needs the theme too, or it paints Qt's
+     * near-white behind everything. */
     m_sectionsHost->setPalette(scrollPal);
     m_sectionsHost->setAutoFillBackground(true);
 
@@ -322,9 +297,7 @@ bool HelpPanel::eventFilter(QObject *watched, QEvent *event) {
     if (event->type() == QEvent::KeyPress && (watched == m_scrollArea || watched == m_search)) {
         auto *keyEvent = static_cast<QKeyEvent *>(event);
         if (keyEvent->key() == Qt::Key_Escape) {
-            /* Escape clears an active search first — losing your filter
-             * is a smaller surprise than losing the whole panel when you
-             * only meant to start over. */
+            /* Escape clears an active search before closing. */
             if (watched == m_search && !m_search->text().isEmpty()) {
                 m_search->clear();
                 return true;
@@ -345,10 +318,8 @@ bool HelpPanel::eventFilter(QObject *watched, QEvent *event) {
     return FloatingPanel::eventFilter(watched, event);
 }
 
-/* Renders every section's header and rows at the current theme. Colours
- * are blended to solid RGB rather than passed as #AARRGGBB: Qt's
- * rich-text CSS does not reliably parse an alpha channel in a hex
- * colour, so the dimming would silently render fully opaque. */
+/* Colours are blended to solid RGB: Qt's rich-text CSS does not
+ * reliably parse an alpha channel, so dimming rendered opaque. */
 void HelpPanel::restyleSections() {
     if (m_sections.isEmpty()) {
         return;
@@ -364,10 +335,8 @@ void HelpPanel::restyleSections() {
     QString dim = blend(m_viewport->textColor(), 150.0 / 255.0).name();
     QString faint = blend(m_viewport->textColor(), 105.0 / 255.0).name();
 
-    /* Copied from an already-themed widget, not default-constructed:
-     * QPalette() picks up the *application* palette, whose other roles
-     * then fight the theme — the rich text ended up rendering in a flat
-     * light grey with the inline colours ignored. */
+    /* Copied from an already-themed widget: a default QPalette picks
+     * up the application palette, whose roles fight the theme. */
     QPalette pal = m_title->palette();
     pal.setColor(QPalette::WindowText, m_viewport->textColor());
     pal.setColor(QPalette::Text, m_viewport->textColor());
@@ -376,9 +345,7 @@ void HelpPanel::restyleSections() {
         section.titleLabel->setPalette(pal);
         section.rowsLabel->setPalette(pal);
 
-        /* A rotated caret rather than +/- or a chevron image: it reads as
-         * "there is more under here" without adding an icon set to an app
-         * that has none. */
+        /* A rotated caret, so the app needs no icon set. */
         QString caret = section.expanded ? QStringLiteral("&#9662;") : QStringLiteral("&#9656;");
         QString header = QStringLiteral("<span style=\"color:%1;\">%2</span>&nbsp;&nbsp;"
                                          "<b style=\"color:%3;\">%4</b>")
