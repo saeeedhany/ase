@@ -12,6 +12,7 @@
 
 #include <QFontMetrics>
 #include <QPainter>
+#include <cstdio>
 #include <QPainterPath>
 #include <QPixmap>
 
@@ -67,6 +68,18 @@ void EditorViewport::paintEvent(QPaintEvent *) {
      * beyond what a plain height()/lineHeight count would cover. */
     int visibleLines = std::max(1, height() / m_lineHeight + 2);
     int lastLine = std::min(firstLine + visibleLines, static_cast<int>(m_lineStarts.size()));
+
+    /* The syntax query runs over a window around what is visible, not
+     * over the whole file (docs/adr/0072) — so the window has to be
+     * made to cover these lines before any of them are drawn. A no-op
+     * whenever the previous window already reaches this far, which
+     * ordinary scrolling usually does. */
+    {
+        int firstByte = 0;
+        int lastByte = 0;
+        visibleByteRange(&firstByte, &lastByte);
+        ensureCaptureWindow(firstByte, lastByte, false);
+    }
 
     /* Everything from here to restore() draws in "local" (document)
      * coordinates — the translate folds in the gutter offset, horizontal

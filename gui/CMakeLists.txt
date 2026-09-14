@@ -67,6 +67,8 @@ target_link_libraries(ase_gui
         ase_core
         ase_syntax
         Qt6::Widgets
+
+        ase_warnings
 )
 
 # Single source of truth for the version shown in the About panel —

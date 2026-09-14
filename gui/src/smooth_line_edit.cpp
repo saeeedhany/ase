@@ -1,5 +1,6 @@
 #include "smooth_line_edit.h"
 
+#include "editor_viewport.h"
 #include "motion.h"
 
 #include <algorithm>
@@ -77,6 +78,22 @@ SmoothLineEdit::SmoothLineEdit(QWidget *parent) : QLineEdit(parent) {
     connect(this, &QLineEdit::cursorPositionChanged, this, wake);
     connect(this, &QLineEdit::textChanged, this, wake);
     connect(this, &QLineEdit::selectionChanged, this, wake);
+}
+
+void SmoothLineEdit::applyPanelTheme(const EditorViewport *viewport) {
+    if (viewport == nullptr) {
+        return;
+    }
+    QPalette palette = this->palette();
+    palette.setColor(QPalette::Base, viewport->panelFieldColor());
+    palette.setColor(QPalette::Text, viewport->textColor());
+    palette.setColor(QPalette::Highlight, viewport->panelBorderColor());
+    palette.setColor(QPalette::HighlightedText, viewport->textColor());
+    QColor placeholder = viewport->textColor();
+    placeholder.setAlpha(115);
+    palette.setColor(QPalette::PlaceholderText, placeholder);
+    setPalette(palette);
+    setAnimated(viewport->animationsEnabled());
 }
 
 void SmoothLineEdit::setAnimated(bool animated) {

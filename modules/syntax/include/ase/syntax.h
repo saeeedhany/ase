@@ -48,6 +48,21 @@ typedef void (*AseHighlightCallback)(void *user_data, AseHighlightSpan span);
  * them (not guaranteed sorted by start offset — see docs/adr/0007,
  * decision 5, on why this isn't incremental). `text` need not be
  * NUL-terminated. */
+/*
+ * Spans for the bytes in [start_byte, end_byte) only.
+ *
+ * The parse is always of the whole text — a syntax tree of half a file
+ * is not a syntax tree — but the *query* that turns the tree into spans
+ * is the expensive half at scale, and an editor only ever draws a
+ * screenful. Measured on a 10,800-line file: 64ms for the whole file
+ * against roughly a millisecond for a window. See docs/adr/0072.
+ *
+ * Callers that pass the whole range get exactly what ase_syntax_highlight
+ * gives them; it is now a wrapper around this.
+ */
+void ase_syntax_highlight_range(AseSyntax *syntax, const char *text, size_t len, size_t start_byte,
+                                 size_t end_byte, AseHighlightCallback callback, void *user_data);
+
 void ase_syntax_highlight(AseSyntax *syntax, const char *text, size_t len,
                            AseHighlightCallback callback, void *user_data);
 

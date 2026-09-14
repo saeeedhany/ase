@@ -121,18 +121,10 @@ void FindBar::refreshTheme() {
      * native frame (setFrame(false) above); the field's own background
      * sits slightly off the panel's via panelFieldColor so it still
      * reads as an input, without introducing a new hue. */
-    QPalette editPalette = m_findEdit->palette();
-    editPalette.setColor(QPalette::Base, m_viewport->panelFieldColor());
-    editPalette.setColor(QPalette::Text, m_viewport->textColor());
-    editPalette.setColor(QPalette::Highlight, m_viewport->panelBorderColor());
-    editPalette.setColor(QPalette::HighlightedText, m_viewport->textColor());
-    m_findEdit->setPalette(editPalette);
-    m_replaceEdit->setPalette(editPalette);
-
-    /* The caret in here glides and breathes like the editor's own —
-     * including honouring `animations = false`. See docs/adr/0058. */
-    m_findEdit->setAnimated(m_viewport->animationsEnabled());
-    m_replaceEdit->setAnimated(m_viewport->animationsEnabled());
+    /* One helper, so every field in the app is themed the same way and
+     * gains any later fix at the same time — see docs/adr/0072. */
+    m_findEdit->applyPanelTheme(m_viewport);
+    m_replaceEdit->applyPanelTheme(m_viewport);
 }
 
 /* Return/Enter in the find field navigates (Shift = previous, wrapping

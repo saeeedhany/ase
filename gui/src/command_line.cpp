@@ -51,16 +51,7 @@ void CommandLine::refreshTheme() {
     badgeFill.setAlpha(220);
     m_badge->setColors(badgeFill, m_viewport->backgroundColor());
 
-    QPalette editPalette = m_edit->palette();
-    editPalette.setColor(QPalette::Base, m_viewport->panelFieldColor());
-    editPalette.setColor(QPalette::Text, m_viewport->textColor());
-    editPalette.setColor(QPalette::Highlight, m_viewport->panelBorderColor());
-    editPalette.setColor(QPalette::HighlightedText, m_viewport->textColor());
-    m_edit->setPalette(editPalette);
-    /* The caret glides and breathes like the editor's own, and goes
-     * back to a hard blink when `animations = false`. See
-     * docs/adr/0058. */
-    m_edit->setAnimated(m_viewport->animationsEnabled());
+    m_edit->applyPanelTheme(m_viewport);
 }
 
 /* Return/Escape consumed here, not left to QLineEdit's native

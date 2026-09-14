@@ -323,6 +323,14 @@ private:
      * font_size. A no-op if there's no active override. */
     void resetFontSize();
     void refreshCache();
+    /* Makes sure m_captureAt covers [startByte, endByte), re-running the
+     * syntax query over a generous window around it if it does not.
+     * Cheap enough to call from paintEvent, which is what keeps
+     * scrolling correct without a whole-file query per keystroke. */
+    void ensureCaptureWindow(int startByte, int endByte, bool force);
+    /* Byte range of the lines currently on screen, for the two callers
+     * that need to know what to highlight. */
+    void visibleByteRange(int *startByte, int *endByte) const;
     void drawLine(QPainter &painter, int start, int end, int y);
     QFont fontForCapture(AseHighlightCapture capture) const;
     QColor colorForCapture(AseHighlightCapture capture) const;
@@ -764,6 +772,11 @@ private:
      * uint8_t rather than the enum keeps it 1 byte per buffer byte. See
      * docs/adr/0053. */
     QVector<uint8_t> m_captureAt;
+    /* The byte range m_captureAt is actually valid for. Highlighting is
+     * computed for a window around what is on screen rather than for the
+     * whole file — see ensureCaptureWindow() and docs/adr/0072. */
+    int m_captureWindowStart = 0;
+    int m_captureWindowEnd = 0;
 
     QByteArray m_cache;
     QVector<int> m_lineStarts;

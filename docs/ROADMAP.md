@@ -855,11 +855,14 @@ something else.
 
 ### Tier 1 — make the existing promises true
 
-- **Incremental Tree-sitter reparse.** Measured: **~12.7ms of CPU per
-  keystroke** on an 8400-line file, because `refreshCache()` reparses the
-  whole buffer every time (a deliberate v1 call — ADR 0007, decision 5).
-  `ts_tree_edit` + reusing the previous tree is the fix. This is the
-  single biggest remaining gap between the editor and "blazingly fast."
+- ~~**Incremental Tree-sitter reparse.**~~ Done, and the estimate here was
+  an order of magnitude low: the real cost was **~177ms per keystroke** on
+  a 10,800-line file (107ms reparse, 64ms whole-file query). Now ~7ms —
+  the parse is incremental, the query runs over a window around what is
+  on screen, and the line scan uses `memchr`. See
+  [ADR 0072](adr/0072-incremental-highlighting-and-a-measured-hot-path.md),
+  which also lists what is next in measured order (caret-rect repaints,
+  incremental line starts).
 - ~~**Multiple buffers / files per window.**~~ Done — a viewport per
   buffer behind a minimal dot-and-name bar, `Ctrl+Tab`/`Ctrl+W` to
   switch and close. See

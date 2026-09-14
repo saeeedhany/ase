@@ -59,7 +59,9 @@ target_include_directories(ase_syntax
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
-target_link_libraries(ase_syntax PRIVATE tree_sitter_c_grammar)
+target_link_libraries(ase_syntax PRIVATE tree_sitter_c_grammar
+        ase_warnings
+)
 
 if(ASE_ENABLE_SANITIZERS)
     foreach(sanitized_target tree_sitter_runtime tree_sitter_c_grammar ase_syntax)

@@ -53,7 +53,9 @@ target_include_directories(ase_core
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(ase_core PRIVATE lua_runtime ${CMAKE_DL_LIBS})
+target_link_libraries(ase_core PRIVATE lua_runtime ${CMAKE_DL_LIBS}
+        ase_warnings
+)
 
 if(ASE_ENABLE_SANITIZERS)
     target_compile_options(ase_core PUBLIC -fsanitize=address,undefined -fno-omit-frame-pointer -g)

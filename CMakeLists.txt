@@ -23,6 +23,19 @@ option(ASE_BUILD_BENCH "Build the core engine benchmark tool" OFF)
 option(ASE_BUILD_FUZZERS "Build libFuzzer harnesses for the core engine (requires clang)" OFF)
 option(ASE_BUILD_SYNTAX "Build the Tree-sitter syntax module (fetches deps from GitHub)" ON)
 
+# The project builds clean at -Wall -Wextra and has all along; nothing
+# was asking for it, so nothing was stopping the next warning from
+# sneaking in. An INTERFACE target rather than a global add_compile_options
+# so the flags reach this project's own code and not the Tree-sitter and
+# Lua sources FetchContent pulls in, which are not ours to keep clean.
+# See docs/adr/0072.
+add_library(ase_warnings INTERFACE)
+if(MSVC)
+    target_compile_options(ase_warnings INTERFACE /W4)
+else()
+    target_compile_options(ase_warnings INTERFACE -Wall -Wextra)
+endif()
+
 enable_testing()
 
 if(ASE_BUILD_GUI AND NOT ASE_BUILD_SYNTAX)

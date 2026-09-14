@@ -5,6 +5,7 @@
 #include <QLineEdit>
 
 class QTimer;
+class EditorViewport;
 
 /*
  * A QLineEdit whose caret glides and breathes exactly like the editor's
@@ -51,6 +52,19 @@ public:
      * hot-reload reaches it. With animations off the caret hard-blinks
      * on the same cadence the editor uses in that mode. */
     void setAnimated(bool animated);
+
+    /* Everything a panel's text field needs to look like this app's
+     * text fields: the field tone, full-contrast text, a selection that
+     * matches the panel's own border rather than the platform's blue,
+     * the placeholder one opacity tier down (Qt derives it from Text
+     * otherwise, and that derivation lands nearly black on a dark
+     * theme), and the caret animation following `animations`.
+     *
+     * Four panels were each doing this by hand in five or six lines,
+     * with the placeholder fix present in two of them and missing from
+     * the rest — which is what a copied idiom always eventually looks
+     * like. See docs/adr/0072. */
+    void applyPanelTheme(const EditorViewport *viewport);
 
 private:
     void tick();

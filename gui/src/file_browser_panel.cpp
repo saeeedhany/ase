@@ -141,23 +141,7 @@ void FileBrowserPanel::refreshTheme() {
     badgeFill.setAlpha(220);
     m_badge->setColors(badgeFill, m_viewport->backgroundColor());
 
-    QPalette editPalette = m_filterEdit->palette();
-    editPalette.setColor(QPalette::Base, m_viewport->panelFieldColor());
-    editPalette.setColor(QPalette::Text, m_viewport->textColor());
-    editPalette.setColor(QPalette::Highlight, m_viewport->panelBorderColor());
-    editPalette.setColor(QPalette::HighlightedText, m_viewport->textColor());
-    /* Qt derives PlaceholderText from Text when it isn't set, and that
-     * derivation lands almost black against this theme's dark field —
-     * the placeholder was effectively invisible. Set explicitly, one
-     * opacity tier down from real input. */
-    QColor placeholder = m_viewport->textColor();
-    placeholder.setAlpha(115);
-    editPalette.setColor(QPalette::PlaceholderText, placeholder);
-    m_filterEdit->setPalette(editPalette);
-    /* The caret glides and breathes like the editor's own, and goes
-     * back to a hard blink when `animations = false`. See
-     * docs/adr/0058. */
-    m_filterEdit->setAnimated(m_viewport->animationsEnabled());
+    m_filterEdit->applyPanelTheme(m_viewport);
 
     /* Highlight == Base so the native selection rect renders invisible
      * — the animated m_rowHighlight bar is the only visible highlight,

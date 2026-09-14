@@ -294,17 +294,7 @@ void HelpPanel::refreshTheme() {
     pal.setColor(QPalette::WindowText, m_viewport->textColor());
     m_title->setPalette(pal);
 
-    QPalette searchPal = m_search->palette();
-    searchPal.setColor(QPalette::Base, m_viewport->panelFieldColor());
-    searchPal.setColor(QPalette::Text, m_viewport->textColor());
-    QColor searchPlaceholder = m_viewport->textColor();
-    searchPlaceholder.setAlpha(115);
-    searchPal.setColor(QPalette::PlaceholderText, searchPlaceholder);
-    m_search->setPalette(searchPal);
-    /* The caret glides and breathes like the editor's own, and goes
-     * back to a hard blink when `animations = false`. See
-     * docs/adr/0058. */
-    m_search->setAnimated(m_viewport->animationsEnabled());
+    m_search->applyPanelTheme(m_viewport);
 
     restyleSections();
 

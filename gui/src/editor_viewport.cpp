@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 #include <QDir>
 #include <QFileInfo>
@@ -117,45 +118,105 @@ void EditorViewport::refreshCache() {
         ase_buffer_get_text(m_buffer, 0, len, m_cache.data());
     }
 
-    m_lineStarts.clear();
+    /* memchr, not a byte loop: this runs on every keystroke over the
+     * whole buffer, and the obvious loop measured 8.2ms on a 276KB file
+     * — more than the incremental syntax parse it sits next to.
+     * resize(0) rather than clear() so the vector keeps its capacity
+     * between keystrokes instead of reallocating from nothing each
+     * time. See docs/adr/0072. */
+    m_lineStarts.resize(0);
+    m_lineStarts.reserve(m_cache.size() / 24 + 16);
     m_lineStarts.push_back(0);
-    for (int i = 0; i < m_cache.size(); ++i) {
-        if (m_cache[i] == '\n') {
-            m_lineStarts.push_back(i + 1);
+    const char *data = m_cache.constData();
+    const char *cursor = data;
+    const char *end = data + m_cache.size();
+    while (cursor < end) {
+        const char *newline = static_cast<const char *>(memchr(cursor, '\n', end - cursor));
+        if (newline == nullptr) {
+            break;
         }
+        m_lineStarts.push_back(static_cast<int>(newline - data) + 1);
+        cursor = newline + 1;
     }
+
+    /* Sized here, filled by ensureCaptureWindow() for the part that is
+     * about to be drawn. */
+    m_captureAt.fill(static_cast<uint8_t>(ASE_HL_NONE), m_cache.size());
+    /* Recomputed now rather than left invalid until the next paint:
+     * xForColumn() measures runs with each capture's own font, and it is
+     * called from the animation tick as well as from painting, so a
+     * window that is empty between an edit and the next frame would put
+     * the caret a pixel or two off. */
+    m_captureWindowStart = 0;
+    m_captureWindowEnd = 0;
+    int visibleStart = 0;
+    int visibleEnd = 0;
+    visibleByteRange(&visibleStart, &visibleEnd);
+    ensureCaptureWindow(visibleStart, visibleEnd, true);
+
+    recomputeMatches();
+    sendLspDidChange();
+    requestCompletionIfAppropriate();
+}
+
+/*
+ * Fills m_captureAt for the bytes about to be drawn, re-running the
+ * syntax query only when the window it already holds does not cover
+ * them.
+ *
+ * Highlighting used to be computed for the entire file on every
+ * keystroke: 14,402 spans and 64ms on a 10,800-line file, to draw about
+ * forty lines. The parse still covers the whole file — a syntax tree of
+ * half a file is not a syntax tree — but the query that turns it into
+ * spans now runs over a window, and the window is padded generously so
+ * that ordinary scrolling does not re-run it every frame. See
+ * docs/adr/0072.
+ */
+void EditorViewport::visibleByteRange(int *startByte, int *endByte) const {
+    int lineCount = static_cast<int>(m_lineStarts.size());
+    int firstLine = std::clamp(static_cast<int>(m_renderedScrollLine), 0, std::max(0, lineCount - 1));
+    int lines = (m_lineHeight > 0) ? (height() / m_lineHeight + 2) : 1;
+    int lastLine = std::min(firstLine + std::max(1, lines), lineCount);
+    *startByte = m_lineStarts.isEmpty() ? 0 : m_lineStarts[firstLine];
+    *endByte = (lastLine < lineCount) ? m_lineStarts[lastLine] : static_cast<int>(m_cache.size());
+}
+
+void EditorViewport::ensureCaptureWindow(int startByte, int endByte, bool force) {
+    if (m_syntax == nullptr || m_cache.isEmpty()) {
+        return;
+    }
+    if (!force && startByte >= m_captureWindowStart && endByte <= m_captureWindowEnd) {
+        return;
+    }
+
+    /* Roughly a screenful either side, so paging up and down mostly
+     * lands inside what is already computed. */
+    int pad = std::max(4096, (endByte - startByte) * 2);
+    int windowStart = std::max(0, startByte - pad);
+    int windowEnd = std::min(static_cast<int>(m_cache.size()), endByte + pad);
 
     m_highlights.clear();
-    if (m_syntax != nullptr) {
-        ase_syntax_highlight(m_syntax, m_cache.constData(), static_cast<size_t>(m_cache.size()),
-                              collectHighlightSpan, &m_highlights);
-    }
+    ase_syntax_highlight_range(m_syntax, m_cache.constData(), static_cast<size_t>(m_cache.size()),
+                                static_cast<size_t>(windowStart), static_cast<size_t>(windowEnd),
+                                collectHighlightSpan, &m_highlights);
 
-    /* Flattened to one capture byte per buffer byte, once per edit,
-     * rather than re-derived per line per frame. capturesForLine() used
-     * to scan *every* span in the file for *every* visible line on
-     * *every* frame — with animations on (a repaint every 30ms) that is
-     * O(visible_lines * spans_in_file) forever, which measured as 22%
-     * CPU at complete idle on an 8400-line file. Same "mirror the whole
-     * buffer once, index it cheaply after" shape m_cache and
-     * m_lineStarts already use (docs/adr/0006). See docs/adr/0053. */
-    /* fill(), not assign(): QList::assign arrived in Qt 6.6, and the
-     * oldest base this project packages against is Qt 6.4
-     * (debian:bookworm, see packaging/README.md). Building natively on a
-     * rolling-release machine hid that for three releases — exactly the
-     * class of bug ADR 0045 introduced the pinned containers to catch. */
-    m_captureAt.fill(static_cast<uint8_t>(ASE_HL_NONE), m_cache.size());
+    /* Only the window is cleared and refilled. Bytes outside it keep
+     * whatever a previous window left there, which nothing reads:
+     * capturesForLine is only ever called for lines inside the window
+     * this function just guaranteed. */
+    for (int i = windowStart; i < windowEnd; ++i) {
+        m_captureAt[i] = static_cast<uint8_t>(ASE_HL_NONE);
+    }
     for (const AseHighlightSpan &span : m_highlights) {
-        int spanStart = std::clamp(static_cast<int>(span.start), 0, static_cast<int>(m_captureAt.size()));
-        int spanEnd = std::clamp(static_cast<int>(span.end), 0, static_cast<int>(m_captureAt.size()));
+        int spanStart = std::clamp(static_cast<int>(span.start), windowStart, windowEnd);
+        int spanEnd = std::clamp(static_cast<int>(span.end), windowStart, windowEnd);
         for (int i = spanStart; i < spanEnd; ++i) {
             m_captureAt[i] = static_cast<uint8_t>(span.capture);
         }
     }
 
-    recomputeMatches();
-    sendLspDidChange();
-    requestCompletionIfAppropriate();
+    m_captureWindowStart = windowStart;
+    m_captureWindowEnd = windowEnd;
 }
 
 int EditorViewport::lineForOffset(size_t offset) const {
