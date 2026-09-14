@@ -24,9 +24,8 @@ have real tradeoffs and set precedent for everything after:
    feel across every future panel outweighed it.
 2. **Do future Open/Save-As dialogs join this system, or stay native
    `QFileDialog`?** Chose **custom floating panels** — overrides the
-   native-dialog approach `~/.claude/plans/noble-herding-quokka.md`'s
-   Phase 14 section had originally sketched; that plan needs updating
-   before Phase 14 starts (a custom file browser is real, non-trivial
+   native-dialog approach the original Phase 14 plan had sketched;
+   that plan needs updating before Phase 14 starts (a custom file browser is real, non-trivial
    work `QFileDialog` would have skipped entirely).
 
 ## Decision
@@ -151,7 +150,7 @@ Still gated by the same `animations` config key and `setAnimated`
 per-open check as before — this only changes *how* the motion looks
 when it's on, not when it runs. (editor chrome: status bar, dirty
 tracking, Open/Save-As) needs its own plan update before it starts:
-`~/.claude/plans/noble-herding-quokka.md`'s existing Phase 14 section
-still describes native `QFileDialog` for Open/Save-As, superseded by
+the original Phase 14 plan still describes native `QFileDialog` for
+Open/Save-As, superseded by
 this ADR's second decision — a custom file-browsing floating panel is
 real, unscoped work that plan never accounted for.

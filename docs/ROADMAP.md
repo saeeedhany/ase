@@ -222,9 +222,9 @@ editor first (undo, selection, clipboard, find/replace, chrome,
 compile, LSP UI) — full modal Vim emulation is confirmed scope but
 deliberately pushed to *after* this list, planned in detail only once
 it's reached. Single file per window (no tabs) for now — multi-file
-may become a tmux-like tiling plugin later. Full plan at the time of
-writing in `~/.claude/plans/noble-herding-quokka.md`, phase-by-phase
-ADRs as each lands here going forward.
+may become a tmux-like tiling plugin later. The full plan was kept
+outside this repo at the time of writing; phase-by-phase ADRs land
+here as each is reached.
 
 - [x] **Phase 10 — Undo/redo**: `AseUndoStack` in core
       (`core/include/ase/undo.h`, `core/src/undo.c`) — records edit
@@ -289,10 +289,9 @@ ADRs as each lands here going forward.
       decisions taken to the user rather than guessed: panels are
       **true-centered** on the window (not top-anchored), and future
       Open/Save-As will be **custom floating panels**, not native
-      `QFileDialog` — overriding what
-      `~/.claude/plans/noble-herding-quokka.md`'s Phase 14 section
-      originally sketched; that plan needs a matching update before
-      Phase 14 starts. `main.cpp` reverted to its pre-Phase-13
+      `QFileDialog` — overriding what the original Phase 14 plan
+      sketched; that plan needs a matching update before Phase 14
+      starts. `main.cpp` reverted to its pre-Phase-13
       simplicity (`FindBar` is a child of `EditorViewport`, not a
       layout row). See [ADR 0022](adr/0022-floating-panel-design-system.md).
 - [x] **Phase 14 — Editor chrome**: status bar (`Ln %1, Col %2` + a

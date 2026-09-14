@@ -7,9 +7,9 @@ Accepted
 ## Context
 
 Phase 14 of the "complete normal editor" plan: status bar, dirty
-tracking (explicitly deferred since ADR 0006), and Open/Save-As.
-`~/.claude/plans/noble-herding-quokka.md`'s original sketch for this
-phase used native `QFileDialog::getOpenFileName`/`getSaveFileName` —
+tracking (explicitly deferred since ADR 0006), and Open/Save-As. The
+original sketch for this phase used native
+`QFileDialog::getOpenFileName`/`getSaveFileName` —
 superseded mid-flight by [ADR 0022](0022-floating-panel-design-system.md),
 written right after Phase 13.5's find-bar restyle, when the user
 decided future dialogs should join the same custom floating-panel
