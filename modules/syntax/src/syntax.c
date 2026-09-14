@@ -186,57 +186,8 @@ void ase_syntax_highlight(AseSyntax *syntax, const char *text, size_t len,
     ase_syntax_highlight_range(syntax, text, len, 0, len, callback, user_data);
 }
 
-void ase_syntax_highlight_range(AseSyntax *syntax, const char *text, size_t len, size_t start_byte,
-                                 size_t end_byte, AseHighlightCallback callback, void *user_data) {
-    if (syntax == NULL || callback == NULL) {
-        return;
-    }
-
-    /*
-     * Incremental where it can be: the previous tree is kept, told what
-     * changed, and handed back to the parser, which then re-parses only
-     * the affected subtree rather than the whole file. Measured on a
-     * 10,800-line file: 107ms -> 3.4ms for one keystroke.
-     *
-     * Falls back to a full parse whenever there is nothing to be
-     * incremental *from*. A wrong incremental parse corrupts
-     * highlighting in ways that look like a Tree-sitter bug, so any path
-     * that cannot prove the stored text matches the stored tree throws
-     * both away. See docs/adr/0072.
-     */
-    TSTree *old_tree = NULL;
-    if (syntax->tree != NULL && syntax->text != NULL) {
-        TSInputEdit edit;
-        if (derive_edit(syntax->text, syntax->text_len, text, len, &edit)) {
-            ts_tree_edit(syntax->tree, &edit);
-        }
-        old_tree = syntax->tree;
-        syntax->tree = NULL;
-    }
-
-    TSTree *tree = ts_parser_parse_string(syntax->parser, old_tree, text, (uint32_t)len);
-    if (old_tree != NULL) {
-        ts_tree_delete(old_tree);
-    }
-    if (tree == NULL) {
-        free(syntax->text);
-        syntax->text = NULL;
-        syntax->text_len = 0;
-        return;
-    }
-
-    /* Remember exactly what this tree was parsed from. If the copy
-     * fails, only the *next* call's incrementality is lost — this one
-     * still has a valid tree to query. */
-    char *copy = (char *)malloc(len > 0 ? len : 1);
-    if (copy != NULL) {
-        memcpy(copy, text, len);
-    }
-    free(syntax->text);
-    syntax->text = copy;
-    syntax->text_len = (copy != NULL) ? len : 0;
-    syntax->tree = tree;
-
+static void run_query(AseSyntax *syntax, TSTree *tree, size_t start_byte, size_t end_byte,
+                       AseHighlightCallback callback, void *user_data) {
     TSNode root = ts_tree_root_node(tree);
     /* Set every call: the cursor is reused (see the struct), so a range
      * left over from a previous window would silently clip this one. */
@@ -259,5 +210,72 @@ void ase_syntax_highlight_range(AseSyntax *syntax, const char *text, size_t len,
             callback(user_data, span);
         }
     }
+}
 
+void ase_syntax_highlight_range(AseSyntax *syntax, const char *text, size_t len, size_t start_byte,
+                                 size_t end_byte, AseHighlightCallback callback, void *user_data) {
+    if (syntax == NULL || callback == NULL) {
+        return;
+    }
+
+    /*
+     * Incremental where it can be: the previous tree is kept, told what
+     * changed, and handed back to the parser, which then re-parses only
+     * the affected subtree rather than the whole file. Measured on a
+     * 10,800-line file: 107ms -> 3.4ms for one keystroke.
+     *
+     * Falls back to a full parse whenever there is nothing to be
+     * incremental *from*. A wrong incremental parse corrupts
+     * highlighting in ways that look like a Tree-sitter bug, so any path
+     * that cannot prove the stored text matches the stored tree throws
+     * both away. See docs/adr/0072.
+     *
+     * Invariant: syntax->tree is non-NULL only when syntax->text holds
+     * the bytes it was parsed from.
+     */
+    TSTree *old_tree = NULL;
+    if (syntax->tree != NULL && syntax->text != NULL) {
+        TSInputEdit edit;
+        if (!derive_edit(syntax->text, syntax->text_len, text, len, &edit)) {
+            /* Identical text: the tree is still exact. Scrolling
+             * re-enters here at frame rate, so skipping the re-copy and
+             * the parser round-trip matters. */
+            run_query(syntax, syntax->tree, start_byte, end_byte, callback, user_data);
+            return;
+        }
+        ts_tree_edit(syntax->tree, &edit);
+        old_tree = syntax->tree;
+        syntax->tree = NULL;
+    }
+
+    TSTree *tree = ts_parser_parse_string(syntax->parser, old_tree, text, (uint32_t)len);
+    if (old_tree != NULL) {
+        ts_tree_delete(old_tree);
+    }
+    if (tree == NULL) {
+        free(syntax->text);
+        syntax->text = NULL;
+        syntax->text_len = 0;
+        return;
+    }
+
+    /* Remember exactly what this tree was parsed from. */
+    char *copy = (char *)malloc(len > 0 ? len : 1);
+    if (copy != NULL) {
+        memcpy(copy, text, len);
+    }
+    free(syntax->text);
+    syntax->text = copy;
+    syntax->text_len = (copy != NULL) ? len : 0;
+
+    run_query(syntax, tree, start_byte, end_byte, callback, user_data);
+
+    /* A tree stored without its text fails the guard above next call,
+     * which would overwrite it without freeing: one leak per call. */
+    if (copy != NULL) {
+        syntax->tree = tree;
+    } else {
+        ts_tree_delete(tree);
+        syntax->tree = NULL;
+    }
 }
