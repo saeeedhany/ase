@@ -10,29 +10,29 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0071-block-cursor-knockout-follows-its-block/">
       
       
+        <link rel="prev" href="../0070-the-jumplist/">
       
-        <link rel="next" href="SPEC/">
       
       
         
       
       
-      <link rel="icon" href="assets/ase-logo.png">
+      <link rel="icon" href="../../assets/ase-logo.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
-        <title>Absolute Simple Editor</title>
+        <title>ADR 0071: The block cursor's knockout follows its block - Absolute Simple Editor</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -51,9 +51,9 @@
       
     
     
-      <link rel="stylesheet" href="stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#absolute-simple-editor" class="md-skip">
+        <a href="#adr-0071-the-block-cursors-knockout-follows-its-block" class="md-skip">
           Skip to content
         </a>
       
@@ -92,9 +92,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="Absolute Simple Editor" class="md-header__button md-logo" aria-label="Absolute Simple Editor" data-md-component="logo">
+    <a href="../.." title="Absolute Simple Editor" class="md-header__button md-logo" aria-label="Absolute Simple Editor" data-md-component="logo">
       
-  <img src="assets/ase-logo.png" alt="logo">
+  <img src="../../assets/ase-logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              ADR 0071: The block cursor's knockout follows its block
             
           </span>
         </div>
@@ -222,11 +222,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="." class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -245,7 +243,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="SPEC/" class="md-tabs__link">
+      <a href="../../SPEC/" class="md-tabs__link">
         
   
   
@@ -264,7 +262,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="ROADMAP/" class="md-tabs__link">
+      <a href="../../ROADMAP/" class="md-tabs__link">
         
   
   
@@ -283,7 +281,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="plugins/" class="md-tabs__link">
+      <a href="../../plugins/" class="md-tabs__link">
         
   
   
@@ -302,7 +300,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="EXTENSIBILITY/" class="md-tabs__link">
+      <a href="../../EXTENSIBILITY/" class="md-tabs__link">
         
   
   
@@ -323,7 +321,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="feedback/" class="md-tabs__link">
+        <a href="../../feedback/" class="md-tabs__link">
           
   
   
@@ -341,11 +339,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="adr/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -381,9 +381,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="Absolute Simple Editor" class="md-nav__button md-logo" aria-label="Absolute Simple Editor" data-md-component="logo">
+    <a href="../.." title="Absolute Simple Editor" class="md-nav__button md-logo" aria-label="Absolute Simple Editor" data-md-component="logo">
       
-  <img src="assets/ase-logo.png" alt="logo">
+  <img src="../../assets/ase-logo.png" alt="logo">
 
     </a>
     Absolute Simple Editor
@@ -407,37 +407,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Home
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="." class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -453,48 +426,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#where-to-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where to start
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -506,7 +437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="SPEC/" class="md-nav__link">
+      <a href="../../SPEC/" class="md-nav__link">
         
   
   
@@ -533,7 +464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="ROADMAP/" class="md-nav__link">
+      <a href="../../ROADMAP/" class="md-nav__link">
         
   
   
@@ -560,7 +491,7 @@
   
   
     <li class="md-nav__item">
-      <a href="plugins/" class="md-nav__link">
+      <a href="../../plugins/" class="md-nav__link">
         
   
   
@@ -587,7 +518,7 @@
   
   
     <li class="md-nav__item">
-      <a href="EXTENSIBILITY/" class="md-nav__link">
+      <a href="../../EXTENSIBILITY/" class="md-nav__link">
         
   
   
@@ -639,7 +570,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="feedback/" class="md-nav__link ">
+            <a href="../../feedback/" class="md-nav__link ">
               
   
   
@@ -683,7 +614,7 @@
   
   
     <li class="md-nav__item">
-      <a href="feedback/0001-alpha-release-external-review/" class="md-nav__link">
+      <a href="../../feedback/0001-alpha-release-external-review/" class="md-nav__link">
         
   
   
@@ -715,6 +646,8 @@
       
   
   
+    
+  
   
   
     
@@ -870,20 +803,23 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="adr/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -901,13 +837,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -927,7 +863,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0001-record-architecture-decisions/" class="md-nav__link">
+      <a href="../0001-record-architecture-decisions/" class="md-nav__link">
         
   
   
@@ -955,7 +891,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0002-headless-core-separation/" class="md-nav__link">
+      <a href="../0002-headless-core-separation/" class="md-nav__link">
         
   
   
@@ -983,7 +919,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0003-license-decision-pending/" class="md-nav__link">
+      <a href="../0003-license-decision-pending/" class="md-nav__link">
         
   
   
@@ -1011,7 +947,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0004-core-in-plain-c/" class="md-nav__link">
+      <a href="../0004-core-in-plain-c/" class="md-nav__link">
         
   
   
@@ -1039,7 +975,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0005-buffer-engine-piece-table/" class="md-nav__link">
+      <a href="../0005-buffer-engine-piece-table/" class="md-nav__link">
         
   
   
@@ -1067,7 +1003,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0006-gui-shell-v1-shortcuts/" class="md-nav__link">
+      <a href="../0006-gui-shell-v1-shortcuts/" class="md-nav__link">
         
   
   
@@ -1095,7 +1031,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0007-syntax-highlighting-tree-sitter/" class="md-nav__link">
+      <a href="../0007-syntax-highlighting-tree-sitter/" class="md-nav__link">
         
   
   
@@ -1123,7 +1059,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0008-config-theme-format/" class="md-nav__link">
+      <a href="../0008-config-theme-format/" class="md-nav__link">
         
   
   
@@ -1151,7 +1087,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0009-plugin-abi-and-lua-host/" class="md-nav__link">
+      <a href="../0009-plugin-abi-and-lua-host/" class="md-nav__link">
         
   
   
@@ -1179,7 +1115,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0010-hand-rolled-json/" class="md-nav__link">
+      <a href="../0010-hand-rolled-json/" class="md-nav__link">
         
   
   
@@ -1207,7 +1143,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0011-lsp-client/" class="md-nav__link">
+      <a href="../0011-lsp-client/" class="md-nav__link">
         
   
   
@@ -1235,7 +1171,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0012-polish-phase-scope/" class="md-nav__link">
+      <a href="../0012-polish-phase-scope/" class="md-nav__link">
         
   
   
@@ -1263,7 +1199,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0013-caret-drift-fix/" class="md-nav__link">
+      <a href="../0013-caret-drift-fix/" class="md-nav__link">
         
   
   
@@ -1291,7 +1227,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0014-viewport-geometry/" class="md-nav__link">
+      <a href="../0014-viewport-geometry/" class="md-nav__link">
         
   
   
@@ -1319,7 +1255,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0015-smooth-motion/" class="md-nav__link">
+      <a href="../0015-smooth-motion/" class="md-nav__link">
         
   
   
@@ -1347,7 +1283,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0016-caret-visibility-fix/" class="md-nav__link">
+      <a href="../0016-caret-visibility-fix/" class="md-nav__link">
         
   
   
@@ -1375,7 +1311,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0017-viewport-review-pass/" class="md-nav__link">
+      <a href="../0017-viewport-review-pass/" class="md-nav__link">
         
   
   
@@ -1403,7 +1339,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0018-undo-redo/" class="md-nav__link">
+      <a href="../0018-undo-redo/" class="md-nav__link">
         
   
   
@@ -1431,7 +1367,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0019-selection-model/" class="md-nav__link">
+      <a href="../0019-selection-model/" class="md-nav__link">
         
   
   
@@ -1459,7 +1395,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0020-clipboard/" class="md-nav__link">
+      <a href="../0020-clipboard/" class="md-nav__link">
         
   
   
@@ -1487,7 +1423,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0021-find-replace/" class="md-nav__link">
+      <a href="../0021-find-replace/" class="md-nav__link">
         
   
   
@@ -1515,7 +1451,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0022-floating-panel-design-system/" class="md-nav__link">
+      <a href="../0022-floating-panel-design-system/" class="md-nav__link">
         
   
   
@@ -1543,7 +1479,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0023-editor-chrome/" class="md-nav__link">
+      <a href="../0023-editor-chrome/" class="md-nav__link">
         
   
   
@@ -1571,7 +1507,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0024-panel-polish-and-scroll-margin/" class="md-nav__link">
+      <a href="../0024-panel-polish-and-scroll-margin/" class="md-nav__link">
         
   
   
@@ -1599,7 +1535,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0025-command-system/" class="md-nav__link">
+      <a href="../0025-command-system/" class="md-nav__link">
         
   
   
@@ -1627,7 +1563,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0026-keybinding-scheme-help-about/" class="md-nav__link">
+      <a href="../0026-keybinding-scheme-help-about/" class="md-nav__link">
         
   
   
@@ -1655,7 +1591,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0027-visual-polish-pass/" class="md-nav__link">
+      <a href="../0027-visual-polish-pass/" class="md-nav__link">
         
   
   
@@ -1683,7 +1619,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0028-click-precision-select-all-deletion-glide/" class="md-nav__link">
+      <a href="../0028-click-precision-select-all-deletion-glide/" class="md-nav__link">
         
   
   
@@ -1711,7 +1647,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0029-lsp-diagnostics-wiring/" class="md-nav__link">
+      <a href="../0029-lsp-diagnostics-wiring/" class="md-nav__link">
         
   
   
@@ -1739,7 +1675,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0030-lsp-completion-hover/" class="md-nav__link">
+      <a href="../0030-lsp-completion-hover/" class="md-nav__link">
         
   
   
@@ -1767,7 +1703,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0031-draggable-panels-smooth-scroll-tracking-glide/" class="md-nav__link">
+      <a href="../0031-draggable-panels-smooth-scroll-tracking-glide/" class="md-nav__link">
         
   
   
@@ -1795,7 +1731,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0032-lsp-relative-path-uri-fix/" class="md-nav__link">
+      <a href="../0032-lsp-relative-path-uri-fix/" class="md-nav__link">
         
   
   
@@ -1823,7 +1759,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0033-license-apache-2.0-and-first-alpha-release/" class="md-nav__link">
+      <a href="../0033-license-apache-2.0-and-first-alpha-release/" class="md-nav__link">
         
   
   
@@ -1851,7 +1787,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0034-linux-packaging/" class="md-nav__link">
+      <a href="../0034-linux-packaging/" class="md-nav__link">
         
   
   
@@ -1879,7 +1815,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0035-mkdocs-documentation-site/" class="md-nav__link">
+      <a href="../0035-mkdocs-documentation-site/" class="md-nav__link">
         
   
   
@@ -1907,7 +1843,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0036-docs-site-theme-and-plugins-page/" class="md-nav__link">
+      <a href="../0036-docs-site-theme-and-plugins-page/" class="md-nav__link">
         
   
   
@@ -1935,7 +1871,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0037-feedback-triage-log/" class="md-nav__link">
+      <a href="../0037-feedback-triage-log/" class="md-nav__link">
         
   
   
@@ -1963,7 +1899,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0038-feedback-triage-criteria-and-deferred-status/" class="md-nav__link">
+      <a href="../0038-feedback-triage-criteria-and-deferred-status/" class="md-nav__link">
         
   
   
@@ -1991,7 +1927,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0039-mouse-hit-test-drift-fix/" class="md-nav__link">
+      <a href="../0039-mouse-hit-test-drift-fix/" class="md-nav__link">
         
   
   
@@ -2019,7 +1955,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0040-italic-glyph-clipping-fix/" class="md-nav__link">
+      <a href="../0040-italic-glyph-clipping-fix/" class="md-nav__link">
         
   
   
@@ -2047,7 +1983,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0041-diagnostic-underline-and-dot-focus/" class="md-nav__link">
+      <a href="../0041-diagnostic-underline-and-dot-focus/" class="md-nav__link">
         
   
   
@@ -2075,7 +2011,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0042-empty-buffer-welcome-overlay/" class="md-nav__link">
+      <a href="../0042-empty-buffer-welcome-overlay/" class="md-nav__link">
         
   
   
@@ -2103,7 +2039,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0043-faster-global-easing-and-welcome-overlay-layout/" class="md-nav__link">
+      <a href="../0043-faster-global-easing-and-welcome-overlay-layout/" class="md-nav__link">
         
   
   
@@ -2131,7 +2067,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0044-panel-isolation-drag-bar-unsaved-quit-confirm/" class="md-nav__link">
+      <a href="../0044-panel-isolation-drag-bar-unsaved-quit-confirm/" class="md-nav__link">
         
   
   
@@ -2159,7 +2095,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0045-v0.2.0-alpha-and-containerized-packaging/" class="md-nav__link">
+      <a href="../0045-v0.2.0-alpha-and-containerized-packaging/" class="md-nav__link">
         
   
   
@@ -2187,7 +2123,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0046-native-vim-mode-phase-1/" class="md-nav__link">
+      <a href="../0046-native-vim-mode-phase-1/" class="md-nav__link">
         
   
   
@@ -2215,7 +2151,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0047-vim-block-cursor/" class="md-nav__link">
+      <a href="../0047-vim-block-cursor/" class="md-nav__link">
         
   
   
@@ -2243,7 +2179,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0048-syntax-accent-colors-caret-inset-status-init/" class="md-nav__link">
+      <a href="../0048-syntax-accent-colors-caret-inset-status-init/" class="md-nav__link">
         
   
   
@@ -2271,7 +2207,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0049-typing-pop-in-animation/" class="md-nav__link">
+      <a href="../0049-typing-pop-in-animation/" class="md-nav__link">
         
   
   
@@ -2299,7 +2235,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0050-runtime-font-zoom-and-vim-mode-default-on/" class="md-nav__link">
+      <a href="../0050-runtime-font-zoom-and-vim-mode-default-on/" class="md-nav__link">
         
   
   
@@ -2327,7 +2263,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0051-global-animation-consistency-and-vim-polish/" class="md-nav__link">
+      <a href="../0051-global-animation-consistency-and-vim-polish/" class="md-nav__link">
         
   
   
@@ -2355,7 +2291,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0052-editor-viewport-split-into-translation-units/" class="md-nav__link">
+      <a href="../0052-editor-viewport-split-into-translation-units/" class="md-nav__link">
         
   
   
@@ -2383,7 +2319,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0053-render-hot-path-and-one-motion-language/" class="md-nav__link">
+      <a href="../0053-render-hot-path-and-one-motion-language/" class="md-nav__link">
         
   
   
@@ -2411,7 +2347,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0054-multiple-buffers-and-plugin-host-wiring/" class="md-nav__link">
+      <a href="../0054-multiple-buffers-and-plugin-host-wiring/" class="md-nav__link">
         
   
   
@@ -2439,7 +2375,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0055-dirty-dot-new-file-panel-fixes/" class="md-nav__link">
+      <a href="../0055-dirty-dot-new-file-panel-fixes/" class="md-nav__link">
         
   
   
@@ -2467,7 +2403,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0056-linewise-visual-tab-motion-searchable-shortcuts/" class="md-nav__link">
+      <a href="../0056-linewise-visual-tab-motion-searchable-shortcuts/" class="md-nav__link">
         
   
   
@@ -2495,7 +2431,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0057-always-on-tab-strip-and-welcome-rework/" class="md-nav__link">
+      <a href="../0057-always-on-tab-strip-and-welcome-rework/" class="md-nav__link">
         
   
   
@@ -2523,7 +2459,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0058-session-scoped-greeting-and-panel-carets/" class="md-nav__link">
+      <a href="../0058-session-scoped-greeting-and-panel-carets/" class="md-nav__link">
         
   
   
@@ -2551,7 +2487,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0059-derived-dirty-state-paste-cursor-and-more-vim-motions/" class="md-nav__link">
+      <a href="../0059-derived-dirty-state-paste-cursor-and-more-vim-motions/" class="md-nav__link">
         
   
   
@@ -2579,7 +2515,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0060-linewise-operations-at-the-end-of-the-buffer/" class="md-nav__link">
+      <a href="../0060-linewise-operations-at-the-end-of-the-buffer/" class="md-nav__link">
         
   
   
@@ -2607,7 +2543,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0061-the-unnamed-register/" class="md-nav__link">
+      <a href="../0061-the-unnamed-register/" class="md-nav__link">
         
   
   
@@ -2635,7 +2571,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0062-the-status-bar-message-line/" class="md-nav__link">
+      <a href="../0062-the-status-bar-message-line/" class="md-nav__link">
         
   
   
@@ -2663,7 +2599,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0063-language-server-state-in-the-status-bar/" class="md-nav__link">
+      <a href="../0063-language-server-state-in-the-status-bar/" class="md-nav__link">
         
   
   
@@ -2691,7 +2627,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0064-gui-in-ci-and-a-test-suite-that-runs-in-release/" class="md-nav__link">
+      <a href="../0064-gui-in-ci-and-a-test-suite-that-runs-in-release/" class="md-nav__link">
         
   
   
@@ -2719,7 +2655,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0065-quick-open/" class="md-nav__link">
+      <a href="../0065-quick-open/" class="md-nav__link">
         
   
   
@@ -2747,7 +2683,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0066-project-wide-search/" class="md-nav__link">
+      <a href="../0066-project-wide-search/" class="md-nav__link">
         
   
   
@@ -2775,7 +2711,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0067-go-to-definition/" class="md-nav__link">
+      <a href="../0067-go-to-definition/" class="md-nav__link">
         
   
   
@@ -2803,7 +2739,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0068-freeing-ctrl-o-and-ctrl-i/" class="md-nav__link">
+      <a href="../0068-freeing-ctrl-o-and-ctrl-i/" class="md-nav__link">
         
   
   
@@ -2831,7 +2767,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0069-find-in-line-and-list-navigation/" class="md-nav__link">
+      <a href="../0069-find-in-line-and-list-navigation/" class="md-nav__link">
         
   
   
@@ -2859,7 +2795,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0070-the-jumplist/" class="md-nav__link">
+      <a href="../0070-the-jumplist/" class="md-nav__link">
         
   
   
@@ -2884,10 +2820,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="adr/0071-block-cursor-knockout-follows-its-block/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0071: The block cursor's knockout follows its block
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2903,6 +2866,98 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-was-actually-wrong" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was actually wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-fix-and-why-it-is-a-threshold-rather-than-a-fade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The fix, and why it is a threshold rather than a fade
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2942,10 +2997,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#where-to-start" class="md-nav__link">
+  <a href="#status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Where to start
+        Status
       
     </span>
   </a>
@@ -2953,10 +3008,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
+  <a href="#context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Status
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-was-actually-wrong" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was actually wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-fix-and-why-it-is-a-threshold-rather-than-a-fade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The fix, and why it is a threshold rather than a fade
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
       
     </span>
   </a>
@@ -2980,7 +3085,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0071-block-cursor-knockout-follows-its-block.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2988,34 +3093,75 @@
   
 
 
-<h1 id="absolute-simple-editor">Absolute Simple Editor<a class="headerlink" href="#absolute-simple-editor" title="Permanent link">&para;</a></h1>
-<p>A minimal, robust, blazingly fast, and aesthetically deliberate GUI text editor.</p>
-<p>Core and GUI are cleanly separated — the editing engine is a headless C library
-(<code>core/</code>) with a stable C ABI, and the GUI (<code>gui/</code>) is a replaceable Qt6 shell on
-top of it. See <a href="adr/0002-headless-core-separation/">ADR 0002</a> for why.</p>
-<p><a class="md-button" href="https://github.com/saeeedhany/ase"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 0c4.42 0 8 3.58 8 8a8.01 8.01 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27s-1.36.09-2 .27c-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8"/></svg></span> Source on GitHub</a>
-<a class="md-button" href="https://github.com/saeeedhany/ase/releases/latest"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.969a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 6.78a.749.749 0 1 1 1.06-1.06z"/></svg></span> Latest release</a></p>
-<h2 id="where-to-start">Where to start<a class="headerlink" href="#where-to-start" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong><a href="SPEC/">Spec</a></strong> — the original product spec: vision, design pillars,
-  architecture, and build order. What this project is trying to be.</li>
-<li><strong><a href="ROADMAP/">Roadmap</a></strong> — what's actually done, phase by phase, against
-  that spec. What this project actually is, right now.</li>
-<li><strong><a href="adr/">Decisions</a></strong> — every architecturally significant choice
-  made along the way, in the order it was made, with the reasoning behind
-  it and what it cost. The project's history, in its own words.</li>
-<li><strong><a href="https://github.com/saeeedhany/ase/blob/main/CONTRIBUTING.md">Contributing</a></strong>
-  — ground rules, workflow, and the plugin-authoring guide.</li>
-</ul>
+<h1 id="adr-0071-the-block-cursors-knockout-follows-its-block">ADR 0071: The block cursor's knockout follows its block<a class="headerlink" href="#adr-0071-the-block-cursors-knockout-follows-its-block" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>First alpha release, <code>v0.1.0-alpha</code>, licensed under the
-<a href="https://github.com/saeeedhany/ase/blob/main/LICENSE">Apache License 2.0</a>.
-All seven original spec phases plus the full "complete normal editor" pass:
-undo/redo, multi-cursor selection, clipboard, find/replace, viewport/scroll
-polish, a floating command line with <code>:compile</code>, an LSP client (diagnostics,
-completion, hover) wired into the GUI, and Linux packaging (AppImage, Arch
-<code>PKGBUILD</code>, <code>.deb</code>). Vim mode is next — see the <a href="ROADMAP/">roadmap</a> for
-everything else still open.</p>
+<p>Accepted</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>Reported from use: the character under the block cursor is not fully
+visible while the cursor is in the faded part of its blink.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<h3 id="what-was-actually-wrong">What was actually wrong<a class="headerlink" href="#what-was-actually-wrong" title="Permanent link">&para;</a></h3>
+<p>The guess in the report was that the character's opacity had been
+lowered. It was the opposite: the character was being <em>erased</em> by
+something that was not fading at all.</p>
+<p>The block cursor is drawn in three steps. <code>drawLine()</code> paints the real
+text first. The block is then filled over it in the text colour at the
+blink's current alpha. Finally the glyph is drawn again on top in the
+<strong>background</strong> colour, terminal style, so it reads as inverse video
+against an opaque block.</p>
+<p>That last step was unconditional and fully opaque. So at the dim end of
+the blink the block had faded to nearly nothing while a
+background-coloured glyph was still being painted at full strength over
+the real text — background on background. Measured on <code>mmmm mmmm</code>: the
+character's contrast against its own cell fell to <strong>21/255</strong> at the
+trough, against 181 at the peak, while the identical characters beside
+it stayed at full strength.</p>
+<h3 id="the-fix-and-why-it-is-a-threshold-rather-than-a-fade">The fix, and why it is a threshold rather than a fade<a class="headerlink" href="#the-fix-and-why-it-is-a-threshold-rather-than-a-fade" title="Permanent link">&para;</a></h3>
+<p>The knockout now only happens while the block is at least half opaque.</p>
+<p>The tempting fix — fade the knockout along with the block — does not
+work, and the reason is worth writing down. With the block at alpha <code>a</code>
+and the knockout at <code>k</code>, the glyph ends up at <code>mix(T, bg, k)</code> and the
+cell behind it at <code>mix(bg, T, a)</code>, so the contrast between them is</p>
+<div class="highlight"><pre><span></span><code>|T - bg| · |1 - k - a|
+</code></pre></div>
+<p>That vanishes whenever <code>k + a == 1</code>. Any continuous knockout ramp from
+0 to 1 crosses that line <em>somewhere</em>: <code>k = a</code> simply moves the invisible
+moment from the end of the blink to its middle. There is no continuous
+choice that avoids it.</p>
+<p>A step keeps <code>|1 - k - a|</code> at 1/2 or better everywhere — contrast is
+<code>1 - a</code> below the threshold and <code>a</code> above it, both at least a half. It
+also puts the single switch at the midpoint of a cosine, which is where
+the curve moves fastest and therefore dwells least.</p>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<p>Measured over 14 consecutive frames of the blink, same file and cell:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>worst contrast</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>before</td>
+<td>21 / 255</td>
+</tr>
+<tr>
+<td>after</td>
+<td><strong>52 / 255</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Visually: at the trough the character under the cursor is now
+indistinguishable from its neighbours — full colour, fully legible. At
+the peak it is still knocked out in the background colour against a
+solid block. At the crossover it is a lighter glyph on a half-strength
+block, and readable.</p>
+<p>This supersedes the claim in ADR 0047's code comment that the knockout
+"guarantees legibility regardless of the block's opacity". It did the
+opposite for half of every blink, and had been doing so since the block
+cursor shipped.</p>
+<p><code>ctest</code> 9/9, clean build, zero warnings.</p>
 
 
 
@@ -3098,10 +3244,10 @@ everything else still open.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

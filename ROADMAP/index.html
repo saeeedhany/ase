@@ -974,6 +974,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -2876,6 +2886,146 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0067-go-to-definition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0067: Go to definition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0068-freeing-ctrl-o-and-ctrl-i/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0068: Freeing Ctrl+O and Ctrl+I
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0069-find-in-line-and-list-navigation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0069: Find-in-line, and one way to move through any list
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0070-the-jumplist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0070: The jumplist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0071-block-cursor-knockout-follows-its-block/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0071: The block cursor's knockout follows its block
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3878,6 +4028,36 @@ ADRs as each lands here going forward.</p>
       disagree about what is in the project. Enter or a single click on
       a row opens that file at that line. See
       <a href="../adr/0066-project-wide-search/">ADR 0066</a>.</li>
+<li>[x] <strong>Go to definition (<code>gd</code> / <code>F12</code>)</strong>: the request had existed in
+      <code>core/</code> since ADR 0011 with nothing in the GUI calling it. Both
+      bindings work, in-file and across files, and every way it can fail
+      now says why instead of the key appearing dead. The LSP language
+      gate grew to C++ on the way — it had been <code>.c</code>/<code>.h</code> only, so this
+      could not work on the editor's own sources. Named gap: there is no
+      way to jump <em>back</em> yet (vim's jumplist is on <code>Ctrl+O</code>, which is
+      Open here — the collision ADR 0046 flagged). See
+      <a href="../adr/0067-go-to-definition/">ADR 0067</a>.</li>
+<li>[x] <strong>Freed <code>Ctrl+O</code> and <code>Ctrl+I</code></strong> for Vim's jumplist by moving the
+      two panels that held them: the shortcut reference to <code>F1</code> (where it
+      belonged anyway), About to <code>Alt+I</code>, Open to <code>Alt+O</code>. A panel opened
+      a few times a session can afford an unusual binding; a navigation
+      key used constantly cannot. See
+      <a href="../adr/0068-freeing-ctrl-o-and-ctrl-i/">ADR 0068</a>.</li>
+<li>[x] <strong>Find-in-line (<code>f F t T ; ,</code>) and <code>Ctrl+J</code>/<code>Ctrl+K</code> in every
+      list</strong>: two requests that are the same request underneath — not
+      leaving the home row. The find motions are line-confined like
+      vim's, take counts that fail as a unit, and are inclusive under an
+      operator (<code>df,</code> takes the comma). List navigation went into one
+      shared helper rather than four copies of the same check. See
+      <a href="../adr/0069-find-in-line-and-list-navigation/">ADR 0069</a>.</li>
+<li>[x] <strong>The jumplist (<code>Ctrl+O</code> / <code>Ctrl+I</code>)</strong>: go-to-definition made this
+      impossible to ignore — you could follow a name into a file you did
+      not choose with no way back. Same list-plus-index shape as the undo
+      stack, owned by the window because jumps cross buffers, recording
+      only movements you could not have made with <code>h j k l</code>. Entries
+      carry a path as well as a buffer address, so a closed file is
+      reopened rather than skipped. See
+      <a href="../adr/0070-the-jumplist/">ADR 0070</a>.</li>
 <li>[x] <strong>v0.3.0-alpha</strong>: everything since v0.2.0-alpha — Vim mode and its
       polish, the block cursor, syntax accent colors, runtime font zoom,
       the typing pop-in, the <code>EditorViewport</code> split, the render hot-path
@@ -3932,9 +4112,10 @@ something else.</p>
   project from one keystroke wants its own design pass (a preview, an
   undo story spanning buffers), not a ride-along on a read-only
   feature.</li>
-<li><strong>The rest of LSP's useful half</strong>: go-to-definition, find-references,
-  rename, document symbols. Diagnostics, completion and hover are wired
-  (ADR 0029/0030); the navigation half is what people actually miss.</li>
+<li><strong>The rest of LSP's useful half</strong>: ~~go-to-definition~~ (done,
+  <a href="../adr/0067-go-to-definition/">ADR 0067</a>), find-references, rename,
+  document symbols — plus a <strong>jumplist</strong>, which go-to-definition makes
+  conspicuous: you can follow a name into a file and have no way back.</li>
 <li><strong>Git gutter marks</strong> — added/changed/deleted per line. Cheap next to
   the existing diagnostic-gutter machinery, and disproportionately useful.</li>
 <li><strong>Session restore</strong> — reopen the files, cursors, and scroll positions

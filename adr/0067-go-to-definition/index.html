@@ -10,29 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0067-go-to-definition/">
       
       
+        <link rel="prev" href="../0066-project-wide-search/">
       
-        <link rel="next" href="SPEC/">
+      
+        <link rel="next" href="../0068-freeing-ctrl-o-and-ctrl-i/">
       
       
         
       
       
-      <link rel="icon" href="assets/ase-logo.png">
+      <link rel="icon" href="../../assets/ase-logo.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
-        <title>Absolute Simple Editor</title>
+        <title>ADR 0067: Go to definition - Absolute Simple Editor</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -51,9 +53,9 @@
       
     
     
-      <link rel="stylesheet" href="stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -78,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#absolute-simple-editor" class="md-skip">
+        <a href="#adr-0067-go-to-definition" class="md-skip">
           Skip to content
         </a>
       
@@ -92,9 +94,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="Absolute Simple Editor" class="md-header__button md-logo" aria-label="Absolute Simple Editor" data-md-component="logo">
+    <a href="../.." title="Absolute Simple Editor" class="md-header__button md-logo" aria-label="Absolute Simple Editor" data-md-component="logo">
       
-  <img src="assets/ase-logo.png" alt="logo">
+  <img src="../../assets/ase-logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -111,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              ADR 0067: Go to definition
             
           </span>
         </div>
@@ -222,11 +224,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="." class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -245,7 +245,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="SPEC/" class="md-tabs__link">
+      <a href="../../SPEC/" class="md-tabs__link">
         
   
   
@@ -264,7 +264,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="ROADMAP/" class="md-tabs__link">
+      <a href="../../ROADMAP/" class="md-tabs__link">
         
   
   
@@ -283,7 +283,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="plugins/" class="md-tabs__link">
+      <a href="../../plugins/" class="md-tabs__link">
         
   
   
@@ -302,7 +302,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="EXTENSIBILITY/" class="md-tabs__link">
+      <a href="../../EXTENSIBILITY/" class="md-tabs__link">
         
   
   
@@ -323,7 +323,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="feedback/" class="md-tabs__link">
+        <a href="../../feedback/" class="md-tabs__link">
           
   
   
@@ -341,11 +341,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="adr/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -381,9 +383,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="Absolute Simple Editor" class="md-nav__button md-logo" aria-label="Absolute Simple Editor" data-md-component="logo">
+    <a href="../.." title="Absolute Simple Editor" class="md-nav__button md-logo" aria-label="Absolute Simple Editor" data-md-component="logo">
       
-  <img src="assets/ase-logo.png" alt="logo">
+  <img src="../../assets/ase-logo.png" alt="logo">
 
     </a>
     Absolute Simple Editor
@@ -407,37 +409,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Home
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="." class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -453,48 +428,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#where-to-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where to start
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -506,7 +439,7 @@
   
   
     <li class="md-nav__item">
-      <a href="SPEC/" class="md-nav__link">
+      <a href="../../SPEC/" class="md-nav__link">
         
   
   
@@ -533,7 +466,7 @@
   
   
     <li class="md-nav__item">
-      <a href="ROADMAP/" class="md-nav__link">
+      <a href="../../ROADMAP/" class="md-nav__link">
         
   
   
@@ -560,7 +493,7 @@
   
   
     <li class="md-nav__item">
-      <a href="plugins/" class="md-nav__link">
+      <a href="../../plugins/" class="md-nav__link">
         
   
   
@@ -587,7 +520,7 @@
   
   
     <li class="md-nav__item">
-      <a href="EXTENSIBILITY/" class="md-nav__link">
+      <a href="../../EXTENSIBILITY/" class="md-nav__link">
         
   
   
@@ -639,7 +572,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="feedback/" class="md-nav__link ">
+            <a href="../../feedback/" class="md-nav__link ">
               
   
   
@@ -683,7 +616,7 @@
   
   
     <li class="md-nav__item">
-      <a href="feedback/0001-alpha-release-external-review/" class="md-nav__link">
+      <a href="../../feedback/0001-alpha-release-external-review/" class="md-nav__link">
         
   
   
@@ -715,6 +648,8 @@
       
   
   
+    
+  
   
   
     
@@ -870,20 +805,23 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="adr/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -901,13 +839,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -927,7 +865,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0001-record-architecture-decisions/" class="md-nav__link">
+      <a href="../0001-record-architecture-decisions/" class="md-nav__link">
         
   
   
@@ -955,7 +893,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0002-headless-core-separation/" class="md-nav__link">
+      <a href="../0002-headless-core-separation/" class="md-nav__link">
         
   
   
@@ -983,7 +921,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0003-license-decision-pending/" class="md-nav__link">
+      <a href="../0003-license-decision-pending/" class="md-nav__link">
         
   
   
@@ -1011,7 +949,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0004-core-in-plain-c/" class="md-nav__link">
+      <a href="../0004-core-in-plain-c/" class="md-nav__link">
         
   
   
@@ -1039,7 +977,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0005-buffer-engine-piece-table/" class="md-nav__link">
+      <a href="../0005-buffer-engine-piece-table/" class="md-nav__link">
         
   
   
@@ -1067,7 +1005,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0006-gui-shell-v1-shortcuts/" class="md-nav__link">
+      <a href="../0006-gui-shell-v1-shortcuts/" class="md-nav__link">
         
   
   
@@ -1095,7 +1033,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0007-syntax-highlighting-tree-sitter/" class="md-nav__link">
+      <a href="../0007-syntax-highlighting-tree-sitter/" class="md-nav__link">
         
   
   
@@ -1123,7 +1061,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0008-config-theme-format/" class="md-nav__link">
+      <a href="../0008-config-theme-format/" class="md-nav__link">
         
   
   
@@ -1151,7 +1089,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0009-plugin-abi-and-lua-host/" class="md-nav__link">
+      <a href="../0009-plugin-abi-and-lua-host/" class="md-nav__link">
         
   
   
@@ -1179,7 +1117,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0010-hand-rolled-json/" class="md-nav__link">
+      <a href="../0010-hand-rolled-json/" class="md-nav__link">
         
   
   
@@ -1207,7 +1145,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0011-lsp-client/" class="md-nav__link">
+      <a href="../0011-lsp-client/" class="md-nav__link">
         
   
   
@@ -1235,7 +1173,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0012-polish-phase-scope/" class="md-nav__link">
+      <a href="../0012-polish-phase-scope/" class="md-nav__link">
         
   
   
@@ -1263,7 +1201,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0013-caret-drift-fix/" class="md-nav__link">
+      <a href="../0013-caret-drift-fix/" class="md-nav__link">
         
   
   
@@ -1291,7 +1229,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0014-viewport-geometry/" class="md-nav__link">
+      <a href="../0014-viewport-geometry/" class="md-nav__link">
         
   
   
@@ -1319,7 +1257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0015-smooth-motion/" class="md-nav__link">
+      <a href="../0015-smooth-motion/" class="md-nav__link">
         
   
   
@@ -1347,7 +1285,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0016-caret-visibility-fix/" class="md-nav__link">
+      <a href="../0016-caret-visibility-fix/" class="md-nav__link">
         
   
   
@@ -1375,7 +1313,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0017-viewport-review-pass/" class="md-nav__link">
+      <a href="../0017-viewport-review-pass/" class="md-nav__link">
         
   
   
@@ -1403,7 +1341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0018-undo-redo/" class="md-nav__link">
+      <a href="../0018-undo-redo/" class="md-nav__link">
         
   
   
@@ -1431,7 +1369,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0019-selection-model/" class="md-nav__link">
+      <a href="../0019-selection-model/" class="md-nav__link">
         
   
   
@@ -1459,7 +1397,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0020-clipboard/" class="md-nav__link">
+      <a href="../0020-clipboard/" class="md-nav__link">
         
   
   
@@ -1487,7 +1425,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0021-find-replace/" class="md-nav__link">
+      <a href="../0021-find-replace/" class="md-nav__link">
         
   
   
@@ -1515,7 +1453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0022-floating-panel-design-system/" class="md-nav__link">
+      <a href="../0022-floating-panel-design-system/" class="md-nav__link">
         
   
   
@@ -1543,7 +1481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0023-editor-chrome/" class="md-nav__link">
+      <a href="../0023-editor-chrome/" class="md-nav__link">
         
   
   
@@ -1571,7 +1509,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0024-panel-polish-and-scroll-margin/" class="md-nav__link">
+      <a href="../0024-panel-polish-and-scroll-margin/" class="md-nav__link">
         
   
   
@@ -1599,7 +1537,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0025-command-system/" class="md-nav__link">
+      <a href="../0025-command-system/" class="md-nav__link">
         
   
   
@@ -1627,7 +1565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0026-keybinding-scheme-help-about/" class="md-nav__link">
+      <a href="../0026-keybinding-scheme-help-about/" class="md-nav__link">
         
   
   
@@ -1655,7 +1593,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0027-visual-polish-pass/" class="md-nav__link">
+      <a href="../0027-visual-polish-pass/" class="md-nav__link">
         
   
   
@@ -1683,7 +1621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0028-click-precision-select-all-deletion-glide/" class="md-nav__link">
+      <a href="../0028-click-precision-select-all-deletion-glide/" class="md-nav__link">
         
   
   
@@ -1711,7 +1649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0029-lsp-diagnostics-wiring/" class="md-nav__link">
+      <a href="../0029-lsp-diagnostics-wiring/" class="md-nav__link">
         
   
   
@@ -1739,7 +1677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0030-lsp-completion-hover/" class="md-nav__link">
+      <a href="../0030-lsp-completion-hover/" class="md-nav__link">
         
   
   
@@ -1767,7 +1705,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0031-draggable-panels-smooth-scroll-tracking-glide/" class="md-nav__link">
+      <a href="../0031-draggable-panels-smooth-scroll-tracking-glide/" class="md-nav__link">
         
   
   
@@ -1795,7 +1733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0032-lsp-relative-path-uri-fix/" class="md-nav__link">
+      <a href="../0032-lsp-relative-path-uri-fix/" class="md-nav__link">
         
   
   
@@ -1823,7 +1761,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0033-license-apache-2.0-and-first-alpha-release/" class="md-nav__link">
+      <a href="../0033-license-apache-2.0-and-first-alpha-release/" class="md-nav__link">
         
   
   
@@ -1851,7 +1789,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0034-linux-packaging/" class="md-nav__link">
+      <a href="../0034-linux-packaging/" class="md-nav__link">
         
   
   
@@ -1879,7 +1817,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0035-mkdocs-documentation-site/" class="md-nav__link">
+      <a href="../0035-mkdocs-documentation-site/" class="md-nav__link">
         
   
   
@@ -1907,7 +1845,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0036-docs-site-theme-and-plugins-page/" class="md-nav__link">
+      <a href="../0036-docs-site-theme-and-plugins-page/" class="md-nav__link">
         
   
   
@@ -1935,7 +1873,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0037-feedback-triage-log/" class="md-nav__link">
+      <a href="../0037-feedback-triage-log/" class="md-nav__link">
         
   
   
@@ -1963,7 +1901,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0038-feedback-triage-criteria-and-deferred-status/" class="md-nav__link">
+      <a href="../0038-feedback-triage-criteria-and-deferred-status/" class="md-nav__link">
         
   
   
@@ -1991,7 +1929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0039-mouse-hit-test-drift-fix/" class="md-nav__link">
+      <a href="../0039-mouse-hit-test-drift-fix/" class="md-nav__link">
         
   
   
@@ -2019,7 +1957,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0040-italic-glyph-clipping-fix/" class="md-nav__link">
+      <a href="../0040-italic-glyph-clipping-fix/" class="md-nav__link">
         
   
   
@@ -2047,7 +1985,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0041-diagnostic-underline-and-dot-focus/" class="md-nav__link">
+      <a href="../0041-diagnostic-underline-and-dot-focus/" class="md-nav__link">
         
   
   
@@ -2075,7 +2013,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0042-empty-buffer-welcome-overlay/" class="md-nav__link">
+      <a href="../0042-empty-buffer-welcome-overlay/" class="md-nav__link">
         
   
   
@@ -2103,7 +2041,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0043-faster-global-easing-and-welcome-overlay-layout/" class="md-nav__link">
+      <a href="../0043-faster-global-easing-and-welcome-overlay-layout/" class="md-nav__link">
         
   
   
@@ -2131,7 +2069,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0044-panel-isolation-drag-bar-unsaved-quit-confirm/" class="md-nav__link">
+      <a href="../0044-panel-isolation-drag-bar-unsaved-quit-confirm/" class="md-nav__link">
         
   
   
@@ -2159,7 +2097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0045-v0.2.0-alpha-and-containerized-packaging/" class="md-nav__link">
+      <a href="../0045-v0.2.0-alpha-and-containerized-packaging/" class="md-nav__link">
         
   
   
@@ -2187,7 +2125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0046-native-vim-mode-phase-1/" class="md-nav__link">
+      <a href="../0046-native-vim-mode-phase-1/" class="md-nav__link">
         
   
   
@@ -2215,7 +2153,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0047-vim-block-cursor/" class="md-nav__link">
+      <a href="../0047-vim-block-cursor/" class="md-nav__link">
         
   
   
@@ -2243,7 +2181,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0048-syntax-accent-colors-caret-inset-status-init/" class="md-nav__link">
+      <a href="../0048-syntax-accent-colors-caret-inset-status-init/" class="md-nav__link">
         
   
   
@@ -2271,7 +2209,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0049-typing-pop-in-animation/" class="md-nav__link">
+      <a href="../0049-typing-pop-in-animation/" class="md-nav__link">
         
   
   
@@ -2299,7 +2237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0050-runtime-font-zoom-and-vim-mode-default-on/" class="md-nav__link">
+      <a href="../0050-runtime-font-zoom-and-vim-mode-default-on/" class="md-nav__link">
         
   
   
@@ -2327,7 +2265,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0051-global-animation-consistency-and-vim-polish/" class="md-nav__link">
+      <a href="../0051-global-animation-consistency-and-vim-polish/" class="md-nav__link">
         
   
   
@@ -2355,7 +2293,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0052-editor-viewport-split-into-translation-units/" class="md-nav__link">
+      <a href="../0052-editor-viewport-split-into-translation-units/" class="md-nav__link">
         
   
   
@@ -2383,7 +2321,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0053-render-hot-path-and-one-motion-language/" class="md-nav__link">
+      <a href="../0053-render-hot-path-and-one-motion-language/" class="md-nav__link">
         
   
   
@@ -2411,7 +2349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0054-multiple-buffers-and-plugin-host-wiring/" class="md-nav__link">
+      <a href="../0054-multiple-buffers-and-plugin-host-wiring/" class="md-nav__link">
         
   
   
@@ -2439,7 +2377,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0055-dirty-dot-new-file-panel-fixes/" class="md-nav__link">
+      <a href="../0055-dirty-dot-new-file-panel-fixes/" class="md-nav__link">
         
   
   
@@ -2467,7 +2405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0056-linewise-visual-tab-motion-searchable-shortcuts/" class="md-nav__link">
+      <a href="../0056-linewise-visual-tab-motion-searchable-shortcuts/" class="md-nav__link">
         
   
   
@@ -2495,7 +2433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0057-always-on-tab-strip-and-welcome-rework/" class="md-nav__link">
+      <a href="../0057-always-on-tab-strip-and-welcome-rework/" class="md-nav__link">
         
   
   
@@ -2523,7 +2461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0058-session-scoped-greeting-and-panel-carets/" class="md-nav__link">
+      <a href="../0058-session-scoped-greeting-and-panel-carets/" class="md-nav__link">
         
   
   
@@ -2551,7 +2489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0059-derived-dirty-state-paste-cursor-and-more-vim-motions/" class="md-nav__link">
+      <a href="../0059-derived-dirty-state-paste-cursor-and-more-vim-motions/" class="md-nav__link">
         
   
   
@@ -2579,7 +2517,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0060-linewise-operations-at-the-end-of-the-buffer/" class="md-nav__link">
+      <a href="../0060-linewise-operations-at-the-end-of-the-buffer/" class="md-nav__link">
         
   
   
@@ -2607,7 +2545,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0061-the-unnamed-register/" class="md-nav__link">
+      <a href="../0061-the-unnamed-register/" class="md-nav__link">
         
   
   
@@ -2635,7 +2573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0062-the-status-bar-message-line/" class="md-nav__link">
+      <a href="../0062-the-status-bar-message-line/" class="md-nav__link">
         
   
   
@@ -2663,7 +2601,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0063-language-server-state-in-the-status-bar/" class="md-nav__link">
+      <a href="../0063-language-server-state-in-the-status-bar/" class="md-nav__link">
         
   
   
@@ -2691,7 +2629,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0064-gui-in-ci-and-a-test-suite-that-runs-in-release/" class="md-nav__link">
+      <a href="../0064-gui-in-ci-and-a-test-suite-that-runs-in-release/" class="md-nav__link">
         
   
   
@@ -2719,7 +2657,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0065-quick-open/" class="md-nav__link">
+      <a href="../0065-quick-open/" class="md-nav__link">
         
   
   
@@ -2747,7 +2685,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0066-project-wide-search/" class="md-nav__link">
+      <a href="../0066-project-wide-search/" class="md-nav__link">
         
   
   
@@ -2772,10 +2710,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="adr/0067-go-to-definition/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0067: Go to definition
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2791,6 +2756,131 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#two-bindings-because-there-are-two-audiences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two bindings, because there are two audiences
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#every-way-it-can-fail-says-so" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Every way it can fail says so
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#three-response-shapes-because-servers-choose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Three response shapes, because servers choose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jumping-is-still-two-objects-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jumping is still two objects' work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-language-gate-had-to-grow-and-that-was-overdue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The language gate had to grow, and that was overdue
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2803,7 +2893,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0068-freeing-ctrl-o-and-ctrl-i/" class="md-nav__link">
+      <a href="../0068-freeing-ctrl-o-and-ctrl-i/" class="md-nav__link">
         
   
   
@@ -2831,7 +2921,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0069-find-in-line-and-list-navigation/" class="md-nav__link">
+      <a href="../0069-find-in-line-and-list-navigation/" class="md-nav__link">
         
   
   
@@ -2859,7 +2949,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0070-the-jumplist/" class="md-nav__link">
+      <a href="../0070-the-jumplist/" class="md-nav__link">
         
   
   
@@ -2887,7 +2977,7 @@
   
   
     <li class="md-nav__item">
-      <a href="adr/0071-block-cursor-knockout-follows-its-block/" class="md-nav__link">
+      <a href="../0071-block-cursor-knockout-follows-its-block/" class="md-nav__link">
         
   
   
@@ -2942,10 +3032,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#where-to-start" class="md-nav__link">
+  <a href="#status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Where to start
+        Status
       
     </span>
   </a>
@@ -2953,10 +3043,93 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
+  <a href="#context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Status
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#two-bindings-because-there-are-two-audiences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two bindings, because there are two audiences
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#every-way-it-can-fail-says-so" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Every way it can fail says so
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#three-response-shapes-because-servers-choose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Three response shapes, because servers choose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jumping-is-still-two-objects-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jumping is still two objects' work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-language-gate-had-to-grow-and-that-was-overdue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The language gate had to grow, and that was overdue
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
       
     </span>
   </a>
@@ -2980,7 +3153,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0067-go-to-definition.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -2988,34 +3161,96 @@
   
 
 
-<h1 id="absolute-simple-editor">Absolute Simple Editor<a class="headerlink" href="#absolute-simple-editor" title="Permanent link">&para;</a></h1>
-<p>A minimal, robust, blazingly fast, and aesthetically deliberate GUI text editor.</p>
-<p>Core and GUI are cleanly separated — the editing engine is a headless C library
-(<code>core/</code>) with a stable C ABI, and the GUI (<code>gui/</code>) is a replaceable Qt6 shell on
-top of it. See <a href="adr/0002-headless-core-separation/">ADR 0002</a> for why.</p>
-<p><a class="md-button" href="https://github.com/saeeedhany/ase"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 0c4.42 0 8 3.58 8 8a8.01 8.01 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27s-1.36.09-2 .27c-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8"/></svg></span> Source on GitHub</a>
-<a class="md-button" href="https://github.com/saeeedhany/ase/releases/latest"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.969a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 6.78a.749.749 0 1 1 1.06-1.06z"/></svg></span> Latest release</a></p>
-<h2 id="where-to-start">Where to start<a class="headerlink" href="#where-to-start" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong><a href="SPEC/">Spec</a></strong> — the original product spec: vision, design pillars,
-  architecture, and build order. What this project is trying to be.</li>
-<li><strong><a href="ROADMAP/">Roadmap</a></strong> — what's actually done, phase by phase, against
-  that spec. What this project actually is, right now.</li>
-<li><strong><a href="adr/">Decisions</a></strong> — every architecturally significant choice
-  made along the way, in the order it was made, with the reasoning behind
-  it and what it cost. The project's history, in its own words.</li>
-<li><strong><a href="https://github.com/saeeedhany/ase/blob/main/CONTRIBUTING.md">Contributing</a></strong>
-  — ground rules, workflow, and the plugin-authoring guide.</li>
-</ul>
+<h1 id="adr-0067-go-to-definition">ADR 0067: Go to definition<a class="headerlink" href="#adr-0067-go-to-definition" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>First alpha release, <code>v0.1.0-alpha</code>, licensed under the
-<a href="https://github.com/saeeedhany/ase/blob/main/LICENSE">Apache License 2.0</a>.
-All seven original spec phases plus the full "complete normal editor" pass:
-undo/redo, multi-cursor selection, clipboard, find/replace, viewport/scroll
-polish, a floating command line with <code>:compile</code>, an LSP client (diagnostics,
-completion, hover) wired into the GUI, and Linux packaging (AppImage, Arch
-<code>PKGBUILD</code>, <code>.deb</code>). Vim mode is next — see the <a href="ROADMAP/">roadmap</a> for
-everything else still open.</p>
+<p>Accepted</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>Diagnostics (ADR 0029), completion and hover (ADR 0030) were wired to
+the language server. Navigation was not — and navigation is the half
+people actually miss, because reading code is mostly following names to
+where they are defined.</p>
+<p><code>ase_lsp_client_request_definition()</code> has existed in <code>core/</code> since
+ADR 0011, tested, with nothing in the GUI ever calling it. The same
+situation the plugin host was in before ADR 0054: the capability was
+built and then left unreachable.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<h3 id="two-bindings-because-there-are-two-audiences">Two bindings, because there are two audiences<a class="headerlink" href="#two-bindings-because-there-are-two-audiences" title="Permanent link">&para;</a></h3>
+<p><code>gd</code> in Normal mode — vim's own key for this, in an editor that defaults
+to vim mode — and <code>F12</code>, which is what every other editor uses and works
+in any mode, including with <code>vim_mode = false</code>.</p>
+<p><code>gd</code> slots into the existing pending-<code>g</code> state next to <code>gg</code>. It is not a
+motion, so no operator can be pending against it: <code>dgd</code> is not a thing,
+and it jumps and that is all.</p>
+<h3 id="every-way-it-can-fail-says-so">Every way it can fail says so<a class="headerlink" href="#every-way-it-can-fail-says-so" title="Permanent link">&para;</a></h3>
+<p>Completion and hover are <em>offered</em> — they appear when they have
+something and stay quiet when they don't, which is right for something
+you didn't ask for. Go-to-definition is <strong>asked for</strong>, on a keystroke,
+so silence reads as a broken key. Each case gets a message
+(ADR 0062):</p>
+<ul>
+<li>no server for this file → <code>no language server for this file</code></li>
+<li>server said nothing, or an empty array → <code>no definition found</code></li>
+<li>a non-<code>file:</code> URI (a built-in, something inside an archive) →
+  <code>definition is not in a file</code></li>
+<li>the server returned an error → the server's own text</li>
+</ul>
+<p>This is the first feature built after the message line existed, and it
+is noticeably better for it: the old alternative was a key that
+sometimes did nothing for four different reasons.</p>
+<h3 id="three-response-shapes-because-servers-choose">Three response shapes, because servers choose<a class="headerlink" href="#three-response-shapes-because-servers-choose" title="Permanent link">&para;</a></h3>
+<p><code>textDocument/definition</code> may answer with a single <code>Location</code>, an array
+of <code>Location</code>, or an array of <code>LocationLink</code> — which names its target
+<code>targetUri</code>/<code>targetSelectionRange</code> rather than <code>uri</code>/<code>range</code>. clangd
+returns the array form; handling only that would work until the day
+someone points <code>lsp_command</code> at a different server.</p>
+<p>Multiple results take the first. For C, "several definitions" is
+usually a declaration and its definition, and the server lists the one
+you want first. A picker is deferred rather than guessed at.</p>
+<h3 id="jumping-is-still-two-objects-work">Jumping is still two objects' work<a class="headerlink" href="#jumping-is-still-two-objects-work" title="Permanent link">&para;</a></h3>
+<p>A definition in another file is a path <em>and</em> a line, exactly like a
+search hit (ADR 0066) — so the viewport emits
+<code>fileOpenAtLineRequested(path, line)</code> and the window opens the buffer
+and calls <code>goToLine()</code>. A definition in the <em>same</em> file skips that
+entirely and just moves the cursor, rather than asking the window to
+"open" a file already on screen.</p>
+<h3 id="the-language-gate-had-to-grow-and-that-was-overdue">The language gate had to grow, and that was overdue<a class="headerlink" href="#the-language-gate-had-to-grow-and-that-was-overdue" title="Permanent link">&para;</a></h3>
+<p>The server was started only for <code>.c</code> and <code>.h</code>, so <code>gd</code> could not work on
+this editor's own C++ sources — a strange thing to ship. clangd handles
+both languages; the gate was never a decision, just a list from ADR 0029
+that never grew. It now covers <code>.cpp/.cc/.cxx/.hpp/.hh/.hxx</code> as well.</p>
+<p>The language id sent on <code>didOpen</code> matters and is now derived rather than
+hardcoded to <code>"c"</code>: telling a server <code>c</code> about a <code>.cpp</code> file makes it
+parse C++ as C, and the resulting errors look like your code is broken
+rather than like the editor lied. <code>.h</code> stays <code>c</code> — ambiguous by nature,
+and a C++ header parsed as C fails loudly rather than silently, while
+the compile database corrects it when there is one.</p>
+<p>Tree-sitter highlighting is a separate gate and stays C-only: that one
+needs a grammar per language, this one does not.</p>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<p>Verified live against clangd, with <code>build/compile_commands.json</code>
+present:</p>
+<ul>
+<li><strong>In-file</strong>: <code>gd</code> on <code>lspDefinitionTrampoline</code> at line 464 of
+  <code>editor_viewport_lsp.cpp</code> lands on line 69, where it is defined.</li>
+<li><strong>Cross-file</strong>: <code>gd</code> on <code>ase_lsp_client_request_definition</code> opens
+  <code>core/src/lsp_client.c</code> as a new buffer at line 561 — its definition.</li>
+<li><strong>F12</strong>, on <code>bool</code>, opens <code>stdbool.h</code> at line 24: a different binding,
+  a file outside the project entirely, and proof the jump does not
+  assume the target is in the workspace.</li>
+<li>Before the language gate was widened, <code>gd</code> in a <code>.cpp</code> file reported
+  <code>no language server for this file</code> — which is how the gate was found.</li>
+</ul>
+<p><code>ctest</code> 9/9, clean build, zero warnings.</p>
+<p>Deferred, and the first one matters:</p>
+<ul>
+<li><strong>No way to jump back.</strong> Vim has a jumplist on <code>Ctrl+O</code>; here <code>Ctrl+O</code>
+  is Open, and ADR 0046 already flagged that collision when it deferred
+  the jumplist. Following a definition into a file you did not choose,
+  with no way back except the buffer bar, is the obvious next gap.</li>
+<li><strong>A picker for multiple results</strong>, which wants the same list-in-the-
+  output-panel shape project search just built.</li>
+<li><strong>Find references and rename</strong>, the rest of LSP's navigation half.</li>
+</ul>
 
 
 
@@ -3098,10 +3333,10 @@ everything else still open.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
