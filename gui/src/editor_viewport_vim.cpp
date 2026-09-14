@@ -777,7 +777,7 @@ bool EditorViewport::vimApplyMotionKey(char c, int count) {
     if (c == ':') {
         /* Normal/Visual only: Insert still needs `:` as a literal. */
         if (m_commandLine != nullptr) {
-            m_commandLine->openCommandLine();
+            m_commandLine->openPrompt(QLatin1Char(':'));
         }
         resetVimPendingState();
         return true;

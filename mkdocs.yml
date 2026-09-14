@@ -93,6 +93,7 @@ nav:
     - adr/0070-the-jumplist.md
     - adr/0071-block-cursor-knockout-follows-its-block.md
     - adr/0072-incremental-highlighting-and-a-measured-hot-path.md
+    - adr/0073-the-command-line-moves-to-the-status-bar.md
 
 theme:
   name: material

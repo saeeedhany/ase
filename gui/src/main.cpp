@@ -98,6 +98,7 @@ private:
     QStackedWidget *m_stack = nullptr;
     BufferBar *m_bufferBar = nullptr;
     OutputPanel *m_outputPanel = nullptr;
+    CommandLine *m_commandLine = nullptr;
     QLabel *m_modeLabel = nullptr;
     QLabel *m_statusLabel = nullptr;
     /* Shares the bar with the mode label rather than replacing it. */
@@ -246,6 +247,24 @@ MainWindow::MainWindow() {
     m_messageTimer->setSingleShot(true);
     connect(m_messageTimer, &QTimer::timeout, this, [this]() { hideMessage(); });
     statusBar()->addWidget(m_messageLabel, 1);
+    /* Takes the mode and message area while it is up; the position and
+     * LSP readouts to the right stay put. See docs/adr/0073. */
+    m_commandLine = new CommandLine();
+    statusBar()->addWidget(m_commandLine, 1);
+    /* addWidget() shows what it is given, undoing the hide() in the
+     * constructor — and a shown-but-transparent line still takes its
+     * share of the stretch and its own height, which moved every other
+     * label by a pixel. */
+    m_commandLine->hide();
+    connect(m_commandLine, &CommandLine::promptOpened, this, [this]() {
+        hideMessage();
+        m_modeLabel->hide();
+        m_messageLabel->hide();
+    });
+    connect(m_commandLine, &CommandLine::promptClosed, this, [this]() {
+        m_modeLabel->show();
+        m_messageLabel->show();
+    });
     /* addPermanentWidget appends right-to-left, so this lands left of
      * the position readout. */
     m_lspLabel = new QLabel();
@@ -289,9 +308,10 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
      * its own set. Inert until shown. See docs/adr/0022. */
     viewport->setFindBar(new FindBar(viewport));
     viewport->setFileBrowser(new FileBrowserPanel(viewport));
-    viewport->setCommandLine(new CommandLine(viewport));
     viewport->setHelpPanel(new HelpPanel(viewport));
     viewport->setAboutPanel(new AboutPanel(viewport));
+    /* One for the window: there is one status bar. */
+    viewport->setCommandLine(m_commandLine);
     /* Not FloatingPanels: both track the caret and refresh constantly. */
     viewport->setCompletionPopup(new CompletionPopup(viewport));
     viewport->setHoverPanel(new HoverPanel(viewport));
@@ -584,6 +604,7 @@ void MainWindow::setActiveIndex(int index) {
     /* Each buffer has its own server, so this follows the visible file. */
     showLspState(viewport->lspState(), viewport->lspServerName());
     m_outputPanel->setViewport(viewport);
+    m_commandLine->setViewport(viewport);
     viewport->onActivated(); /* focuses, and starts its LSP the first time */
     refreshBufferBar();
     /* Through the same statusChanged path every edit uses, so there is

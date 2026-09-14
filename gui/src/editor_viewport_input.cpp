@@ -103,7 +103,7 @@ bool EditorViewport::handleCtrlShortcut(QKeyEvent *event) {
          * use later; in normal mode a bare `:` has to stay a
          * literal, typeable character). See docs/adr/0025. */
         if (m_commandLine != nullptr) {
-            m_commandLine->openCommandLine();
+            m_commandLine->openPrompt(QLatin1Char(':'));
         }
         return true;
     }

@@ -235,7 +235,7 @@ size_t EditorViewport::offsetForPoint(const QPoint &pos) const {
 bool EditorViewport::isModalPanelOpen() const {
     return (m_findBar != nullptr && m_findBar->isVisible()) ||
            (m_fileBrowser != nullptr && m_fileBrowser->isVisible()) ||
-           (m_commandLine != nullptr && m_commandLine->isVisible()) ||
+           (m_commandLine != nullptr && m_commandLine->isPromptOpen()) ||
            (m_helpPanel != nullptr && m_helpPanel->isVisible()) ||
            (m_aboutPanel != nullptr && m_aboutPanel->isVisible());
 }

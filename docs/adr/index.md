@@ -80,3 +80,4 @@ what changed.
 | [0070](0070-the-jumplist.md) | The jumplist (`Ctrl+O` / `Ctrl+I`) |
 | [0071](0071-block-cursor-knockout-follows-its-block.md) | The block cursor's knockout follows its block |
 | [0072](0072-incremental-highlighting-and-a-measured-hot-path.md) | Incremental highlighting, and a measured hot path |
+| [0073](0073-the-command-line-moves-to-the-status-bar.md) | The command line moves to the status bar |
