@@ -308,7 +308,20 @@ private:
      * See docs/adr/0046. */
     enum class VimMode { Insert, Normal, Visual };
     bool vimModeActive() const { return m_vimModeEnabled; }
+    /* Claimed-key handlers keyPressEvent tries in order. True means the
+     * key was consumed and nothing further should see it. */
+    bool handleCompletionPopupKey(QKeyEvent *event);
+    bool handleAltShortcut(QKeyEvent *event);
+    bool handleCtrlShortcut(QKeyEvent *event);
     bool handleVimNormalOrVisualKey(QKeyEvent *event);
+    /* The pieces handleVimNormalOrVisualKey() dispatches to, in order.
+     * Each runs its own reset/ensureCursorVisible/update tail, because
+     * which of those a key needs differs between them. */
+    bool vimResolvePendingKey(QChar qc);
+    bool vimAccumulateCount(QChar qc);
+    bool vimApplyMotionKey(char c, int count);
+    void vimApplyVisualKey(char c);
+    void vimApplyNormalKey(char c, int count);
     /* '\n' counts as Blank — see vimClassifyAt in the .cpp. */
     enum class VimCharClass { Blank, Word, Punct };
     VimCharClass vimClassifyAt(size_t pos) const;

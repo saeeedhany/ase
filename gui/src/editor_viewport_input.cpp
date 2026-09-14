@@ -14,6 +14,196 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 
+/* Enter/Tab accept, Escape dismisses, Ctrl+J/K and the arrows move;
+ * anything else falls through and retriggers a fresh request. */
+bool EditorViewport::handleCompletionPopupKey(QKeyEvent *event) {
+    if (m_completionPopup == nullptr || !m_completionPopup->isShowingPopup()) {
+        return false;
+    }
+    /* Before the switch: a modifier combination, not a bare key. */
+    if (int delta = listnav::delta(event); delta != 0) {
+        m_completionPopup->moveSelection(delta);
+        return true;
+    }
+    switch (event->key()) {
+    case Qt::Key_Escape:
+        dismissCompletion();
+        return true;
+    case Qt::Key_Return:
+    case Qt::Key_Enter:
+    case Qt::Key_Tab:
+        acceptCompletion();
+        return true;
+    default:
+        break;
+    }
+    return false;
+}
+
+/* About and Open moved to Alt so Ctrl+O/Ctrl+I could go to the
+ * jumplist, which has no alternative keys. */
+bool EditorViewport::handleAltShortcut(QKeyEvent *event) {
+    if (!(event->modifiers() & Qt::AltModifier) || (event->modifiers() & Qt::ControlModifier)) {
+        return false;
+    }
+    if (event->key() == Qt::Key_O) {
+        if (m_fileBrowser != nullptr) {
+            m_fileBrowser->openFor(FileBrowserPanel::Mode::Open);
+        }
+        return true;
+    }
+    if (event->key() == Qt::Key_I) {
+        if (m_aboutPanel != nullptr) {
+            m_aboutPanel->openAbout();
+        }
+        return true;
+    }
+    QWidget::keyPressEvent(event);
+    return true;
+}
+
+bool EditorViewport::handleCtrlShortcut(QKeyEvent *event) {
+    if (!(event->modifiers() & Qt::ControlModifier)) {
+        return false;
+    }
+    if (event->key() == Qt::Key_S) {
+        /* Ctrl+Shift+S always opens Save-As, even with a path
+         * already set — "save as" means "let me pick a
+         * different one," not "save.". Ctrl+S with no path set
+         * falls through to save()'s own Save-As fallback. */
+        if (event->modifiers() & Qt::ShiftModifier) {
+            if (m_fileBrowser != nullptr) {
+                m_fileBrowser->openFor(FileBrowserPanel::Mode::SaveAs);
+            }
+        } else {
+            save();
+        }
+        return true;
+    }
+    if (event->key() == Qt::Key_P) {
+        /* Ctrl+P — open any file in the project by typing part
+         * of its name, rather than walking there a directory at
+         * a time. Same panel as Ctrl+O in a different mode; see
+         * docs/adr/0065. */
+        if (m_fileBrowser != nullptr) {
+            m_fileBrowser->openFor(FileBrowserPanel::Mode::QuickOpen);
+        }
+        return true;
+    }
+    if (event->key() == Qt::Key_O && (event->modifiers() & Qt::ShiftModifier)) {
+        /* Ctrl+Shift+O toggles the output panel directly,
+         * without going through :output. Plain Ctrl+O is Vim's
+         * jump-back now; Open moved to Alt+O (docs/adr/0068). */
+        toggleOutputPanel();
+        return true;
+    }
+    if (event->key() == Qt::Key_Semicolon) {
+        /* Command-line trigger — Ctrl+; here, not a bare `:`
+         * (that's the ex-command-line convention Vim mode will
+         * use later; in normal mode a bare `:` has to stay a
+         * literal, typeable character). See docs/adr/0025. */
+        if (m_commandLine != nullptr) {
+            m_commandLine->openCommandLine();
+        }
+        return true;
+    }
+    if (event->key() == Qt::Key_B) {
+        compile();
+        return true;
+    }
+    if (event->key() == Qt::Key_Q) {
+        window()->close();
+        return true;
+    }
+    if ((event->key() == Qt::Key_D || event->key() == Qt::Key_U) && vimModeActive() &&
+        m_vimMode != VimMode::Insert) {
+        /* The one place Vim mode *takes over* an existing
+         * Ctrl shortcut rather than adding one. ADR 0046 set
+         * out to keep the whole Ctrl chain mode-independent,
+         * and that holds everywhere else — but Ctrl+D is
+         * half-a-screen-down to anyone with vim in their
+         * fingers, and having it fan out multi-cursors in
+         * Normal mode is the kind of surprise that costs more
+         * than the rule saves. Only in Normal/Visual: Insert
+         * mode and `vim_mode = false` keep multi-cursor
+         * Ctrl+D untouched, which is where multi-cursor
+         * editing actually happens. See docs/adr/0059. */
+        vimHalfPageMotion(event->key() == Qt::Key_D ? 1 : -1);
+        return true;
+    }
+    if (event->key() == Qt::Key_D) {
+        addCursorAtNextOccurrence();
+        return true;
+    }
+    if (event->key() == Qt::Key_A) {
+        selectAll();
+        return true;
+    }
+    if (event->key() == Qt::Key_C) {
+        copySelection();
+        return true;
+    }
+    if (event->key() == Qt::Key_X) {
+        cutSelection();
+        return true;
+    }
+    if (event->key() == Qt::Key_V) {
+        pasteClipboard();
+        return true;
+    }
+    if (event->key() == Qt::Key_F) {
+        if (m_findBar != nullptr) {
+            /* Ctrl+Shift+F searches every file in the project;
+             * Ctrl+F keeps its existing meaning, this buffer.
+             * Same split as Ctrl+O / Ctrl+Shift+O above. */
+            m_findBar->openFor((event->modifiers() & Qt::ShiftModifier) ? FindBar::Mode::Project
+                                                                       : FindBar::Mode::Find);
+        }
+        return true;
+    }
+    if (event->key() == Qt::Key_H) {
+        if (m_findBar != nullptr) {
+            m_findBar->openFor(FindBar::Mode::Replace);
+        }
+        return true;
+    }
+    if (event->key() == Qt::Key_Z) {
+        if (event->modifiers() & Qt::ShiftModifier) {
+            redo();
+        } else {
+            undo();
+        }
+        return true;
+    }
+    if (event->key() == Qt::Key_Equal || event->key() == Qt::Key_Plus) {
+        /* Ctrl+= (the unshifted key '+' shares on most layouts)
+         * and Ctrl+Plus both zoom in, matching every other
+         * app's convention (browsers, VS Code, ...). Live,
+         * in-session only — see docs/adr/0050. */
+        adjustFontSize(1);
+        return true;
+    }
+    if (event->key() == Qt::Key_Minus) {
+        adjustFontSize(-1);
+        return true;
+    }
+    if (event->key() == Qt::Key_0) {
+        resetFontSize();
+        return true;
+    }
+    if (event->key() == Qt::Key_R && vimModeActive()) {
+        /* Vim's own redo binding, additive to the existing
+         * Ctrl+Shift+Z above — gated on vimModeActive() (not on
+         * m_vimMode) so it works from Insert too, matching how
+         * Ctrl+Z/Ctrl+Shift+Z are already mode-independent, and
+         * so non-Vim users see no new shortcut. */
+        redo();
+        return true;
+    }
+    QWidget::keyPressEvent(event);
+    return true;
+}
+
 void EditorViewport::keyPressEvent(QKeyEvent *event) {
     /* Belt-and-braces: a modal panel normally holds focus anyway, but
      * no focus-routing edge case may edit the document beneath. */
@@ -24,27 +214,8 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
 
     resetCaretBlink();
     dismissHover();
-
-    /* Takes priority over Up/Down/Escape/Return below; anything else
-     * falls through and retriggers a fresh request. */
-    if (m_completionPopup != nullptr && m_completionPopup->isShowingPopup()) {
-        /* Before the switch: a modifier combination, not a bare key. */
-        if (int delta = listnav::delta(event); delta != 0) {
-            m_completionPopup->moveSelection(delta);
-            return;
-        }
-        switch (event->key()) {
-        case Qt::Key_Escape:
-            dismissCompletion();
-            return;
-        case Qt::Key_Return:
-        case Qt::Key_Enter:
-        case Qt::Key_Tab:
-            acceptCompletion();
-            return;
-        default:
-            break;
-        }
+    if (handleCompletionPopupKey(event)) {
+        return;
     }
 
     bool extend = event->modifiers() & Qt::ShiftModifier;
@@ -144,160 +315,10 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         insertText(QByteArrayLiteral("\n"));
         break;
     default:
-        /* About and Open moved here so Ctrl+O/Ctrl+I could go to the
-         * jumplist, which has no alternative keys. */
-        if ((event->modifiers() & Qt::AltModifier) && !(event->modifiers() & Qt::ControlModifier)) {
-            if (event->key() == Qt::Key_O) {
-                if (m_fileBrowser != nullptr) {
-                    m_fileBrowser->openFor(FileBrowserPanel::Mode::Open);
-                }
-                return;
-            }
-            if (event->key() == Qt::Key_I) {
-                if (m_aboutPanel != nullptr) {
-                    m_aboutPanel->openAbout();
-                }
-                return;
-            }
-            QWidget::keyPressEvent(event);
+        if (handleAltShortcut(event)) {
             return;
         }
-        if (event->modifiers() & Qt::ControlModifier) {
-            if (event->key() == Qt::Key_S) {
-                /* Ctrl+Shift+S always opens Save-As, even with a path
-                 * already set — "save as" means "let me pick a
-                 * different one," not "save.". Ctrl+S with no path set
-                 * falls through to save()'s own Save-As fallback. */
-                if (event->modifiers() & Qt::ShiftModifier) {
-                    if (m_fileBrowser != nullptr) {
-                        m_fileBrowser->openFor(FileBrowserPanel::Mode::SaveAs);
-                    }
-                } else {
-                    save();
-                }
-                return;
-            }
-            if (event->key() == Qt::Key_P) {
-                /* Ctrl+P — open any file in the project by typing part
-                 * of its name, rather than walking there a directory at
-                 * a time. Same panel as Ctrl+O in a different mode; see
-                 * docs/adr/0065. */
-                if (m_fileBrowser != nullptr) {
-                    m_fileBrowser->openFor(FileBrowserPanel::Mode::QuickOpen);
-                }
-                return;
-            }
-            if (event->key() == Qt::Key_O && (event->modifiers() & Qt::ShiftModifier)) {
-                /* Ctrl+Shift+O toggles the output panel directly,
-                 * without going through :output. Plain Ctrl+O is Vim's
-                 * jump-back now; Open moved to Alt+O (docs/adr/0068). */
-                toggleOutputPanel();
-                return;
-            }
-            if (event->key() == Qt::Key_Semicolon) {
-                /* Command-line trigger — Ctrl+; here, not a bare `:`
-                 * (that's the ex-command-line convention Vim mode will
-                 * use later; in normal mode a bare `:` has to stay a
-                 * literal, typeable character). See docs/adr/0025. */
-                if (m_commandLine != nullptr) {
-                    m_commandLine->openCommandLine();
-                }
-                return;
-            }
-            if (event->key() == Qt::Key_B) {
-                compile();
-                return;
-            }
-            if (event->key() == Qt::Key_Q) {
-                window()->close();
-                return;
-            }
-            if ((event->key() == Qt::Key_D || event->key() == Qt::Key_U) && vimModeActive() &&
-                m_vimMode != VimMode::Insert) {
-                /* The one place Vim mode *takes over* an existing
-                 * Ctrl shortcut rather than adding one. ADR 0046 set
-                 * out to keep the whole Ctrl chain mode-independent,
-                 * and that holds everywhere else — but Ctrl+D is
-                 * half-a-screen-down to anyone with vim in their
-                 * fingers, and having it fan out multi-cursors in
-                 * Normal mode is the kind of surprise that costs more
-                 * than the rule saves. Only in Normal/Visual: Insert
-                 * mode and `vim_mode = false` keep multi-cursor
-                 * Ctrl+D untouched, which is where multi-cursor
-                 * editing actually happens. See docs/adr/0059. */
-                vimHalfPageMotion(event->key() == Qt::Key_D ? 1 : -1);
-                return;
-            }
-            if (event->key() == Qt::Key_D) {
-                addCursorAtNextOccurrence();
-                return;
-            }
-            if (event->key() == Qt::Key_A) {
-                selectAll();
-                return;
-            }
-            if (event->key() == Qt::Key_C) {
-                copySelection();
-                return;
-            }
-            if (event->key() == Qt::Key_X) {
-                cutSelection();
-                return;
-            }
-            if (event->key() == Qt::Key_V) {
-                pasteClipboard();
-                return;
-            }
-            if (event->key() == Qt::Key_F) {
-                if (m_findBar != nullptr) {
-                    /* Ctrl+Shift+F searches every file in the project;
-                     * Ctrl+F keeps its existing meaning, this buffer.
-                     * Same split as Ctrl+O / Ctrl+Shift+O above. */
-                    m_findBar->openFor((event->modifiers() & Qt::ShiftModifier) ? FindBar::Mode::Project
-                                                                               : FindBar::Mode::Find);
-                }
-                return;
-            }
-            if (event->key() == Qt::Key_H) {
-                if (m_findBar != nullptr) {
-                    m_findBar->openFor(FindBar::Mode::Replace);
-                }
-                return;
-            }
-            if (event->key() == Qt::Key_Z) {
-                if (event->modifiers() & Qt::ShiftModifier) {
-                    redo();
-                } else {
-                    undo();
-                }
-                return;
-            }
-            if (event->key() == Qt::Key_Equal || event->key() == Qt::Key_Plus) {
-                /* Ctrl+= (the unshifted key '+' shares on most layouts)
-                 * and Ctrl+Plus both zoom in, matching every other
-                 * app's convention (browsers, VS Code, ...). Live,
-                 * in-session only — see docs/adr/0050. */
-                adjustFontSize(1);
-                return;
-            }
-            if (event->key() == Qt::Key_Minus) {
-                adjustFontSize(-1);
-                return;
-            }
-            if (event->key() == Qt::Key_0) {
-                resetFontSize();
-                return;
-            }
-            if (event->key() == Qt::Key_R && vimModeActive()) {
-                /* Vim's own redo binding, additive to the existing
-                 * Ctrl+Shift+Z above — gated on vimModeActive() (not on
-                 * m_vimMode) so it works from Insert too, matching how
-                 * Ctrl+Z/Ctrl+Shift+Z are already mode-independent, and
-                 * so non-Vim users see no new shortcut. */
-                redo();
-                return;
-            }
-            QWidget::keyPressEvent(event);
+        if (handleCtrlShortcut(event)) {
             return;
         }
 

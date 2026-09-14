@@ -714,28 +714,8 @@ QString EditorViewport::vimBlockGlyphAt(size_t cursor, int *width, AseHighlightC
 /* Returns true for every key Vim claims, including invalid-but-
  * swallowed ones; false only for keys outside its alphabet. See
  * docs/adr/0046 for the state table. */
-bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
-    if (event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) {
-        return false;
-    }
-    if (m_cursors.size() > 1) {
-        collapseToOneCursor();
-    }
-
-    if (event->key() == Qt::Key_Backspace) {
-        vimExecuteMotion('h', std::max(1, m_vimCount1) * std::max(1, m_vimCount2));
-        resetVimPendingState();
-        ensureCursorVisible();
-        update();
-        return true;
-    }
-
-    QString text = event->text();
-    if (text.isEmpty()) {
-        return false;
-    }
-    QChar qc = text.at(0);
-
+/* An f/F/t/T target, or the second half of a `g` pair. */
+bool EditorViewport::vimResolvePendingKey(QChar qc) {
     /* This key is the target, whatever it is: `f3` and `fd` search for
      * '3' and 'd', not a count or an operator. */
     if (m_vimPendingFind != '\0') {
@@ -775,7 +755,11 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         update();
         return true;
     }
+    return false;
+}
 
+/* True when the key was consumed as part of a count. */
+bool EditorViewport::vimAccumulateCount(QChar qc) {
     /* A bare '0' is the column-0 motion, not a digit. */
     if (qc.isDigit()) {
         int d = qc.digitValue();
@@ -785,10 +769,11 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
             return true;
         }
     }
+    return false;
+}
 
-    char c = qc.toLatin1(); /* '\0' for non-Latin1 — falls through to "unrecognized" below. */
-    int count = std::max(1, m_vimCount1) * std::max(1, m_vimCount2);
-
+/* Motions, and the keys that arm one. False if `c` is neither. */
+bool EditorViewport::vimApplyMotionKey(char c, int count) {
     if (c == ':') {
         /* Normal/Visual only: Insert still needs `:` as a literal. */
         if (m_commandLine != nullptr) {
@@ -854,89 +839,91 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         update();
         return true;
     }
+    return false;
+}
 
-    if (m_vimMode == VimMode::Visual) {
-        switch (c) {
-        case 'v':
-            /* v in linewise Visual drops to charwise, not out. */
-            if (m_vimVisualLinewise) {
-                m_vimVisualLinewise = false;
-            } else {
-                collapseToOneCursor();
-                m_vimMode = VimMode::Normal;
-            }
-            break;
-        case 'V':
-            if (m_vimVisualLinewise) {
-                collapseToOneCursor();
-                m_vimMode = VimMode::Normal;
-                m_vimVisualLinewise = false;
-            } else {
-                m_vimVisualLinewise = true;
-                m_vimVisualAnchorLine = lineForOffset(m_selectionAnchors[0]);
-                m_vimVisualCursorLine = lineForOffset(m_cursors[0]);
-                vimNormalizeLinewiseSelection();
-            }
-            break;
-        case 'o': {
-            /* Other end of the selection, keeping it. */
-            std::swap(m_cursors[0], m_selectionAnchors[0]);
-            if (m_vimVisualLinewise) {
-                std::swap(m_vimVisualAnchorLine, m_vimVisualCursorLine);
-                vimNormalizeLinewiseSelection();
-            }
-            break;
-        }
-        case 'x':
-        case 'd':
-            if (hasSelectionAt(0)) {
-                size_t start = selectionMinAt(0);
-                size_t end = selectionMaxAt(0);
-                /* No trailing newline at the buffer's end, so this
-                 * emptied the last line instead of removing it. */
-                if (m_vimVisualLinewise) {
-                    start = vimLinewiseDeleteStart(start, end);
-                }
-                vimDeleteRange(start, end, m_vimVisualLinewise);
-                if (m_vimVisualLinewise) {
-                    /* The range began on the previous line's newline,
-                     * so land on the first non-blank instead. */
-                    size_t target = vimFirstNonBlank(lineForOffset(m_cursors[0]));
-                    m_cursors[0] = target;
-                    m_selectionAnchors[0] = target;
-                }
-            }
-            m_vimMode = VimMode::Normal;
+void EditorViewport::vimApplyVisualKey(char c) {
+    switch (c) {
+    case 'v':
+        /* v in linewise Visual drops to charwise, not out. */
+        if (m_vimVisualLinewise) {
             m_vimVisualLinewise = false;
-            break;
-        case 'y':
-            if (hasSelectionAt(0)) {
-                /* p/P need to know which kind this was. */
-                vimYankRange(selectionMinAt(0), selectionMaxAt(0), m_vimVisualLinewise);
-            }
+        } else {
+            collapseToOneCursor();
+            m_vimMode = VimMode::Normal;
+        }
+        break;
+    case 'V':
+        if (m_vimVisualLinewise) {
             collapseToOneCursor();
             m_vimMode = VimMode::Normal;
             m_vimVisualLinewise = false;
-            break;
-        case 'c':
-            if (hasSelectionAt(0)) {
-                /* Not extended over the preceding newline as `d` is, or
-                 * the insertion point lands on the previous line. */
-                vimChangeRange(selectionMinAt(0), selectionMaxAt(0), m_vimVisualLinewise);
-            } else {
-                m_vimMode = VimMode::Insert;
-            }
-            m_vimVisualLinewise = false;
-            break;
-        default:
-            break; /* unrecognized in Visual: swallowed, no state change */
+        } else {
+            m_vimVisualLinewise = true;
+            m_vimVisualAnchorLine = lineForOffset(m_selectionAnchors[0]);
+            m_vimVisualCursorLine = lineForOffset(m_cursors[0]);
+            vimNormalizeLinewiseSelection();
         }
-        resetVimPendingState();
-        ensureCursorVisible();
-        update();
-        return true;
+        break;
+    case 'o': {
+        /* Other end of the selection, keeping it. */
+        std::swap(m_cursors[0], m_selectionAnchors[0]);
+        if (m_vimVisualLinewise) {
+            std::swap(m_vimVisualAnchorLine, m_vimVisualCursorLine);
+            vimNormalizeLinewiseSelection();
+        }
+        break;
     }
+    case 'x':
+    case 'd':
+        if (hasSelectionAt(0)) {
+            size_t start = selectionMinAt(0);
+            size_t end = selectionMaxAt(0);
+            /* No trailing newline at the buffer's end, so this
+             * emptied the last line instead of removing it. */
+            if (m_vimVisualLinewise) {
+                start = vimLinewiseDeleteStart(start, end);
+            }
+            vimDeleteRange(start, end, m_vimVisualLinewise);
+            if (m_vimVisualLinewise) {
+                /* The range began on the previous line's newline,
+                 * so land on the first non-blank instead. */
+                size_t target = vimFirstNonBlank(lineForOffset(m_cursors[0]));
+                m_cursors[0] = target;
+                m_selectionAnchors[0] = target;
+            }
+        }
+        m_vimMode = VimMode::Normal;
+        m_vimVisualLinewise = false;
+        break;
+    case 'y':
+        if (hasSelectionAt(0)) {
+            /* p/P need to know which kind this was. */
+            vimYankRange(selectionMinAt(0), selectionMaxAt(0), m_vimVisualLinewise);
+        }
+        collapseToOneCursor();
+        m_vimMode = VimMode::Normal;
+        m_vimVisualLinewise = false;
+        break;
+    case 'c':
+        if (hasSelectionAt(0)) {
+            /* Not extended over the preceding newline as `d` is, or
+             * the insertion point lands on the previous line. */
+            vimChangeRange(selectionMinAt(0), selectionMaxAt(0), m_vimVisualLinewise);
+        } else {
+            m_vimMode = VimMode::Insert;
+        }
+        m_vimVisualLinewise = false;
+        break;
+    default:
+        break; /* unrecognized in Visual: swallowed, no state change */
+    }
+    resetVimPendingState();
+    ensureCursorVisible();
+    update();
+}
 
+void EditorViewport::vimApplyNormalKey(char c, int count) {
     /* Normal-mode-only from here: operators, x/p/P/u, mode entry. */
 
     if (c == 'd' || c == 'y' || c == 'c') {
@@ -949,13 +936,13 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         }
         ensureCursorVisible();
         update();
-        return true;
+        return;
     }
 
     if (m_vimPendingOperator != '\0') {
         /* Operator pending, but this is neither a repeat nor a motion. */
         resetVimPendingState();
-        return true;
+        return;
     }
 
     switch (c) {
@@ -1024,5 +1011,48 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     resetVimPendingState();
     ensureCursorVisible();
     update();
+}
+
+bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
+    if (event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) {
+        return false;
+    }
+    if (m_cursors.size() > 1) {
+        collapseToOneCursor();
+    }
+
+    if (event->key() == Qt::Key_Backspace) {
+        vimExecuteMotion('h', std::max(1, m_vimCount1) * std::max(1, m_vimCount2));
+        resetVimPendingState();
+        ensureCursorVisible();
+        update();
+        return true;
+    }
+
+    QString text = event->text();
+    if (text.isEmpty()) {
+        return false;
+    }
+    QChar qc = text.at(0);
+
+    if (vimResolvePendingKey(qc)) {
+        return true;
+    }
+    if (vimAccumulateCount(qc)) {
+        return true;
+    }
+
+    char c = qc.toLatin1(); /* '\0' for non-Latin1 — falls through to "unrecognized" below. */
+    int count = std::max(1, m_vimCount1) * std::max(1, m_vimCount2);
+
+    if (vimApplyMotionKey(c, count)) {
+        return true;
+    }
+
+    if (m_vimMode == VimMode::Visual) {
+        vimApplyVisualKey(c);
+    } else {
+        vimApplyNormalKey(c, count);
+    }
     return true;
 }
