@@ -5,6 +5,16 @@ project(absolute_simple_editor
     LANGUAGES C CXX
 )
 
+# An unset CMAKE_BUILD_TYPE means no -O flag at all, not a mild default:
+# measured on a 276KB file, that is 6.8ms per keystroke against 2.3ms at
+# -O3. `cmake -B build` is what everyone types, so it has to be fast.
+# An explicit -DCMAKE_BUILD_TYPE still wins, which is what CI's Debug
+# and sanitizer jobs pass.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
+
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
