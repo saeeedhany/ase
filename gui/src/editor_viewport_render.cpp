@@ -71,7 +71,7 @@ void EditorViewport::paintEvent(QPaintEvent *) {
         if (!hasSelectionAt(i)) {
             continue;
         }
-        highlightRange(painter, selectionMinAt(i), selectionMaxAt(i), firstLine, lastLine, m_selectionColor);
+        highlightRange(painter, selectionMinAt(i), vimVisualEnd(i), firstLine, lastLine, m_selectionColor);
     }
 
     /* Current match drawn last, so it lands on top of any regular

@@ -67,7 +67,12 @@ the first key to the operator.
 
 ## Consequences
 
-The off-by-one is now documented but not fixed. Fixing it means making
+The off-by-one was fixed straight afterwards in
+[ADR 0079](0079-the-visual-selection-includes-the-cursor.md), which also
+had to correct `$` as a motion: the two errors were cancelling each
+other. What follows is the reasoning as it stood before that.
+
+The off-by-one is documented here but not yet fixed. Fixing it means making
 the selection inclusive of the cursor character across `d`, `y`, `c`,
 `r` and the highlight rendering at once, and deciding what that means
 for the non-vim selection model the same code serves

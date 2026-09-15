@@ -247,6 +247,7 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
             }
             m_vimMode = VimMode::Normal;
             vimEndInsertCapture();
+            endUndoSession();
             resetVimPendingState();
         } else if (vimModeActive()) {
             /* Drop any pending operator/count and selection. */

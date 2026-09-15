@@ -99,6 +99,8 @@ nav:
     - adr/0076-replace-a-character.md
     - adr/0077-replace-mode.md
     - adr/0078-visual-mode-replace.md
+    - adr/0079-the-visual-selection-includes-the-cursor.md
+    - adr/0080-one-undo-step-per-insert-session.md
 
 theme:
   name: material

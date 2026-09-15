@@ -336,9 +336,22 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
                 }
                 return;
             }
-            case '$':
+            case '$': {
                 moveCursorEndAt(0, visual);
+                /* vim leaves the cursor on the last character, not past
+                 * it. The operator branch below computes `$` for itself,
+                 * so `d$` still reaches the line end. */
+                int line = lineForOffset(m_cursors[0]);
+                size_t lineStart = static_cast<size_t>(m_lineStarts[line]);
+                if (m_cursors[0] > lineStart) {
+                    size_t back = vimPrevCharBoundary(m_cursors[0]);
+                    m_cursors[0] = back;
+                    if (!visual) {
+                        m_selectionAnchors[0] = back;
+                    }
+                }
                 return;
+            }
             case 'w': {
                 size_t target = vimWordForward(m_cursors[0]);
                 m_cursors[0] = target;
@@ -457,8 +470,12 @@ void EditorViewport::vimApplyPendingOperatorCharwise(size_t start, size_t end) {
         vimYankRange(start, end, false);
         break;
     case 'c':
+        /* Before the deletion: vim undoes a `c` and the typing that
+         * follows it as one. */
+        beginUndoSession();
         vimChangeRange(start, end);
         vimMarkChange();
+        beginUndoSession();
         vimBeginInsertCapture();
         break;
     default:
@@ -479,9 +496,11 @@ void EditorViewport::vimApplyPendingOperatorLinewise(int startLine, int lineCoun
         break;
     case 'c':
         /* Real vim leaves a blank line here; v1 simplification. */
+        beginUndoSession();
         vimDeleteLines(startLine, lineCount);
         m_vimMode = VimMode::Insert;
         vimMarkChange();
+        beginUndoSession();
         vimBeginInsertCapture();
         break;
     default:
@@ -508,13 +527,13 @@ void EditorViewport::vimSetRegister(const QByteArray &text, bool linewise) {
 void EditorViewport::vimDeleteRange(size_t start, size_t end, bool linewise) {
     QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
     vimSetRegister(removed, linewise);
-    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    beginUndoStep();
     if (ase_buffer_delete(m_buffer, start, end - start)) {
         ase_undo_record_delete(m_undo, start, removed.constData(), static_cast<size_t>(removed.size()));
     }
     m_cursors[0] = start;
     m_selectionAnchors[0] = start;
-    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    endUndoStep();
     refreshCache();
     ensureCursorVisible();
     update();
@@ -559,11 +578,11 @@ void EditorViewport::vimDeleteLines(int startLine, int count) {
     start = vimLinewiseDeleteStart(start, end);
     QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
     vimSetRegister(removed, true);
-    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    beginUndoStep();
     if (ase_buffer_delete(m_buffer, start, end - start)) {
         ase_undo_record_delete(m_undo, start, removed.constData(), static_cast<size_t>(removed.size()));
     }
-    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    endUndoStep();
     refreshCache();
     int newLine = std::clamp(startLine, 0, static_cast<int>(m_lineStarts.size()) - 1);
     size_t target = vimFirstNonBlank(newLine);
@@ -630,11 +649,11 @@ void EditorViewport::vimPasteAfter() {
         bool atNewline = cur < static_cast<size_t>(m_cache.size()) && m_cache[static_cast<int>(cur)] == '\n';
         insertAt = atNewline ? cur : vimNextCharBoundary(cur);
     }
-    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    beginUndoStep();
     if (ase_buffer_insert(m_buffer, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()))) {
         ase_undo_record_insert(m_undo, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()));
     }
-    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    endUndoStep();
     refreshCache();
     /* Charwise paste leaves the cursor on the *last* character of what
      * was pasted, not the first — real vim's rule, and the one that
@@ -660,11 +679,11 @@ void EditorViewport::vimPasteBefore() {
     bool linewise = reg.isLinewise();
     size_t insertAt = linewise ? static_cast<size_t>(m_lineStarts[lineForOffset(m_cursors[0])])
                                : m_cursors[0];
-    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    beginUndoStep();
     if (ase_buffer_insert(m_buffer, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()))) {
         ase_undo_record_insert(m_undo, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()));
     }
-    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    endUndoStep();
     refreshCache();
     /* Charwise paste leaves the cursor on the *last* character of what
      * was pasted, not the first — real vim's rule, and the one that
@@ -684,11 +703,11 @@ void EditorViewport::vimPasteBefore() {
 void EditorViewport::vimOpenLineAbove() {
     int line = lineForOffset(m_cursors[0]);
     size_t at = static_cast<size_t>(m_lineStarts[line]);
-    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    beginUndoStep();
     if (ase_buffer_insert(m_buffer, at, "\n", 1)) {
         ase_undo_record_insert(m_undo, at, "\n", 1);
     }
-    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    endUndoStep();
     m_cursors[0] = at;
     m_selectionAnchors[0] = at;
     refreshCache();
@@ -858,7 +877,7 @@ void EditorViewport::vimReplaceChar(QChar target, int count, bool newline) {
     QByteArray inserted = newline ? QByteArrayLiteral("\n") : QString(count, target).toUtf8();
     QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
 
-    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    beginUndoStep();
     if (ase_buffer_delete(m_buffer, start, end - start)) {
         ase_undo_record_delete(m_undo, start, removed.constData(), static_cast<size_t>(removed.size()));
     }
@@ -871,7 +890,7 @@ void EditorViewport::vimReplaceChar(QChar target, int count, bool newline) {
                              : start + static_cast<size_t>(inserted.size() - QString(target).toUtf8().size());
     m_cursors[0] = landing;
     m_selectionAnchors[0] = landing;
-    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    endUndoStep();
     refreshCache();
     vimMarkChange();
 }
@@ -888,9 +907,27 @@ void EditorViewport::vimReplaceChar(QChar target, int count, bool newline) {
  * would make `r` disagree with the highlight it is acting on. See
  * docs/adr/0078.
  */
+size_t EditorViewport::vimVisualEnd(int i) const {
+    size_t end = selectionMaxAt(i);
+    if (m_vimMode != VimMode::Visual || m_vimVisualLinewise) {
+        return end;
+    }
+    /* One character further, but never over the line break: a charwise
+     * selection sitting on the last character of a line covers that
+     * character and stops there. */
+    int line = lineForOffset(end);
+    size_t lineEnd = (line + 1 < m_lineStarts.size())
+                         ? static_cast<size_t>(m_lineStarts[line + 1] - 1)
+                         : static_cast<size_t>(m_cache.size());
+    if (end >= lineEnd) {
+        return end;
+    }
+    return vimNextCharBoundary(end);
+}
+
 void EditorViewport::vimReplaceSelection(QChar target) {
     size_t start = selectionMinAt(0);
-    size_t end = selectionMaxAt(0);
+    size_t end = vimVisualEnd(0);
     if (start >= end) {
         return;
     }
@@ -913,7 +950,7 @@ void EditorViewport::vimReplaceSelection(QChar target) {
         i += len;
     }
 
-    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    beginUndoStep();
     if (ase_buffer_delete(m_buffer, start, end - start)) {
         ase_undo_record_delete(m_undo, start, original.constData(), static_cast<size_t>(original.size()));
     }
@@ -924,7 +961,7 @@ void EditorViewport::vimReplaceSelection(QChar target) {
     }
     m_cursors[0] = start;
     m_selectionAnchors[0] = start;
-    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    endUndoStep();
     refreshCache();
     vimMarkChange();
 }
@@ -936,6 +973,7 @@ void EditorViewport::vimEnterReplaceMode(int count) {
     m_replaceTyped.clear();
     m_replaceCount = std::max(1, count);
     vimMarkChange();
+    beginUndoSession();
     vimBeginInsertCapture();
 }
 
@@ -960,7 +998,7 @@ void EditorViewport::vimReplaceTyped(const QByteArray &bytes) {
     QByteArray original =
         overwrite ? m_cache.mid(static_cast<int>(cursor), static_cast<int>(end - cursor)) : QByteArray();
 
-    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    beginUndoStep();
     if (overwrite && ase_buffer_delete(m_buffer, cursor, end - cursor)) {
         ase_undo_record_delete(m_undo, cursor, original.constData(), static_cast<size_t>(original.size()));
     }
@@ -970,7 +1008,7 @@ void EditorViewport::vimReplaceTyped(const QByteArray &bytes) {
     }
     m_cursors[0] = cursor;
     m_selectionAnchors[0] = cursor;
-    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    endUndoStep();
 
     m_replaceOriginals.push_back(original);
     m_replaceTyped.append(bytes);
@@ -993,7 +1031,7 @@ bool EditorViewport::vimReplaceBackspace() {
     }
     QByteArray typed = m_cache.mid(static_cast<int>(start), static_cast<int>(cursor - start));
 
-    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    beginUndoStep();
     if (ase_buffer_delete(m_buffer, start, cursor - start)) {
         ase_undo_record_delete(m_undo, start, typed.constData(), static_cast<size_t>(typed.size()));
     }
@@ -1003,7 +1041,7 @@ bool EditorViewport::vimReplaceBackspace() {
     }
     m_cursors[0] = start;
     m_selectionAnchors[0] = start;
-    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    endUndoStep();
 
     if (!m_replaceTyped.isEmpty()) {
         m_replaceTyped.chop(static_cast<int>(cursor - start));
@@ -1238,10 +1276,12 @@ void EditorViewport::vimApplyVisualKey(char c) {
         break;
     }
     case 'x':
-    case 'd':
-        if (hasSelectionAt(0)) {
-            size_t start = selectionMinAt(0);
-            size_t end = selectionMaxAt(0);
+    case 'd': {
+        size_t start = selectionMinAt(0);
+        size_t end = vimVisualEnd(0);
+        /* Not hasSelectionAt(): with an inclusive range, anchor ==
+         * cursor still means one character is selected. */
+        if (end > start) {
             /* No trailing newline at the buffer's end, so this
              * emptied the last line instead of removing it. */
             if (m_vimVisualLinewise) {
@@ -1259,20 +1299,21 @@ void EditorViewport::vimApplyVisualKey(char c) {
         m_vimMode = VimMode::Normal;
         m_vimVisualLinewise = false;
         break;
+    }
     case 'y':
-        if (hasSelectionAt(0)) {
+        if (vimVisualEnd(0) > selectionMinAt(0)) {
             /* p/P need to know which kind this was. */
-            vimYankRange(selectionMinAt(0), selectionMaxAt(0), m_vimVisualLinewise);
+            vimYankRange(selectionMinAt(0), vimVisualEnd(0), m_vimVisualLinewise);
         }
         collapseToOneCursor();
         m_vimMode = VimMode::Normal;
         m_vimVisualLinewise = false;
         break;
     case 'c':
-        if (hasSelectionAt(0)) {
+        if (vimVisualEnd(0) > selectionMinAt(0)) {
             /* Not extended over the preceding newline as `d` is, or
              * the insertion point lands on the previous line. */
-            vimChangeRange(selectionMinAt(0), selectionMaxAt(0), m_vimVisualLinewise);
+            vimChangeRange(selectionMinAt(0), vimVisualEnd(0), m_vimVisualLinewise);
         } else {
             m_vimMode = VimMode::Insert;
         }
@@ -1326,17 +1367,20 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
         vimNormalizeLinewiseSelection();
         break;
     case 'i':
+        beginUndoSession();
         m_vimMode = VimMode::Insert;
         vimMarkChange();
         vimBeginInsertCapture();
         break;
     case 'a':
+        beginUndoSession();
         moveCursorRightAt(0, false);
         m_vimMode = VimMode::Insert;
         vimMarkChange();
         vimBeginInsertCapture();
         break;
     case 'I': {
+        beginUndoSession();
         size_t target = vimFirstNonBlank(lineForOffset(m_cursors[0]));
         m_cursors[0] = target;
         m_selectionAnchors[0] = target;
@@ -1346,12 +1390,15 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
         break;
     }
     case 'A':
+        beginUndoSession();
         moveCursorEndAt(0, false);
         m_vimMode = VimMode::Insert;
         vimMarkChange();
         vimBeginInsertCapture();
         break;
     case 'o':
+        /* Before the line break, or undo leaves the blank line behind. */
+        beginUndoSession();
         moveCursorEndAt(0, false);
         insertText(QByteArrayLiteral("\n"));
         m_vimMode = VimMode::Insert;
@@ -1359,6 +1406,7 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
         vimBeginInsertCapture();
         break;
     case 'O':
+        beginUndoSession();
         vimOpenLineAbove();
         m_vimMode = VimMode::Insert;
         vimMarkChange();

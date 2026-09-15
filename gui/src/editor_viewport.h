@@ -294,6 +294,12 @@ private:
 
     /* Selection helpers — see docs/adr/0019. m_selectionAnchors[i] ==
      * m_cursors[i] means cursor i has no active selection. */
+    /* Where a Visual-mode selection actually ends. Vim's visual is
+     * inclusive of the character under the cursor; this editor's own
+     * selection (shift+arrows, mouse, Ctrl+D) is exclusive, and stays
+     * that way — the adjustment belongs here, not in selectionMaxAt().
+     * See docs/adr/0079. */
+    size_t vimVisualEnd(int i) const;
     bool hasSelectionAt(int i) const;
     size_t selectionMinAt(int i) const;
     size_t selectionMaxAt(int i) const;
@@ -513,6 +519,18 @@ private:
 
     /* Restore cursors from the stack's snapshot rather than deriving
      * them, and render instantly. See docs/adr/0018. */
+    /*
+     * One undo step. While an insert session is open these do nothing —
+     * the session is the group — so a whole `i...<Esc>` undoes at once
+     * the way vim does, instead of a step per keystroke. The core stack
+     * does not nest groups (core/include/ase/undo.h), which is why this
+     * is a flag here rather than a depth count there.
+     */
+    void beginUndoStep();
+    void endUndoStep();
+    void beginUndoSession();
+    void endUndoSession();
+
     void undo();
     void redo();
     void applyUndoResult(size_t *cursors, size_t count);
@@ -635,6 +653,7 @@ private:
     char m_vimPendingFind = '\0'; /* awaiting the char to search for */
     bool m_vimPendingReplace = false; /* mid-`r`, awaiting the new char */
     bool m_vimReplacing = false;      /* in `R` Replace mode */
+    bool m_undoSessionOpen = false;   /* an insert session owns the group */
     /* What each typed character overwrote, newest last, so Backspace can
      * put it back. An empty entry means that character was appended past
      * the end of the line and there is nothing to restore. */

@@ -221,7 +221,7 @@ void EditorViewport::replaceAllMatches(const QByteArray &replacement) {
         return;
     }
     size_t needleLen = static_cast<size_t>(m_findNeedle.size());
-    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    beginUndoStep();
     for (int i = m_matches.size() - 1; i >= 0; --i) {
         size_t start = m_matches[i];
         QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(needleLen));
@@ -236,7 +236,7 @@ void EditorViewport::replaceAllMatches(const QByteArray &replacement) {
     }
     m_cursors = {0};
     m_selectionAnchors = {0};
-    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    endUndoStep();
     refreshCache(); /* recomputes m_matches too */
     m_currentMatch = m_matches.isEmpty() ? -1 : 0;
     ensureCursorVisible();

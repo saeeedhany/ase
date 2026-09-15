@@ -162,14 +162,14 @@ void EditorViewport::cutSelection() {
     if (!copySelection()) {
         return;
     }
-    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    beginUndoStep();
     for (int i = m_cursors.size() - 1; i >= 0; --i) {
         if (hasSelectionAt(i)) {
             deleteSelectionAt(i);
         }
     }
     normalizeCursors();
-    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    endUndoStep();
     refreshCache();
     ensureCursorVisible();
     snapAnimationToTarget();
@@ -198,6 +198,39 @@ QString EditorViewport::primarySelectionText() const {
     return QString::fromUtf8(m_cache.constData() + static_cast<int>(start), static_cast<int>(end - start));
 }
 
+void EditorViewport::beginUndoStep() {
+    if (m_undoSessionOpen) {
+        return;
+    }
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+}
+
+void EditorViewport::endUndoStep() {
+    if (m_undoSessionOpen) {
+        return;
+    }
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+}
+
+/* Opened where an insert begins — i/a/I/A/o/O, `c`, `R` — and closed by
+ * the Escape that ends it, so the cursors recorded either side are where
+ * typing started and where it stopped. */
+void EditorViewport::beginUndoSession() {
+    if (m_undoSessionOpen) {
+        return;
+    }
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    m_undoSessionOpen = true;
+}
+
+void EditorViewport::endUndoSession() {
+    if (!m_undoSessionOpen) {
+        return;
+    }
+    m_undoSessionOpen = false;
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+}
+
 void EditorViewport::insertText(const QByteArray &bytes) {
     if (bytes.isEmpty()) {
         return;
@@ -205,12 +238,12 @@ void EditorViewport::insertText(const QByteArray &bytes) {
     /* Short single-line insertions only — an actual keystroke. */
     bool animate =
         m_animationsEnabled && bytes.size() <= kTypingAnimationMaxBytes && !bytes.contains('\n');
-    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    beginUndoStep();
     for (int i = m_cursors.size() - 1; i >= 0; --i) {
         insertTextAt(i, bytes, animate);
     }
     normalizeCursors();
-    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    endUndoStep();
     refreshCache();
 }
 
@@ -233,12 +266,12 @@ void EditorViewport::insertTextAt(int i, const QByteArray &bytes, bool animate) 
 }
 
 void EditorViewport::deleteBackward() {
-    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    beginUndoStep();
     for (int i = m_cursors.size() - 1; i >= 0; --i) {
         deleteBackwardAt(i);
     }
     normalizeCursors();
-    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    endUndoStep();
     refreshCache();
 }
 
@@ -267,12 +300,12 @@ void EditorViewport::deleteBackwardAt(int i) {
 }
 
 void EditorViewport::deleteForward() {
-    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    beginUndoStep();
     for (int i = m_cursors.size() - 1; i >= 0; --i) {
         deleteForwardAt(i);
     }
     normalizeCursors();
-    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    endUndoStep();
     refreshCache();
 }
 
