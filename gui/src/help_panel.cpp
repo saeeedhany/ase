@@ -89,6 +89,7 @@ QVector<HelpSection> helpSections() {
           {"d y c + motion", "Delete / yank / change (dd, yy, cc for lines)"},
           {"", "&mdash; all four fill the unnamed register that p pastes"},
           {"x / p / P", "Delete character / paste after / before"},
+          {".", "Repeat the last change (a count replaces the original)"},
           {"Ctrl+V", "Paste the system clipboard (y copies there too)"},
           {"u / Ctrl+R", "Undo / redo"},
           {":", "Command line"}}},

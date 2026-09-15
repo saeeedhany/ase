@@ -82,3 +82,4 @@ what changed.
 | [0072](0072-incremental-highlighting-and-a-measured-hot-path.md) | Incremental highlighting, and a measured hot path |
 | [0073](0073-the-command-line-moves-to-the-status-bar.md) | The command line moves to the status bar |
 | [0074](0074-search-with-slash-and-n.md) | `/` search, and a needle that outlives its panel |
+| [0075](0075-repeating-the-last-change.md) | Repeating the last change (`.`) |

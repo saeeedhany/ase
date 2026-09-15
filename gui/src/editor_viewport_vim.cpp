@@ -450,12 +450,15 @@ void EditorViewport::vimApplyPendingOperatorCharwise(size_t start, size_t end) {
     switch (op) {
     case 'd':
         vimDeleteRange(start, end);
+        vimMarkChange();
         break;
     case 'y':
         vimYankRange(start, end, false);
         break;
     case 'c':
         vimChangeRange(start, end);
+        vimMarkChange();
+        vimBeginInsertCapture();
         break;
     default:
         break;
@@ -468,6 +471,7 @@ void EditorViewport::vimApplyPendingOperatorLinewise(int startLine, int lineCoun
     switch (op) {
     case 'd':
         vimDeleteLines(startLine, lineCount);
+        vimMarkChange();
         break;
     case 'y':
         vimYankLines(startLine, lineCount);
@@ -476,6 +480,8 @@ void EditorViewport::vimApplyPendingOperatorLinewise(int startLine, int lineCoun
         /* Real vim leaves a blank line here; v1 simplification. */
         vimDeleteLines(startLine, lineCount);
         m_vimMode = VimMode::Insert;
+        vimMarkChange();
+        vimBeginInsertCapture();
         break;
     default:
         break;
@@ -714,6 +720,95 @@ QString EditorViewport::vimBlockGlyphAt(size_t cursor, int *width, AseHighlightC
 /* Returns true for every key Vim claims, including invalid-but-
  * swallowed ones; false only for keys outside its alphabet. See
  * docs/adr/0046 for the state table. */
+void EditorViewport::vimRecordKey(QChar qc) {
+    if (m_dotReplaying) {
+        return;
+    }
+    /* A key with nothing pending begins a new command, so whatever was
+     * being recorded came to nothing and is dropped. */
+    if (m_vimPendingOperator == '\0' && m_vimCount1 == 0 && m_vimCount2 == 0 && !m_vimPendingG &&
+        m_vimPendingFind == '\0') {
+        m_dotRecording.clear();
+    }
+    m_dotRecording.append(qc);
+}
+
+void EditorViewport::vimMarkChange() {
+    if (m_dotReplaying) {
+        return; /* a repeat must not become the thing repeated */
+    }
+    m_dotKeys = m_dotRecording;
+    m_dotInserted.clear();
+}
+
+void EditorViewport::vimBeginInsertCapture() {
+    if (m_dotReplaying) {
+        return;
+    }
+    m_dotCapturingInsert = true;
+    m_dotInsertBuf.clear();
+}
+
+void EditorViewport::vimEndInsertCapture() {
+    if (!m_dotCapturingInsert) {
+        return;
+    }
+    m_dotCapturingInsert = false;
+    m_dotInserted = m_dotInsertBuf;
+    m_dotInsertBuf.clear();
+}
+
+/*
+ * Replays the recorded keys, then the recorded insert text if the change
+ * ended up in Insert mode.
+ *
+ * A count given to `.` replaces the original one rather than multiplying
+ * it, as vim does — so `3x` then `2.` deletes two characters, not six.
+ */
+void EditorViewport::vimRepeatChange(int count) {
+    if (m_dotKeys.isEmpty() || m_dotReplaying) {
+        return;
+    }
+
+    /* Before replaying, not after: the count that selected this repeat is
+     * still pending, and a replayed digit would be appended to it —
+     * `2.` of a `3x` accumulated 22 and took the whole line. */
+    resetVimPendingState();
+
+    QString keys = m_dotKeys;
+    if (count > 1) {
+        int digits = 0;
+        while (digits < keys.size() && keys.at(digits).isDigit()) {
+            digits++;
+        }
+        keys = QString::number(count) + keys.mid(digits);
+    }
+
+    m_dotReplaying = true;
+    for (QChar ch : keys) {
+        /* key code 0 is fine: the dispatcher reads event->text() for
+         * everything except Backspace, which never gets recorded. */
+        QKeyEvent replay(QEvent::KeyPress, 0, Qt::NoModifier, QString(ch));
+        handleVimNormalOrVisualKey(&replay);
+    }
+    if (m_vimMode == VimMode::Insert) {
+        if (!m_dotInserted.isEmpty()) {
+            insertText(m_dotInserted);
+        }
+        /* Leave Insert the way Escape does, so the cursor lands where it
+         * would have if this had been typed. */
+        if (m_cursors[0] > static_cast<size_t>(m_lineStarts[lineForOffset(m_cursors[0])])) {
+            moveCursorLeftAt(0, false);
+        }
+        m_vimMode = VimMode::Normal;
+    }
+    m_dotReplaying = false;
+
+    resetVimPendingState();
+    ensureCursorVisible();
+    update();
+}
+
 /* An f/F/t/T target, or the second half of a `g` pair. */
 bool EditorViewport::vimResolvePendingKey(QChar qc) {
     /* This key is the target, whatever it is: `f3` and `fd` search for
@@ -973,30 +1068,42 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
         break;
     case 'i':
         m_vimMode = VimMode::Insert;
+        vimMarkChange();
+        vimBeginInsertCapture();
         break;
     case 'a':
         moveCursorRightAt(0, false);
         m_vimMode = VimMode::Insert;
+        vimMarkChange();
+        vimBeginInsertCapture();
         break;
     case 'I': {
         size_t target = vimFirstNonBlank(lineForOffset(m_cursors[0]));
         m_cursors[0] = target;
         m_selectionAnchors[0] = target;
         m_vimMode = VimMode::Insert;
+        vimMarkChange();
+        vimBeginInsertCapture();
         break;
     }
     case 'A':
         moveCursorEndAt(0, false);
         m_vimMode = VimMode::Insert;
+        vimMarkChange();
+        vimBeginInsertCapture();
         break;
     case 'o':
         moveCursorEndAt(0, false);
         insertText(QByteArrayLiteral("\n"));
         m_vimMode = VimMode::Insert;
+        vimMarkChange();
+        vimBeginInsertCapture();
         break;
     case 'O':
         vimOpenLineAbove();
         m_vimMode = VimMode::Insert;
+        vimMarkChange();
+        vimBeginInsertCapture();
         break;
     case 'x': {
         size_t start = m_cursors[0];
@@ -1006,17 +1113,23 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
         }
         if (end > start) {
             vimDeleteRange(start, end);
+            vimMarkChange();
         }
         break;
     }
     case 'p':
         vimPasteAfter();
+        vimMarkChange();
         break;
     case 'P':
         vimPasteBefore();
+        vimMarkChange();
         break;
     case 'u':
-        undo();
+        undo(); /* not a change: `.` after `u` repeats what `u` undid */
+        break;
+    case '.':
+        vimRepeatChange(count);
         break;
     default:
         break; /* unrecognized: swallowed, no state change */
@@ -1048,6 +1161,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         return false;
     }
     QChar qc = text.at(0);
+    vimRecordKey(qc);
 
     if (vimResolvePendingKey(qc)) {
         return true;

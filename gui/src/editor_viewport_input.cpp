@@ -239,6 +239,7 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
                 moveCursorLeftAt(0, false);
             }
             m_vimMode = VimMode::Normal;
+            vimEndInsertCapture();
             resetVimPendingState();
         } else if (vimModeActive()) {
             /* Drop any pending operator/count and selection. */
@@ -290,6 +291,17 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         moveCursorEnd(extend);
         break;
     case Qt::Key_Backspace:
+        /* The capture holds what the session actually put in the buffer,
+         * so a correction has to shorten it rather than be recorded as a
+         * keystroke — otherwise typing "helo", Backspace, "lo" repeats
+         * as "helolo". Steps back over a whole codepoint. */
+        if (m_dotCapturingInsert && !m_dotInsertBuf.isEmpty()) {
+            int i = m_dotInsertBuf.size() - 1;
+            while (i > 0 && (static_cast<unsigned char>(m_dotInsertBuf.at(i)) & 0xC0) == 0x80) {
+                i--;
+            }
+            m_dotInsertBuf.truncate(i);
+        }
         deleteBackward();
         break;
     case Qt::Key_Delete:
@@ -307,6 +319,9 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         if (vimModeActive() && m_vimMode != VimMode::Insert) {
             break;
         }
+        if (m_dotCapturingInsert) {
+            m_dotInsertBuf.append("    ");
+        }
         insertText(QByteArrayLiteral("    "));
         break;
     case Qt::Key_Return:
@@ -314,6 +329,9 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         /* Vim gives Enter no Normal-mode meaning either. */
         if (vimModeActive() && m_vimMode != VimMode::Insert) {
             break;
+        }
+        if (m_dotCapturingInsert) {
+            m_dotInsertBuf.append('\n');
         }
         insertText(QByteArrayLiteral("\n"));
         break;
@@ -338,6 +356,9 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
              * see docs/adr/0046. */
             if (vimModeActive() && m_vimMode != VimMode::Insert) {
                 return;
+            }
+            if (m_dotCapturingInsert) {
+                m_dotInsertBuf.append(text.toUtf8());
             }
             insertText(text.toUtf8());
         }

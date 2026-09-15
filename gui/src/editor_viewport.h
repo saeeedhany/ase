@@ -361,6 +361,22 @@ private:
     /* After every resolved command, so state never leaks into the next
      * keystroke. */
     void resetVimPendingState();
+    /*
+     * `.` — repeating the last change.
+     *
+     * The change is stored as the Normal-mode keys that made it plus any
+     * text typed in the insert session that followed, and replayed back
+     * through this same dispatcher. Keys rather than a description of
+     * the edit, because that is the only form that composes: `c` + any
+     * motion + any typed text needs no case of its own.
+     */
+    void vimRecordKey(QChar qc);
+    /* Called where a command actually changes the buffer, which is what
+     * makes it repeatable. Yanks and motions do not call it. */
+    void vimMarkChange();
+    void vimBeginInsertCapture();
+    void vimEndInsertCapture();
+    void vimRepeatChange(int count);
     void vimNormalizeLinewiseSelection();
     /* Paired with vimNormalizeLinewiseSelection(). No-op unless
      * linewise. */
@@ -599,6 +615,17 @@ private:
     /* Last f/F/t/T, for `;` and `,`. Per window, not per line. */
     char m_vimLastFindCommand = '\0';
     char m_vimLastFindTarget = '\0';
+    /* Keys of the command being typed now, and of the last one that
+     * changed anything. m_dotInserted is what was typed in that change's
+     * insert session, if it had one. */
+    QString m_dotRecording;
+    QString m_dotKeys;
+    QByteArray m_dotInserted;
+    QByteArray m_dotInsertBuf;
+    bool m_dotCapturingInsert = false;
+    /* Suppresses recording while replaying, so a repeat never rewrites
+     * the change it is repeating. */
+    bool m_dotReplaying = false;
     /* A flag on Visual, not a fourth mode: everything already works
      * off the selection range. See docs/adr/0056. */
     bool m_vimVisualLinewise = false;
