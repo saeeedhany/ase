@@ -329,10 +329,19 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
         for (int n = 0; n < count; ++n) {
             switch (m) {
             case 'h':
-                moveCursorLeftAt(0, visual);
+                /* vim's `h` stops at column 1; the arrow key it shares a
+                 * primitive with wraps to the line above. */
+                if (m_cursors[0] > static_cast<size_t>(m_lineStarts[lineForOffset(m_cursors[0])])) {
+                    moveCursorLeftAt(0, visual);
+                }
                 break;
             case 'l':
-                moveCursorRightAt(0, visual);
+                /* And `l` stops at the last character, rather than
+                 * stepping onto the newline and then the next line. */
+                if (vimNextCharBoundary(m_cursors[0]) <
+                    vimLineEndOffset(lineForOffset(m_cursors[0]))) {
+                    moveCursorRightAt(0, visual);
+                }
                 break;
             case 'j':
                 moveCursorVerticallyAt(0, 1, visual);
@@ -476,10 +485,16 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
         for (int n = 0; n < count; ++n) {
             switch (m) {
             case 'h':
-                after = vimPrevCharBoundary(after);
+                if (after > static_cast<size_t>(m_lineStarts[lineForOffset(after)])) {
+                    after = vimPrevCharBoundary(after);
+                }
                 break;
             case 'l':
-                after = vimNextCharBoundary(after);
+                /* `d10l` on a short line deletes to the end of it, not
+                 * into the next one. */
+                if (after < vimLineEndOffset(lineForOffset(after))) {
+                    after = vimNextCharBoundary(after);
+                }
                 break;
             case 'w':
                 if (!changeToWordEnd) {
