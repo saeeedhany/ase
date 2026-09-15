@@ -101,6 +101,7 @@ nav:
     - adr/0078-visual-mode-replace.md
     - adr/0079-the-visual-selection-includes-the-cursor.md
     - adr/0080-one-undo-step-per-insert-session.md
+    - adr/0081-cw-changes-to-the-end-of-the-word.md
 
 theme:
   name: material

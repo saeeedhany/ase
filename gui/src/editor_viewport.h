@@ -344,6 +344,10 @@ private:
     size_t vimPrevCharBoundary(size_t pos) const;
     size_t vimWordForward(size_t pos) const;
     size_t vimWordEnd(size_t pos) const;
+    /* End of the character-class run `pos` sits in. Unlike vimWordEnd,
+     * which is `e` and steps on to the next word when already at a run's
+     * end, this stops where the run does — what `cw` needs. */
+    size_t vimWordRunEnd(size_t pos) const;
     size_t vimWordBackward(size_t pos) const;
     /* First non-blank on `line`, or its end if entirely blank. */
     size_t vimFirstNonBlank(int line) const;

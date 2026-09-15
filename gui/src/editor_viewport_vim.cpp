@@ -112,6 +112,19 @@ size_t EditorViewport::vimWordForward(size_t pos) const {
     return pos;
 }
 
+size_t EditorViewport::vimWordRunEnd(size_t pos) const {
+    size_t len = static_cast<size_t>(m_cache.size());
+    if (pos >= len) {
+        return pos;
+    }
+    VimCharClass cls = vimClassifyAt(pos);
+    size_t p = pos;
+    while (p < len && vimClassifyAt(p) == cls) {
+        p = vimNextCharBoundary(p);
+    }
+    return p;
+}
+
 size_t EditorViewport::vimWordEnd(size_t pos) const {
     size_t len = static_cast<size_t>(m_cache.size());
     if (pos >= len) {
@@ -421,6 +434,21 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
         after = (line + 1 < m_lineStarts.size()) ? static_cast<size_t>(m_lineStarts[line + 1] - 1)
                                                   : static_cast<size_t>(m_cache.size());
     } else {
+        /*
+         * vim's one special case, and the reason `cw` is not `dw` with a
+         * different operator: on a non-blank it changes to the end of
+         * the word rather than to the start of the next, so the space
+         * after it survives. On whitespace it stays a plain `w`.
+         *
+         * "End of the word" is the end of the run the cursor is in, not
+         * where `e` would go: `e` steps on to the next word when it is
+         * already at a run's end, so on `.ab` it reaches the end of `ab`
+         * while `cw` changes only the `.`. Only the first step is
+         * special; the rest of a count behave like `e`.
+         */
+        bool changeToWordEnd = (m == 'w' && m_vimPendingOperator == 'c' &&
+                                before < static_cast<size_t>(m_cache.size()) &&
+                                vimClassifyAt(before) != VimCharClass::Blank);
         for (int n = 0; n < count; ++n) {
             switch (m) {
             case 'h':
@@ -430,7 +458,13 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
                 after = vimNextCharBoundary(after);
                 break;
             case 'w':
-                after = vimWordForward(after);
+                if (!changeToWordEnd) {
+                    after = vimWordForward(after);
+                } else if (n == 0) {
+                    after = vimWordRunEnd(after);
+                } else {
+                    after = vimNextCharBoundary(vimWordEnd(after));
+                }
                 break;
             case 'b':
                 after = vimWordBackward(after);

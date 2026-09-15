@@ -88,3 +88,4 @@ what changed.
 | [0078](0078-visual-mode-replace.md) | Visual-mode `r`, and a selection that is off by one |
 | [0079](0079-the-visual-selection-includes-the-cursor.md) | The visual selection includes the character under the cursor |
 | [0080](0080-one-undo-step-per-insert-session.md) | One undo step per insert session |
+| [0081](0081-cw-changes-to-the-end-of-the-word.md) | `cw` changes to the end of the word |
