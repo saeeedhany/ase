@@ -163,6 +163,9 @@ public:
     /* `n` / `N`, with the direction already resolved against the one
      * the search was made in. */
     void searchRepeat(bool forward);
+    /* `*` and `#` — search for the word at or after the cursor, whole
+     * words only, and leave it as the search `n` repeats. */
+    void vimSearchWordUnderCursor(bool forward);
     bool searchWasForward() const { return m_searchForward; }
     /* Vim's :nohlsearch — drops the matches, keeps the needle. */
     void clearFindHighlights();
@@ -373,6 +376,9 @@ private:
      * X = the mirror of x. */
     void vimChangeOrInsert(size_t start, size_t end);
     size_t vimLineEndOffset(int line) const;
+    /* `%` — the bracket matching the one at or after `pos` on its line,
+     * or `pos` when there is none or it is unmatched. */
+    size_t vimMatchBracket(size_t pos) const;
     void vimEnterReplaceMode(int count);
     /* One typed character, overwriting what is under the cursor, or
      * appending when the line has run out. */
@@ -465,7 +471,10 @@ private:
     void searchStep(bool forward);
     void notifyNoMatches();
     /* Wraps either direction, selecting the range like any other. */
-    void jumpToMatch(int index);
+    /* `select` leaves the match selected, which is what the find bar's
+     * replace acts on. Vim's search does not select: it puts the cursor
+     * on the first character of the match and stops. */
+    void jumpToMatch(int index, bool select = true);
     int nearestMatchAtOrAfter(size_t offset) const;
 
     void ensureCursorVisible();
@@ -599,6 +608,8 @@ private:
      * outlives it, so `n` works with nothing on screen. */
     bool m_findActive = false;
     bool m_searchForward = true;
+    /* `*` matches whole words; `/` and the find bar do not. */
+    bool m_findWholeWord = false;
     FindBar *m_findBar = nullptr;
     FileBrowserPanel *m_fileBrowser = nullptr;
     CommandLine *m_commandLine = nullptr;

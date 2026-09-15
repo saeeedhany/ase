@@ -1,5 +1,7 @@
 #include "editor_viewport.h"
 
+#include "editor_viewport_internal.h"
+
 #include <algorithm>
 
 /* Plain substring, ASCII-case-insensitive: fresh QByteArray::toLower()
@@ -30,7 +32,15 @@ void EditorViewport::recomputeMatches() {
         if (idx < 0) {
             break;
         }
-        m_matches.push_back(static_cast<size_t>(idx));
+        bool keep = true;
+        if (m_findWholeWord) {
+            bool before = (idx == 0) || !isWordChar(m_cache[idx - 1]);
+            bool after = (idx + needleLen >= m_cache.size()) || !isWordChar(m_cache[idx + needleLen]);
+            keep = before && after;
+        }
+        if (keep) {
+            m_matches.push_back(static_cast<size_t>(idx));
+        }
         pos = idx + needleLen;
     }
 
@@ -52,14 +62,14 @@ int EditorViewport::nearestMatchAtOrAfter(size_t offset) const {
 /* Selects m_matches[index] (wrapping either direction) like any other
  * selection, so replaceCurrentMatch can just reuse insertText's existing
  * selection-replace path instead of its own delete/insert logic. */
-void EditorViewport::jumpToMatch(int index) {
+void EditorViewport::jumpToMatch(int index, bool select) {
     if (m_matches.isEmpty()) {
         return;
     }
     m_currentMatch = ((index % m_matches.size()) + m_matches.size()) % m_matches.size();
     size_t start = m_matches[m_currentMatch];
     size_t end = start + static_cast<size_t>(m_findNeedle.size());
-    m_cursors = {end};
+    m_cursors = {select ? end : start};
     m_selectionAnchors = {start};
     m_desiredColumn = -1;
     resetCaretBlink();
@@ -73,6 +83,7 @@ void EditorViewport::jumpToMatch(int index) {
  * incremental-search feel. Called on every keystroke in FindBar's find
  * field. */
 void EditorViewport::setFindQuery(const QString &needle) {
+    m_findWholeWord = false;
     m_findNeedle = needle.toUtf8();
     m_findActive = true;
     recomputeMatches();
@@ -81,6 +92,52 @@ void EditorViewport::setFindQuery(const QString &needle) {
     } else {
         m_currentMatch = -1;
         update();
+    }
+}
+
+/*
+ * `*` and `#`. Vim takes the word under the cursor, or the next one on
+ * the line if the cursor is not on a word, and searches for it as a
+ * whole word — so `*` on `foo` skips `foobar`. It leaves that as the
+ * search pattern, which is why `n` afterwards keeps going.
+ */
+void EditorViewport::vimSearchWordUnderCursor(bool forward) {
+    int len = m_cache.size();
+    int pos = static_cast<int>(m_cursors.isEmpty() ? 0 : m_cursors[0]);
+    int lineEnd = static_cast<int>(vimLineEndOffset(lineForOffset(static_cast<size_t>(pos))));
+    while (pos < lineEnd && !isWordChar(m_cache[pos])) {
+        pos++;
+    }
+    if (pos >= lineEnd || !isWordChar(m_cache[pos])) {
+        notify(NotifyLevel::Warning, QStringLiteral("no word under the cursor"));
+        return;
+    }
+    int start = pos;
+    while (start > 0 && isWordChar(m_cache[start - 1])) {
+        start--;
+    }
+    int end = pos;
+    while (end < len && isWordChar(m_cache[end])) {
+        end++;
+    }
+
+    recordJump();
+    m_findNeedle = m_cache.mid(start, end - start);
+    m_findWholeWord = true;
+    m_searchForward = forward;
+    m_findActive = true;
+    recomputeMatches();
+    if (m_matches.isEmpty()) {
+        notifyNoMatches();
+        return;
+    }
+    /* Step off this occurrence deliberately: searching forward starts
+     * past the word's end and backward from its start, so `*` on a word
+     * goes to the next one rather than sitting where it already is. */
+    if (forward) {
+        jumpToMatch(nearestMatchAtOrAfter(static_cast<size_t>(end)), false);
+    } else {
+        jumpToMatch(lastMatchBefore(static_cast<size_t>(start)), false);
     }
 }
 
@@ -125,6 +182,7 @@ void EditorViewport::startSearch(const QString &needle, bool forward) {
         return;
     }
     recordJump();
+    m_findWholeWord = false;
     m_findNeedle = needle.toUtf8();
     m_searchForward = forward;
     m_findActive = true;
@@ -162,11 +220,11 @@ void EditorViewport::searchRepeat(bool forward) {
 void EditorViewport::searchStep(bool forward) {
     size_t cursor = m_cursors.isEmpty() ? 0 : m_cursors.last();
     if (forward) {
-        size_t from = hasSelectionAt(0) ? selectionMaxAt(0) : cursor;
-        jumpToMatch(nearestMatchAtOrAfter(from));
+        /* Past this match's own start, or `n` would not move. */
+        size_t from = cursor + 1;
+        jumpToMatch(nearestMatchAtOrAfter(from), false);
     } else {
-        size_t from = hasSelectionAt(0) ? selectionMinAt(0) : cursor;
-        jumpToMatch(lastMatchBefore(from));
+        jumpToMatch(lastMatchBefore(cursor), false);
     }
 }
 

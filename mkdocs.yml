@@ -104,6 +104,7 @@ nav:
     - adr/0081-cw-changes-to-the-end-of-the-word.md
     - adr/0082-a-bare-modifier-must-not-clear-a-count.md
     - adr/0083-the-shorthand-operators.md
+    - adr/0084-bracket-matching-and-word-search.md
 
 theme:
   name: material

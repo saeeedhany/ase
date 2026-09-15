@@ -349,6 +349,17 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
                 }
                 return;
             }
+            case '%': {
+                size_t target = vimMatchBracket(m_cursors[0]);
+                if (target != m_cursors[0]) {
+                    recordJump(); /* far enough to want to come back from */
+                    m_cursors[0] = target;
+                    if (!visual) {
+                        m_selectionAnchors[0] = target;
+                    }
+                }
+                return;
+            }
             case '$': {
                 moveCursorEndAt(0, visual);
                 /* vim leaves the cursor on the last character, not past
@@ -421,6 +432,17 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
         int startLine = std::min(beforeLine, targetLine);
         int lineCount = std::abs(targetLine - beforeLine) + 1;
         vimApplyPendingOperatorLinewise(startLine, lineCount);
+        return;
+    }
+
+    if (m == '%') {
+        size_t target = vimMatchBracket(before);
+        if (target == before) {
+            resetVimPendingState();
+            return;
+        }
+        vimApplyPendingOperatorCharwise(std::min(before, target),
+                                        vimNextCharBoundary(std::max(before, target)));
         return;
     }
 
@@ -1021,6 +1043,65 @@ void EditorViewport::vimChangeOrInsert(size_t start, size_t end) {
     vimBeginInsertCapture();
 }
 
+/*
+ * Vim does not require the cursor to be on a bracket: it scans forward
+ * along the line for the first one and matches that, which is what makes
+ * `%` usable from the start of a line of code.
+ *
+ * Nesting is counted, and the search for the partner runs over the whole
+ * buffer rather than the line, since that is the common case. Brackets
+ * inside strings and comments are not skipped — plain vim does not skip
+ * them either.
+ */
+size_t EditorViewport::vimMatchBracket(size_t pos) const {
+    static const char kOpen[] = "([{";
+    static const char kClose[] = ")]}";
+    int len = m_cache.size();
+    if (pos >= static_cast<size_t>(len)) {
+        return pos;
+    }
+    int lineEnd = static_cast<int>(vimLineEndOffset(lineForOffset(pos)));
+
+    int at = -1;
+    int kind = -1;
+    bool opening = false;
+    for (int i = static_cast<int>(pos); i < lineEnd && at < 0; ++i) {
+        for (int k = 0; k < 3; ++k) {
+            if (m_cache[i] == kOpen[k]) {
+                at = i; kind = k; opening = true; break;
+            }
+            if (m_cache[i] == kClose[k]) {
+                at = i; kind = k; opening = false; break;
+            }
+        }
+    }
+    if (at < 0) {
+        return pos;
+    }
+
+    char open = kOpen[kind];
+    char close = kClose[kind];
+    int depth = 0;
+    if (opening) {
+        for (int i = at; i < len; ++i) {
+            if (m_cache[i] == open) {
+                depth++;
+            } else if (m_cache[i] == close && --depth == 0) {
+                return static_cast<size_t>(i);
+            }
+        }
+    } else {
+        for (int i = at; i >= 0; --i) {
+            if (m_cache[i] == close) {
+                depth++;
+            } else if (m_cache[i] == open && --depth == 0) {
+                return static_cast<size_t>(i);
+            }
+        }
+    }
+    return pos; /* unmatched */
+}
+
 size_t EditorViewport::vimLineEndOffset(int line) const {
     return (line + 1 < m_lineStarts.size()) ? static_cast<size_t>(m_lineStarts[line + 1] - 1)
                                             : static_cast<size_t>(m_cache.size());
@@ -1236,6 +1317,11 @@ bool EditorViewport::vimApplyMotionKey(char c, int count) {
         resetVimPendingState();
         return true;
     }
+    if (c == '*' || c == '#') {
+        vimSearchWordUnderCursor(c == '*');
+        resetVimPendingState();
+        return true;
+    }
     if (c == 'n' || c == 'N') {
         /* `n` keeps the search's own direction, `N` reverses it, so `n`
          * after `?` goes backward. */
@@ -1285,7 +1371,7 @@ bool EditorViewport::vimApplyMotionKey(char c, int count) {
         return true;
     }
     if (c == 'h' || c == 'l' || c == 'j' || c == 'k' || c == '0' || c == '^' || c == '$' || c == 'w' ||
-        c == 'b' || c == 'e' || c == '{' || c == '}') {
+        c == 'b' || c == 'e' || c == '{' || c == '}' || c == '%') {
         if ((c == '{' || c == '}') && m_vimPendingOperator == '\0') {
             /* Far enough to be worth coming back from; h/j/k/l are
              * deliberately not. See docs/adr/0070. */
