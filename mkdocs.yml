@@ -121,6 +121,7 @@ nav:
     - adr/0098-global-marks.md
     - adr/0099-vim-conformance-fixes.md
     - adr/0100-text-objects.md
+    - adr/0101-join-lines.md
 
 theme:
   name: material

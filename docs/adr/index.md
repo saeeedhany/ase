@@ -108,3 +108,4 @@ what changed.
 | [0098](0098-global-marks.md) | Global marks reuse the jumplist’s entry |
 | [0099](0099-vim-conformance-fixes.md) | Four vim rules the editor was missing |
 | [0100](0100-text-objects.md) | Text objects |
+| [0101](0101-join-lines.md) | `J` joins lines |

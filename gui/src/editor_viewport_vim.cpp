@@ -1339,6 +1339,76 @@ bool EditorViewport::vimQuotedRange(size_t pos, char quote, size_t *outOpen,
     return false;
 }
 
+/* vim inserts one space between the lines, except where it would be
+ * wrong: the first line already ends in blank, either line is empty, or
+ * the next begins with `)`. `gJ` skips the rule and the indent strip. */
+void EditorViewport::vimJoinLines(int count, bool withSpace) {
+    int joins = std::max(2, count) - 1;
+    size_t landing = m_cursors[0];
+    bool any = false;
+
+    beginUndoSession();
+    for (int n = 0; n < joins; ++n) {
+        int line = lineForOffset(landing);
+        if (line + 1 > vimLastLine()) {
+            /* vimLastLine, not m_lineStarts.size(): the position past a
+             * trailing newline is not a line to join with, and treating
+             * it as one ate the newline. */
+            break;
+        }
+
+        size_t lineStart = static_cast<size_t>(m_lineStarts[line]);
+        size_t lineEnd = vimLineEndOffset(line);
+        size_t contentStart = static_cast<size_t>(m_lineStarts[line + 1]);
+        size_t nextEnd = vimLineEndOffset(line + 1);
+        if (withSpace) {
+            while (contentStart < nextEnd && isBlankByte(m_cache[static_cast<int>(contentStart)])) {
+                contentStart++;
+            }
+        }
+
+        QByteArray separator;
+        if (withSpace && lineEnd > lineStart && contentStart < nextEnd &&
+            !isBlankByte(m_cache[static_cast<int>(lineEnd) - 1]) &&
+            m_cache[static_cast<int>(contentStart)] != ')') {
+            separator = QByteArrayLiteral(" ");
+        }
+
+        QByteArray removed = m_cache.mid(static_cast<int>(lineEnd),
+                                          static_cast<int>(contentStart - lineEnd));
+        beginUndoStep();
+        if (ase_buffer_delete(m_buffer, lineEnd, contentStart - lineEnd)) {
+            ase_undo_record_delete(m_undo, lineEnd, removed.constData(),
+                                    static_cast<size_t>(removed.size()));
+        }
+        if (!separator.isEmpty() &&
+            ase_buffer_insert(m_buffer, lineEnd, separator.constData(),
+                               static_cast<size_t>(separator.size()))) {
+            ase_undo_record_insert(m_undo, lineEnd, separator.constData(),
+                                    static_cast<size_t>(separator.size()));
+        }
+        endUndoStep();
+        refreshCache();
+
+        /* Where the lines met, which is what vim leaves under the
+         * cursor — the inserted space, or the next line's first byte. */
+        landing = lineEnd;
+        any = true;
+    }
+    endUndoSession();
+
+    if (!any) {
+        return;
+    }
+    landing = std::min(landing, static_cast<size_t>(m_cache.size()));
+    collapseToOneCursor();
+    m_cursors[0] = landing;
+    m_selectionAnchors[0] = landing;
+    vimMarkChange();
+    ensureCursorVisible();
+    update();
+}
+
 void EditorViewport::vimApplyTextObject(char kind, char object) {
     VimObjectRange range = vimTextObjectRange(kind, object);
     if (!range.valid || range.end <= range.start) {
@@ -1782,6 +1852,11 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
             resetVimPendingState();
             goToDefinition();
             return true;
+        } else if (qc == QLatin1Char('J')) {
+            int count = std::max(1, m_vimCount1) * std::max(1, m_vimCount2);
+            resetVimPendingState();
+            vimJoinLines(count, false);
+            return true;
         }
         vimNormalizeLinewiseSelection();
         resetVimPendingState();
@@ -1982,6 +2057,19 @@ void EditorViewport::vimApplyVisualKey(char c) {
          * selects the word rather than entering Insert. */
         m_vimPendingTextObject = c;
         return;
+    case 'J': {
+        /* Every line the selection touches, however it was made. */
+        int first = lineForOffset(selectionMinAt(0));
+        int last = lineForOffset(vimVisualEnd(0) > selectionMinAt(0) ? vimVisualEnd(0) - 1
+                                                                     : selectionMinAt(0));
+        collapseToOneCursor();
+        m_cursors[0] = static_cast<size_t>(m_lineStarts[first]);
+        m_selectionAnchors[0] = m_cursors[0];
+        m_vimMode = VimMode::Normal;
+        m_vimVisualLinewise = false;
+        vimJoinLines(last - first + 1, true);
+        return;
+    }
     default:
         break; /* unrecognized in Visual: swallowed, no state change */
     }
@@ -2112,6 +2200,9 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
          * below would clear the pending flag before it arrived. */
         m_vimPendingMark = c;
         return;
+    case 'J':
+        vimJoinLines(count, true);
+        break;
     case 'r':
         m_vimPendingReplace = true;
         return; /* the count is still needed when the target arrives */

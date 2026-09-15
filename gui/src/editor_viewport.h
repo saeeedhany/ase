@@ -417,6 +417,9 @@ private:
                            size_t *outClose) const;
     bool vimQuotedRange(size_t pos, char quote, size_t *outOpen, size_t *outClose) const;
     void vimApplyTextObject(char kind, char object);
+    /* `J` joins with a space and drops the next line's indent; `gJ`
+     * takes both lines verbatim. See docs/adr/0101. */
+    void vimJoinLines(int count, bool withSpace);
     void vimEnterReplaceMode(int count);
     /* One typed character, overwriting what is under the cursor, or
      * appending when the line has run out. */
