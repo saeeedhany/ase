@@ -39,6 +39,17 @@ long ase_config_get_int(const AseConfig *config, const char *key, long fallback)
 bool ase_config_get_color(const AseConfig *config, const char *key,
                            uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *a);
 
+/* The language a file is written in, e.g. "c" or "cpp" — this is also
+ * the LSP languageId. Resolved from the suffix against a built-in
+ * table, which `filetype.<suffix> = <language>` overrides. NULL if the
+ * suffix is unknown. Valid until `config` is destroyed. */
+const char *ase_config_language_for_path(const AseConfig *config, const char *path);
+
+/* A per-language setting: `lang.<language>.<key>`. NULL if unset, so
+ * callers can fall back to a global key of their own choosing. */
+const char *ase_config_get_lang_string(const AseConfig *config, const char *language,
+                                        const char *key);
+
 /* This platform's config file path
  * ($XDG_CONFIG_HOME or ~/.config on Unix, %APPDATA% on Windows, then
  * "/ase/config.ase"). NULL if it can't be determined (no HOME/APPDATA).

@@ -133,6 +133,71 @@ static void test_default_path_resolves(void) {
     }
 }
 
+static void test_language_for_path(void) {
+    AseConfig *config = ase_config_create_default();
+    CHECK(config != NULL);
+
+    CHECK(strcmp(ase_config_language_for_path(config, "a.c"), "c") == 0);
+    CHECK(strcmp(ase_config_language_for_path(config, "/tmp/a.h"), "c") == 0);
+    CHECK(strcmp(ase_config_language_for_path(config, "a.cpp"), "cpp") == 0);
+    CHECK(strcmp(ase_config_language_for_path(config, "a.HXX"), "cpp") == 0);
+
+    CHECK(ase_config_language_for_path(config, "notes.txt") == NULL);
+    CHECK(ase_config_language_for_path(config, "Makefile") == NULL);
+    CHECK(ase_config_language_for_path(config, NULL) == NULL);
+    /* A dot in a parent directory is not a suffix. */
+    CHECK(ase_config_language_for_path(config, "/a.c/Makefile") == NULL);
+    CHECK(ase_config_language_for_path(config, ".bashrc") == NULL);
+    CHECK(ase_config_language_for_path(config, "trailing.") == NULL);
+
+    ase_config_destroy(config);
+}
+
+static void test_filetype_override(void) {
+    const char *path = "test_config_filetype.tmp";
+    FILE *f = fopen(path, "w");
+    CHECK(f != NULL);
+    fputs("filetype.h = cpp\n"
+          "filetype.rs = rust\n",
+          f);
+    fclose(f);
+
+    AseConfig *config = ase_config_load(path);
+    CHECK(config != NULL);
+
+    CHECK(strcmp(ase_config_language_for_path(config, "a.h"), "cpp") == 0);
+    /* A language with no grammar still resolves — it is the LSP id too. */
+    CHECK(strcmp(ase_config_language_for_path(config, "a.rs"), "rust") == 0);
+    /* Untouched suffixes keep the built-in answer. */
+    CHECK(strcmp(ase_config_language_for_path(config, "a.c"), "c") == 0);
+
+    ase_config_destroy(config);
+    remove(path);
+}
+
+static void test_lang_string(void) {
+    const char *path = "test_config_lang.tmp";
+    FILE *f = fopen(path, "w");
+    CHECK(f != NULL);
+    fputs("lang.cpp.lsp = clangd\n"
+          "lang.rust.lsp = rust-analyzer\n",
+          f);
+    fclose(f);
+
+    AseConfig *config = ase_config_load(path);
+    CHECK(config != NULL);
+
+    CHECK(strcmp(ase_config_get_lang_string(config, "cpp", "lsp"), "clangd") == 0);
+    CHECK(strcmp(ase_config_get_lang_string(config, "rust", "lsp"), "rust-analyzer") == 0);
+    /* Unset: the caller falls back to a global key itself. */
+    CHECK(ase_config_get_lang_string(config, "c", "lsp") == NULL);
+    CHECK(ase_config_get_lang_string(config, "cpp", "no_such") == NULL);
+    CHECK(ase_config_get_lang_string(config, NULL, "lsp") == NULL);
+
+    ase_config_destroy(config);
+    remove(path);
+}
+
 int main(void) {
     test_defaults();
     test_load_missing_file_keeps_defaults();
@@ -140,6 +205,9 @@ int main(void) {
     test_color_parsing_edge_cases();
     test_write_default_if_missing();
     test_default_path_resolves();
+    test_language_for_path();
+    test_filetype_override();
+    test_lang_string();
 
     printf("all config tests passed\n");
     return 0;

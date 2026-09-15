@@ -106,6 +106,7 @@ nav:
     - adr/0083-the-shorthand-operators.md
     - adr/0084-bracket-matching-and-word-search.md
     - adr/0085-a-second-grammar-for-cpp.md
+    - adr/0086-one-language-gate-and-per-language-keys.md
 
 theme:
   name: material

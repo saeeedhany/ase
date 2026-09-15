@@ -38,13 +38,16 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
         m_vimMode = VimMode::Normal;
     }
 
-    QString suffix = QFileInfo(m_filePath).suffix().toLower();
-    if (suffix == QLatin1String("c") || suffix == QLatin1String("h")) {
-        m_syntax = ase_syntax_create(ASE_LANG_C);
-    } else if (suffix == QLatin1String("cpp") || suffix == QLatin1String("cc") ||
-               suffix == QLatin1String("cxx") || suffix == QLatin1String("hpp") ||
-               suffix == QLatin1String("hh") || suffix == QLatin1String("hxx")) {
-        m_syntax = ase_syntax_create(ASE_LANG_CPP);
+    /* A language with no grammar still highlights nothing, but it is
+     * the same answer the LSP gate gets — see docs/adr/0086. */
+    const char *language =
+        ase_config_language_for_path(m_config, m_filePath.toUtf8().constData());
+    if (language != nullptr) {
+        if (strcmp(language, "c") == 0) {
+            m_syntax = ase_syntax_create(ASE_LANG_C);
+        } else if (strcmp(language, "cpp") == 0) {
+            m_syntax = ase_syntax_create(ASE_LANG_CPP);
+        }
     }
 
     refreshCache();

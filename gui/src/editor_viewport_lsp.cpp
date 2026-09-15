@@ -94,32 +94,22 @@ void EditorViewport::setLspState(LspState state) {
  *
  * The id matters: telling a server `c` about a `.cpp` file makes the
  * resulting errors look like your code is broken. */
-QString lspLanguageIdFor(const QString &path) {
-    QString suffix = QFileInfo(path).suffix().toLower();
-    if (suffix == QLatin1String("c")) {
-        return QStringLiteral("c");
-    }
-    if (suffix == QLatin1String("h")) {
-        /* `c` is the safer guess: a C++ header parsed as C fails
-         * loudly rather than silently. */
-        return QStringLiteral("c");
-    }
-    if (suffix == QLatin1String("cpp") || suffix == QLatin1String("cc") ||
-        suffix == QLatin1String("cxx") || suffix == QLatin1String("hpp") ||
-        suffix == QLatin1String("hh") || suffix == QLatin1String("hxx")) {
-        return QStringLiteral("cpp");
-    }
-    return QString();
-}
 
 void EditorViewport::startLspClientIfConfigured() {
-    m_lspLanguageId = lspLanguageIdFor(m_filePath);
+    const char *language =
+        ase_config_language_for_path(m_config, m_filePath.toUtf8().constData());
+    m_lspLanguageId = language != nullptr ? QString::fromUtf8(language) : QString();
     if (m_lspLanguageId.isEmpty()) {
         /* A permanently blank indicator on a .txt file is noise. */
         setLspState(LspState::NotApplicable);
         return;
     }
-    const char *lspCommand = ase_config_get_string(m_config, "lsp_command");
+    /* `lang.<id>.lsp` first, so one config can name a server per
+     * language; `lsp_command` stays the global fallback. */
+    const char *lspCommand = ase_config_get_lang_string(m_config, language, "lsp");
+    if (lspCommand == nullptr) {
+        lspCommand = ase_config_get_string(m_config, "lsp_command");
+    }
     if (lspCommand == nullptr || m_filePath.isEmpty()) {
         /* Every packaged install starts here, since lsp_command ships
          * commented out. The silence read as "LSP is broken". */

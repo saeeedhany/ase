@@ -93,3 +93,4 @@ what changed.
 | [0083](0083-the-shorthand-operators.md) | The shorthand operators (`s`, `S`, `C`, `D`, `X`) |
 | [0084](0084-bracket-matching-and-word-search.md) | `%`, `*`/`#`, and where a search lands |
 | [0085](0085-a-second-grammar-for-cpp.md) | A second grammar for C++ |
+| [0086](0086-one-language-gate-and-per-language-keys.md) | One language gate, and per-language config keys |

@@ -112,7 +112,7 @@ QVector<HelpSection> helpSections() {
          {{"Ctrl+B", "Compile the current file"},
           {"Ctrl+Shift+O", "Toggle the output panel"}}},
 
-        {"Language server", "lsp_command, .c/.h files",
+        {"Language server", "lang.&lt;id&gt;.lsp, C and C++ files",
          {{"(automatic)", "Diagnostics, and completion while typing"},
           {"&uarr; &darr;", "Move through completions"},
           {"Enter / Tab", "Accept completion"},

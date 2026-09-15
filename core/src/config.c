@@ -194,6 +194,86 @@ long ase_config_get_int(const AseConfig *config, const char *key, long fallback)
     return parsed;
 }
 
+/* A dot in a parent directory is not a suffix, hence the separator
+ * scan first. */
+static const char *path_suffix(const char *path) {
+    const char *name = path;
+    for (const char *p = path; *p != '\0'; p++) {
+        if (*p == '/' || *p == '\\') {
+            name = p + 1;
+        }
+    }
+    const char *dot = strrchr(name, '.');
+    if (dot == NULL || dot == name || dot[1] == '\0') {
+        return NULL;
+    }
+    return dot + 1;
+}
+
+static const struct {
+    const char *suffix;
+    const char *language;
+} kBuiltinFiletypes[] = {
+    {"c", "c"},     {"h", "c"},     {"cpp", "cpp"}, {"cc", "cpp"},
+    {"cxx", "cpp"}, {"hpp", "cpp"}, {"hh", "cpp"},  {"hxx", "cpp"},
+};
+
+/* Lowercased into `out` so FOO.C resolves; anything longer than the
+ * buffer is not a suffix we know. */
+static bool suffix_to_lower(const char *suffix, char *out, size_t out_size) {
+    size_t len = strlen(suffix);
+    if (len == 0 || len >= out_size) {
+        return false;
+    }
+    for (size_t i = 0; i < len; i++) {
+        out[i] = (char)tolower((unsigned char)suffix[i]);
+    }
+    out[len] = '\0';
+    return true;
+}
+
+const char *ase_config_language_for_path(const AseConfig *config, const char *path) {
+    if (path == NULL) {
+        return NULL;
+    }
+    const char *suffix = path_suffix(path);
+    if (suffix == NULL) {
+        return NULL;
+    }
+
+    char lower[32];
+    if (!suffix_to_lower(suffix, lower, sizeof(lower))) {
+        return NULL;
+    }
+
+    char key[64];
+    if (snprintf(key, sizeof(key), "filetype.%s", lower) < (int)sizeof(key)) {
+        const char *override = ase_config_get_string(config, key);
+        if (override != NULL && *override != '\0') {
+            return override;
+        }
+    }
+
+    for (size_t i = 0; i < sizeof(kBuiltinFiletypes) / sizeof(kBuiltinFiletypes[0]); i++) {
+        if (strcmp(kBuiltinFiletypes[i].suffix, lower) == 0) {
+            return kBuiltinFiletypes[i].language;
+        }
+    }
+    return NULL;
+}
+
+const char *ase_config_get_lang_string(const AseConfig *config, const char *language,
+                                        const char *key) {
+    if (language == NULL || key == NULL) {
+        return NULL;
+    }
+    char full[128];
+    if (snprintf(full, sizeof(full), "lang.%s.%s", language, key) >= (int)sizeof(full)) {
+        return NULL;
+    }
+    return ase_config_get_string(config, full);
+}
+
 static bool parse_hex_byte(const char *s, uint8_t *out) {
     if (!isxdigit((unsigned char)s[0]) || !isxdigit((unsigned char)s[1])) {
         return false;
@@ -324,11 +404,20 @@ static const char kDefaultConfigTemplate[] =
     "# unconfigured build_command is reported as such, not guessed.\n"
     "# build_command = gcc %f -o /tmp/a.out && /tmp/a.out\n"
     "\n"
-    "# Language server to spawn for .c/.h files — diagnostics only for\n"
-    "# now (see docs/adr/0029). No default, same reasoning as\n"
-    "# build_command: an unconfigured lsp_command just means no LSP\n"
-    "# features, not a guess at which server you have installed.\n"
-    "# lsp_command = clangd\n";
+    "# Language server to spawn, per language — diagnostics only for now\n"
+    "# (see docs/adr/0029). No default, same reasoning as build_command:\n"
+    "# an unconfigured server just means no LSP features, not a guess at\n"
+    "# what you have installed. `lsp_command` still applies to every\n"
+    "# language that has no entry of its own.\n"
+    "# lang.c.lsp = clangd\n"
+    "# lang.cpp.lsp = clangd\n"
+    "\n"
+    "# What a suffix means. Built in: .c/.h are c, .cpp/.cc/.cxx/.hpp/.hh/\n"
+    "# .hxx are cpp. Override per suffix — .h is the one worth knowing\n"
+    "# about, since a C++ project that uses .h headers wants this. The\n"
+    "# name is both the highlighting language and the LSP languageId, so\n"
+    "# a language with no grammar can still have a server.\n"
+    "# filetype.h = cpp\n";
 
 /* Creates only the immediate parent directory, not any missing
  * grandparent — see docs/adr/0008, decision 5. */
