@@ -369,6 +369,10 @@ private:
      * matters already keys off "are we inserting", and only the typing
      * and Backspace paths differ.
      */
+    /* Shorthand operators: s = c<count>l, S = cc, C = c$, D = d$,
+     * X = the mirror of x. */
+    void vimChangeOrInsert(size_t start, size_t end);
+    size_t vimLineEndOffset(int line) const;
     void vimEnterReplaceMode(int count);
     /* One typed character, overwriting what is under the cursor, or
      * appending when the line has run out. */

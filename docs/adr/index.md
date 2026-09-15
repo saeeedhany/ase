@@ -89,3 +89,5 @@ what changed.
 | [0079](0079-the-visual-selection-includes-the-cursor.md) | The visual selection includes the character under the cursor |
 | [0080](0080-one-undo-step-per-insert-session.md) | One undo step per insert session |
 | [0081](0081-cw-changes-to-the-end-of-the-word.md) | `cw` changes to the end of the word |
+| [0082](0082-a-bare-modifier-must-not-clear-a-count.md) | A bare modifier must not clear a pending count |
+| [0083](0083-the-shorthand-operators.md) | The shorthand operators (`s`, `S`, `C`, `D`, `X`) |

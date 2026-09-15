@@ -102,6 +102,8 @@ nav:
     - adr/0079-the-visual-selection-includes-the-cursor.md
     - adr/0080-one-undo-step-per-insert-session.md
     - adr/0081-cw-changes-to-the-end-of-the-word.md
+    - adr/0082-a-bare-modifier-must-not-clear-a-count.md
+    - adr/0083-the-shorthand-operators.md
 
 theme:
   name: material

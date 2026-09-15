@@ -509,7 +509,6 @@ void EditorViewport::vimApplyPendingOperatorCharwise(size_t start, size_t end) {
         beginUndoSession();
         vimChangeRange(start, end);
         vimMarkChange();
-        beginUndoSession();
         vimBeginInsertCapture();
         break;
     default:
@@ -528,15 +527,23 @@ void EditorViewport::vimApplyPendingOperatorLinewise(int startLine, int lineCoun
     case 'y':
         vimYankLines(startLine, lineCount);
         break;
-    case 'c':
-        /* Real vim leaves a blank line here; v1 simplification. */
+    case 'c': {
+        /* Empties the lines and keeps one to type on, rather than
+         * removing them: `cc` is a change, not a delete, and vim leaves
+         * you on a blank line. Taking the content but not the final
+         * newline is what collapses the span to that one line. */
         beginUndoSession();
-        vimDeleteLines(startLine, lineCount);
+        size_t start = static_cast<size_t>(m_lineStarts[startLine]);
+        int lastLine = std::min(startLine + lineCount - 1, static_cast<int>(m_lineStarts.size()) - 1);
+        size_t end = vimLineEndOffset(lastLine);
+        if (end > start) {
+            vimDeleteRange(start, end, true);
+        }
         m_vimMode = VimMode::Insert;
         vimMarkChange();
-        beginUndoSession();
         vimBeginInsertCapture();
         break;
+    }
     default:
         break;
     }
@@ -998,6 +1005,25 @@ void EditorViewport::vimReplaceSelection(QChar target) {
     endUndoStep();
     refreshCache();
     vimMarkChange();
+}
+
+/* Change [start, end), or just enter Insert when there is nothing there
+ * — `s` and `C` on an empty line still start typing. */
+void EditorViewport::vimChangeOrInsert(size_t start, size_t end) {
+    if (end > start) {
+        m_vimPendingOperator = 'c';
+        vimApplyPendingOperatorCharwise(start, end);
+        return;
+    }
+    beginUndoSession();
+    m_vimMode = VimMode::Insert;
+    vimMarkChange();
+    vimBeginInsertCapture();
+}
+
+size_t EditorViewport::vimLineEndOffset(int line) const {
+    return (line + 1 < m_lineStarts.size()) ? static_cast<size_t>(m_lineStarts[line + 1] - 1)
+                                            : static_cast<size_t>(m_cache.size());
 }
 
 void EditorViewport::vimEnterReplaceMode(int count) {
@@ -1464,6 +1490,53 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
     case 'R':
         vimEnterReplaceMode(count);
         break;
+    case 's': {
+        /* `c` over `count` characters, never past the line end. */
+        size_t start = m_cursors[0];
+        size_t end = start;
+        size_t lineEnd = vimLineEndOffset(lineForOffset(start));
+        for (int n = 0; n < count && end < lineEnd; ++n) {
+            end = vimNextCharBoundary(end);
+        }
+        vimChangeOrInsert(start, end);
+        break;
+    }
+    case 'S':
+        /* `cc`, which the linewise operator already is. */
+        m_vimPendingOperator = 'c';
+        vimApplyPendingOperatorLinewise(lineForOffset(m_cursors[0]), count);
+        break;
+    case 'C':
+    case 'D': {
+        /* A count runs to the end of the count-th line down, so `2D`
+         * takes the rest of this line and all of the next. */
+        size_t start = m_cursors[0];
+        int lastLine = std::min(lineForOffset(start) + count - 1,
+                                static_cast<int>(m_lineStarts.size()) - 1);
+        size_t end = vimLineEndOffset(lastLine);
+        if (c == 'C') {
+            vimChangeOrInsert(start, end);
+        } else if (end > start) {
+            m_vimPendingOperator = 'd';
+            vimApplyPendingOperatorCharwise(start, end);
+        }
+        break;
+    }
+    case 'X': {
+        /* The mirror of `x`: `count` characters before the cursor,
+         * never past the start of the line. */
+        size_t end = m_cursors[0];
+        size_t start = end;
+        size_t lineStart = static_cast<size_t>(m_lineStarts[lineForOffset(end)]);
+        for (int n = 0; n < count && start > lineStart; ++n) {
+            start = vimPrevCharBoundary(start);
+        }
+        if (start < end) {
+            vimDeleteRange(start, end);
+            vimMarkChange();
+        }
+        break;
+    }
     case 'p':
         vimPasteAfter();
         vimMarkChange();
@@ -1504,7 +1577,17 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     }
 
     QString text = event->text();
-    if (text.isEmpty()) {
+    /*
+     * A bare modifier press is not a command. It has to be rejected on
+     * the character rather than on emptiness: Shift arrives here with a
+     * text of one NUL under the offscreen platform plugin, which is not
+     * empty, so it used to fall through every case and hit the
+     * resetVimPendingState() at the end of the dispatch — clearing a
+     * count that was only half typed. `10G` went to the last line
+     * instead of line ten, and every counted command needing Shift was
+     * the same. See docs/adr/0082.
+     */
+    if (text.isEmpty() || text.at(0).isNull()) {
         return false;
     }
     QChar qc = text.at(0);
