@@ -57,6 +57,8 @@ void EditorViewport::resetVimPendingState() {
     m_vimPendingG = false;
     m_vimPendingFind = '\0';
     m_vimPendingReplace = false;
+    m_vimPendingMark = '\0';
+    m_vimPendingMacro = '\0';
 }
 
 /* '\n' counts as Blank, which is what lets w/b/e cross lines with no
@@ -803,6 +805,106 @@ QString EditorViewport::vimBlockGlyphAt(size_t cursor, int *width, AseHighlightC
 /* Returns true for every key Vim claims, including invalid-but-
  * swallowed ones; false only for keys outside its alphabet. See
  * docs/adr/0046 for the state table. */
+/* Recorded before dispatch, so a macro replays the keys as typed. The
+ * `q` that ends recording is dropped by vimStopRecordingMacro. */
+void EditorViewport::vimRecordMacroKey(QKeyEvent *event) {
+    if (m_macroRecording == '\0' || m_macroReplayDepth > 0) {
+        return;
+    }
+    RecordedKey recorded;
+    recorded.key = event->key();
+    recorded.mods = event->modifiers();
+    recorded.text = event->text();
+    m_macroBuffer.push_back(recorded);
+}
+
+void EditorViewport::vimStopRecordingMacro() {
+    if (m_macroRecording == '\0') {
+        return;
+    }
+    /* The `q` that stopped it was recorded a moment ago; replaying it
+     * would start a recording inside the macro. */
+    if (!m_macroBuffer.isEmpty()) {
+        m_macroBuffer.removeLast();
+    }
+    m_macros.insert(m_macroRecording, m_macroBuffer);
+    notify(NotifyLevel::Info, QStringLiteral("recorded @%1 (%2 keys)")
+                                   .arg(QChar(m_macroRecording))
+                                   .arg(m_macroBuffer.size()));
+    m_macroRecording = '\0';
+    m_macroBuffer.clear();
+}
+
+void EditorViewport::vimPlayMacro(char name, int count) {
+    auto it = m_macros.constFind(name);
+    if (it == m_macros.constEnd() || it->isEmpty()) {
+        notify(NotifyLevel::Warning, QStringLiteral("register %1 is empty").arg(QChar(name)));
+        return;
+    }
+    m_macroLastPlayed = name;
+
+    /* A macro may call itself; the budget is what stops one that never
+     * stops. Set once per outermost play so nesting shares it. */
+    if (m_macroReplayDepth == 0) {
+        m_macroReplayBudget = 200000;
+    }
+    if (m_macroReplayDepth > 32) {
+        /* Silently unwinding would look like the macro simply did less
+         * than it was asked to. */
+        notify(NotifyLevel::Warning, QStringLiteral("@%1 stopped: nested too deep").arg(QChar(name)));
+        return;
+    }
+
+    /* Copied: replaying may re-record this register, and iterating a
+     * container being written is how that ends badly. */
+    QVector<RecordedKey> keys = *it;
+    m_macroReplayDepth++;
+    for (int pass = 0; pass < count; ++pass) {
+        for (const RecordedKey &recorded : keys) {
+            if (m_macroReplayBudget-- <= 0) {
+                notify(NotifyLevel::Warning, QStringLiteral("@%1 stopped: too many keys")
+                                                   .arg(QChar(name)));
+                m_macroReplayDepth--;
+                return;
+            }
+            QKeyEvent replay(QEvent::KeyPress, recorded.key, recorded.mods, recorded.text);
+            keyPressEvent(&replay);
+        }
+    }
+    m_macroReplayDepth--;
+}
+
+/* (line, column), the same shape the jumplist stores, so an edit above
+ * a mark leaves it pointing at the old line number — see docs/adr/0097. */
+void EditorViewport::vimSetMark(char name) {
+    m_vimMarks.insert(name, qMakePair(cursorLine(), cursorColumn()));
+}
+
+void EditorViewport::vimJumpToMark(char name, bool exact) {
+    auto it = m_vimMarks.constFind(name);
+    if (it == m_vimMarks.constEnd()) {
+        notify(NotifyLevel::Warning, QStringLiteral("mark %1 not set").arg(QChar(name)));
+        return;
+    }
+
+    /* A mark jump is a jump: Ctrl+O comes back from it. */
+    recordJump();
+
+    int line = std::clamp(it->first, 1, std::max(1, static_cast<int>(m_lineStarts.size())));
+    if (exact) {
+        goToLineColumn(line, it->second);
+        return;
+    }
+    collapseToOneCursor();
+    size_t target = vimFirstNonBlank(line - 1);
+    m_cursors[0] = target;
+    m_selectionAnchors[0] = target;
+    resetVimPendingState();
+    ensureCursorVisible();
+    resetCaretBlink();
+    update();
+}
+
 void EditorViewport::vimRecordKey(QChar qc) {
     if (m_dotReplaying) {
         return;
@@ -1260,6 +1362,48 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
         return true;
     }
 
+    /* Mid-`q` or `@`: this key names the register. */
+    if (m_vimPendingMacro != '\0') {
+        char pending = m_vimPendingMacro;
+        m_vimPendingMacro = '\0';
+        int count = std::max(1, m_vimCount1) * std::max(1, m_vimCount2);
+        char name = qc.toLatin1();
+        if (pending == '@' && name == '@') {
+            name = m_macroLastPlayed; /* `@@` repeats the last one played */
+        }
+        resetVimPendingState();
+        if (name != '\0' && (qc.isLetterOrNumber() || pending == '@')) {
+            if (pending == 'q') {
+                m_macroRecording = name;
+                m_macroBuffer.clear();
+                notify(NotifyLevel::Info, QStringLiteral("recording @%1").arg(QChar(name)));
+            } else {
+                vimPlayMacro(name, count);
+            }
+        }
+        ensureCursorVisible();
+        update();
+        return true;
+    }
+
+    /* Mid-`m`, `` ` `` or `'`: this key names the mark, whatever it is. */
+    if (m_vimPendingMark != '\0') {
+        char pending = m_vimPendingMark;
+        m_vimPendingMark = '\0';
+        char name = qc.toLatin1();
+        if (name != '\0' && (qc.isLetter() || pending != 'm')) {
+            if (pending == 'm') {
+                vimSetMark(name);
+            } else {
+                vimJumpToMark(name, pending == '`');
+            }
+        }
+        resetVimPendingState();
+        ensureCursorVisible();
+        update();
+        return true;
+    }
+
     /* Mid-"g": resolved on the very next key, whatever it is. */
     if (m_vimPendingG) {
         m_vimPendingG = false;
@@ -1570,6 +1714,24 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
         }
         break;
     }
+    case 'q':
+        /* While recording, `q` is the stop key and takes no register. */
+        if (m_macroRecording != '\0') {
+            vimStopRecordingMacro();
+            break;
+        }
+        m_vimPendingMacro = 'q';
+        return;
+    case '@':
+        m_vimPendingMacro = '@';
+        return; /* the count belongs to the replay, so keep it */
+    case 'm':
+    case '`':
+    case '\'':
+        /* Early, like `r`: the mark's name is the next key, and the tail
+         * below would clear the pending flag before it arrived. */
+        m_vimPendingMark = c;
+        return;
     case 'r':
         m_vimPendingReplace = true;
         return; /* the count is still needed when the target arrives */

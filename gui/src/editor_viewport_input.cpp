@@ -215,6 +215,10 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         return;
     }
 
+    /* Before anything interprets it: a macro should replay the keys the
+     * user pressed, not the actions they turned into. */
+    vimRecordMacroKey(event);
+
     resetCaretBlink();
     dismissHover();
     if (handleCompletionPopupKey(event)) {

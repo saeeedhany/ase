@@ -117,6 +117,7 @@ nav:
     - adr/0094-what-startup-actually-costs.md
     - adr/0095-the-performance-baseline.md
     - adr/0096-one-server-per-language-and-project.md
+    - adr/0097-marks-and-macros.md
 
 theme:
   name: material

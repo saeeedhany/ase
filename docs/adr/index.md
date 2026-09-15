@@ -104,3 +104,4 @@ what changed.
 | [0094](0094-what-startup-actually-costs.md) | What startup actually costs |
 | [0095](0095-the-performance-baseline.md) | The performance baseline |
 | [0096](0096-one-server-per-language-and-project.md) | One server per language and project, not per buffer |
+| [0097](0097-marks-and-macros.md) | Marks and macros |

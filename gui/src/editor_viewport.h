@@ -7,6 +7,7 @@
 #include <QFont>
 #include <QFontMetrics>
 #include <QPointF>
+#include <QHash>
 #include <QPointer>
 #include <QString>
 #include <QVector>
@@ -422,6 +423,15 @@ private:
      * the edit, because that is the only form that composes: `c` + any
      * motion + any typed text needs no case of its own.
      */
+    /* Every key while recording, before dispatch — so a macro replays
+     * what was typed rather than what it was interpreted as. */
+    void vimRecordMacroKey(QKeyEvent *event);
+    void vimStopRecordingMacro();
+    void vimPlayMacro(char name, int count);
+    void vimSetMark(char name);
+    /* `exact` is the backtick form (line and column); false is the quote
+     * form, which lands on the line's first non-blank. */
+    void vimJumpToMark(char name, bool exact);
     void vimRecordKey(QChar qc);
     /* Called where a command actually changes the buffer, which is what
      * makes it repeatable. Yanks and motions do not call it. */
@@ -687,6 +697,28 @@ private:
     bool m_vimPendingG = false;           /* mid-"gg" sequence */
     char m_vimPendingFind = '\0'; /* awaiting the char to search for */
     bool m_vimPendingReplace = false; /* mid-`r`, awaiting the new char */
+    /* 'm' awaiting a letter to set, '`' or '\'' awaiting one to jump to. */
+    char m_vimPendingMark = '\0';
+    /* 'q' awaiting a register to record into, '@' awaiting one to play. */
+    char m_vimPendingMacro = '\0';
+
+    /* Enough to replay faithfully: Escape and Backspace carry no text,
+     * so a macro of plain characters would lose them. */
+    struct RecordedKey {
+        int key = 0;
+        Qt::KeyboardModifiers mods = Qt::NoModifier;
+        QString text;
+    };
+    QHash<char, QVector<RecordedKey>> m_macros;
+    QVector<RecordedKey> m_macroBuffer;
+    char m_macroRecording = '\0';
+    char m_macroLastPlayed = '\0';
+    /* Recursion is allowed; running away is not. See docs/adr/0097. */
+    int m_macroReplayDepth = 0;
+    int m_macroReplayBudget = 0;
+    /* Buffer-local, keyed by letter, as (line, column) 1-based — the
+     * same shape the jumplist stores. See docs/adr/0097. */
+    QHash<char, QPair<int, int>> m_vimMarks;
     bool m_vimReplacing = false;      /* in `R` Replace mode */
     bool m_undoSessionOpen = false;   /* an insert session owns the group */
     /* What each typed character overwrote, newest last, so Backspace can
