@@ -58,6 +58,8 @@ private:
 
     void buildSections();
     void applySearch(const QString &query);
+    /* Held so restyleSections can drop non-matching rows. */
+    QString m_searchNeedle;
     void setSectionExpanded(int index, bool expanded);
     void restyleSections();
 

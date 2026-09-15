@@ -214,6 +214,7 @@ private:
      * this buffer's own file. */
     void rebuildConfig();
     void rebuildSyntax();
+    void openConfigFile();
     /* Rebuilds the font and its cached metrics; touches no config. */
     void rebuildFont(int pointSize);
     /* Ctrl+=/Ctrl+-. A hot-reload doesn't clear an active override;

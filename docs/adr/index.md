@@ -95,3 +95,4 @@ what changed.
 | [0085](0085-a-second-grammar-for-cpp.md) | A second grammar for C++ |
 | [0086](0086-one-language-gate-and-per-language-keys.md) | One language gate, and per-language config keys |
 | [0087](0087-project-config-says-what-files-mean.md) | A project file says what files mean, never what to run |
+| [0088](0088-config-documents-itself.md) | Config keys document themselves |

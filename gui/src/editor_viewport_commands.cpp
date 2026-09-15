@@ -62,6 +62,8 @@ void EditorViewport::runCommand(const QString &command) {
         compile();
     } else if (trimmed == QLatin1String("output")) {
         toggleOutputPanel();
+    } else if (trimmed == QLatin1String("config")) {
+        openConfigFile();
     } else {
         /* Not gated on vim_mode. vimGotoLine is safe either way: no
          * operator can be pending, since ex-commands bypass Vim's own
@@ -79,6 +81,22 @@ void EditorViewport::runCommand(const QString &command) {
         /* Silence made a typo look like a command that ran and did
          * nothing. */
     }
+}
+
+/* The answer to "where is the config file". It is written on first run,
+ * so it is nearly always already there; re-asking covers the case where
+ * it was deleted. */
+void EditorViewport::openConfigFile() {
+    if (m_configPath.isEmpty()) {
+        notify(NotifyLevel::Error, QStringLiteral("no config path on this platform"));
+        return;
+    }
+    QByteArray path = m_configPath.toUtf8();
+    if (!ase_config_write_default_if_missing(path.constData())) {
+        notify(NotifyLevel::Error, QStringLiteral("cannot create %1").arg(m_configPath));
+        return;
+    }
+    requestOpenFile(m_configPath);
 }
 
 /* Checked last, so a plugin can't shadow a built-in.

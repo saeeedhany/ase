@@ -108,6 +108,7 @@ nav:
     - adr/0085-a-second-grammar-for-cpp.md
     - adr/0086-one-language-gate-and-per-language-keys.md
     - adr/0087-project-config-says-what-files-mean.md
+    - adr/0088-config-documents-itself.md
 
 theme:
   name: material

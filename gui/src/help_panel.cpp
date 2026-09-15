@@ -1,6 +1,8 @@
 #include "help_panel.h"
 
 #include "editor_viewport.h"
+
+#include "ase/config.h"
 #include "letter_badge.h"
 #include "smooth_line_edit.h"
 #include "scrollbar_style.h"
@@ -22,8 +24,9 @@ namespace {
  * Maintained by hand, not generated from the keybinding dispatch — see
  * the class doc comment. */
 struct HelpRow {
-    const char *keys;
-    const char *description;
+    QString keys; /* rich text: a literal row writes its own entities, a
+                   * generated one is escaped at the point it is built */
+    QString description;
 };
 struct HelpSection {
     const char *title;
@@ -31,6 +34,22 @@ struct HelpSection {
     const char *note;
     QVector<HelpRow> rows;
 };
+
+/* Built from core's key table rather than written out here, so a key
+ * cannot be added without this list showing it — see docs/adr/0088. */
+HelpSection configSection() {
+    size_t count = 0;
+    const AseConfigKeyDoc *docs = ase_config_key_docs(&count);
+
+    QVector<HelpRow> rows;
+    rows.reserve(static_cast<int>(count) + 1);
+    rows.push_back({QStringLiteral(":config"), QStringLiteral("Open your config file")});
+    for (size_t i = 0; i < count; i++) {
+        rows.push_back({QString::fromUtf8(docs[i].key).toHtmlEscaped(),
+                        QString::fromUtf8(docs[i].summary).toHtmlEscaped()});
+    }
+    return {"Configuration", "~/.config/ase/config.ase &mdash; saved changes apply at once", rows};
+}
 
 QVector<HelpSection> helpSections() {
     return {
@@ -105,6 +124,7 @@ QVector<HelpSection> helpSections() {
          {{"Ctrl+; &nbsp;(or : in Vim mode)", "Open command line"},
           {":w &nbsp; :q", "Save / quit"},
           {":compile &nbsp; :output", "Build / toggle the output panel"},
+          {":config", "Open your config file"},
           {":42", "Jump to line 42"},
           {":&lt;name&gt;", "Run a plugin command"}}},
 
@@ -119,6 +139,8 @@ QVector<HelpSection> helpSections() {
           {"Ctrl+J / Ctrl+K", "Move down / up any list (completion, panels)"},
           {"Esc", "Dismiss completion"},
           {"(automatic)", "Hover info when the pointer rests on a symbol"}}},
+
+        configSection(),
 
         {"Panels", nullptr,
          {{"F1", "This panel"},
@@ -202,7 +224,7 @@ void HelpPanel::buildSections() {
         section.title = QString::fromUtf8(source.title);
         section.note = source.note != nullptr ? QString::fromUtf8(source.note) : QString();
         for (const HelpRow &row : source.rows) {
-            section.rows.push_back({QString::fromUtf8(row.keys), QString::fromUtf8(row.description)});
+            section.rows.push_back({row.keys, row.description});
         }
 
         section.header = new QWidget(m_sectionsLayout->parentWidget());
@@ -242,10 +264,13 @@ void HelpPanel::setSectionExpanded(int index, bool expanded) {
 }
 
 /* Matches either column plus the section title, so "vim" finds the
- * whole block. Searching force-expands matches: collapsed state is a
- * browsing preference, not a filter. */
+ * whole block. A section whose title does not match is narrowed to the
+ * rows that do, which is what makes a long list searchable rather than
+ * merely locatable. Searching force-expands matches: collapsed state is
+ * a browsing preference, not a filter. */
 void HelpPanel::applySearch(const QString &query) {
     QString needle = query.trimmed().toLower();
+    m_searchNeedle = needle;
     for (Section &section : m_sections) {
         bool titleMatches = needle.isEmpty() || section.title.toLower().contains(needle);
         int matches = 0;
@@ -369,8 +394,15 @@ void HelpPanel::restyleSections() {
         }
         section.titleLabel->setText(header);
 
+        bool titleMatches =
+            m_searchNeedle.isEmpty() || section.title.toLower().contains(m_searchNeedle);
+
         QString rows = QStringLiteral("<table cellspacing=\"0\" cellpadding=\"3\" width=\"100%\">");
         for (const QPair<QString, QString> &row : section.rows) {
+            if (!titleMatches && !row.first.toLower().contains(m_searchNeedle) &&
+                !row.second.toLower().contains(m_searchNeedle)) {
+                continue;
+            }
             rows += QStringLiteral("<tr><td width=\"215\" style=\"color:%1;\">%2</td>"
                                     "<td style=\"color:%3;\">%4</td></tr>")
                          .arg(dim, row.first, strong, row.second);

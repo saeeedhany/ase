@@ -311,6 +311,76 @@ static void test_find_project_file_walks_up(void) {
     ase_test_rmdir("test_proj");
 }
 
+static void test_key_docs_cover_everything(void) {
+    size_t count = 0;
+    const AseConfigKeyDoc *docs = ase_config_key_docs(&count);
+    CHECK(docs != NULL);
+    CHECK(count > 0);
+
+    AseConfig *config = ase_config_create_default();
+    CHECK(config != NULL);
+
+    for (size_t i = 0; i < count; i++) {
+        CHECK(docs[i].key != NULL && docs[i].key[0] != '\0');
+        /* The reason the table exists: no key without a description. */
+        CHECK(docs[i].summary != NULL && docs[i].summary[0] != '\0');
+
+        bool is_family = strchr(docs[i].key, '<') != NULL;
+        if (!is_family && docs[i].value != NULL) {
+            const char *got = ase_config_get_string(config, docs[i].key);
+            CHECK(got != NULL && strcmp(got, docs[i].value) == 0);
+        }
+        /* The table and the allowlist must agree, or the help panel
+         * would describe a scope the parser does not enforce. */
+        char sample[128];
+        snprintf(sample, sizeof(sample), "%s", docs[i].key);
+        char *angle = strchr(sample, '<');
+        if (angle != NULL) {
+            *angle = 'x';
+            char *close = strchr(sample, '>');
+            if (close != NULL) {
+                memmove(angle + 1, close + 1, strlen(close + 1) + 1);
+            }
+        }
+        CHECK(ase_config_key_allowed_in_project(sample) == docs[i].project);
+    }
+
+    ase_config_destroy(config);
+}
+
+/* The starter file is what a new user reads, so a key missing from it
+ * is a key nobody can discover. */
+static void test_starter_file_documents_every_key(void) {
+    const char *path = "test_starter_doc.tmp";
+    remove(path);
+    CHECK(ase_config_write_default_if_missing(path));
+
+    FILE *f = fopen(path, "r");
+    CHECK(f != NULL);
+    static char text[16384];
+    size_t len = fread(text, 1, sizeof(text) - 1, f);
+    text[len] = '\0';
+    fclose(f);
+
+    size_t count = 0;
+    const AseConfigKeyDoc *docs = ase_config_key_docs(&count);
+    for (size_t i = 0; i < count; i++) {
+        /* A family is documented by its prefix, e.g. "filetype." */
+        char needle[128];
+        snprintf(needle, sizeof(needle), "%s", docs[i].key);
+        char *angle = strchr(needle, '<');
+        if (angle != NULL) {
+            *angle = '\0';
+        }
+        if (strstr(text, needle) == NULL) {
+            printf("starter file does not mention '%s'\n", docs[i].key);
+            CHECK(0);
+        }
+    }
+
+    remove(path);
+}
+
 int main(void) {
     test_defaults();
     test_load_missing_file_keeps_defaults();
@@ -325,6 +395,8 @@ int main(void) {
     test_project_overlay_refuses_commands();
     test_project_overlay_missing_file();
     test_find_project_file_walks_up();
+    test_key_docs_cover_everything();
+    test_starter_file_documents_every_key();
 
     printf("all config tests passed\n");
     return 0;

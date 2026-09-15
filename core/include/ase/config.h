@@ -18,6 +18,20 @@ extern "C" {
 
 typedef struct AseConfig AseConfig;
 
+/* One documented config key, or one family of them (`key` then reads
+ * "lang.<id>.lsp"). The defaults, the starter file and the editor's own
+ * reference all come from this one table, so a key cannot exist without
+ * a line saying what it does — see docs/adr/0088. */
+typedef struct {
+    const char *key;
+    const char *value; /* the shipped default; NULL if unset by default */
+    const char *summary;
+    bool project; /* whether a project .ase.conf may set it */
+} AseConfigKeyDoc;
+
+/* The table, in the order it should be presented. Never NULL. */
+const AseConfigKeyDoc *ase_config_key_docs(size_t *count);
+
 /* The shipped defaults (background/text colors, font family/size) —
  * see docs/adr/0008, decision 3, for the exact values and why. */
 AseConfig *ase_config_create_default(void);

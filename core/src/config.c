@@ -83,34 +83,47 @@ static char *trim(char *s) {
     return s;
 }
 
+static const AseConfigKeyDoc kKeyDocs[] = {
+    {"background", "#282828", "Page colour. #RRGGBB or #RRGGBBAA.", false},
+    {"text", "#F5E6C8", "Text colour.", false},
+    {"selection", "#45403866", "Selection highlight.", false},
+    {"find_match", "#45403899", "The current find/replace match.", false},
+    {"panel_background", "#282828E6", "Floating panels (find, open, help).", false},
+    {"diagnostic_error", "#E06C75", "Language-server error underline.", false},
+    {"diagnostic_warning", "#E5C07B", "Language-server warning underline.", false},
+    {"syntax_type", "#689d6a", "Types. One of only two syntax colours.", false},
+    {"syntax_string", "#d79921", "String literals. The other one.", false},
+    {"font_family", "monospace", "Editor font.", false},
+    {"font_size", "11", "Point size. Ctrl+= / Ctrl+- override it live.", false},
+    {"vim_mode", "true", "Modal editing. false for always-insert.", false},
+    {"animations", "false", "true for a smooth caret fade instead of a blink.", false},
+    {"line_numbers", "absolute", "off, absolute, or relative.", false},
+    {"build_command", NULL, ":compile runs this; %f is the current file.", false},
+    {"lsp_command", NULL, "Language server for any language without its own.", false},
+    {"lang.<id>.lsp", NULL, "Language server for one language, e.g. lang.cpp.lsp.", false},
+    {"filetype.<suffix>", NULL, "What a suffix means, e.g. filetype.h = cpp.", true},
+};
+
+const AseConfigKeyDoc *ase_config_key_docs(size_t *count) {
+    if (count != NULL) {
+        *count = sizeof(kKeyDocs) / sizeof(kKeyDocs[0]);
+    }
+    return kKeyDocs;
+}
+
 AseConfig *ase_config_create_default(void) {
     AseConfig *config = (AseConfig *)calloc(1, sizeof(AseConfig));
     if (config == NULL) {
         return NULL;
     }
 
-    config_set(config, "background", "#282828");
-    config_set(config, "text", "#F5E6C8");
-    config_set(config, "selection", "#45403866");
-    config_set(config, "find_match", "#45403899");
-    config_set(config, "panel_background", "#282828E6");
-    /* Diagnostic severity colors — the one deliberate departure from
-     * the "one font color" pillar (see docs/adr/0029): error/warning
-     * color-coding is too strong and too widely expected a convention
-     * to fold into opacity/weight variation the way syntax highlighting
-     * does. */
-    config_set(config, "diagnostic_error", "#E06C75");
-    config_set(config, "diagnostic_warning", "#E5C07B");
-    /* The two deliberate departures from the "one font color" pillar —
-     * see docs/adr/0048. */
-    config_set(config, "syntax_type", "#689d6a");
-    config_set(config, "syntax_string", "#d79921");
-    config_set(config, "font_family", "monospace");
-    config_set(config, "font_size", "11");
-    /* On by default — see docs/adr/0050 for why this reverses ADR
-     * 0046's original "opt-in, changes what every keystroke does"
-     * reasoning. */
-    config_set(config, "vim_mode", "true");
+    for (size_t i = 0; i < sizeof(kKeyDocs) / sizeof(kKeyDocs[0]); i++) {
+        /* A family placeholder has no key to set, and an unset key has
+         * no value to set it to. */
+        if (kKeyDocs[i].value != NULL && strchr(kKeyDocs[i].key, '<') == NULL) {
+            config_set(config, kKeyDocs[i].key, kKeyDocs[i].value);
+        }
+    }
 
     return config;
 }
