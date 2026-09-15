@@ -10,6 +10,7 @@
 #include "queries_embed.h"
 
 extern const TSLanguage *tree_sitter_c(void);
+extern const TSLanguage *tree_sitter_cpp(void);
 
 struct AseSyntax {
     TSParser *parser;
@@ -103,7 +104,7 @@ static AseHighlightCapture capture_from_name(const char *name, uint32_t len) {
     return ASE_HL_NONE;
 }
 
-AseSyntax *ase_syntax_create_c(void) {
+static AseSyntax *syntax_create(const TSLanguage *language, const char *query_src, size_t query_len) {
     AseSyntax *syntax = (AseSyntax *)calloc(1, sizeof(AseSyntax));
     if (syntax == NULL) {
         return NULL;
@@ -115,7 +116,6 @@ AseSyntax *ase_syntax_create_c(void) {
         return NULL;
     }
 
-    const TSLanguage *language = tree_sitter_c();
     if (!ts_parser_set_language(syntax->parser, language)) {
         ts_parser_delete(syntax->parser);
         free(syntax);
@@ -124,9 +124,7 @@ AseSyntax *ase_syntax_create_c(void) {
 
     uint32_t error_offset;
     TSQueryError error_type;
-    syntax->query = ts_query_new(language, ASE_C_HIGHLIGHTS_QUERY,
-                                  (uint32_t)(sizeof(ASE_C_HIGHLIGHTS_QUERY) - 1),
-                                  &error_offset, &error_type);
+    syntax->query = ts_query_new(language, query_src, (uint32_t)query_len, &error_offset, &error_type);
     if (syntax->query == NULL) {
         ts_parser_delete(syntax->parser);
         free(syntax);
@@ -158,6 +156,17 @@ AseSyntax *ase_syntax_create_c(void) {
     }
 
     return syntax;
+}
+
+AseSyntax *ase_syntax_create(AseLanguage language) {
+    switch (language) {
+    case ASE_LANG_C:
+        return syntax_create(tree_sitter_c(), ASE_C_HIGHLIGHTS_QUERY, sizeof(ASE_C_HIGHLIGHTS_QUERY) - 1);
+    case ASE_LANG_CPP:
+        return syntax_create(tree_sitter_cpp(), ASE_CPP_HIGHLIGHTS_QUERY,
+                              sizeof(ASE_CPP_HIGHLIGHTS_QUERY) - 1);
+    }
+    return NULL;
 }
 
 void ase_syntax_destroy(AseSyntax *syntax) {

@@ -35,9 +35,14 @@ typedef struct {
 
 typedef struct AseSyntax AseSyntax;
 
-/* Only C is supported in v1 (docs/adr/0007, decision 3). Returns NULL on
- * allocation failure. */
-AseSyntax *ase_syntax_create_c(void);
+typedef enum {
+    ASE_LANG_C,
+    ASE_LANG_CPP,
+} AseLanguage;
+
+/* NULL on allocation failure or an unknown language. Each language costs
+ * a compiled-in grammar, so the set stays short — see docs/adr/0085. */
+AseSyntax *ase_syntax_create(AseLanguage language);
 
 void ase_syntax_destroy(AseSyntax *syntax);
 

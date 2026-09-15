@@ -92,3 +92,4 @@ what changed.
 | [0082](0082-a-bare-modifier-must-not-clear-a-count.md) | A bare modifier must not clear a pending count |
 | [0083](0083-the-shorthand-operators.md) | The shorthand operators (`s`, `S`, `C`, `D`, `X`) |
 | [0084](0084-bracket-matching-and-word-search.md) | `%`, `*`/`#`, and where a search lands |
+| [0085](0085-a-second-grammar-for-cpp.md) | A second grammar for C++ |

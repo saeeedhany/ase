@@ -40,7 +40,11 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 
     QString suffix = QFileInfo(m_filePath).suffix().toLower();
     if (suffix == QLatin1String("c") || suffix == QLatin1String("h")) {
-        m_syntax = ase_syntax_create_c();
+        m_syntax = ase_syntax_create(ASE_LANG_C);
+    } else if (suffix == QLatin1String("cpp") || suffix == QLatin1String("cc") ||
+               suffix == QLatin1String("cxx") || suffix == QLatin1String("hpp") ||
+               suffix == QLatin1String("hh") || suffix == QLatin1String("hxx")) {
+        m_syntax = ase_syntax_create(ASE_LANG_CPP);
     }
 
     refreshCache();

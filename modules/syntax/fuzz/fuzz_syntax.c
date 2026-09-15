@@ -24,7 +24,7 @@ static void discard_span(void *user_data, AseHighlightSpan span) {
 int LLVMFuzzerInitialize(int *argc, char ***argv) {
     (void)argc;
     (void)argv;
-    g_syntax = ase_syntax_create_c();
+    g_syntax = ase_syntax_create(ASE_LANG_C);
     return 0;
 }
 

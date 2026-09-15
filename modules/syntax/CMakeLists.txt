@@ -20,7 +20,15 @@ FetchContent_Declare(tree_sitter_c
     GIT_TAG b780e47fc780ddc8da13afa35a3f4ed5c157823d
     SOURCE_SUBDIR do-not-configure-upstream-build
 )
-FetchContent_MakeAvailable(tree_sitter tree_sitter_c)
+# C++ has its own grammar rather than borrowing C's: the C parser on C++
+# leaves class/template/namespace unhighlighted and mis-colours ordinary
+# identifiers after `auto` and `&`. See docs/adr/0085.
+FetchContent_Declare(tree_sitter_cpp
+    GIT_REPOSITORY https://github.com/tree-sitter/tree-sitter-cpp.git
+    GIT_TAG v0.23.4
+    SOURCE_SUBDIR do-not-configure-upstream-build
+)
+FetchContent_MakeAvailable(tree_sitter tree_sitter_c tree_sitter_cpp)
 
 add_library(tree_sitter_runtime STATIC ${tree_sitter_SOURCE_DIR}/lib/src/lib.c)
 target_include_directories(tree_sitter_runtime
@@ -32,20 +40,25 @@ set_target_properties(tree_sitter_runtime PROPERTIES
     C_STANDARD_REQUIRED ON
 )
 
-add_library(tree_sitter_c_grammar STATIC ${tree_sitter_c_SOURCE_DIR}/src/parser.c)
-target_include_directories(tree_sitter_c_grammar PRIVATE ${tree_sitter_c_SOURCE_DIR}/src)
-target_link_libraries(tree_sitter_c_grammar PUBLIC tree_sitter_runtime)
-if(EXISTS ${tree_sitter_c_SOURCE_DIR}/src/scanner.c)
-    target_sources(tree_sitter_c_grammar PRIVATE ${tree_sitter_c_SOURCE_DIR}/src/scanner.c)
-endif()
+foreach(grammar c cpp)
+    add_library(tree_sitter_${grammar}_grammar STATIC ${tree_sitter_${grammar}_SOURCE_DIR}/src/parser.c)
+    target_include_directories(tree_sitter_${grammar}_grammar PRIVATE ${tree_sitter_${grammar}_SOURCE_DIR}/src)
+    target_link_libraries(tree_sitter_${grammar}_grammar PUBLIC tree_sitter_runtime)
+    if(EXISTS ${tree_sitter_${grammar}_SOURCE_DIR}/src/scanner.c)
+        target_sources(tree_sitter_${grammar}_grammar PRIVATE ${tree_sitter_${grammar}_SOURCE_DIR}/src/scanner.c)
+    endif()
+endforeach()
 
 # Embed src/queries/c_highlights.scm as a C string — see docs/adr/0007,
 # decision 4, for why this is our own query, not the grammar's.
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/src/queries/c_highlights.scm ASE_QUERY_RAW)
-string(REPLACE "\\" "\\\\" ASE_QUERY_RAW "${ASE_QUERY_RAW}")
-string(REPLACE "\"" "\\\"" ASE_QUERY_RAW "${ASE_QUERY_RAW}")
-string(REPLACE "\n" "\\n\"\n\"" ASE_QUERY_RAW "${ASE_QUERY_RAW}")
-set(ASE_C_HIGHLIGHTS_QUERY "\"${ASE_QUERY_RAW}\"")
+foreach(lang c cpp)
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/src/queries/${lang}_highlights.scm ASE_QUERY_RAW)
+    string(REPLACE "\\" "\\\\" ASE_QUERY_RAW "${ASE_QUERY_RAW}")
+    string(REPLACE "\"" "\\\"" ASE_QUERY_RAW "${ASE_QUERY_RAW}")
+    string(REPLACE "\n" "\\n\"\n\"" ASE_QUERY_RAW "${ASE_QUERY_RAW}")
+    string(TOUPPER ${lang} LANG_UPPER)
+    set(ASE_${LANG_UPPER}_HIGHLIGHTS_QUERY "\"${ASE_QUERY_RAW}\"")
+endforeach()
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/queries_embed.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/generated/queries_embed.h
@@ -59,12 +72,12 @@ target_include_directories(ase_syntax
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
-target_link_libraries(ase_syntax PRIVATE tree_sitter_c_grammar
+target_link_libraries(ase_syntax PRIVATE tree_sitter_c_grammar tree_sitter_cpp_grammar
         ase_warnings
 )
 
 if(ASE_ENABLE_SANITIZERS)
-    foreach(sanitized_target tree_sitter_runtime tree_sitter_c_grammar ase_syntax)
+    foreach(sanitized_target tree_sitter_runtime tree_sitter_c_grammar tree_sitter_cpp_grammar ase_syntax)
         target_compile_options(${sanitized_target} PUBLIC -fsanitize=address,undefined -fno-omit-frame-pointer -g)
         target_link_options(${sanitized_target} PUBLIC -fsanitize=address,undefined)
     endforeach()

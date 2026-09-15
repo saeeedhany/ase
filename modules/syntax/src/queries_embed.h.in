@@ -1,9 +1,12 @@
 #ifndef ASE_QUERIES_EMBED_H
 #define ASE_QUERIES_EMBED_H
 
-/* Generated at configure time from src/queries/c_highlights.scm — do not
+/* Generated at configure time from the .scm files in src/queries — do not
  * edit the build-dir copy, edit the .scm source and reconfigure. */
 static const char ASE_C_HIGHLIGHTS_QUERY[] =
 @ASE_C_HIGHLIGHTS_QUERY@;
+
+static const char ASE_CPP_HIGHLIGHTS_QUERY[] =
+@ASE_CPP_HIGHLIGHTS_QUERY@;
 
 #endif /* ASE_QUERIES_EMBED_H */

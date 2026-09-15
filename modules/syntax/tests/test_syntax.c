@@ -63,8 +63,8 @@ static void highlight_into(AseSyntax *syntax, const char *text, SpanList *list) 
  * So: `before` then `after` on a reused handle must equal `after` on a
  * fresh one. */
 static void check_incremental_matches_fresh(const char *label, const char *before, const char *after) {
-    AseSyntax *reused = ase_syntax_create_c();
-    AseSyntax *fresh = ase_syntax_create_c();
+    AseSyntax *reused = ase_syntax_create(ASE_LANG_C);
+    AseSyntax *fresh = ase_syntax_create(ASE_LANG_C);
     CHECK(reused != NULL);
     CHECK(fresh != NULL);
 
@@ -101,7 +101,7 @@ static void check_incremental_matches_fresh(const char *label, const char *befor
 }
 
 int main(void) {
-    AseSyntax *syntax = ase_syntax_create_c();
+    AseSyntax *syntax = ase_syntax_create(ASE_LANG_C);
     CHECK(syntax != NULL);
 
     const char *source =
@@ -195,6 +195,31 @@ int main(void) {
                                      "}\n");
     check_incremental_matches_fresh("emptied", base, "");
     check_incremental_matches_fresh("grown from empty", "", base);
+
+    /* A typo in a query makes ts_query_new fail silently; in the editor
+     * that looks like "no colours" rather than an error. */
+    AseSyntax *cpp = ase_syntax_create(ASE_LANG_CPP);
+    CHECK(cpp != NULL);
+    const char *cpp_src =
+        "namespace demo {\n"
+        "template <typename T> class Holder {\n"
+        "public:\n"
+        "    explicit Holder(T v) : m_v(v) {}\n"
+        "private:\n"
+        "    T m_v;\n"
+        "};\n"
+        "} // demo\n";
+    SpanList cpp_spans = {0};
+    ase_syntax_highlight(cpp, cpp_src, strlen(cpp_src), collect, &cpp_spans);
+    CHECK(cpp_spans.count > 0);
+    CHECK(has_span(&cpp_spans, cpp_src, ASE_HL_KEYWORD, "namespace"));
+    CHECK(has_span(&cpp_spans, cpp_src, ASE_HL_KEYWORD, "template"));
+    CHECK(has_span(&cpp_spans, cpp_src, ASE_HL_KEYWORD, "class"));
+    CHECK(has_span(&cpp_spans, cpp_src, ASE_HL_KEYWORD, "public"));
+    CHECK(has_span(&cpp_spans, cpp_src, ASE_HL_KEYWORD, "explicit"));
+    CHECK(has_span(&cpp_spans, cpp_src, ASE_HL_COMMENT, "// demo"));
+    free(cpp_spans.spans);
+    ase_syntax_destroy(cpp);
 
     printf("all syntax tests passed\n");
     return 0;
