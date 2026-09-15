@@ -97,3 +97,4 @@ what changed.
 | [0087](0087-project-config-says-what-files-mean.md) | A project file says what files mean, never what to run |
 | [0088](0088-config-documents-itself.md) | Config keys document themselves |
 | [0089](0089-closing-a-buffer.md) | `:q` closes a buffer, and closing stopped sleeping |
+| [0090](0090-scrolling-runs-at-frame-rate.md) | Scrolling runs at frame rate |

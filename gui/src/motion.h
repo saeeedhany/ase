@@ -50,7 +50,12 @@ constexpr double kEaseFactor = 0.68;
  * caret breathe cycle, the typing pop-in, all eased glide — advances one
  * step per tick of this, so it is the unit those tick counts are
  * expressed in. */
-constexpr int kTickMs = 30;
+constexpr int kTickMs = 16;
+
+/* Tick counts are derived from the duration they mean, not written as
+ * literals, so changing kTickMs re-rates the animation loop without
+ * silently re-timing every animation that counts in it. */
+constexpr int ticksFor(int ms) { return ms / kTickMs > 0 ? ms / kTickMs : 1; }
 
 /* Below this remaining fraction, an eased 0..1 opacity/reveal snaps to
  * its target instead of asymptotically crawling forever. */

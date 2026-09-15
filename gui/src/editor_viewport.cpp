@@ -55,8 +55,17 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     connect(m_blinkTimer, &QTimer::timeout, this, [this]() {
         m_idleTicks++;
         if (m_animationsEnabled) {
-            update(); /* the fade's phase is also idle-tick-driven — see docs/adr/0017 */
-        } else if (m_idleTicks % 12 == 0) { /* ~360ms at this 30ms tick — was 17 (~500ms), see docs/adr/0016, docs/adr/0027 */
+            /* The tick runs at frame rate so a scroll is smooth the
+             * moment it starts. Once nothing is moving, only the caret's
+             * slow breathe is left, which does not need every frame —
+             * and a full repaint that often is real idle cost. */
+            bool moving = m_renderedScrollLine != m_scrollLine || m_renderedScrollX != m_scrollX ||
+                          !m_typingAnimations.isEmpty() ||
+                          m_idleTicks < motion::ticksFor(400);
+            if (moving || m_idleTicks % 2 == 0) {
+                update(); /* the fade's phase is also idle-tick-driven — see docs/adr/0017 */
+            }
+        } else if (m_idleTicks % motion::ticksFor(360) == 0) { /* see docs/adr/0016, docs/adr/0027 */
             m_caretVisible = !m_caretVisible;
             update();
         }

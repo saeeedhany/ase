@@ -19,8 +19,8 @@ namespace {
  * does", and the only other caret in the app is the editor's own, whose
  * copy lives in its own renderer. If a third caret ever appears, that is
  * the moment to move them. */
-constexpr int kCaretAnimationTicks = 24;
-constexpr int kBlinkToggleTicks = 12;
+constexpr int kCaretAnimationTicks = motion::ticksFor(720);
+constexpr int kBlinkToggleTicks = motion::ticksFor(360);
 constexpr double kTwoPi = 6.283185307179586;
 
 /* Matches kCaretWidth in the editor's own internal header — the panels

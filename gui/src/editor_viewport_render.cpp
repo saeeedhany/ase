@@ -17,7 +17,7 @@
 
 namespace {
 /* Caret breathe cycle, in ticks of motion::kTickMs (~720ms). */
-constexpr int kCaretAnimationTicks = 24;
+constexpr int kCaretAnimationTicks = motion::ticksFor(720);
 constexpr double kTwoPi = 6.283185307179586;
 /* A typed character grows from 85% to 100% as it fades in. */
 constexpr double kTypingAnimationStartScale = 0.85;
@@ -38,6 +38,7 @@ using motion::kOpacitySnapThreshold;
 } // namespace
 
 void EditorViewport::paintEvent(QPaintEvent *) {
+
     updateAnimation();
 
     QPainter painter(this);

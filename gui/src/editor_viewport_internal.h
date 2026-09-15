@@ -13,6 +13,8 @@
  * header is a hint that two files are reaching into the same concern.
  */
 
+#include "motion.h"
+
 /* Caret/cursor width in pixels. Shared because the renderer draws with
  * it and ensureCursorVisible() reserves horizontal scroll margin for
  * it. */
@@ -23,7 +25,7 @@ constexpr int kCaretWidth = 2;
  * sluggish delay before typed text looks finished. See docs/adr/0049.
  * Shared because insertText() stamps entries with it and the renderer
  * measures their progress against it. */
-constexpr int kTypingAnimationTicks = 4;
+constexpr int kTypingAnimationTicks = motion::ticksFor(120);
 
 /* A UTF-8 continuation byte is 10xxxxxx — i.e. not the first byte of a
  * codepoint. Every "step one character, not one byte" walk in this
