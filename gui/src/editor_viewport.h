@@ -432,6 +432,9 @@ private:
     /* `exact` is the backtick form (line and column); false is the quote
      * form, which lands on the line's first non-blank. */
     void vimJumpToMark(char name, bool exact);
+    /* `d'a` and ``d`a``: the mark is the motion's target rather than a
+     * place to go. Linewise for `'`, charwise-exclusive for `` ` ``. */
+    void vimApplyOperatorToMark(char name, bool exact);
     void vimRecordKey(QChar qc);
     /* Called where a command actually changes the buffer, which is what
      * makes it repeatable. Yanks and motions do not call it. */

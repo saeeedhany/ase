@@ -108,6 +108,7 @@ QVector<HelpSection> helpSections() {
           {"m &lt;letter&gt;", "Set a mark here"},
           {"` &lt;letter&gt;", "Jump to a mark, exact line and column"},
           {"' &lt;letter&gt;", "Jump to a mark's line, first non-blank"},
+          {"d' &nbsp; d` &nbsp; y' &nbsp; c'", "Operate from the cursor to a mark"},
           {"q &lt;letter&gt; ... q", "Record a macro into a register"},
           {"@ &lt;letter&gt; &nbsp; @@", "Play a macro / replay the last one"},
           {"v / V", "Visual / visual line mode"},

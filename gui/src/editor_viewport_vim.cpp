@@ -880,6 +880,32 @@ void EditorViewport::vimSetMark(char name) {
     m_vimMarks.insert(name, qMakePair(cursorLine(), cursorColumn()));
 }
 
+void EditorViewport::vimApplyOperatorToMark(char name, bool exact) {
+    auto it = m_vimMarks.constFind(name);
+    if (it == m_vimMarks.constEnd()) {
+        notify(NotifyLevel::Warning, QStringLiteral("mark %1 not set").arg(QChar(name)));
+        resetVimPendingState();
+        return;
+    }
+    int lineCount = std::max(1, static_cast<int>(m_lineStarts.size()));
+    int markLine = std::clamp(it->first, 1, lineCount);
+
+    if (!exact) {
+        /* `'` is linewise and inclusive of both ends. */
+        int cursorLine = lineForOffset(m_cursors[0]);
+        int first = std::min(cursorLine, markLine - 1);
+        int last = std::max(cursorLine, markLine - 1);
+        vimApplyPendingOperatorLinewise(first, last - first + 1);
+        return;
+    }
+
+    /* `` ` `` is charwise and exclusive: the byte under the later of the
+     * two positions survives. */
+    size_t markOffset = offsetForLineColumn(markLine - 1, it->second - 1);
+    size_t cursor = m_cursors[0];
+    vimApplyPendingOperatorCharwise(std::min(cursor, markOffset), std::max(cursor, markOffset));
+}
+
 void EditorViewport::vimJumpToMark(char name, bool exact) {
     auto it = m_vimMarks.constFind(name);
     if (it == m_vimMarks.constEnd()) {
@@ -1394,6 +1420,8 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
         if (name != '\0' && (qc.isLetter() || pending != 'm')) {
             if (pending == 'm') {
                 vimSetMark(name);
+            } else if (m_vimPendingOperator != '\0') {
+                vimApplyOperatorToMark(name, pending == '`');
             } else {
                 vimJumpToMark(name, pending == '`');
             }
@@ -1638,6 +1666,13 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
         return;
     }
 
+    /* Before the guard below: a mark is a motion, so `d'a` has to keep
+     * the pending operator rather than have it abandoned here. */
+    if (c == '`' || c == '\'') {
+        m_vimPendingMark = c;
+        return;
+    }
+
     if (m_vimPendingOperator != '\0') {
         /* Operator pending, but this is neither a repeat nor a motion. */
         resetVimPendingState();
@@ -1726,8 +1761,6 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
         m_vimPendingMacro = '@';
         return; /* the count belongs to the replay, so keep it */
     case 'm':
-    case '`':
-    case '\'':
         /* Early, like `r`: the mark's name is the next key, and the tail
          * below would clear the pending flag before it arrived. */
         m_vimPendingMark = c;

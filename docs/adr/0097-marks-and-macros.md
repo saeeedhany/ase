@@ -87,9 +87,33 @@ buffer-local like the lowercase ones rather than global as vim has them.
 A global mark has to name a file as well as a position, which is the
 jumplist's problem too and should be solved once for both.
 
-Marks are not yet usable as operator targets — `d'a` and `y`a` do not
-work, because operators take a motion and a mark is not wired as one.
-That is a smaller change than it looks and is the obvious follow-up.
+### Marks as operator targets
+
+Added immediately after the above, because a mark you cannot delete to
+is half a mark. `'` is linewise and inclusive of both ends; `` ` `` is
+charwise and exclusive, so the byte under the later position survives.
+Both reuse the operator helpers the other motions already use.
+
+Checked against vim on the same file, mark at (2,5), cursor at (4,6):
+
+| keys | result |
+|---|---|
+| `d'a` | `one AAA` / `five EEE` |
+| ``d`a`` | `one AAA` / `two DDD` / `five EEE` |
+| `c'a` then `XX` | `one AAA` / `XX` / `five EEE` |
+| `y'a`, `G`, `p` | the three lines appended at the end |
+
+All four byte-identical to vim.
+
+The wiring was not where it looked. `vimApplyNormalKey` abandons a
+pending operator before its switch — *"operator pending, but this is
+neither a repeat nor a motion"* — so `'` reached that guard and the `d`
+was discarded before the mark case could run. A mark motion has to be
+recognised **above** that guard, which is the sort of thing a
+measurement finds in a minute and reading finds in an hour: the keys
+arrived correctly, the switch was correct, and neither was the problem.
+
+An operator over a mark that was never set changes nothing and says so.
 
 Macros record what reached the viewport, so keys handled by the window
 before it — `Ctrl+Tab`, `Ctrl+W`, `Ctrl+N`, the jumplist bindings — are
