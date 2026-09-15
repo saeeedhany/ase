@@ -1,5 +1,8 @@
 #include "editor_viewport.h"
 
+#include "lsp_registry.h"
+#include "project_files.h"
+
 #include "editor_viewport_internal.h"
 
 #include "completion_popup.h"
@@ -52,9 +55,6 @@ QString extractHoverText(const AseJsonValue *contents) {
 } // namespace
 
 namespace {
-void lspDiagnosticsTrampoline(void *user_data, const char *uri, const AseLspDiagnostic *diagnostics, size_t count) {
-    static_cast<EditorViewport *>(user_data)->applyLspDiagnostics(uri, diagnostics, count);
-}
 void lspCompletionTrampoline(void *user_data, const AseJsonValue *result, const char *error_message) {
     static_cast<EditorViewport *>(user_data)->applyLspCompletion(result, error_message);
 }
@@ -66,10 +66,9 @@ void lspDefinitionTrampoline(void *user_data, const AseJsonValue *result, const 
 }
 } // namespace
 
-/* One-shot, the first time this buffer is shown. The server is kept
- * alive on switch-away: restarting clangd costs a reindex, and
- * switching is the common action. One project-wide server is the real
- * fix for N files meaning N servers. See docs/adr/0029. */
+/* One-shot, the first time this buffer is shown. The server itself is
+ * shared with every other buffer in the same language and project, so
+ * this only joins one — see docs/adr/0096. */
 void EditorViewport::onActivated() {
     setFocus();
     if (m_lspActivated) {
@@ -110,71 +109,63 @@ void EditorViewport::startLspClientIfConfigured() {
     if (lspCommand == nullptr) {
         lspCommand = ase_config_get_string(m_config, "lsp_command");
     }
-    if (lspCommand == nullptr || m_filePath.isEmpty()) {
+    if (lspCommand == nullptr || m_filePath.isEmpty() || m_lspRegistry == nullptr) {
         /* Every packaged install starts here, since lsp_command ships
          * commented out. The silence read as "LSP is broken". */
         m_lspServerName.clear();
         setLspState(LspState::Unconfigured);
         return;
     }
-    m_lspServerName = QFileInfo(QString::fromLocal8Bit(lspCommand)).fileName();
 
-    const char *argv[] = {lspCommand, nullptr};
     /* QUrl::fromLocalFile on a relative path yields a URI clangd
      * rejects outright, silently breaking every LSP feature. */
-    m_lspUri = QUrl::fromLocalFile(QFileInfo(m_filePath).absoluteFilePath()).toString();
-    m_lspClient = ase_lsp_client_start(argv, nullptr);
+    QString absolute = QFileInfo(m_filePath).absoluteFilePath();
+    m_lspUri = QUrl::fromLocalFile(absolute).toString();
+
+    /* Buffers in the same project share one server, so the root has to
+     * be the project's, not the file's. See docs/adr/0096. */
+    QString root = project::rootFor(QFileInfo(absolute).absolutePath());
+    m_lspClient = m_lspRegistry->acquire(this, m_lspLanguageId,
+                                          QString::fromLocal8Bit(lspCommand), root);
     if (m_lspClient == nullptr) {
-        /* Missing binary or timed-out handshake; indistinguishable
-         * here, and the fix is the same either way. */
-        setLspState(LspState::Failed);
-        /* The message says what to do; the segment says what is.
-         * Identical wording would read as a duplicate rather than as two
-         * layers. */
-        notify(NotifyLevel::Error,
-               QStringLiteral("%1 not found — check lsp_command").arg(m_lspServerName));
+        notify(NotifyLevel::Error, QStringLiteral("%1 not found — check lang.%2.lsp")
+                                        .arg(m_lspServerName, m_lspLanguageId));
         return;
     }
-    /* Spawned, not yet handshaken. pollLsp() promotes this to Running
-     * when the server answers, or to Failed when it never does —
-     * see docs/adr/0093. didOpen below queues until then. */
-    setLspState(LspState::Starting);
 
-    ase_lsp_client_set_diagnostics_callback(m_lspClient, lspDiagnosticsTrampoline, this);
     ase_lsp_client_did_open(m_lspClient, m_lspUri.toUtf8().constData(),
                              m_lspLanguageId.toUtf8().constData(), m_cache.constData());
     m_lspVersion = 1;
 }
 
-void EditorViewport::checkLspAlive() {
-    if (m_lspState != LspState::Running || m_lspClient == nullptr) {
-        return;
-    }
-    if (ase_lsp_client_is_alive(m_lspClient)) {
-        return;
-    }
-    setLspState(LspState::Stopped);
-    notify(NotifyLevel::Error, QStringLiteral("%1 stopped — no diagnostics").arg(m_lspServerName));
-}
-
-void EditorViewport::pollLsp() {
-    if (m_lspClient == nullptr) {
-        return;
-    }
-    ase_lsp_client_poll(m_lspClient);
-
-    if (m_lspState != LspState::Starting) {
-        return;
-    }
-    if (ase_lsp_client_is_ready(m_lspClient)) {
-        setLspState(LspState::Running);
-    } else if (!ase_lsp_client_is_alive(m_lspClient)) {
-        setLspState(LspState::Failed);
-        notify(NotifyLevel::Error,
-               QStringLiteral("%1 not found — check lang.%2.lsp")
-                   .arg(m_lspServerName, m_lspLanguageId));
+/* The registry owns the state; this buffer only displays it. A server
+ * that fails after several buffers joined it reports to all of them. */
+void EditorViewport::onLspStateChanged(LspState state, const QString &serverName) {
+    m_lspServerName = serverName;
+    LspState previous = m_lspState;
+    setLspState(state);
+    if (state == LspState::Failed && previous == LspState::Starting) {
+        notify(NotifyLevel::Error, QStringLiteral("%1 not found — check lang.%2.lsp")
+                                        .arg(serverName, m_lspLanguageId));
+    } else if (state == LspState::Stopped) {
+        notify(NotifyLevel::Error, QStringLiteral("%1 stopped — no diagnostics").arg(serverName));
     }
 }
+
+/* Lets the shared server forget this document; the server itself stays
+ * up for whatever other buffers are using it. */
+void EditorViewport::releaseLspClient() {
+    if (m_lspRegistry == nullptr) {
+        return;
+    }
+    if (m_lspClient != nullptr && !m_lspUri.isEmpty()) {
+        ase_lsp_client_did_close(m_lspClient, m_lspUri.toUtf8().constData());
+    }
+    m_lspRegistry->release(this);
+    m_lspClient = nullptr;
+}
+
+
 
 /* Full-document sync — see ase_lsp_client_did_change's own doc
  * comment. Called from refreshCache(), the one choke point every edit

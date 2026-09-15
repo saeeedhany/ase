@@ -116,6 +116,7 @@ nav:
     - adr/0093-the-handshake-is-not-awaited.md
     - adr/0094-what-startup-actually-costs.md
     - adr/0095-the-performance-baseline.md
+    - adr/0096-one-server-per-language-and-project.md
 
 theme:
   name: material

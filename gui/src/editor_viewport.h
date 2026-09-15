@@ -7,6 +7,7 @@
 #include <QFont>
 #include <QFontMetrics>
 #include <QPointF>
+#include <QPointer>
 #include <QString>
 #include <QVector>
 #include <QWidget>
@@ -67,14 +68,8 @@ class HoverPanel;
  */
 
 /* For the status bar's language-server segment. See docs/adr/0063. */
-enum class LspState {
-    NotApplicable, /* not a file we'd start a server for; shows nothing */
-    Unconfigured,  /* lsp_command isn't set */
-    Starting,      /* spawned; the initialize handshake is in flight */
-    Running,
-    Failed,        /* never came up: missing binary, or handshake timeout */
-    Stopped,       /* came up, then went away */
-};
+#include "lsp_registry.h"
+#include "lsp_state.h"
 
 class EditorViewport : public QWidget {
     Q_OBJECT
@@ -91,6 +86,11 @@ public:
     void setOutputPanel(OutputPanel *panel) { m_outputPanel = panel; }
     void setHelpPanel(HelpPanel *panel) { m_helpPanel = panel; }
     void setAboutPanel(AboutPanel *panel) { m_aboutPanel = panel; }
+    /* One per window, like the output panel — see docs/adr/0096. */
+    void setLspRegistry(LspRegistry *registry) { m_lspRegistry = registry; }
+    /* Called by the registry when this buffer's shared server changes
+     * state, including when it joins one that is already up. */
+    void onLspStateChanged(LspState state, const QString &serverName);
     void setCompletionPopup(CompletionPopup *popup) { m_completionPopup = popup; }
     void setHoverPanel(HoverPanel *panel) { m_hoverPanel = panel; }
 
@@ -511,8 +511,7 @@ private:
     void setLspState(LspState state);
     /* A server that dies after a good start otherwise leaves the editor
      * reporting one that isn't there. */
-    void checkLspAlive();
-    void pollLsp();
+    void releaseLspClient();
     /* From refreshCache(), the choke point every edit passes through. */
     void sendLspDidChange();
     QColor colorForSeverity(int severity) const;
@@ -633,14 +632,18 @@ private:
     QTimer *m_compilePollTimer;
 
     /* Null means no LSP for this buffer; every LSP method checks. */
+    /* Borrowed from the registry, never owned. */
     AseLspClient *m_lspClient = nullptr;
+    /* QPointer, not a raw one: both this and the registry are children
+     * of the window, and Qt's teardown order is not ours to assume — a
+     * dangling registry here would be a crash on exit. */
+    QPointer<LspRegistry> m_lspRegistry;
     bool m_lspActivated = false; /* see onActivated() */
     LspState m_lspState = LspState::NotApplicable;
     QString m_lspLanguageId; /* "c" or "cpp"; empty if no server */
     QString m_lspServerName; /* basename, for the status bar */
     QString m_lspUri;
     int m_lspVersion = 1; /* didOpen implicitly sends version 1; didChange starts at 2 */
-    QTimer *m_lspPollTimer;
     QVector<GuiDiagnostic> m_diagnostics;
     QColor m_diagnosticErrorColor;
     QColor m_diagnosticWarningColor;

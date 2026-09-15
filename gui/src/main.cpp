@@ -24,6 +24,7 @@
 #include "command_line.h"
 #include "completion_popup.h"
 #include "editor_viewport.h"
+#include "lsp_registry.h"
 #include "file_browser_panel.h"
 #include "find_bar.h"
 #include "help_panel.h"
@@ -97,6 +98,8 @@ private:
 
     /* Set by :q! so closeEvent does not re-ask what :q! already answered. */
     bool m_forceClose = false;
+    /* One per window: buffers in the same project share a server. */
+    LspRegistry *m_lspRegistry = nullptr;
     QStackedWidget *m_stack = nullptr;
     BufferBar *m_bufferBar = nullptr;
     OutputPanel *m_outputPanel = nullptr;
@@ -213,6 +216,7 @@ MainWindow::MainWindow() {
     m_stack = new QStackedWidget(central);
     centralLayout->addWidget(m_stack, 1);
 
+    m_lspRegistry = new LspRegistry(this);
     m_outputPanel = new OutputPanel(nullptr, central);
     centralLayout->addWidget(m_outputPanel);
     /* Opening the file is the window's job, landing on the line the
@@ -322,6 +326,7 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
     viewport->setCompletionPopup(new CompletionPopup(viewport));
     viewport->setHoverPanel(new HoverPanel(viewport));
     viewport->setOutputPanel(m_outputPanel);
+    viewport->setLspRegistry(m_lspRegistry);
 
     connect(viewport, &EditorViewport::statusChanged, this,
             [this, viewport](int line, int column, bool dirty, const QString &mode) {

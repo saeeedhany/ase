@@ -587,6 +587,20 @@ bool ase_lsp_client_did_open(AseLspClient *client, const char *uri, const char *
     return send_message(client, make_notification("textDocument/didOpen", params));
 }
 
+bool ase_lsp_client_did_close(AseLspClient *client, const char *uri) {
+    if (client == NULL || !client->alive) {
+        return false;
+    }
+
+    AseJsonValue *text_document = ase_json_object();
+    ase_json_object_set(text_document, "uri", ase_json_string(uri));
+
+    AseJsonValue *params = ase_json_object();
+    ase_json_object_set(params, "textDocument", text_document);
+
+    return send_message(client, make_notification("textDocument/didClose", params));
+}
+
 bool ase_lsp_client_did_change(AseLspClient *client, const char *uri, int version, const char *text) {
     if (client == NULL || !client->alive) {
         return false;

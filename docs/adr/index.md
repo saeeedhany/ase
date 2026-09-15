@@ -103,3 +103,4 @@ what changed.
 | [0093](0093-the-handshake-is-not-awaited.md) | The initialize handshake is not awaited |
 | [0094](0094-what-startup-actually-costs.md) | What startup actually costs |
 | [0095](0095-the-performance-baseline.md) | The performance baseline |
+| [0096](0096-one-server-per-language-and-project.md) | One server per language and project, not per buffer |

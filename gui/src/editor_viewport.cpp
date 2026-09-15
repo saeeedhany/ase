@@ -75,20 +75,12 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
  /* the heartbeat every frame-driven value steps on */
 
     m_configTimer = new QTimer(this);
-    connect(m_configTimer, &QTimer::timeout, this, [this]() {
-        checkConfigReload();
-        /* Same beat rather than a second timer: both ask whether
-         * something outside the process changed. */
-        checkLspAlive();
-    });
+    connect(m_configTimer, &QTimer::timeout, this, [this]() { checkConfigReload(); });
     m_configTimer->start(750); /* see docs/adr/0008, decision 4 */
 
     m_compilePollTimer = new QTimer(this);
     connect(m_compilePollTimer, &QTimer::timeout, this, [this]() { pollCompile(); });
 
-    m_lspPollTimer = new QTimer(this);
-    connect(m_lspPollTimer, &QTimer::timeout, this, [this]() { pollLsp(); });
-    m_lspPollTimer->start(200); /* non-blocking poll, same shape as config-reload/compile-output polling */
     /* The server starts on first activation — see onActivated(). */
 
     /* So mouseMoveEvent fires with no button held, for hover. */
@@ -118,7 +110,7 @@ void EditorViewport::rebuildSyntax() {
 
 EditorViewport::~EditorViewport() {
     ase_plugin_host_destroy(m_pluginHost);
-    ase_lsp_client_stop(m_lspClient);
+    releaseLspClient();
     ase_process_destroy(m_compileProcess);
     ase_syntax_destroy(m_syntax);
     ase_config_destroy(m_config);

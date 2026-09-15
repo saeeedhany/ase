@@ -63,6 +63,11 @@ bool ase_lsp_client_did_open(AseLspClient *client, const char *uri,
 /* Full-document sync, not an incremental range. `version` must
  * increase on every call; the caller owns that counter.
  * Fire-and-forget. */
+/* Tells the server to forget a document: its diagnostics stop and it
+ * stops being kept in sync. Needed once a server outlives the buffer
+ * that opened it — see docs/adr/0096. */
+bool ase_lsp_client_did_close(AseLspClient *client, const char *uri);
+
 bool ase_lsp_client_did_change(AseLspClient *client, const char *uri, int version, const char *text);
 
 /* Async: `callback` fires later, from ase_lsp_client_poll(). Returns
