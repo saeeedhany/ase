@@ -400,6 +400,23 @@ private:
     /* `%` — the bracket matching the one at or after `pos` on its line,
      * or `pos` when there is none or it is unmatched. */
     size_t vimMatchBracket(size_t pos) const;
+
+    /* A text object resolves to a byte range; `valid` is false when
+     * there is nothing of that shape at or after the cursor. */
+    struct VimObjectRange {
+        size_t start = 0;
+        size_t end = 0;
+        bool valid = false;
+    };
+    /* `kind` is 'i' (inner) or 'a' (around); `object` names the shape —
+     * w W ( ) b { } B [ ] < > " ' ` — see docs/adr/0100. */
+    VimObjectRange vimTextObjectRange(char kind, char object) const;
+    /* The pair enclosing `pos`, or the next one starting after it on
+     * this line, which is what vim does when the cursor is outside. */
+    bool vimEnclosingPair(size_t pos, char open, char close, size_t *outOpen,
+                           size_t *outClose) const;
+    bool vimQuotedRange(size_t pos, char quote, size_t *outOpen, size_t *outClose) const;
+    void vimApplyTextObject(char kind, char object);
     void vimEnterReplaceMode(int count);
     /* One typed character, overwriting what is under the cursor, or
      * appending when the line has run out. */
@@ -713,6 +730,8 @@ private:
     char m_vimPendingMark = '\0';
     /* 'q' awaiting a register to record into, '@' awaiting one to play. */
     char m_vimPendingMacro = '\0';
+    /* 'i' or 'a' awaiting the object's name. */
+    char m_vimPendingTextObject = '\0';
 
     /* Enough to replay faithfully: Escape and Backspace carry no text,
      * so a macro of plain characters would lose them. */

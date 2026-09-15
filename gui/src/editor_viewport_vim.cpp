@@ -59,6 +59,7 @@ void EditorViewport::resetVimPendingState() {
     m_vimPendingReplace = false;
     m_vimPendingMark = '\0';
     m_vimPendingMacro = '\0';
+    m_vimPendingTextObject = '\0';
 }
 
 /* '\n' counts as Blank, which is what lets w/b/e cross lines with no
@@ -1246,6 +1247,260 @@ void EditorViewport::vimChangeOrInsert(size_t start, size_t end) {
  * inside strings and comments are not skipped — plain vim does not skip
  * them either.
  */
+namespace {
+bool isBlankByte(char c) { return c == ' ' || c == '\t'; }
+} // namespace
+
+/* Enclosing first — being on either bracket counts as inside — then the
+ * next pair opening later on this line, which is what vim does when the
+ * cursor sits before one. */
+bool EditorViewport::vimEnclosingPair(size_t pos, char open, char close, size_t *outOpen,
+                                       size_t *outClose) const {
+    int len = m_cache.size();
+    if (len == 0) {
+        return false;
+    }
+    int at = static_cast<int>(std::min(pos, static_cast<size_t>(len - 1)));
+
+    int openAt = -1;
+    if (m_cache[at] == open) {
+        openAt = at;
+    } else {
+        /* Backwards for an unmatched opener; a closer on the way means a
+         * complete pair that does not contain us. */
+        int depth = 0;
+        for (int i = (m_cache[at] == close) ? at - 1 : at; i >= 0; --i) {
+            if (m_cache[i] == close) {
+                depth++;
+            } else if (m_cache[i] == open) {
+                if (depth == 0) {
+                    openAt = i;
+                    break;
+                }
+                depth--;
+            }
+        }
+    }
+
+    if (openAt < 0) {
+        int lineEnd = static_cast<int>(vimLineEndOffset(lineForOffset(pos)));
+        for (int i = at; i < lineEnd; ++i) {
+            if (m_cache[i] == open) {
+                openAt = i;
+                break;
+            }
+        }
+    }
+    if (openAt < 0) {
+        return false;
+    }
+
+    int depth = 0;
+    for (int i = openAt; i < len; ++i) {
+        if (m_cache[i] == open) {
+            depth++;
+        } else if (m_cache[i] == close && --depth == 0) {
+            *outOpen = static_cast<size_t>(openAt);
+            *outClose = static_cast<size_t>(i);
+            return true;
+        }
+    }
+    return false;
+}
+
+/* Quotes do not nest, so the pairs on a line are simply every other one.
+ * The pair containing the cursor wins; failing that, the next to open. */
+bool EditorViewport::vimQuotedRange(size_t pos, char quote, size_t *outOpen,
+                                     size_t *outClose) const {
+    int line = lineForOffset(pos);
+    int from = m_lineStarts[line];
+    int to = static_cast<int>(vimLineEndOffset(line));
+
+    for (int i = from; i < to; ++i) {
+        if (m_cache[i] != quote || (i > from && m_cache[i - 1] == '\\')) {
+            continue;
+        }
+        for (int j = i + 1; j < to; ++j) {
+            if (m_cache[j] != quote || m_cache[j - 1] == '\\') {
+                continue;
+            }
+            if (static_cast<size_t>(j) >= pos) {
+                *outOpen = static_cast<size_t>(i);
+                *outClose = static_cast<size_t>(j);
+                return true;
+            }
+            i = j; /* a closed pair entirely before the cursor */
+            break;
+        }
+        if (static_cast<size_t>(i) > pos) {
+            break; /* an unterminated quote past the cursor */
+        }
+    }
+    return false;
+}
+
+void EditorViewport::vimApplyTextObject(char kind, char object) {
+    VimObjectRange range = vimTextObjectRange(kind, object);
+    if (!range.valid || range.end <= range.start) {
+        /* Nothing of that shape here; vim leaves the buffer alone. */
+        resetVimPendingState();
+        return;
+    }
+
+    /* A change into a whole-line block keeps the closing newline so
+     * there is a line to type on — the same split `C` has from `D`. */
+    if (m_vimPendingOperator == 'c' && range.end > range.start &&
+        m_cache[static_cast<int>(range.end) - 1] == '\n' &&
+        range.start == static_cast<size_t>(m_lineStarts[lineForOffset(range.start)])) {
+        range.end--;
+    }
+
+    if (m_vimMode == VimMode::Visual) {
+        /* Selects it rather than operating, so `viw` then `d` works and
+         * so does `viwc`. */
+        collapseToOneCursor();
+        m_selectionAnchors[0] = range.start;
+        m_cursors[0] = range.end - 1;
+        m_vimVisualLinewise = false;
+        resetVimPendingState();
+        return;
+    }
+    vimApplyPendingOperatorCharwise(range.start, range.end);
+}
+
+EditorViewport::VimObjectRange EditorViewport::vimTextObjectRange(char kind, char object) const {
+    VimObjectRange result;
+    int len = m_cache.size();
+    if (len == 0) {
+        return result;
+    }
+    size_t pos = std::min(m_cursors[0], static_cast<size_t>(len - 1));
+    bool around = (kind == 'a');
+
+    if (object == 'w' || object == 'W') {
+        /* A WORD is a run of non-blanks; a word is a run of one class. */
+        auto sameRun = [&](size_t a, size_t b) {
+            if (object == 'W') {
+                return isBlankByte(m_cache[static_cast<int>(a)]) ==
+                       isBlankByte(m_cache[static_cast<int>(b)]);
+            }
+            return vimClassifyAt(a) == vimClassifyAt(b);
+        };
+        size_t start = pos;
+        while (start > 0 && m_cache[static_cast<int>(start) - 1] != '\n' && sameRun(start - 1, pos)) {
+            start--;
+        }
+        size_t end = pos;
+        while (end + 1 < static_cast<size_t>(len) && m_cache[static_cast<int>(end)] != '\n' &&
+               sameRun(end + 1, pos)) {
+            end++;
+        }
+        end++; /* exclusive */
+
+        if (around) {
+            /* The trailing blanks, or the leading ones when there are
+             * none — vim's rule, and what makes `daw` on a line's last
+             * word take the space before it. */
+            size_t after = end;
+            while (after < static_cast<size_t>(len) && isBlankByte(m_cache[static_cast<int>(after)])) {
+                after++;
+            }
+            if (after > end) {
+                end = after;
+            } else {
+                while (start > 0 && isBlankByte(m_cache[static_cast<int>(start) - 1])) {
+                    start--;
+                }
+            }
+        }
+        result.start = start;
+        result.end = end;
+        result.valid = end > start;
+        return result;
+    }
+
+    char open = '\0';
+    char close = '\0';
+    switch (object) {
+    case '(': case ')': case 'b': open = '('; close = ')'; break;
+    case '{': case '}': case 'B': open = '{'; close = '}'; break;
+    case '[': case ']': open = '['; close = ']'; break;
+    case '<': case '>': open = '<'; close = '>'; break;
+    default: break;
+    }
+
+    if (open != '\0') {
+        size_t o = 0;
+        size_t c = 0;
+        if (!vimEnclosingPair(pos, open, close, &o, &c)) {
+            return result;
+        }
+
+        int openLine = lineForOffset(o);
+        int closeLine = lineForOffset(c);
+        if (!around && closeLine > openLine) {
+            /* vim: an inner block whose braces sit alone at the ends of
+             * their lines covers whole lines, so `di{` on a function body
+             * leaves the braces where they are. */
+            bool tailBlank = true;
+            for (size_t i = o + 1; i < vimLineEndOffset(openLine); ++i) {
+                if (!isBlankByte(m_cache[static_cast<int>(i)])) {
+                    tailBlank = false;
+                    break;
+                }
+            }
+            bool headBlank = true;
+            for (size_t i = static_cast<size_t>(m_lineStarts[closeLine]); i < c; ++i) {
+                if (!isBlankByte(m_cache[static_cast<int>(i)])) {
+                    headBlank = false;
+                    break;
+                }
+            }
+            if (tailBlank && headBlank) {
+                result.start = static_cast<size_t>(m_lineStarts[openLine + 1]);
+                result.end = static_cast<size_t>(m_lineStarts[closeLine]);
+                result.valid = result.end > result.start;
+                return result;
+            }
+        }
+
+        result.start = around ? o : o + 1;
+        result.end = around ? c + 1 : c;
+        result.valid = result.end >= result.start;
+        return result;
+    }
+
+    if (object == '"' || object == '\'' || object == '`') {
+        size_t o = 0;
+        size_t c = 0;
+        if (!vimQuotedRange(pos, object, &o, &c)) {
+            return result;
+        }
+        result.start = around ? o : o + 1;
+        result.end = around ? c + 1 : c;
+        if (around) {
+            /* `a"` takes the blanks after the closing quote, or before
+             * the opening one when there are none. */
+            size_t after = result.end;
+            while (after < static_cast<size_t>(len) && isBlankByte(m_cache[static_cast<int>(after)])) {
+                after++;
+            }
+            if (after > result.end) {
+                result.end = after;
+            } else {
+                while (result.start > 0 &&
+                       isBlankByte(m_cache[static_cast<int>(result.start) - 1])) {
+                    result.start--;
+                }
+            }
+        }
+        result.valid = result.end >= result.start;
+        return result;
+    }
+
+    return result;
+}
+
 size_t EditorViewport::vimMatchBracket(size_t pos) const {
     static const char kOpen[] = "([{";
     static const char kClose[] = ")]}";
@@ -1450,6 +1705,20 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
         m_vimLastFindCommand = command;
         m_vimLastFindTarget = target;
         vimApplyFindInLine(command, target, std::max(1, m_vimCount1) * std::max(1, m_vimCount2));
+        return true;
+    }
+
+    /* Mid-`i`/`a`: this key names the text object. */
+    if (m_vimPendingTextObject != '\0') {
+        char kind = m_vimPendingTextObject;
+        m_vimPendingTextObject = '\0';
+        char object = qc.toLatin1();
+        if (object != '\0') {
+            vimApplyTextObject(kind, object);
+        }
+        resetVimPendingState();
+        ensureCursorVisible();
+        update();
         return true;
     }
 
@@ -1707,6 +1976,12 @@ void EditorViewport::vimApplyVisualKey(char c) {
          * replacement character ever arrived. */
         m_vimPendingReplace = true;
         return;
+    case 'i':
+    case 'a':
+        /* In Visual these only ever introduce a text object — `viw`
+         * selects the word rather than entering Insert. */
+        m_vimPendingTextObject = c;
+        return;
     default:
         break; /* unrecognized in Visual: swallowed, no state change */
     }
@@ -1735,6 +2010,13 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
      * the pending operator rather than have it abandoned here. */
     if (c == '`' || c == '\'') {
         m_vimPendingMark = c;
+        return;
+    }
+
+    /* Likewise `i`/`a`: with an operator waiting they introduce a text
+     * object rather than entering Insert. */
+    if (m_vimPendingOperator != '\0' && (c == 'i' || c == 'a')) {
+        m_vimPendingTextObject = c;
         return;
     }
 

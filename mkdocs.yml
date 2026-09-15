@@ -120,6 +120,7 @@ nav:
     - adr/0097-marks-and-macros.md
     - adr/0098-global-marks.md
     - adr/0099-vim-conformance-fixes.md
+    - adr/0100-text-objects.md
 
 theme:
   name: material

@@ -107,3 +107,4 @@ what changed.
 | [0097](0097-marks-and-macros.md) | Marks and macros |
 | [0098](0098-global-marks.md) | Global marks reuse the jumplist’s entry |
 | [0099](0099-vim-conformance-fixes.md) | Four vim rules the editor was missing |
+| [0100](0100-text-objects.md) | Text objects |
