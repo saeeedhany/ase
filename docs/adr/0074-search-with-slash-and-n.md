@@ -7,7 +7,7 @@ Accepted
 ## Context
 
 `Ctrl+F` opened a floating find bar and searched incrementally as you
-typed ([ADR 0021](0021-find-and-replace.md)). Vim mode had no `/` at
+typed ([ADR 0021](0021-find-replace.md)). Vim mode had no `/` at
 all, which is the single most-used key it was missing.
 
 The keys were never the hard part. [ADR 0067](0067-go-to-definition.md)

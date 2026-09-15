@@ -234,6 +234,13 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
     }
     if (event->key() == Qt::Key_Escape) {
         if (vimModeActive() && m_vimMode == VimMode::Insert) {
+            /* The count's extra passes run from where typing stopped, so
+             * they have to happen before the cursor steps back — doing it
+             * after made `3Rab` start a character early and produce
+             * "aababfgh" instead of "abababgh". */
+            if (m_vimReplacing) {
+                vimLeaveReplaceMode();
+            }
             /* Steps back a column, as vim does, unless already at 0. */
             if (m_cursors[0] > static_cast<size_t>(m_lineStarts[lineForOffset(m_cursors[0])])) {
                 moveCursorLeftAt(0, false);
@@ -291,6 +298,16 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         moveCursorEnd(extend);
         break;
     case Qt::Key_Backspace:
+        if (m_vimReplacing && vimReplaceBackspace()) {
+            if (m_dotCapturingInsert && !m_dotInsertBuf.isEmpty()) {
+                int i = m_dotInsertBuf.size() - 1;
+                while (i > 0 && (static_cast<unsigned char>(m_dotInsertBuf.at(i)) & 0xC0) == 0x80) {
+                    i--;
+                }
+                m_dotInsertBuf.truncate(i);
+            }
+            break;
+        }
         /* The capture holds what the session actually put in the buffer,
          * so a correction has to shorten it rather than be recorded as a
          * keystroke — otherwise typing "helo", Backspace, "lo" repeats
@@ -322,7 +339,11 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         if (m_dotCapturingInsert) {
             m_dotInsertBuf.append("    ");
         }
-        insertText(QByteArrayLiteral("    "));
+        if (m_vimReplacing) {
+            vimReplaceTyped(QByteArrayLiteral("    "));
+        } else {
+            insertText(QByteArrayLiteral("    "));
+        }
         break;
     case Qt::Key_Return:
     case Qt::Key_Enter:
@@ -333,7 +354,11 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         if (m_dotCapturingInsert) {
             m_dotInsertBuf.append('\n');
         }
-        insertText(QByteArrayLiteral("\n"));
+        if (m_vimReplacing) {
+            vimReplaceTyped(QByteArrayLiteral("\n"));
+        } else {
+            insertText(QByteArrayLiteral("\n"));
+        }
         break;
     default:
         if (handleAltShortcut(event)) {
@@ -360,7 +385,11 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
             if (m_dotCapturingInsert) {
                 m_dotInsertBuf.append(text.toUtf8());
             }
-            insertText(text.toUtf8());
+            if (m_vimReplacing) {
+                vimReplaceTyped(text.toUtf8());
+            } else {
+                insertText(text.toUtf8());
+            }
         }
     }
 

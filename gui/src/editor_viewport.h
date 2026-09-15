@@ -353,6 +353,20 @@ private:
      * staying in Normal mode. A no-op unless the line has that many
      * characters left, which is vim's own rule. */
     void vimReplaceChar(QChar target, int count, bool newline);
+    /*
+     * `R` — Replace mode. A flag on Insert rather than a fourth VimMode,
+     * the same call ADR 0056 made for linewise Visual: everything that
+     * matters already keys off "are we inserting", and only the typing
+     * and Backspace paths differ.
+     */
+    void vimEnterReplaceMode(int count);
+    /* One typed character, overwriting what is under the cursor, or
+     * appending when the line has run out. */
+    void vimReplaceTyped(const QByteArray &bytes);
+    /* Backspace in Replace mode puts back what was overwritten rather
+     * than deleting, which is why the originals are kept. */
+    bool vimReplaceBackspace();
+    void vimLeaveReplaceMode();
     size_t vimParagraphForward(size_t pos) const;
     size_t vimParagraphBackward(size_t pos) const;
     bool vimLineIsEmpty(int line) const;
@@ -617,6 +631,13 @@ private:
     bool m_vimPendingG = false;           /* mid-"gg" sequence */
     char m_vimPendingFind = '\0'; /* awaiting the char to search for */
     bool m_vimPendingReplace = false; /* mid-`r`, awaiting the new char */
+    bool m_vimReplacing = false;      /* in `R` Replace mode */
+    /* What each typed character overwrote, newest last, so Backspace can
+     * put it back. An empty entry means that character was appended past
+     * the end of the line and there is nothing to restore. */
+    QVector<QByteArray> m_replaceOriginals;
+    int m_replaceCount = 1;           /* the count given to `R` */
+    QByteArray m_replaceTyped;        /* this session's text, for the count */
     /* Last f/F/t/T, for `;` and `,`. Per window, not per line. */
     char m_vimLastFindCommand = '\0';
     char m_vimLastFindTarget = '\0';

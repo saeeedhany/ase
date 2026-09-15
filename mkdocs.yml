@@ -97,6 +97,7 @@ nav:
     - adr/0074-search-with-slash-and-n.md
     - adr/0075-repeating-the-last-change.md
     - adr/0076-replace-a-character.md
+    - adr/0077-replace-mode.md
 
 theme:
   name: material

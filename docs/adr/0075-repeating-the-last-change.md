@@ -9,7 +9,7 @@ Accepted
 `.` is the key that makes the rest of vim's grammar pay off: `cw` a word,
 then `.` on the next one, and the next. Without it every edit has to be
 typed in full, and the operator/motion vocabulary
-([ADR 0046](0046-vim-mode-phase-1.md)) is worth much less than it looks.
+([ADR 0046](0046-native-vim-mode-phase-1.md)) is worth much less than it looks.
 
 It repeats the last *change*, which is a narrower thing than the last
 command. Motions, mode switches, yanks and undo are all excluded — `yy`

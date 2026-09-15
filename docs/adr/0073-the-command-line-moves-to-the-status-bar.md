@@ -8,10 +8,10 @@ Accepted
 
 The `:` command line was a centred floating panel, one per buffer, in
 the same family as Find/Replace and Open/Save-As ([ADR 0022](0022-floating-panel-design-system.md),
-[ADR 0025](0025-command-line-and-compile.md)).
+[ADR 0025](0025-command-system.md)).
 
 Every other part of vim's bottom line had already arrived in the status
-bar and stayed there: the mode label ([ADR 0046](0046-vim-mode-phase-1.md)),
+bar and stayed there: the mode label ([ADR 0046](0046-native-vim-mode-phase-1.md)),
 messages ([ADR 0062](0062-the-status-bar-message-line.md)), the
 language-server segment ([ADR 0063](0063-language-server-state-in-the-status-bar.md)),
 and the position readout ([ADR 0023](0023-editor-chrome.md)). Command
@@ -22,7 +22,7 @@ anyone who types `/` is expecting, and putting it in a panel would have
 meant two search surfaces with no clear division between them.
 
 There is precedent for moving chrome off centre rather than defending
-the design system: [ADR 0026](0026-keybinding-scheme-help-about-find-bar-position.md)
+the design system: [ADR 0026](0026-keybinding-scheme-help-about.md)
 moved find/replace to the top-right on direct feedback that a centred
 panel sat on top of the text being searched. A `:` prompt over the code
 is the same complaint one step further.
@@ -61,7 +61,7 @@ typed would be perverse. Vim keeps the ruler for the same reason.
 Floating panels open with scale+fade ([ADR 0022](0022-floating-panel-design-system.md)).
 This does not. The status bar is a fixed strip, and scaling a line of it
 reads as the chrome itself moving rather than as something appearing in
-it. A fade at the existing `kChrome` tier ([ADR 0053](0053-one-motion-language.md)),
+it. A fade at the existing `kChrome` tier ([ADR 0053](0053-render-hot-path-and-one-motion-language.md)),
 no new duration.
 
 ### Find/Replace stays a floating panel

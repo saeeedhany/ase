@@ -84,3 +84,4 @@ what changed.
 | [0074](0074-search-with-slash-and-n.md) | `/` search, and a needle that outlives its panel |
 | [0075](0075-repeating-the-last-change.md) | Repeating the last change (`.`) |
 | [0076](0076-replace-a-character.md) | Replacing a character (`r`) |
+| [0077](0077-replace-mode.md) | Replace mode (`R`) |

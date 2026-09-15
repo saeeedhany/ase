@@ -482,7 +482,7 @@ void EditorViewport::ensureCursorVisible() {
             modeLabel = m_vimVisualLinewise ? QStringLiteral("VISUAL LINE") : QStringLiteral("VISUAL");
             break;
         case VimMode::Insert:
-            modeLabel = QStringLiteral("INSERT");
+            modeLabel = m_vimReplacing ? QStringLiteral("REPLACE") : QStringLiteral("INSERT");
             break;
         }
     }

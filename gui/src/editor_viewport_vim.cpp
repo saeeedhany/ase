@@ -794,10 +794,28 @@ void EditorViewport::vimRepeatChange(int count) {
     }
     if (m_vimMode == VimMode::Insert) {
         if (!m_dotInserted.isEmpty()) {
-            insertText(m_dotInserted);
+            if (m_vimReplacing) {
+                /* Replayed text has to go back through the overwriting
+                 * path, or repeating an `R` session would insert. */
+                for (int i = 0; i < m_dotInserted.size();) {
+                    int len = 1;
+                    while (i + len < m_dotInserted.size() &&
+                           (static_cast<unsigned char>(m_dotInserted.at(i + len)) & 0xC0) == 0x80) {
+                        len++;
+                    }
+                    vimReplaceTyped(m_dotInserted.mid(i, len));
+                    i += len;
+                }
+            } else {
+                insertText(m_dotInserted);
+            }
         }
         /* Leave Insert the way Escape does, so the cursor lands where it
-         * would have if this had been typed. */
+         * would have if this had been typed — count passes first, then
+         * the step back. */
+        if (m_vimReplacing) {
+            vimLeaveReplaceMode();
+        }
         if (m_cursors[0] > static_cast<size_t>(m_lineStarts[lineForOffset(m_cursors[0])])) {
             moveCursorLeftAt(0, false);
         }
@@ -856,6 +874,114 @@ void EditorViewport::vimReplaceChar(QChar target, int count, bool newline) {
     ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
     refreshCache();
     vimMarkChange();
+}
+
+void EditorViewport::vimEnterReplaceMode(int count) {
+    m_vimMode = VimMode::Insert;
+    m_vimReplacing = true;
+    m_replaceOriginals.clear();
+    m_replaceTyped.clear();
+    m_replaceCount = std::max(1, count);
+    vimMarkChange();
+    vimBeginInsertCapture();
+}
+
+/*
+ * Overwrites the character under the cursor, or appends when the line
+ * has run out — `R` at the end of a line goes on typing rather than
+ * stopping, which is what vim does and what anyone would expect.
+ *
+ * One undo group per character, matching the granularity Insert mode
+ * already has.
+ */
+void EditorViewport::vimReplaceTyped(const QByteArray &bytes) {
+    size_t cursor = m_cursors[0];
+    int line = lineForOffset(cursor);
+    int lineEnd = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1
+                                                   : static_cast<int>(m_cache.size());
+
+    /* A line break is inserted, never overwritten: there is no character
+     * "under" the cursor to trade for it. */
+    bool overwrite = !bytes.startsWith('\n') && cursor < static_cast<size_t>(lineEnd);
+    size_t end = overwrite ? vimNextCharBoundary(cursor) : cursor;
+    QByteArray original =
+        overwrite ? m_cache.mid(static_cast<int>(cursor), static_cast<int>(end - cursor)) : QByteArray();
+
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    if (overwrite && ase_buffer_delete(m_buffer, cursor, end - cursor)) {
+        ase_undo_record_delete(m_undo, cursor, original.constData(), static_cast<size_t>(original.size()));
+    }
+    if (ase_buffer_insert(m_buffer, cursor, bytes.constData(), static_cast<size_t>(bytes.size()))) {
+        ase_undo_record_insert(m_undo, cursor, bytes.constData(), static_cast<size_t>(bytes.size()));
+        cursor += static_cast<size_t>(bytes.size());
+    }
+    m_cursors[0] = cursor;
+    m_selectionAnchors[0] = cursor;
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+
+    m_replaceOriginals.push_back(original);
+    m_replaceTyped.append(bytes);
+    refreshCache();
+}
+
+/* True when it consumed the key. Before the start of the session there
+ * is nothing of ours to undo, so the key is left alone. */
+bool EditorViewport::vimReplaceBackspace() {
+    if (m_replaceOriginals.isEmpty()) {
+        return false;
+    }
+    QByteArray original = m_replaceOriginals.takeLast();
+    size_t cursor = m_cursors[0];
+    /* What was typed last is immediately before the cursor; step back
+     * over it by codepoint rather than by byte. */
+    size_t start = vimPrevCharBoundary(cursor);
+    if (start >= cursor) {
+        return false;
+    }
+    QByteArray typed = m_cache.mid(static_cast<int>(start), static_cast<int>(cursor - start));
+
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    if (ase_buffer_delete(m_buffer, start, cursor - start)) {
+        ase_undo_record_delete(m_undo, start, typed.constData(), static_cast<size_t>(typed.size()));
+    }
+    if (!original.isEmpty() &&
+        ase_buffer_insert(m_buffer, start, original.constData(), static_cast<size_t>(original.size()))) {
+        ase_undo_record_insert(m_undo, start, original.constData(), static_cast<size_t>(original.size()));
+    }
+    m_cursors[0] = start;
+    m_selectionAnchors[0] = start;
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+
+    if (!m_replaceTyped.isEmpty()) {
+        m_replaceTyped.chop(static_cast<int>(cursor - start));
+    }
+    refreshCache();
+    return true;
+}
+
+/* A count repeats the typed text on the way out — `3Rab` leaves ababab,
+ * replacing as it goes. */
+void EditorViewport::vimLeaveReplaceMode() {
+    QByteArray typed = m_replaceTyped;
+    for (int n = 1; n < m_replaceCount && !typed.isEmpty(); ++n) {
+        for (int i = 0; i < typed.size();) {
+            size_t before = m_cursors[0];
+            int len = 1;
+            while (i + len < typed.size() &&
+                   (static_cast<unsigned char>(typed.at(i + len)) & 0xC0) == 0x80) {
+                len++;
+            }
+            vimReplaceTyped(typed.mid(i, len));
+            i += len;
+            if (m_cursors[0] == before) {
+                break; /* made no progress; do not spin */
+            }
+        }
+    }
+    m_vimReplacing = false;
+    m_replaceOriginals.clear();
+    m_replaceTyped.clear();
+    m_replaceCount = 1;
 }
 
 /* An f/F/t/T target, or the second half of a `g` pair. */
@@ -1188,6 +1314,9 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
     case 'r':
         m_vimPendingReplace = true;
         return; /* the count is still needed when the target arrives */
+    case 'R':
+        vimEnterReplaceMode(count);
+        break;
     case 'p':
         vimPasteAfter();
         vimMarkChange();
