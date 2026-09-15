@@ -10,6 +10,7 @@
  * different. See docs/adr/0104.
  */
 #include "editor_viewport.h"
+#include "vim_register.h"
 
 #include "ase/buffer.h"
 
@@ -114,6 +115,10 @@ void VimConformance::keySequences_data() {
 }
 
 void VimConformance::keySequences() {
+    /* Registers are process-wide; vim starts each case in a fresh
+     * process, so this has to match. */
+    VimRegister::clearAll();
+
     QFETCH(QString, input);
     QFETCH(int, line);
     QFETCH(int, column);
@@ -163,6 +168,10 @@ void VimConformance::commands_data() {
 /* `:` commands arrive through runCommand rather than the key dispatch,
  * so they are driven directly rather than typed. */
 void VimConformance::commands() {
+    /* Registers are process-wide; vim starts each case in a fresh
+     * process, so this has to match. */
+    VimRegister::clearAll();
+
     QFETCH(QString, input);
     QFETCH(int, line);
     QFETCH(int, column);

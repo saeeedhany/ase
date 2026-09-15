@@ -125,6 +125,18 @@ CASES = [
     # so `@a` comes back empty and the file is unchanged. These are in
     # MANUAL_CASES below with the reasoning instead.
 
+    # --- named registers ---
+    # `"` was unhandled before: the letter after it entered Insert and the
+    # rest of the command was typed into the buffer.
+    ("reg yank and paste",  "aaa\nbbb\nccc\nddd\n", 1, 1, '"ayyj"ap'),
+    ("reg delete and paste","aaa\nbbb\nccc\nddd\n", 1, 1, '"addj"ap'),
+    ("reg append uppercase","aaa\nbbb\nccc\nddd\n", 1, 1, '"ayyj"Ayyj"ap'),
+    ("reg also fills unnamed","aaa\nbbb\nccc\nddd\n", 1, 1, '"ayyjp'),
+    ("reg charwise",        "aaa\nbbb\nccc\nddd\n", 1, 1, '"aywj"aP'),
+    ("reg two registers",   "aaa\nbbb\nccc\nddd\n", 1, 1, '"ayyj"byyj"ap"bp'),
+    ("reg survives motion", "aaa\nbbb\nccc\nddd\n", 1, 1, '"ayyGk"ap'),
+    ("reg visual yank",     "aaa\nbbb\nccc\nddd\n", 1, 1, '"aVyj"ap'),
+
     # --- dot repeat ---
     ("dot repeat x",      "aaaa\nbbbb\ncccc\n",       1, 1, "2xj0."),
     ("dot repeat dw",     "aa bb\ncc dd\n",           1, 1, "dwj0."),

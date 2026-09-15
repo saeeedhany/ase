@@ -38,9 +38,65 @@ public:
         return instance;
     }
 
+    /* a-z, with the unnamed register at index 26. An uppercase name
+     * appends to the same slot, which is vim's rule. See docs/adr/0105. */
+    static VimRegister &slot(char name) {
+        static VimRegister registers[27];
+        if (name >= 'a' && name <= 'z') {
+            return registers[name - 'a'];
+        }
+        if (name >= 'A' && name <= 'Z') {
+            return registers[name - 'A'];
+        }
+        return unnamed();
+    }
+
+    /* A yank or delete into a named register also fills the unnamed one,
+     * so a plain `p` still pastes what was just taken. */
+    static void write(char name, const QByteArray &text, bool linewise) {
+        if (name != '\0') {
+            if (name >= 'A' && name <= 'Z') {
+                slot(name).append(text, linewise);
+            } else {
+                slot(name).set(text, linewise);
+            }
+            unnamed().set(slot(name).text(), slot(name).isLinewise());
+            return;
+        }
+        unnamed().set(text, linewise);
+    }
+
+    /* Registers outlive any one buffer by design, which means they also
+     * outlive a test case — every case must start from empty or an
+     * earlier one's yank leaks into it. */
+    static void clearAll() {
+        for (char name = 'a'; name <= 'z'; ++name) {
+            slot(name).set(QByteArray(), false);
+        }
+        unnamed().set(QByteArray(), false);
+    }
+
+    static const VimRegister &read(char name) {
+        return (name == '\0') ? unnamed() : slot(name);
+    }
+
     void set(const QByteArray &text, bool linewise) {
         m_text = text;
         m_linewise = linewise;
+    }
+
+    void append(const QByteArray &text, bool linewise) {
+        if (m_text.isEmpty()) {
+            set(text, linewise);
+            return;
+        }
+        /* Appending anything linewise makes the whole register linewise,
+         * and the pieces need a separator between them. */
+        if ((m_linewise || linewise) && !m_text.endsWith('\n')) {
+            m_text.append('\n');
+        }
+        m_text.append(text);
+        m_linewise = m_linewise || linewise;
     }
 
     const QByteArray &text() const { return m_text; }

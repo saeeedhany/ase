@@ -112,3 +112,4 @@ what changed.
 | [0102](0102-substitute.md) | `:s`, and the regex dialect it speaks |
 | [0103](0103-the-mainstream-languages.md) | The mainstream languages |
 | [0104](0104-the-vim-conformance-suite.md) | The vim conformance suite |
+| [0105](0105-named-registers.md) | Named registers, and a test that was lying |

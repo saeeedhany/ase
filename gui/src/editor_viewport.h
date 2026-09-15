@@ -490,6 +490,8 @@ private:
      * blank line. See docs/adr/0061. */
     void vimDeleteRange(size_t start, size_t end, bool linewise = false);
     void vimSetRegister(const QByteArray &text, bool linewise);
+    /* The register this command names, consumed once. */
+    char vimTakeRegister();
     void vimYankRange(size_t start, size_t end, bool linewise);
     void vimChangeRange(size_t start, size_t end, bool linewise = false);
     void vimDeleteLines(int startLine, int count);
@@ -738,6 +740,13 @@ private:
     char m_vimPendingMacro = '\0';
     /* 'i' or 'a' awaiting the object's name. */
     char m_vimPendingTextObject = '\0';
+    /* Named by `"x` and consumed by the next yank, delete or paste. */
+    char m_vimPendingRegister = '\0';
+    /* True between `"` and the letter that names the register. */
+    bool m_vimAwaitingRegister = false;
+    /* The operator helpers reset the pending state before they run, so
+     * the name is carried across in this. See docs/adr/0105. */
+    char m_vimRegisterInUse = '\0';
 
     /* Enough to replay faithfully: Escape and Backspace carry no text,
      * so a macro of plain characters would lose them. */

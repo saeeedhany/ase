@@ -117,6 +117,7 @@ QVector<HelpSection> helpSections() {
           {"r &nbsp;(in Visual)", "Replace every character in the selection"},
           {"d y c + motion", "Delete / yank / change (dd, yy, cc for lines)"},
           {"J &nbsp; 3J &nbsp; gJ", "Join lines with a space / three of them / verbatim"},
+          {"\" &lt;letter&gt;", "Use a named register: \"ayy then \"ap"},
           {"iw aw &nbsp; iW aW", "Text object: word / word with its spaces"},
           {"i( i{ i[ i&lt; &nbsp; a(", "Text object: inside a bracket pair / around it"},
           {"i\" i' i` &nbsp; a\"", "Text object: inside quotes / around them"},

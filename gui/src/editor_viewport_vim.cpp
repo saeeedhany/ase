@@ -60,6 +60,8 @@ void EditorViewport::resetVimPendingState() {
     m_vimPendingMark = '\0';
     m_vimPendingMacro = '\0';
     m_vimPendingTextObject = '\0';
+    m_vimPendingRegister = '\0';
+    m_vimAwaitingRegister = false;
 }
 
 /* '\n' counts as Blank, which is what lets w/b/e cross lines with no
@@ -558,6 +560,7 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
 
 void EditorViewport::vimApplyPendingOperatorCharwise(size_t start, size_t end) {
     char op = m_vimPendingOperator;
+    m_vimRegisterInUse = m_vimPendingRegister;
     resetVimPendingState();
     if (start >= end) {
         return;
@@ -598,6 +601,7 @@ void EditorViewport::vimApplyPendingOperatorCharwise(size_t start, size_t end) {
 
 void EditorViewport::vimApplyPendingOperatorLinewise(int startLine, int lineCount) {
     char op = m_vimPendingOperator;
+    m_vimRegisterInUse = m_vimPendingRegister;
     resetVimPendingState();
     switch (op) {
     case 'd':
@@ -632,6 +636,16 @@ void EditorViewport::vimApplyPendingOperatorLinewise(int startLine, int lineCoun
 /* Normalises a linewise payload to whole newline-terminated lines,
  * however the range was cut. Without it, `dd` on the last line stores
  * "\nfoo" or "foo" and `p` pastes a blank line or joins. */
+/* The operator helpers clear the pending state before they run, so they
+ * park the name in m_vimRegisterInUse first; everything else still has
+ * m_vimPendingRegister live. Either way it is consumed once. */
+char EditorViewport::vimTakeRegister() {
+    char name = (m_vimRegisterInUse != '\0') ? m_vimRegisterInUse : m_vimPendingRegister;
+    m_vimRegisterInUse = '\0';
+    m_vimPendingRegister = '\0';
+    return name;
+}
+
 void EditorViewport::vimSetRegister(const QByteArray &text, bool linewise) {
     QByteArray payload = text;
     if (linewise) {
@@ -642,7 +656,7 @@ void EditorViewport::vimSetRegister(const QByteArray &text, bool linewise) {
             payload.append('\n');
         }
     }
-    VimRegister::unnamed().set(payload, linewise);
+    VimRegister::write(vimTakeRegister(), payload, linewise);
 }
 
 void EditorViewport::vimDeleteRange(size_t start, size_t end, bool linewise) {
@@ -736,7 +750,7 @@ void EditorViewport::vimYankLines(int startLine, int count) {
 }
 
 void EditorViewport::vimPasteAfter() {
-    const VimRegister &reg = VimRegister::unnamed();
+    const VimRegister &reg = VimRegister::read(vimTakeRegister());
     if (reg.isEmpty()) {
         /* Deliberately no clipboard fallback: `p` always means the
          * register. Ctrl+V pastes the clipboard. */
@@ -796,7 +810,7 @@ void EditorViewport::vimPasteAfter() {
 }
 
 void EditorViewport::vimPasteBefore() {
-    const VimRegister &reg = VimRegister::unnamed();
+    const VimRegister &reg = VimRegister::read(vimTakeRegister());
     if (reg.isEmpty()) {
         return;
     }
@@ -1783,6 +1797,17 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
         return true;
     }
 
+    /* Mid-`"`: this key names the register. It is deliberately not
+     * cleared here — the yank, delete or paste that follows consumes it. */
+    if (m_vimAwaitingRegister) {
+        m_vimAwaitingRegister = false;
+        char name = qc.toLatin1();
+        if ((name >= 'a' && name <= 'z') || (name >= 'A' && name <= 'Z')) {
+            m_vimPendingRegister = name;
+        }
+        return true;
+    }
+
     /* Mid-`i`/`a`: this key names the text object. */
     if (m_vimPendingTextObject != '\0') {
         char kind = m_vimPendingTextObject;
@@ -2062,6 +2087,9 @@ void EditorViewport::vimApplyVisualKey(char c) {
          * selects the word rather than entering Insert. */
         m_vimPendingTextObject = c;
         return;
+    case '"':
+        m_vimAwaitingRegister = true;
+        return;
     case 'J': {
         /* Every line the selection touches, however it was made. */
         int first = lineForOffset(selectionMinAt(0));
@@ -2110,6 +2138,14 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
      * object rather than entering Insert. */
     if (m_vimPendingOperator != '\0' && (c == 'i' || c == 'a')) {
         m_vimPendingTextObject = c;
+        return;
+    }
+
+    /* A register prefix is not a command: `"ayy` must keep whatever is
+     * pending and wait for the letter. Unhandled, the `a` that follows
+     * entered Insert and typed the rest of the command into the file. */
+    if (c == '"') {
+        m_vimAwaitingRegister = true;
         return;
     }
 
