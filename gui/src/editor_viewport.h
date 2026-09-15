@@ -326,7 +326,7 @@ private:
     /* The pieces handleVimNormalOrVisualKey() dispatches to, in order.
      * Each runs its own reset/ensureCursorVisible/update tail, because
      * which of those a key needs differs between them. */
-    bool vimResolvePendingKey(QChar qc);
+    bool vimResolvePendingKey(QChar qc, int key);
     bool vimAccumulateCount(QChar qc);
     bool vimApplyMotionKey(char c, int count);
     void vimApplyVisualKey(char c);
@@ -349,6 +349,10 @@ private:
      * See docs/adr/0069. */
     size_t vimFindInLine(char command, char target, int count) const;
     void vimApplyFindInLine(char command, char target, int count);
+    /* `r` — replace `count` characters under the cursor with `target`,
+     * staying in Normal mode. A no-op unless the line has that many
+     * characters left, which is vim's own rule. */
+    void vimReplaceChar(QChar target, int count, bool newline);
     size_t vimParagraphForward(size_t pos) const;
     size_t vimParagraphBackward(size_t pos) const;
     bool vimLineIsEmpty(int line) const;
@@ -612,6 +616,7 @@ private:
     int m_vimCount2 = 0;                  /* count typed after the operator */
     bool m_vimPendingG = false;           /* mid-"gg" sequence */
     char m_vimPendingFind = '\0'; /* awaiting the char to search for */
+    bool m_vimPendingReplace = false; /* mid-`r`, awaiting the new char */
     /* Last f/F/t/T, for `;` and `,`. Per window, not per line. */
     char m_vimLastFindCommand = '\0';
     char m_vimLastFindTarget = '\0';

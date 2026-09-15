@@ -56,6 +56,7 @@ void EditorViewport::resetVimPendingState() {
     m_vimPendingOperator = '\0';
     m_vimPendingG = false;
     m_vimPendingFind = '\0';
+    m_vimPendingReplace = false;
 }
 
 /* '\n' counts as Blank, which is what lets w/b/e cross lines with no
@@ -727,7 +728,7 @@ void EditorViewport::vimRecordKey(QChar qc) {
     /* A key with nothing pending begins a new command, so whatever was
      * being recorded came to nothing and is dropped. */
     if (m_vimPendingOperator == '\0' && m_vimCount1 == 0 && m_vimCount2 == 0 && !m_vimPendingG &&
-        m_vimPendingFind == '\0') {
+        m_vimPendingFind == '\0' && !m_vimPendingReplace) {
         m_dotRecording.clear();
     }
     m_dotRecording.append(qc);
@@ -809,8 +810,75 @@ void EditorViewport::vimRepeatChange(int count) {
     update();
 }
 
+/*
+ * Replaces `count` characters with `target`, cursor left on the last one
+ * — or, for Enter, replaces them all with a single line break, which is
+ * what vim does. Does nothing at all unless the line has `count`
+ * characters left: a partial replace is not vim's behaviour and would be
+ * worse than a no-op.
+ *
+ * Writes no register. `r` is not a delete, and clobbering the unnamed
+ * register with one character would make `p` after it useless.
+ */
+void EditorViewport::vimReplaceChar(QChar target, int count, bool newline) {
+    int line = lineForOffset(m_cursors[0]);
+    int lineEnd = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1
+                                                  : static_cast<int>(m_cache.size());
+
+    size_t start = m_cursors[0];
+    size_t end = start;
+    for (int n = 0; n < count; ++n) {
+        if (end >= static_cast<size_t>(lineEnd)) {
+            return; /* fewer than `count` characters left on this line */
+        }
+        end = vimNextCharBoundary(end);
+    }
+    if (end <= start) {
+        return;
+    }
+
+    QByteArray inserted = newline ? QByteArrayLiteral("\n") : QString(count, target).toUtf8();
+    QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
+
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    if (ase_buffer_delete(m_buffer, start, end - start)) {
+        ase_undo_record_delete(m_undo, start, removed.constData(), static_cast<size_t>(removed.size()));
+    }
+    if (ase_buffer_insert(m_buffer, start, inserted.constData(), static_cast<size_t>(inserted.size()))) {
+        ase_undo_record_insert(m_undo, start, inserted.constData(), static_cast<size_t>(inserted.size()));
+    }
+    /* On the last replaced character, as vim leaves it — or just past the
+     * break, which is the start of the new line. */
+    size_t landing = newline ? start + 1
+                             : start + static_cast<size_t>(inserted.size() - QString(target).toUtf8().size());
+    m_cursors[0] = landing;
+    m_selectionAnchors[0] = landing;
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    refreshCache();
+    vimMarkChange();
+}
+
 /* An f/F/t/T target, or the second half of a `g` pair. */
-bool EditorViewport::vimResolvePendingKey(QChar qc) {
+bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
+    /* Mid-`r`: this key is the replacement, whatever it is. Escape never
+     * reaches here — keyPressEvent takes it first and resets the pending
+     * state, which is how `r<Esc>` cancels. */
+    if (m_vimPendingReplace) {
+        m_vimPendingReplace = false;
+        /* The key code, not the text: Return arrives as U+0000 under the
+         * offscreen platform plugin and as "\r" under X11, so the text is
+         * not something to branch on. Any other non-printable target
+         * cancels, as it does in vim. */
+        bool newline = (key == Qt::Key_Return || key == Qt::Key_Enter);
+        if (newline || qc.isPrint()) {
+            vimReplaceChar(qc, std::max(1, m_vimCount1) * std::max(1, m_vimCount2), newline);
+        }
+        resetVimPendingState();
+        ensureCursorVisible();
+        update();
+        return true;
+    }
+
     /* This key is the target, whatever it is: `f3` and `fd` search for
      * '3' and 'd', not a count or an operator. */
     if (m_vimPendingFind != '\0') {
@@ -1117,6 +1185,9 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
         }
         break;
     }
+    case 'r':
+        m_vimPendingReplace = true;
+        return; /* the count is still needed when the target arrives */
     case 'p':
         vimPasteAfter();
         vimMarkChange();
@@ -1163,7 +1234,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     QChar qc = text.at(0);
     vimRecordKey(qc);
 
-    if (vimResolvePendingKey(qc)) {
+    if (vimResolvePendingKey(qc, event->key())) {
         return true;
     }
     if (vimAccumulateCount(qc)) {
