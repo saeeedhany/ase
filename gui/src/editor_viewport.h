@@ -371,6 +371,9 @@ private:
     size_t vimWordRunEnd(size_t pos) const;
     size_t vimWordBackward(size_t pos) const;
     /* First non-blank on `line`, or its end if entirely blank. */
+    /* A buffer ending in a newline gets a final m_lineStarts entry at
+     * EOF, which is a position but not a line vim would count. */
+    int vimLastLine() const;
     size_t vimFirstNonBlank(int line) const;
     /* A linewise range at the buffer's end has no trailing '\n' to
      * remove, so take the preceding one instead — that deletes the line

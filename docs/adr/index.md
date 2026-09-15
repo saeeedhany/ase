@@ -106,3 +106,4 @@ what changed.
 | [0096](0096-one-server-per-language-and-project.md) | One server per language and project, not per buffer |
 | [0097](0097-marks-and-macros.md) | Marks and macros |
 | [0098](0098-global-marks.md) | Global marks reuse the jumplist’s entry |
+| [0099](0099-vim-conformance-fixes.md) | Four vim rules the editor was missing |

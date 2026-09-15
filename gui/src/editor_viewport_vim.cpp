@@ -294,6 +294,14 @@ void EditorViewport::vimHalfPageMotion(int direction) {
     update();
 }
 
+int EditorViewport::vimLastLine() const {
+    int last = static_cast<int>(m_lineStarts.size()) - 1;
+    if (last > 0 && static_cast<size_t>(m_lineStarts[last]) >= static_cast<size_t>(m_cache.size())) {
+        last--;
+    }
+    return last;
+}
+
 size_t EditorViewport::vimFirstNonBlank(int line) const {
     line = std::clamp(line, 0, static_cast<int>(m_lineStarts.size()) - 1);
     int start = m_lineStarts[line];
@@ -523,6 +531,20 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
             }
         }
     }
+    /* vim: when the last word an operator moves over ends a line, the
+     * operated text ends there too — `dw` on a line's last word empties
+     * it rather than pulling the next line up. */
+    if (m == 'w' && after > before) {
+        size_t scan = after;
+        while (scan > before && (m_cache[static_cast<int>(scan) - 1] == ' ' ||
+                                 m_cache[static_cast<int>(scan) - 1] == '\t')) {
+            scan--;
+        }
+        if (scan > before && m_cache[static_cast<int>(scan) - 1] == '\n') {
+            after = scan - 1;
+        }
+    }
+
     size_t start = std::min(before, after);
     size_t end = std::max(before, after);
     vimApplyPendingOperatorCharwise(start, end);
@@ -535,10 +557,23 @@ void EditorViewport::vimApplyPendingOperatorCharwise(size_t start, size_t end) {
         return;
     }
     switch (op) {
-    case 'd':
-        vimDeleteRange(start, end);
+    case 'd': {
+        /* vim turns a charwise delete covering whole lines — column 0 to
+         * a line end, across more than one — into a linewise one, so the
+         * lines go rather than leaving a blank. */
+        int startLine = lineForOffset(start);
+        int endLine = lineForOffset(end);
+        bool wholeLines = endLine > startLine &&
+                          start == static_cast<size_t>(m_lineStarts[startLine]) &&
+                          end == vimLineEndOffset(endLine);
+        if (wholeLines) {
+            vimDeleteLines(startLine, endLine - startLine + 1);
+        } else {
+            vimDeleteRange(start, end);
+        }
         vimMarkChange();
         break;
+    }
     case 'y':
         vimYankRange(start, end, false);
         break;
@@ -620,7 +655,11 @@ void EditorViewport::vimDeleteRange(size_t start, size_t end, bool linewise) {
 }
 
 size_t EditorViewport::vimLinewiseDeleteStart(size_t start, size_t end) const {
-    if (end < static_cast<size_t>(m_cache.size()) || start == 0) {
+    /* Only for an empty range, which means the position past a trailing
+     * newline — there is no line there to take, so take the newline that
+     * made it. A real last line already has its own newline in range,
+     * and pulling back would eat the one belonging to the line above. */
+    if (start != end || start == 0) {
         return start;
     }
     return (m_cache[static_cast<int>(start) - 1] == '\n') ? start - 1 : start;
@@ -709,10 +748,10 @@ void EditorViewport::vimPasteAfter() {
                 bytes.append('\n');
             }
             /* A buffer not ending in a newline has nothing to append
-             * after ("a\nb" + p gave "a\nbb"). Trade the trailing
-             * newline for a leading one. */
+             * after ("a\nb" + p gave "a\nbb"), so the pasted line brings
+             * its own leading newline. It keeps the trailing one too:
+             * vim's `yyp` on such a file ends the result with a newline. */
             if (!m_cache.isEmpty() && m_cache.back() != '\n') {
-                bytes.chop(1);
                 bytes.prepend('\n');
             }
         }
@@ -1556,7 +1595,7 @@ bool EditorViewport::vimApplyMotionKey(char c, int count) {
         return true;
     }
     if (c == 'G') {
-        int targetLine = (m_vimCount1 > 0) ? (m_vimCount1 - 1) : static_cast<int>(m_lineStarts.size()) - 1;
+        int targetLine = (m_vimCount1 > 0) ? (m_vimCount1 - 1) : vimLastLine();
         if (m_vimPendingOperator == '\0') {
             recordJump(); /* a jump; with an operator pending it is a range, not a move */
         }
@@ -1822,8 +1861,20 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
                                 static_cast<int>(m_lineStarts.size()) - 1);
         size_t end = vimLineEndOffset(lastLine);
         if (c == 'C') {
+            /* `2C` collapses the lines into one to type on, so the
+             * newline between them goes but the last one's stays. */
             vimChangeOrInsert(start, end);
-        } else if (end > start) {
+            break;
+        }
+        /* A counted `D` that starts at column 1 empties this line as well
+         * as taking the ones below, so the line itself goes rather than
+         * being left blank. From any other column the line survives with
+         * what was before the cursor, and keeps its newline. */
+        size_t lineStart = static_cast<size_t>(m_lineStarts[lineForOffset(start)]);
+        if (count > 1 && start == lineStart && end < static_cast<size_t>(m_cache.size())) {
+            end++;
+        }
+        if (end > start) {
             m_vimPendingOperator = 'd';
             vimApplyPendingOperatorCharwise(start, end);
         }
