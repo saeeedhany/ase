@@ -27,8 +27,9 @@ endif()
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-add_executable(ase_gui
-    src/main.cpp
+# An object library so the test suite can drive the real widgets in
+# process, rather than a second copy of the sources. See docs/adr/0104.
+add_library(ase_gui_objects OBJECT
     src/motion.cpp
     src/lsp_registry.cpp
     # EditorViewport is one class deliberately spread across several
@@ -64,21 +65,27 @@ add_executable(ase_gui
     resources/resources.qrc
 )
 
-target_link_libraries(ase_gui
-    PRIVATE
+target_link_libraries(ase_gui_objects
+    PUBLIC
         ase_core
         ase_syntax
         Qt6::Widgets
-
+    PRIVATE
         ase_warnings
 )
+target_include_directories(ase_gui_objects PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# main.cpp holds both main() and MainWindow, so it stays with the
+# executable — a test linking it would get a second entry point.
+add_executable(ase_gui src/main.cpp)
+target_link_libraries(ase_gui PRIVATE ase_gui_objects)
 
 # Single source of truth for the version shown in the About panel —
 # the top-level project() VERSION, plus a release-stage suffix that
 # isn't part of the numeric CMake version. Bump PROJECT_VERSION (and
 # retag) for a real release; flip/drop "-alpha" here as the project
 # matures past it.
-target_compile_definitions(ase_gui PRIVATE
+target_compile_definitions(ase_gui_objects PUBLIC
     ASE_VERSION_STRING="${PROJECT_VERSION}-alpha"
 )
 
@@ -95,3 +102,7 @@ install(FILES ${CMAKE_SOURCE_DIR}/packaging/linux/ase-icon-512.png
     DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps
     RENAME ase.png
 )
+
+if(ASE_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()

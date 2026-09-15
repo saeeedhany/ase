@@ -353,7 +353,12 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
                 }
                 break;
             case 'j':
-                moveCursorVerticallyAt(0, 1, visual);
+                /* Not past the last real line: the position after a
+                 * trailing newline is a line the arrow keys can reach
+                 * and `j` cannot, the same split `l` has. */
+                if (lineForOffset(m_cursors[0]) < vimLastLine()) {
+                    moveCursorVerticallyAt(0, 1, visual);
+                }
                 break;
             case 'k':
                 moveCursorVerticallyAt(0, -1, visual);
