@@ -20,7 +20,17 @@ typedef struct {
 struct AseLspClient {
     AseProcess *process;
     bool alive;
+    /* The initialize reply has arrived and `initialized` has gone out.
+     * Until then every other message is queued, not sent: a server may
+     * ignore or reject anything before the handshake completes. */
+    bool ready;
+    long handshake_ms; /* monotonic ms at spawn, for the timeout */
     int next_id;
+
+    /* Framed bodies waiting for `ready`, in order. */
+    char **queued;
+    size_t queued_count;
+    size_t queued_capacity;
 
     char *read_buffer;
     size_t read_buffer_len;
@@ -38,21 +48,17 @@ struct AseLspClient {
 
 /* The only platform-specific bit left in this file — everything else
  * process/pipe-related now lives in ase/process.h (docs/adr/0025),
- * shared with :compile. Not part of that module's own API since
- * nothing there needs a plain sleep. */
+ * shared with :compile. */
 #if defined(_WIN32)
 
-static void sleep_ms(int ms) {
-    (void)ms;
-}
+static long monotonic_ms(void) { return 0; }
 
 #else /* POSIX */
 
-static void sleep_ms(int ms) {
+static long monotonic_ms(void) {
     struct timespec ts;
-    ts.tv_sec = ms / 1000;
-    ts.tv_nsec = (long)(ms % 1000) * 1000000L;
-    nanosleep(&ts, NULL);
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (long)(ts.tv_sec * 1000L + ts.tv_nsec / 1000000L);
 }
 
 #endif
@@ -152,7 +158,9 @@ static void dispatch_response(AseLspClient *client, int id, const AseJsonValue *
         }
 
         if (req.callback != NULL) {
-            req.callback(req.user_data, (error != NULL) ? NULL : result, error_message);
+            if (req.callback != NULL) {
+                req.callback(req.user_data, (error != NULL) ? NULL : result, error_message);
+            }
         }
         return;
     }
@@ -269,6 +277,14 @@ void ase_lsp_client_poll(AseLspClient *client) {
         return;
     }
 
+    /* The handshake is no longer awaited, so its timeout lives here.
+     * A server that never answers initialize — a missing binary exits
+     * and is caught by EOF below, a hung one is not — is dead to us. */
+    if (!client->ready && monotonic_ms() - client->handshake_ms > 3000) {
+        client->alive = false;
+        return;
+    }
+
     for (;;) {
         char chunk[4096];
         long n = ase_process_read(client->process, chunk, sizeof(chunk));
@@ -320,13 +336,8 @@ static bool register_pending(AseLspClient *client, int id, AseLspResultCallback 
 }
 
 /* Destroys `message` either way. */
-static bool send_message(AseLspClient *client, AseJsonValue *message) {
-    char *body = ase_json_write(message);
-    ase_json_destroy(message);
-    if (body == NULL) {
-        return false;
-    }
-
+/* Takes ownership of `body` either way. */
+static bool write_framed(AseLspClient *client, char *body) {
     char header[64];
     int header_len = snprintf(header, sizeof(header), "Content-Length: %zu\r\n\r\n", strlen(body));
 
@@ -339,6 +350,58 @@ static bool send_message(AseLspClient *client, AseJsonValue *message) {
         client->alive = false;
     }
     return ok;
+}
+
+/* Takes ownership of `body`. */
+static bool queue_body(AseLspClient *client, char *body) {
+    if (client->queued_count == client->queued_capacity) {
+        size_t cap = client->queued_capacity == 0 ? 8 : client->queued_capacity * 2;
+        char **grown = (char **)realloc(client->queued, cap * sizeof(char *));
+        if (grown == NULL) {
+            free(body);
+            return false;
+        }
+        client->queued = grown;
+        client->queued_capacity = cap;
+    }
+    client->queued[client->queued_count++] = body;
+    return true;
+}
+
+static void flush_queue(AseLspClient *client) {
+    for (size_t i = 0; i < client->queued_count; i++) {
+        write_framed(client, client->queued[i]);
+    }
+    client->queued_count = 0;
+}
+
+static void drop_queue(AseLspClient *client) {
+    for (size_t i = 0; i < client->queued_count; i++) {
+        free(client->queued[i]);
+    }
+    free(client->queued);
+    client->queued = NULL;
+    client->queued_count = 0;
+    client->queued_capacity = 0;
+}
+
+/* `immediate` is the handshake's own escape hatch: initialize and the
+ * initialized that answers it must go out before `ready` is set, and
+ * shutdown goes out on a client that may never have got there. */
+static bool send_message_ex(AseLspClient *client, AseJsonValue *message, bool immediate) {
+    char *body = ase_json_write(message);
+    ase_json_destroy(message);
+    if (body == NULL) {
+        return false;
+    }
+    if (!immediate && !client->ready) {
+        return queue_body(client, body);
+    }
+    return write_framed(client, body);
+}
+
+static bool send_message(AseLspClient *client, AseJsonValue *message) {
+    return send_message_ex(client, message, false);
 }
 
 static AseJsonValue *make_request(AseLspClient *client, const char *method, AseJsonValue *params, int *out_id) {
@@ -364,15 +427,16 @@ static AseJsonValue *make_notification(const char *method, AseJsonValue *params)
     return msg;
 }
 
-static bool send_request(AseLspClient *client, const char *method, AseJsonValue *params,
-                          AseLspResultCallback callback, void *user_data, int *out_id) {
+static bool send_request_ex(AseLspClient *client, const char *method, AseJsonValue *params,
+                             AseLspResultCallback callback, void *user_data, int *out_id,
+                             bool immediate) {
     int id;
     AseJsonValue *request = make_request(client, method, params, &id);
     if (!register_pending(client, id, callback, user_data)) {
         ase_json_destroy(request);
         return false;
     }
-    if (!send_message(client, request)) {
+    if (!send_message_ex(client, request, immediate)) {
         client->pending_count--; /* the entry we just appended never went out */
         return false;
     }
@@ -380,6 +444,11 @@ static bool send_request(AseLspClient *client, const char *method, AseJsonValue 
         *out_id = id;
     }
     return true;
+}
+
+static bool send_request(AseLspClient *client, const char *method, AseJsonValue *params,
+                          AseLspResultCallback callback, void *user_data, int *out_id) {
+    return send_request_ex(client, method, params, callback, user_data, out_id, false);
 }
 
 static AseJsonValue *make_position(AseLspPosition pos) {
@@ -401,36 +470,20 @@ static AseJsonValue *make_text_document_position_params(const char *uri, AseLspP
 
 /* ----------------------------------------------------- handshake / lifecycle */
 
-typedef struct {
-    bool done;
-    bool success;
-} WaitState;
 
-static void wait_state_callback(void *user_data, const AseJsonValue *result, const char *error_message) {
+/* The handshake's second half: answer the server's initialize reply and
+ * let everything that queued up behind it go. */
+static void initialize_callback(void *user_data, const AseJsonValue *result,
+                                 const char *error_message) {
     (void)result;
-    WaitState *state = (WaitState *)user_data;
-    state->done = true;
-    state->success = (error_message == NULL);
-}
-
-/* Polls until `state->done`, the client dies, or `timeout_ms` elapses. */
-/* Fine-grained at first, backing off if the wait drags: a reply that is
- * already on the pipe should not cost a flat 10ms, and both callers are
- * on the UI thread. */
-static void wait_for(AseLspClient *client, WaitState *state, int timeout_ms) {
-    int elapsed = 0;
-    int step_ms = 1;
-    while (!state->done && client->alive && elapsed < timeout_ms) {
-        ase_lsp_client_poll(client);
-        if (state->done) {
-            break;
-        }
-        sleep_ms(step_ms);
-        elapsed += step_ms;
-        if (step_ms < 10) {
-            step_ms++;
-        }
+    AseLspClient *client = (AseLspClient *)user_data;
+    if (error_message != NULL) {
+        client->alive = false;
+        return;
     }
+    send_message_ex(client, make_notification("initialized", ase_json_object()), true);
+    client->ready = true;
+    flush_queue(client);
 }
 
 AseLspClient *ase_lsp_client_start(const char *const *command, const char *root_uri) {
@@ -457,6 +510,7 @@ AseLspClient *ase_lsp_client_start(const char *const *command, const char *root_
     client->process = process;
     client->alive = true;
     client->next_id = 1;
+    client->handshake_ms = monotonic_ms();
 
     AseJsonValue *capabilities = ase_json_object(); /* deliberately empty for v1 */
     AseJsonValue *params = ase_json_object();
@@ -464,8 +518,11 @@ AseLspClient *ase_lsp_client_start(const char *const *command, const char *root_
     ase_json_object_set(params, "rootUri", (root_uri != NULL) ? ase_json_string(root_uri) : ase_json_null());
     ase_json_object_set(params, "capabilities", capabilities);
 
-    WaitState state = {false, false};
-    if (!send_request(client, "initialize", params, wait_state_callback, &state, NULL)) {
+    /* Sent, not awaited. The reply is picked up by ase_lsp_client_poll,
+     * which then sends `initialized` and releases everything queued
+     * meanwhile. Waiting here blocked the UI thread for as long as the
+     * server took to start — see docs/adr/0093. */
+    if (!send_request_ex(client, "initialize", params, initialize_callback, client, NULL, true)) {
         ase_process_destroy(client->process);
         free(client->pending);
         free(client->read_buffer);
@@ -473,14 +530,6 @@ AseLspClient *ase_lsp_client_start(const char *const *command, const char *root_
         return NULL;
     }
 
-    wait_for(client, &state, 3000);
-
-    if (!state.done || !state.success) {
-        ase_lsp_client_stop(client);
-        return NULL;
-    }
-
-    send_message(client, make_notification("initialized", ase_json_object()));
     return client;
 }
 
@@ -498,15 +547,15 @@ void ase_lsp_client_stop(AseLspClient *client) {
          * against 19ms for an idle server. Closing the pipes below makes
          * the server exit regardless; ase_process_destroy polls for that
          * and kills it only if it does not. See docs/adr/0092. */
-        WaitState state = {false, false};
-        send_request(client, "shutdown", NULL, wait_state_callback, &state, NULL);
-        send_message(client, make_notification("exit", NULL));
+        send_request_ex(client, "shutdown", NULL, NULL, NULL, NULL, true);
+        send_message_ex(client, make_notification("exit", NULL), true);
     }
 
     /* Nobody wants a discarded server's exit status, and waiting for it
      * blocked the UI thread. See docs/adr/0092. */
     ase_process_destroy_detached(client->process);
 
+    drop_queue(client);
     free(client->read_buffer);
     free(client->pending);
     free(client);
@@ -586,6 +635,10 @@ bool ase_lsp_client_request_hover(AseLspClient *client, const char *uri, AseLspP
     }
     AseJsonValue *params = make_text_document_position_params(uri, position);
     return send_request(client, "textDocument/hover", params, callback, user_data, NULL);
+}
+
+bool ase_lsp_client_is_ready(const AseLspClient *client) {
+    return client != NULL && client->alive && client->ready;
 }
 
 bool ase_lsp_client_is_alive(const AseLspClient *client) {

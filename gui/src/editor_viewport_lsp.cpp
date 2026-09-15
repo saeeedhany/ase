@@ -135,7 +135,10 @@ void EditorViewport::startLspClientIfConfigured() {
                QStringLiteral("%1 not found — check lsp_command").arg(m_lspServerName));
         return;
     }
-    setLspState(LspState::Running);
+    /* Spawned, not yet handshaken. pollLsp() promotes this to Running
+     * when the server answers, or to Failed when it never does —
+     * see docs/adr/0093. didOpen below queues until then. */
+    setLspState(LspState::Starting);
 
     ase_lsp_client_set_diagnostics_callback(m_lspClient, lspDiagnosticsTrampoline, this);
     ase_lsp_client_did_open(m_lspClient, m_lspUri.toUtf8().constData(),
@@ -155,8 +158,21 @@ void EditorViewport::checkLspAlive() {
 }
 
 void EditorViewport::pollLsp() {
-    if (m_lspClient != nullptr) {
-        ase_lsp_client_poll(m_lspClient);
+    if (m_lspClient == nullptr) {
+        return;
+    }
+    ase_lsp_client_poll(m_lspClient);
+
+    if (m_lspState != LspState::Starting) {
+        return;
+    }
+    if (ase_lsp_client_is_ready(m_lspClient)) {
+        setLspState(LspState::Running);
+    } else if (!ase_lsp_client_is_alive(m_lspClient)) {
+        setLspState(LspState::Failed);
+        notify(NotifyLevel::Error,
+               QStringLiteral("%1 not found — check lang.%2.lsp")
+                   .arg(m_lspServerName, m_lspLanguageId));
     }
 }
 

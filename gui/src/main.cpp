@@ -146,6 +146,8 @@ QString lspLabelText(LspState state, const QString &serverName) {
         return QString();
     case LspState::Unconfigured:
         return QStringLiteral("no lsp");
+    case LspState::Starting:
+        return QStringLiteral("%1…").arg(serverName);
     case LspState::Running:
         return serverName;
     case LspState::Failed:

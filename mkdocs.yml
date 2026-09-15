@@ -113,6 +113,7 @@ nav:
     - adr/0090-scrolling-runs-at-frame-rate.md
     - adr/0091-the-clock-follows-the-display.md
     - adr/0092-a-discarded-server-is-not-waited-for.md
+    - adr/0093-the-handshake-is-not-awaited.md
 
 theme:
   name: material

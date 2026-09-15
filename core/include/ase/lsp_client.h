@@ -43,6 +43,12 @@ typedef void (*AseLspResultCallback)(void *user_data, const AseJsonValue *result
  * one to introspect further. `root_uri` may be NULL. */
 AseLspClient *ase_lsp_client_start(const char *const *command, const char *root_uri);
 
+/* Whether the initialize handshake has completed. Messages sent before
+ * it does are queued and go out in order once it has, so callers do not
+ * have to wait — but a caller that wants to *report* readiness (a status
+ * indicator) needs to ask. Drive it by calling ase_lsp_client_poll. */
+bool ase_lsp_client_is_ready(const AseLspClient *client);
+
 /* Clean shutdown handshake, then force-terminate, then free. Safe
  * even if the server already died. */
 void ase_lsp_client_stop(AseLspClient *client);

@@ -100,3 +100,4 @@ what changed.
 | [0090](0090-scrolling-runs-at-frame-rate.md) | Scrolling runs at frame rate |
 | [0091](0091-the-clock-follows-the-display.md) | The animation clock follows the display |
 | [0092](0092-a-discarded-server-is-not-waited-for.md) | A discarded server is not waited for |
+| [0093](0093-the-handshake-is-not-awaited.md) | The initialize handshake is not awaited |

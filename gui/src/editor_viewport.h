@@ -70,6 +70,7 @@ class HoverPanel;
 enum class LspState {
     NotApplicable, /* not a file we'd start a server for; shows nothing */
     Unconfigured,  /* lsp_command isn't set */
+    Starting,      /* spawned; the initialize handshake is in flight */
     Running,
     Failed,        /* never came up: missing binary, or handshake timeout */
     Stopped,       /* came up, then went away */

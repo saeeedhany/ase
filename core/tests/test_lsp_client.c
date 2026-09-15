@@ -56,13 +56,26 @@ static void poll_until(AseLspClient *client, const bool *flag, int max_iteration
     }
 }
 
-static void test_missing_server_returns_null(void) {
+static void test_missing_server_dies_on_poll(void) {
     /* A misconfigured/uninstalled language server is a common real-world
      * case, not just a theoretical one — must fail cleanly, not hang or
-     * crash. */
+     * crash. Since the handshake is no longer awaited (docs/adr/0093),
+     * the spawn itself succeeds and the failure surfaces as the child
+     * exiting: poll sees EOF and the client stops being alive. */
     const char *command[] = {"/this/path/does/not/exist/ase_fake_lsp", NULL};
     AseLspClient *client = ase_lsp_client_start(command, NULL);
+#if defined(_WIN32)
     CHECK(client == NULL);
+#else
+    CHECK(client != NULL);
+    CHECK(!ase_lsp_client_is_ready(client));
+    for (int i = 0; i < 1000000 && ase_lsp_client_is_alive(client); i++) {
+        ase_lsp_client_poll(client);
+    }
+    CHECK(!ase_lsp_client_is_alive(client));
+    CHECK(!ase_lsp_client_is_ready(client));
+    ase_lsp_client_stop(client);
+#endif
 }
 
 static void test_full_lifecycle(void) {
@@ -78,6 +91,9 @@ static void test_full_lifecycle(void) {
 #else
     CHECK(client != NULL);
     CHECK(ase_lsp_client_is_alive(client));
+    /* Not ready yet: the handshake is in flight, and anything sent now
+     * queues until it lands. */
+    CHECK(!ase_lsp_client_is_ready(client));
 
     DiagnosticsCapture diag_capture;
     memset(&diag_capture, 0, sizeof(diag_capture));
@@ -138,7 +154,7 @@ static void test_full_lifecycle(void) {
 }
 
 int main(void) {
-    test_missing_server_returns_null();
+    test_missing_server_dies_on_poll();
     test_full_lifecycle();
 
     printf("all lsp client tests passed\n");
