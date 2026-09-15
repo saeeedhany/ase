@@ -99,3 +99,4 @@ what changed.
 | [0089](0089-closing-a-buffer.md) | `:q` closes a buffer, and closing stopped sleeping |
 | [0090](0090-scrolling-runs-at-frame-rate.md) | Scrolling runs at frame rate |
 | [0091](0091-the-clock-follows-the-display.md) | The animation clock follows the display |
+| [0092](0092-a-discarded-server-is-not-waited-for.md) | A discarded server is not waited for |

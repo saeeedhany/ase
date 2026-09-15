@@ -490,16 +490,22 @@ void ase_lsp_client_stop(AseLspClient *client) {
     }
 
     if (client->alive) {
+        /* Both sent, neither awaited. The spec has a client wait for the
+         * shutdown reply before sending exit, but a client that is going
+         * away has nothing to do with the answer — and waiting for it
+         * blocks the UI thread on a server that may be mid-index. That
+         * cost 241ms when a file was closed shortly after opening,
+         * against 19ms for an idle server. Closing the pipes below makes
+         * the server exit regardless; ase_process_destroy polls for that
+         * and kills it only if it does not. See docs/adr/0092. */
         WaitState state = {false, false};
-        if (send_request(client, "shutdown", NULL, wait_state_callback, &state, NULL)) {
-            wait_for(client, &state, 1000);
-        }
-        if (client->alive) {
-            send_message(client, make_notification("exit", NULL));
-        }
+        send_request(client, "shutdown", NULL, wait_state_callback, &state, NULL);
+        send_message(client, make_notification("exit", NULL));
     }
 
-    ase_process_destroy(client->process);
+    /* Nobody wants a discarded server's exit status, and waiting for it
+     * blocked the UI thread. See docs/adr/0092. */
+    ase_process_destroy_detached(client->process);
 
     free(client->read_buffer);
     free(client->pending);

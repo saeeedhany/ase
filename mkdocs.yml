@@ -112,6 +112,7 @@ nav:
     - adr/0089-closing-a-buffer.md
     - adr/0090-scrolling-runs-at-frame-rate.md
     - adr/0091-the-clock-follows-the-display.md
+    - adr/0092-a-discarded-server-is-not-waited-for.md
 
 theme:
   name: material

@@ -68,6 +68,10 @@ void ase_process_destroy(AseProcess *process) {
     free(process);
 }
 
+/* The Windows stub never spawns anything, so there is nothing to detach
+ * from — see ase_process_spawn_ex. */
+void ase_process_destroy_detached(AseProcess *process) { free(process); }
+
 #else /* POSIX */
 
 static bool platform_spawn(const char *const *command, const char *cwd, bool merge_stderr, long *out_pid,
@@ -135,17 +139,25 @@ static void platform_terminate(long pid, int read_fd, int write_fd) {
     if (pid > 0) {
         pid_t p = (pid_t)pid;
         int status;
-        /* Closing the pipes makes a well-behaved child exit within a few
-         * milliseconds, so poll for that instead of sleeping the whole
-         * grace period first — this runs on the UI thread. */
-        for (int elapsed_us = 0; elapsed_us < 200000; elapsed_us += 1000) {
-            if (waitpid(p, &status, WNOHANG) != 0) {
-                return;
-            }
+        if (waitpid(p, &status, WNOHANG) != 0) {
+            return; /* already gone */
+        }
+
+        /* Ask, briefly, then insist. Closing the pipes alone is not
+         * enough for a child that only looks at stdin between units of
+         * work — a busy clangd sat through a 200ms grace period and was
+         * killed anyway, after blocking the UI thread for all of it.
+         * SIGTERM gets a well-behaved child out in a few ms, and the
+         * short window bounds the wait for one that will not go. */
+        kill(p, SIGTERM);
+        for (int elapsed_us = 0; elapsed_us < 20000; elapsed_us += 1000) {
             struct timespec ts;
             ts.tv_sec = 0;
             ts.tv_nsec = 1000L * 1000L;
             nanosleep(&ts, NULL);
+            if (waitpid(p, &status, WNOHANG) != 0) {
+                return;
+            }
         }
         kill(p, SIGKILL);
         waitpid(p, &status, 0);
@@ -228,12 +240,62 @@ int ase_process_exit_code(AseProcess *process) {
     return (process != NULL) ? process->exit_code : -1;
 }
 
+/* Children we stopped waiting for. Swept opportunistically rather than
+ * on a timer: this module has none, and a handful of zombies between
+ * sweeps costs nothing. */
+#define ASE_MAX_DETACHED 32
+static pid_t g_detached[ASE_MAX_DETACHED];
+static size_t g_detached_count;
+
+static void reap_detached(void) {
+    for (size_t i = 0; i < g_detached_count;) {
+        int status;
+        if (waitpid(g_detached[i], &status, WNOHANG) != 0) {
+            g_detached[i] = g_detached[--g_detached_count];
+            continue;
+        }
+        i++;
+    }
+}
+
 void ase_process_destroy(AseProcess *process) {
+    reap_detached();
     if (process == NULL) {
         return;
     }
     platform_terminate(process->pid, process->read_fd, process->write_fd);
     free(process);
+}
+
+void ase_process_destroy_detached(AseProcess *process) {
+    reap_detached();
+    if (process == NULL) {
+        return;
+    }
+    if (process->write_fd >= 0) {
+        close(process->write_fd);
+    }
+    if (process->read_fd >= 0) {
+        close(process->read_fd);
+    }
+    pid_t p = (pid_t)process->pid;
+    free(process);
+    if (p <= 0) {
+        return;
+    }
+
+    int status;
+    if (waitpid(p, &status, WNOHANG) != 0) {
+        return;
+    }
+    kill(p, SIGTERM);
+    if (g_detached_count < ASE_MAX_DETACHED) {
+        g_detached[g_detached_count++] = p;
+        return;
+    }
+    /* Full: fall back to waiting, rather than leaking the pid. */
+    kill(p, SIGKILL);
+    waitpid(p, &status, 0);
 }
 
 #endif

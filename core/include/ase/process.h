@@ -37,6 +37,13 @@ bool ase_process_write(AseProcess *process, const char *data, size_t len);
 
 /* Checked non-blockingly on every call. True once the child has
  * exited. */
+/* Like ase_process_destroy, but does not wait for the child to die:
+ * the pipes are closed, SIGTERM is sent, and the pid is remembered so a
+ * later spawn or destroy can reap it. For a process whose exit status
+ * nobody wants — a language server being discarded — where waiting cost
+ * tens of milliseconds on the UI thread. See docs/adr/0092. */
+void ase_process_destroy_detached(AseProcess *process);
+
 bool ase_process_has_exited(AseProcess *process);
 /* Valid only once ase_process_has_exited() is true. */
 int ase_process_exit_code(AseProcess *process);
