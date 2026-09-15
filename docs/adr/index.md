@@ -102,3 +102,4 @@ what changed.
 | [0092](0092-a-discarded-server-is-not-waited-for.md) | A discarded server is not waited for |
 | [0093](0093-the-handshake-is-not-awaited.md) | The initialize handshake is not awaited |
 | [0094](0094-what-startup-actually-costs.md) | What startup actually costs |
+| [0095](0095-the-performance-baseline.md) | The performance baseline |

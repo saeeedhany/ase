@@ -115,6 +115,7 @@ nav:
     - adr/0092-a-discarded-server-is-not-waited-for.md
     - adr/0093-the-handshake-is-not-awaited.md
     - adr/0094-what-startup-actually-costs.md
+    - adr/0095-the-performance-baseline.md
 
 theme:
   name: material
