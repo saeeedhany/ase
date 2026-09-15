@@ -101,10 +101,22 @@ void EditorViewport::rebuildSyntax() {
     if (language == nullptr) {
         return;
     }
-    if (strcmp(language, "c") == 0) {
-        m_syntax = ase_syntax_create(ASE_LANG_C);
-    } else if (strcmp(language, "cpp") == 0) {
-        m_syntax = ase_syntax_create(ASE_LANG_CPP);
+    /* Only the languages a grammar was compiled in for; everything else
+     * the resolver names still gets a server, just no colours. */
+    static const struct {
+        const char *name;
+        AseLanguage language;
+    } kGrammars[] = {
+        {"c", ASE_LANG_C},         {"cpp", ASE_LANG_CPP},
+        {"python", ASE_LANG_PYTHON}, {"javascript", ASE_LANG_JAVASCRIPT},
+        {"css", ASE_LANG_CSS},     {"html", ASE_LANG_HTML},
+        {"lua", ASE_LANG_LUA},
+    };
+    for (const auto &entry : kGrammars) {
+        if (strcmp(language, entry.name) == 0) {
+            m_syntax = ase_syntax_create(entry.language);
+            return;
+        }
     }
 }
 

@@ -110,3 +110,4 @@ what changed.
 | [0100](0100-text-objects.md) | Text objects |
 | [0101](0101-join-lines.md) | `J` joins lines |
 | [0102](0102-substitute.md) | `:s`, and the regex dialect it speaks |
+| [0103](0103-the-mainstream-languages.md) | The mainstream languages |

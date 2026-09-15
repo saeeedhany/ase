@@ -100,6 +100,48 @@ static void check_incremental_matches_fresh(const char *label, const char *befor
     ase_syntax_destroy(fresh);
 }
 
+/* A typo in any query makes ts_query_new fail silently; in the editor
+ * that looks like "no colours", not like an error. */
+static void test_every_language_compiles(void) {
+    static const struct {
+        AseLanguage language;
+        const char *name;
+        const char *source;
+        const char *keyword;
+    } kLanguages[] = {
+        {ASE_LANG_C, "c", "int main(void) { return 0; }", "return"},
+        {ASE_LANG_CPP, "cpp", "class A { public: int x; };", "class"},
+        {ASE_LANG_PYTHON, "python", "def f():\n    return None\n", "def"},
+        {ASE_LANG_JAVASCRIPT, "javascript", "const a = 1;\nfunction f() {}\n", "function"},
+        {ASE_LANG_CSS, "css", "a { color: red; }", NULL},
+        {ASE_LANG_HTML, "html", "<p class=\"x\">hi</p>", NULL},
+        {ASE_LANG_LUA, "lua", "local x = 1\nfunction f() end\n", "function"},
+    };
+
+    for (size_t i = 0; i < sizeof(kLanguages) / sizeof(kLanguages[0]); i++) {
+        AseSyntax *syntax = ase_syntax_create(kLanguages[i].language);
+        if (syntax == NULL) {
+            printf("%s: query failed to compile\n", kLanguages[i].name);
+            CHECK(0);
+            continue;
+        }
+        SpanList spans = {NULL, 0, 0};
+        highlight_into(syntax, kLanguages[i].source, &spans);
+        if (spans.count == 0) {
+            printf("%s: query compiled but captured nothing\n", kLanguages[i].name);
+            CHECK(0);
+        }
+        if (kLanguages[i].keyword != NULL &&
+            !has_span(&spans, kLanguages[i].source, ASE_HL_KEYWORD, kLanguages[i].keyword)) {
+            printf("%s: expected keyword '%s' not highlighted\n", kLanguages[i].name,
+                   kLanguages[i].keyword);
+            CHECK(0);
+        }
+        free(spans.spans);
+        ase_syntax_destroy(syntax);
+    }
+}
+
 int main(void) {
     AseSyntax *syntax = ase_syntax_create(ASE_LANG_C);
     CHECK(syntax != NULL);
@@ -220,6 +262,8 @@ int main(void) {
     CHECK(has_span(&cpp_spans, cpp_src, ASE_HL_COMMENT, "// demo"));
     free(cpp_spans.spans);
     ase_syntax_destroy(cpp);
+
+    test_every_language_compiles();
 
     printf("all syntax tests passed\n");
     return 0;

@@ -28,7 +28,34 @@ FetchContent_Declare(tree_sitter_cpp
     GIT_TAG v0.23.4
     SOURCE_SUBDIR do-not-configure-upstream-build
 )
-FetchContent_MakeAvailable(tree_sitter tree_sitter_c tree_sitter_cpp)
+FetchContent_Declare(tree_sitter_python
+    GIT_REPOSITORY https://github.com/tree-sitter/tree-sitter-python.git
+    GIT_TAG v0.23.6
+    SOURCE_SUBDIR do-not-configure-upstream-build
+)
+FetchContent_Declare(tree_sitter_javascript
+    GIT_REPOSITORY https://github.com/tree-sitter/tree-sitter-javascript.git
+    GIT_TAG v0.23.1
+    SOURCE_SUBDIR do-not-configure-upstream-build
+)
+FetchContent_Declare(tree_sitter_css
+    GIT_REPOSITORY https://github.com/tree-sitter/tree-sitter-css.git
+    GIT_TAG v0.23.2
+    SOURCE_SUBDIR do-not-configure-upstream-build
+)
+FetchContent_Declare(tree_sitter_html
+    GIT_REPOSITORY https://github.com/tree-sitter/tree-sitter-html.git
+    GIT_TAG v0.23.2
+    SOURCE_SUBDIR do-not-configure-upstream-build
+)
+FetchContent_Declare(tree_sitter_lua
+    GIT_REPOSITORY https://github.com/tree-sitter-grammars/tree-sitter-lua.git
+    GIT_TAG v0.4.0
+    SOURCE_SUBDIR do-not-configure-upstream-build
+)
+FetchContent_MakeAvailable(tree_sitter tree_sitter_c tree_sitter_cpp
+    tree_sitter_python tree_sitter_javascript tree_sitter_css
+    tree_sitter_html tree_sitter_lua)
 
 add_library(tree_sitter_runtime STATIC ${tree_sitter_SOURCE_DIR}/lib/src/lib.c)
 target_include_directories(tree_sitter_runtime
@@ -40,7 +67,7 @@ set_target_properties(tree_sitter_runtime PROPERTIES
     C_STANDARD_REQUIRED ON
 )
 
-foreach(grammar c cpp)
+foreach(grammar c cpp python javascript css html lua)
     add_library(tree_sitter_${grammar}_grammar STATIC ${tree_sitter_${grammar}_SOURCE_DIR}/src/parser.c)
     target_include_directories(tree_sitter_${grammar}_grammar PRIVATE ${tree_sitter_${grammar}_SOURCE_DIR}/src)
     target_link_libraries(tree_sitter_${grammar}_grammar PUBLIC tree_sitter_runtime)
@@ -51,7 +78,7 @@ endforeach()
 
 # Embed src/queries/c_highlights.scm as a C string — see docs/adr/0007,
 # decision 4, for why this is our own query, not the grammar's.
-foreach(lang c cpp)
+foreach(lang c cpp python javascript css html lua)
     file(READ ${CMAKE_CURRENT_SOURCE_DIR}/src/queries/${lang}_highlights.scm ASE_QUERY_RAW)
     string(REPLACE "\\" "\\\\" ASE_QUERY_RAW "${ASE_QUERY_RAW}")
     string(REPLACE "\"" "\\\"" ASE_QUERY_RAW "${ASE_QUERY_RAW}")
@@ -73,11 +100,15 @@ target_include_directories(ase_syntax
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
 target_link_libraries(ase_syntax PRIVATE tree_sitter_c_grammar tree_sitter_cpp_grammar
+    tree_sitter_python_grammar tree_sitter_javascript_grammar tree_sitter_css_grammar
+    tree_sitter_html_grammar tree_sitter_lua_grammar
         ase_warnings
 )
 
 if(ASE_ENABLE_SANITIZERS)
-    foreach(sanitized_target tree_sitter_runtime tree_sitter_c_grammar tree_sitter_cpp_grammar ase_syntax)
+    foreach(sanitized_target tree_sitter_runtime tree_sitter_c_grammar tree_sitter_cpp_grammar
+            tree_sitter_python_grammar tree_sitter_javascript_grammar tree_sitter_css_grammar
+            tree_sitter_html_grammar tree_sitter_lua_grammar ase_syntax)
         target_compile_options(${sanitized_target} PUBLIC -fsanitize=address,undefined -fno-omit-frame-pointer -g)
         target_link_options(${sanitized_target} PUBLIC -fsanitize=address,undefined)
     endforeach()

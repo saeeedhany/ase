@@ -11,6 +11,11 @@
 
 extern const TSLanguage *tree_sitter_c(void);
 extern const TSLanguage *tree_sitter_cpp(void);
+extern const TSLanguage *tree_sitter_python(void);
+extern const TSLanguage *tree_sitter_javascript(void);
+extern const TSLanguage *tree_sitter_css(void);
+extern const TSLanguage *tree_sitter_html(void);
+extern const TSLanguage *tree_sitter_lua(void);
 
 struct AseSyntax {
     TSParser *parser;
@@ -165,6 +170,21 @@ AseSyntax *ase_syntax_create(AseLanguage language) {
     case ASE_LANG_CPP:
         return syntax_create(tree_sitter_cpp(), ASE_CPP_HIGHLIGHTS_QUERY,
                               sizeof(ASE_CPP_HIGHLIGHTS_QUERY) - 1);
+    case ASE_LANG_PYTHON:
+        return syntax_create(tree_sitter_python(), ASE_PYTHON_HIGHLIGHTS_QUERY,
+                              sizeof(ASE_PYTHON_HIGHLIGHTS_QUERY) - 1);
+    case ASE_LANG_JAVASCRIPT:
+        return syntax_create(tree_sitter_javascript(), ASE_JAVASCRIPT_HIGHLIGHTS_QUERY,
+                              sizeof(ASE_JAVASCRIPT_HIGHLIGHTS_QUERY) - 1);
+    case ASE_LANG_CSS:
+        return syntax_create(tree_sitter_css(), ASE_CSS_HIGHLIGHTS_QUERY,
+                              sizeof(ASE_CSS_HIGHLIGHTS_QUERY) - 1);
+    case ASE_LANG_HTML:
+        return syntax_create(tree_sitter_html(), ASE_HTML_HIGHLIGHTS_QUERY,
+                              sizeof(ASE_HTML_HIGHLIGHTS_QUERY) - 1);
+    case ASE_LANG_LUA:
+        return syntax_create(tree_sitter_lua(), ASE_LUA_HIGHLIGHTS_QUERY,
+                              sizeof(ASE_LUA_HIGHLIGHTS_QUERY) - 1);
     }
     return NULL;
 }

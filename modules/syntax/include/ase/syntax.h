@@ -38,6 +38,11 @@ typedef struct AseSyntax AseSyntax;
 typedef enum {
     ASE_LANG_C,
     ASE_LANG_CPP,
+    ASE_LANG_PYTHON,
+    ASE_LANG_JAVASCRIPT,
+    ASE_LANG_CSS,
+    ASE_LANG_HTML,
+    ASE_LANG_LUA,
 } AseLanguage;
 
 /* NULL on allocation failure or an unknown language. Each language costs
