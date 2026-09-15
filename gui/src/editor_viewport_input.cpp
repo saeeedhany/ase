@@ -53,7 +53,10 @@ bool EditorViewport::handleAltShortcut(QKeyEvent *event) {
         return true;
     }
     if (event->key() == Qt::Key_I) {
-        if (m_aboutPanel != nullptr) {
+        if (m_aboutPanel == nullptr) {
+            m_aboutPanel = new AboutPanel(this);
+        }
+        {
             m_aboutPanel->openAbout();
         }
         return true;

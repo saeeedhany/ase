@@ -313,7 +313,9 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
     viewport->setFindBar(new FindBar(viewport));
     viewport->setFileBrowser(new FileBrowserPanel(viewport));
     viewport->setHelpPanel(new HelpPanel(viewport));
-    viewport->setAboutPanel(new AboutPanel(viewport));
+    /* AboutPanel is built on first Alt+I instead: it decodes and
+     * smooth-scales the app icon, which cost 8ms of every buffer's
+     * construction for a panel almost nobody opens. See docs/adr/0094. */
     /* One for the window: there is one status bar. */
     viewport->setCommandLine(m_commandLine);
     /* Not FloatingPanels: both track the caret and refresh constantly. */
