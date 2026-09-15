@@ -249,6 +249,9 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         } else {
             collapseToOneCursor();
         }
+        /* Vim's :nohlsearch, on the key people actually press for it.
+         * The needle survives, so `n` still works afterwards. */
+        clearFindHighlights();
         ensureCursorVisible();
         update();
         return;

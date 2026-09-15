@@ -28,8 +28,9 @@ public:
 
     /* Which buffer a typed command acts on. */
     void setViewport(EditorViewport *viewport);
-    /* `prefix` is the character that opened it — ':' today, '/' and '?'
-     * once search lands. It is shown, not typed into the field. */
+    /* `prefix` is the character that opened it and decides what Enter
+     * does: ':' runs a command, '/' and '?' search. It is shown, not
+     * typed into the field. */
     void openPrompt(QChar prefix);
     void closePrompt();
     bool isPromptOpen() const { return m_open; }
@@ -48,6 +49,7 @@ private:
     void run();
 
     EditorViewport *m_viewport = nullptr;
+    QChar m_prefixChar = QLatin1Char(':');
     QLabel *m_prefix;
     SmoothLineEdit *m_edit;
     QGraphicsOpacityEffect *m_opacity;

@@ -157,6 +157,15 @@ public:
     void clearFindQuery();
     void findNext();
     void findPrevious();
+    /* `/` and `?`. Records a jump, then moves to the first match past
+     * the cursor in that direction. */
+    void startSearch(const QString &needle, bool forward);
+    /* `n` / `N`, with the direction already resolved against the one
+     * the search was made in. */
+    void searchRepeat(bool forward);
+    bool searchWasForward() const { return m_searchForward; }
+    /* Vim's :nohlsearch — drops the matches, keeps the needle. */
+    void clearFindHighlights();
     void replaceCurrentMatch(const QByteArray &replacement);
     void replaceAllMatches(const QByteArray &replacement);
 
@@ -401,6 +410,8 @@ private:
 
     /* Plain substring, ASCII-case-insensitive. See docs/adr/0021. */
     void recomputeMatches();
+    int lastMatchBefore(size_t offset) const;
+    void searchStep(bool forward);
     void notifyNoMatches();
     /* Wraps either direction, selecting the range like any other. */
     void jumpToMatch(int index);
@@ -521,6 +532,10 @@ private:
     QByteArray m_findNeedle;
     QVector<size_t> m_matches;
     int m_currentMatch = -1;
+    /* Whether the match list is being maintained and drawn. The needle
+     * outlives it, so `n` works with nothing on screen. */
+    bool m_findActive = false;
+    bool m_searchForward = true;
     FindBar *m_findBar = nullptr;
     FileBrowserPanel *m_fileBrowser = nullptr;
     CommandLine *m_commandLine = nullptr;

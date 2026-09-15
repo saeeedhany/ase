@@ -782,6 +782,20 @@ bool EditorViewport::vimApplyMotionKey(char c, int count) {
         resetVimPendingState();
         return true;
     }
+    if (c == '/' || c == '?') {
+        if (m_commandLine != nullptr) {
+            m_commandLine->openPrompt(QLatin1Char(c));
+        }
+        resetVimPendingState();
+        return true;
+    }
+    if (c == 'n' || c == 'N') {
+        /* `n` keeps the search's own direction, `N` reverses it, so `n`
+         * after `?` goes backward. */
+        searchRepeat(c == 'n' ? searchWasForward() : !searchWasForward());
+        resetVimPendingState();
+        return true;
+    }
     if (c == 'f' || c == 'F' || c == 't' || c == 'T') {
         /* Keeps the pending count, so `3fx` is still the third x. */
         m_vimPendingFind = c;

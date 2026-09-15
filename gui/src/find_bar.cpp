@@ -92,7 +92,9 @@ void FindBar::openFor(Mode mode) {
 void FindBar::hideBar() {
     setAnimated(m_viewport->animationsEnabled());
     closePanel();
-    m_viewport->clearFindQuery();
+    /* Highlights go, the needle stays — `n` repeats whatever was last
+     * searched for, however it was searched for. See docs/adr/0074. */
+    m_viewport->clearFindHighlights();
     m_viewport->setFocus();
 }
 

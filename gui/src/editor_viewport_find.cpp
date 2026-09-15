@@ -12,7 +12,11 @@
  * actually jump. See docs/adr/0021. */
 void EditorViewport::recomputeMatches() {
     m_matches.clear();
-    if (m_findNeedle.isEmpty()) {
+    /* The needle outlives the find bar so `n` can repeat it, but the
+     * match list must not: this runs on every edit and lowercases the
+     * whole buffer twice, which is not a cost to pay for a search
+     * nobody is looking at. */
+    if (!m_findActive || m_findNeedle.isEmpty()) {
         m_currentMatch = -1;
         return;
     }
@@ -35,6 +39,7 @@ void EditorViewport::recomputeMatches() {
     }
 }
 
+/* First match starting at or after `offset`, else the first match. */
 int EditorViewport::nearestMatchAtOrAfter(size_t offset) const {
     for (int i = 0; i < m_matches.size(); ++i) {
         if (m_matches[i] >= offset) {
@@ -69,6 +74,7 @@ void EditorViewport::jumpToMatch(int index) {
  * field. */
 void EditorViewport::setFindQuery(const QString &needle) {
     m_findNeedle = needle.toUtf8();
+    m_findActive = true;
     recomputeMatches();
     if (!m_matches.isEmpty()) {
         jumpToMatch(nearestMatchAtOrAfter(m_cursors.isEmpty() ? 0 : m_cursors[0]));
@@ -87,9 +93,81 @@ void EditorViewport::notifyNoMatches() {
 
 void EditorViewport::clearFindQuery() {
     m_findNeedle.clear();
+    clearFindHighlights();
+}
+
+/* Drops the matches and stops drawing them, but keeps the needle, so
+ * `n` still has something to repeat after the bar is gone. Vim's
+ * `:nohlsearch`, which is also what Escape does in Normal mode. */
+void EditorViewport::clearFindHighlights() {
+    m_findActive = false;
     m_matches.clear();
     m_currentMatch = -1;
     update();
+}
+
+/* Last match starting strictly before `offset`, else the last match. */
+int EditorViewport::lastMatchBefore(size_t offset) const {
+    for (int i = m_matches.size() - 1; i >= 0; --i) {
+        if (m_matches[i] < offset) {
+            return i;
+        }
+    }
+    return m_matches.size() - 1;
+}
+
+/* `/` and `?`. Unlike setFindQuery's incremental feel, this lands on the
+ * first match past the cursor in the chosen direction rather than the
+ * nearest one at or after it — a search you have finished typing should
+ * move, not sit still on what you were already on. */
+void EditorViewport::startSearch(const QString &needle, bool forward) {
+    if (needle.isEmpty()) {
+        return;
+    }
+    recordJump();
+    m_findNeedle = needle.toUtf8();
+    m_searchForward = forward;
+    m_findActive = true;
+    recomputeMatches();
+    if (m_matches.isEmpty()) {
+        notifyNoMatches();
+        return;
+    }
+    searchStep(forward);
+}
+
+/* `n` / `N`. `forward` is already resolved against the direction the
+ * search was made in, so `n` after `?` goes backward. */
+void EditorViewport::searchRepeat(bool forward) {
+    if (m_findNeedle.isEmpty()) {
+        notify(NotifyLevel::Warning, QStringLiteral("no previous search"));
+        return;
+    }
+    /* The list is thrown away when highlights go off, so rebuild it
+     * here rather than keeping it current through every edit. */
+    m_findActive = true;
+    if (m_matches.isEmpty()) {
+        recomputeMatches();
+    }
+    if (m_matches.isEmpty()) {
+        notifyNoMatches();
+        return;
+    }
+    recordJump();
+    searchStep(forward);
+}
+
+/* Steps one match from where the cursor is, not from m_currentMatch,
+ * which an edit or a recompute can have invalidated. */
+void EditorViewport::searchStep(bool forward) {
+    size_t cursor = m_cursors.isEmpty() ? 0 : m_cursors.last();
+    if (forward) {
+        size_t from = hasSelectionAt(0) ? selectionMaxAt(0) : cursor;
+        jumpToMatch(nearestMatchAtOrAfter(from));
+    } else {
+        size_t from = hasSelectionAt(0) ? selectionMinAt(0) : cursor;
+        jumpToMatch(lastMatchBefore(from));
+    }
 }
 
 void EditorViewport::findNext() {

@@ -58,6 +58,7 @@ void CommandLine::openPrompt(QChar prefix) {
     if (m_viewport == nullptr) {
         return;
     }
+    m_prefixChar = prefix;
     m_prefix->setText(QString(prefix));
     refreshTheme();
     m_edit->clear();
@@ -125,11 +126,18 @@ bool CommandLine::eventFilter(QObject *watched, QEvent *event) {
     return QWidget::eventFilter(watched, event);
 }
 
+/* Read before closing: closePrompt() clears the field. */
 void CommandLine::run() {
-    QString command = m_edit->text();
+    QString text = m_edit->text();
+    QChar prefix = m_prefixChar;
     EditorViewport *viewport = m_viewport;
     closePrompt();
-    if (viewport != nullptr) {
-        viewport->runCommand(command);
+    if (viewport == nullptr) {
+        return;
+    }
+    if (prefix == QLatin1Char('/') || prefix == QLatin1Char('?')) {
+        viewport->startSearch(text, prefix == QLatin1Char('/'));
+    } else {
+        viewport->runCommand(text);
     }
 }
