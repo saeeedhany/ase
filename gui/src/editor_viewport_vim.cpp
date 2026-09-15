@@ -727,8 +727,8 @@ void EditorViewport::vimRecordKey(QChar qc) {
     }
     /* A key with nothing pending begins a new command, so whatever was
      * being recorded came to nothing and is dropped. */
-    if (m_vimPendingOperator == '\0' && m_vimCount1 == 0 && m_vimCount2 == 0 && !m_vimPendingG &&
-        m_vimPendingFind == '\0' && !m_vimPendingReplace) {
+    if (m_vimMode != VimMode::Visual && m_vimPendingOperator == '\0' && m_vimCount1 == 0 &&
+        m_vimCount2 == 0 && !m_vimPendingG && m_vimPendingFind == '\0' && !m_vimPendingReplace) {
         m_dotRecording.clear();
     }
     m_dotRecording.append(qc);
@@ -876,6 +876,59 @@ void EditorViewport::vimReplaceChar(QChar target, int count, bool newline) {
     vimMarkChange();
 }
 
+/*
+ * Replaces every character of the selection, leaving line breaks alone —
+ * a selection spanning two lines stays two lines.
+ *
+ * Covers exactly the range visual `d` would delete, which is this
+ * editor's own selection rather than vim's: the cursor sits *at* a byte
+ * here rather than *on* a character, so a selection is exclusive of the
+ * character under the cursor where vim's is inclusive. That gap predates
+ * this and applies to every visual operator; matching vim here alone
+ * would make `r` disagree with the highlight it is acting on. See
+ * docs/adr/0078.
+ */
+void EditorViewport::vimReplaceSelection(QChar target) {
+    size_t start = selectionMinAt(0);
+    size_t end = selectionMaxAt(0);
+    if (start >= end) {
+        return;
+    }
+    QByteArray original = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
+    QByteArray replacement;
+    replacement.reserve(original.size());
+    QByteArray one = QString(target).toUtf8();
+    for (int i = 0; i < original.size();) {
+        if (original.at(i) == '\n') {
+            replacement.append('\n');
+            i++;
+            continue;
+        }
+        int len = 1;
+        while (i + len < original.size() &&
+               (static_cast<unsigned char>(original.at(i + len)) & 0xC0) == 0x80) {
+            len++;
+        }
+        replacement.append(one);
+        i += len;
+    }
+
+    ase_undo_begin_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    if (ase_buffer_delete(m_buffer, start, end - start)) {
+        ase_undo_record_delete(m_undo, start, original.constData(), static_cast<size_t>(original.size()));
+    }
+    if (ase_buffer_insert(m_buffer, start, replacement.constData(),
+                          static_cast<size_t>(replacement.size()))) {
+        ase_undo_record_insert(m_undo, start, replacement.constData(),
+                               static_cast<size_t>(replacement.size()));
+    }
+    m_cursors[0] = start;
+    m_selectionAnchors[0] = start;
+    ase_undo_end_group(m_undo, m_cursors.constData(), static_cast<size_t>(m_cursors.size()));
+    refreshCache();
+    vimMarkChange();
+}
+
 void EditorViewport::vimEnterReplaceMode(int count) {
     m_vimMode = VimMode::Insert;
     m_vimReplacing = true;
@@ -996,7 +1049,14 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
          * not something to branch on. Any other non-printable target
          * cancels, as it does in vim. */
         bool newline = (key == Qt::Key_Return || key == Qt::Key_Enter);
-        if (newline || qc.isPrint()) {
+        if (m_vimMode == VimMode::Visual) {
+            if (qc.isPrint()) {
+                vimReplaceSelection(qc);
+            }
+            collapseToOneCursor();
+            m_vimMode = VimMode::Normal;
+            m_vimVisualLinewise = false;
+        } else if (newline || qc.isPrint()) {
             vimReplaceChar(qc, std::max(1, m_vimCount1) * std::max(1, m_vimCount2), newline);
         }
         resetVimPendingState();
@@ -1218,6 +1278,11 @@ void EditorViewport::vimApplyVisualKey(char c) {
         }
         m_vimVisualLinewise = false;
         break;
+    case 'r':
+        /* Early: the tail below would reset the pending flag before the
+         * replacement character ever arrived. */
+        m_vimPendingReplace = true;
+        return;
     default:
         break; /* unrecognized in Visual: swallowed, no state change */
     }

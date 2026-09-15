@@ -86,6 +86,7 @@ QVector<HelpSection> helpSections() {
           {"gd", "Go to definition"},
           {"v / V", "Visual / visual line mode"},
           {"o", "Jump to the other end of the selection"},
+          {"r &nbsp;(in Visual)", "Replace every character in the selection"},
           {"d y c + motion", "Delete / yank / change (dd, yy, cc for lines)"},
           {"", "&mdash; all four fill the unnamed register that p pastes"},
           {"x / p / P", "Delete character / paste after / before"},

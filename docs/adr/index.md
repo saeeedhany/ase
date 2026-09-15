@@ -85,3 +85,4 @@ what changed.
 | [0075](0075-repeating-the-last-change.md) | Repeating the last change (`.`) |
 | [0076](0076-replace-a-character.md) | Replacing a character (`r`) |
 | [0077](0077-replace-mode.md) | Replace mode (`R`) |
+| [0078](0078-visual-mode-replace.md) | Visual-mode `r`, and a selection that is off by one |

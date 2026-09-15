@@ -367,6 +367,9 @@ private:
      * than deleting, which is why the originals are kept. */
     bool vimReplaceBackspace();
     void vimLeaveReplaceMode();
+    /* Visual-mode `r` — every character in the selection becomes
+     * `target`, except line breaks, which are left alone. */
+    void vimReplaceSelection(QChar target);
     size_t vimParagraphForward(size_t pos) const;
     size_t vimParagraphBackward(size_t pos) const;
     bool vimLineIsEmpty(int line) const;
