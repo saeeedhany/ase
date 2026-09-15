@@ -62,7 +62,7 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
             bool moving = m_renderedScrollLine != m_scrollLine || m_renderedScrollX != m_scrollX ||
                           !m_typingAnimations.isEmpty() ||
                           m_idleTicks < motion::ticksFor(400);
-            if (moving || m_idleTicks % 2 == 0) {
+            if (moving || m_idleTicks % motion::ticksFor(32) == 0) {
                 update(); /* the fade's phase is also idle-tick-driven — see docs/adr/0017 */
             }
         } else if (m_idleTicks % motion::ticksFor(360) == 0) { /* see docs/adr/0016, docs/adr/0027 */
@@ -70,7 +70,9 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
             update();
         }
     });
-    m_blinkTimer->start(motion::kTickMs); /* the heartbeat every frame-driven value steps on */
+    motion::refreshTickFromScreen(this);
+    m_blinkTimer->start(motion::tickMs());
+ /* the heartbeat every frame-driven value steps on */
 
     m_configTimer = new QTimer(this);
     connect(m_configTimer, &QTimer::timeout, this, [this]() {

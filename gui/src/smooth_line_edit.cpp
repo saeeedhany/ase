@@ -13,14 +13,14 @@
 namespace {
 
 /* The caret breathe cycle and the hard-blink half-period, both in ticks
- * of motion::kTickMs — the same numbers EditorViewport uses (24 ticks
- * ~= 720ms, toggling every 12). Duplicated as a deliberate two-line
+ * — the same durations EditorViewport uses (720ms, toggling every
+ * 360ms). Duplicated as a deliberate two-line
  * copy rather than promoted to motion.h: they belong to "what a caret
  * does", and the only other caret in the app is the editor's own, whose
  * copy lives in its own renderer. If a third caret ever appears, that is
  * the moment to move them. */
-constexpr int kCaretAnimationTicks = motion::ticksFor(720);
-constexpr int kBlinkToggleTicks = motion::ticksFor(360);
+inline int caretAnimationTicks() { return motion::ticksFor(720); }
+inline int blinkToggleTicks() { return motion::ticksFor(360); }
 constexpr double kTwoPi = 6.283185307179586;
 
 /* Matches kCaretWidth in the editor's own internal header — the panels
@@ -128,7 +128,7 @@ void SmoothLineEdit::tick() {
     }
 
     m_caretX = caretTargetX();
-    if (m_idleTicks % kBlinkToggleTicks == 0) {
+    if (m_idleTicks % blinkToggleTicks() == 0) {
         m_caretVisible = !m_caretVisible;
         update();
     }
@@ -161,7 +161,8 @@ void SmoothLineEdit::paintEvent(QPaintEvent *event) {
      * (docs/adr/0017). */
     int alpha = 255;
     if (m_animated) {
-        double phase = (m_idleTicks % kCaretAnimationTicks) / static_cast<double>(kCaretAnimationTicks);
+        int cycle = caretAnimationTicks();
+        double phase = (m_idleTicks % cycle) / static_cast<double>(cycle);
         alpha = std::clamp(static_cast<int>(128 + 127 * std::cos(phase * kTwoPi)), 0, 255);
     } else if (!m_caretVisible) {
         return;
@@ -184,7 +185,7 @@ void SmoothLineEdit::focusInEvent(QFocusEvent *event) {
     m_caretX = caretTargetX();
     m_idleTicks = 0;
     m_caretVisible = true;
-    m_timer->start(motion::kTickMs);
+    m_timer->start(motion::tickMs());
     update();
 }
 

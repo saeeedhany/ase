@@ -20,12 +20,12 @@
  * it. */
 constexpr int kCaretWidth = 2;
 
-/* Typing pop-in duration — 4 ticks of motion::kTickMs (~120ms),
+/* Typing pop-in duration — ~120ms,
  * short enough to read as a snappy "just landed" pop rather than a
  * sluggish delay before typed text looks finished. See docs/adr/0049.
  * Shared because insertText() stamps entries with it and the renderer
  * measures their progress against it. */
-constexpr int kTypingAnimationTicks = motion::ticksFor(120);
+inline int typingAnimationTicks() { return motion::ticksFor(120); }
 
 /* A UTF-8 continuation byte is 10xxxxxx — i.e. not the first byte of a
  * codepoint. Every "step one character, not one byte" walk in this

@@ -2,6 +2,8 @@
 #define ASE_MOTION_H
 
 #include <QEasingCurve>
+
+class QWidget;
 #include <QPropertyAnimation>
 
 /*
@@ -50,12 +52,25 @@ constexpr double kEaseFactor = 0.68;
  * caret breathe cycle, the typing pop-in, all eased glide — advances one
  * step per tick of this, so it is the unit those tick counts are
  * expressed in. */
-constexpr int kTickMs = 16;
+/* The animation clock, in milliseconds. Follows the display's refresh
+ * rate — a 144Hz screen animates at 144Hz — rather than assuming a
+ * number. See docs/adr/0091. */
+int tickMs();
+
+/* Re-reads the refresh rate of the screen `widget` is on. Call when a
+ * window is created or moves between displays; a rate that is missing
+ * or implausible leaves the current clock alone. */
+void refreshTickFromScreen(const QWidget *widget);
 
 /* Tick counts are derived from the duration they mean, not written as
- * literals, so changing kTickMs re-rates the animation loop without
- * silently re-timing every animation that counts in it. */
-constexpr int ticksFor(int ms) { return ms / kTickMs > 0 ? ms / kTickMs : 1; }
+ * literals, so the clock can change rate without re-timing every
+ * animation that counts in it. Never returns 0. */
+int ticksFor(int ms);
+
+/* Caps the clock regardless of what the display can do — `max_fps` in
+ * config, for anyone who would rather have the battery. 0 removes the
+ * cap. Never raises the rate above the display's own. */
+void setMaxFps(int fps);
 
 /* Below this remaining fraction, an eased 0..1 opacity/reveal snaps to
  * its target instead of asymptotically crawling forever. */

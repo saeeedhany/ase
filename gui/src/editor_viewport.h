@@ -216,6 +216,7 @@ private:
     void checkConfigReload();
     /* Defaults, then the user file, then the nearest .ase.conf above
      * this buffer's own file. */
+    void refreshAnimationClock();
     void rebuildConfig();
     void rebuildSyntax();
     void openConfigFile();
@@ -582,7 +583,7 @@ private:
     QDateTime m_configModified;
     QString m_projectConfigPath;
     QDateTime m_projectConfigModified;
-    QTimer *m_configTimer;
+    QTimer *m_configTimer = nullptr;
     QColor m_backgroundColor;
     QColor m_textColor;
     QColor m_selectionColor;
@@ -743,7 +744,7 @@ private:
     QFontMetrics m_metrics {m_font};
     QFontMetrics m_boldMetrics {m_font};
 
-    QTimer *m_blinkTimer;
+    QTimer *m_blinkTimer = nullptr;
     bool m_caretVisible = true;
     /* Ticks since the last cursor-moving action; drives both the hard
      * blink and the fade. */

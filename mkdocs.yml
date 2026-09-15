@@ -111,6 +111,7 @@ nav:
     - adr/0088-config-documents-itself.md
     - adr/0089-closing-a-buffer.md
     - adr/0090-scrolling-runs-at-frame-rate.md
+    - adr/0091-the-clock-follows-the-display.md
 
 theme:
   name: material

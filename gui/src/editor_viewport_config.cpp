@@ -7,6 +7,7 @@
 #include "find_bar.h"
 #include "help_panel.h"
 #include "hover_panel.h"
+#include "motion.h"
 #include "output_panel.h"
 
 #include <algorithm>
@@ -130,6 +131,11 @@ void EditorViewport::applyConfig() {
      * An unrecognized value falls back to "absolute" rather than
      * treating it as an error — a bad config value should never break
      * the editor. */
+    /* The timer itself is re-intervalled by refreshAnimationClock(), which
+     * also runs on the config poll — applyConfig() is called from the
+     * constructor, before the timer exists. */
+    motion::setMaxFps(static_cast<int>(ase_config_get_int(m_config, "max_fps", 0)));
+
     const char *lineNumbersStr = ase_config_get_string(m_config, "line_numbers");
     m_lineNumberMode = lineNumbersStr != nullptr ? QString::fromUtf8(lineNumbersStr).toLower()
                                                   : QStringLiteral("absolute");
@@ -178,7 +184,21 @@ void EditorViewport::resetFontSize() {
     update();
 }
 
+/* Polled rather than wired to QWindow::screenChanged: the window has no
+ * native handle yet when the viewport is built, so connecting there
+ * silently never fires. Re-reading a cached rate every 750ms costs
+ * nothing and is right after a drag to another display. */
+void EditorViewport::refreshAnimationClock() {
+    motion::refreshTickFromScreen(this);
+    int interval = motion::tickMs();
+    if (m_blinkTimer != nullptr && m_blinkTimer->interval() != interval) {
+        m_blinkTimer->setInterval(interval);
+    }
+}
+
 void EditorViewport::checkConfigReload() {
+    refreshAnimationClock();
+
     QDateTime modified = m_configPath.isEmpty() ? QDateTime() : QFileInfo(m_configPath).lastModified();
     bool userChanged = !m_configPath.isEmpty() && modified.isValid() && modified != m_configModified;
 

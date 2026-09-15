@@ -16,8 +16,8 @@
 #include <QPixmap>
 
 namespace {
-/* Caret breathe cycle, in ticks of motion::kTickMs (~720ms). */
-constexpr int kCaretAnimationTicks = motion::ticksFor(720);
+/* Caret breathe cycle, ~720ms. */
+inline int caretAnimationTicks() { return motion::ticksFor(720); }
 constexpr double kTwoPi = 6.283185307179586;
 /* A typed character grows from 85% to 100% as it fades in. */
 constexpr double kTypingAnimationStartScale = 0.85;
@@ -38,6 +38,7 @@ using motion::kOpacitySnapThreshold;
 } // namespace
 
 void EditorViewport::paintEvent(QPaintEvent *) {
+
 
     updateAnimation();
 
@@ -116,7 +117,7 @@ void EditorViewport::paintEvent(QPaintEvent *) {
             continue; /* defensive — shouldn't happen, the '\n' guard at the call site keeps insertions single-line */
         }
 
-        double progress = std::clamp(static_cast<double>(anim.elapsedTicks) / kTypingAnimationTicks, 0.0, 1.0);
+        double progress = std::clamp(static_cast<double>(anim.elapsedTicks) / typingAnimationTicks(), 0.0, 1.0);
         double t = 1.0 - (1.0 - progress) * (1.0 - progress); /* ease-out, same shape as kEaseFactor elsewhere */
         double scale = kTypingAnimationStartScale + (1.0 - kTypingAnimationStartScale) * t;
 
@@ -163,7 +164,8 @@ void EditorViewport::paintEvent(QPaintEvent *) {
      * phase 0 is full brightness and the fade starts from solid. */
     int caretAlpha = 255;
     if (m_animationsEnabled) {
-        double phase = (m_idleTicks % kCaretAnimationTicks) / static_cast<double>(kCaretAnimationTicks);
+        int cycle = caretAnimationTicks();
+        double phase = (m_idleTicks % cycle) / static_cast<double>(cycle);
         caretAlpha = std::clamp(static_cast<int>(128 + 127 * std::cos(phase * kTwoPi)), 0, 255);
     } else if (!m_caretVisible) {
         caretAlpha = 0;
@@ -303,7 +305,7 @@ void EditorViewport::updateAnimation() {
     for (int i = m_typingAnimations.size() - 1; i >= 0; --i) {
         TypingAnimation &anim = m_typingAnimations[i];
         anim.elapsedTicks++;
-        if (anim.elapsedTicks >= kTypingAnimationTicks ||
+        if (anim.elapsedTicks >= typingAnimationTicks() ||
             anim.start + anim.length > static_cast<size_t>(m_cache.size())) {
             m_typingAnimations.remove(i);
         }

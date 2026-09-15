@@ -98,6 +98,7 @@ static const AseConfigKeyDoc kKeyDocs[] = {
     {"vim_mode", "true", "Modal editing. false for always-insert.", false},
     {"animations", "false", "true for a smooth caret fade instead of a blink.", false},
     {"line_numbers", "absolute", "off, absolute, or relative.", false},
+    {"max_fps", NULL, "Cap the animation rate; unset follows the display.", false},
     {"build_command", NULL, ":compile runs this; %f is the current file.", false},
     {"lsp_command", NULL, "Language server for any language without its own.", false},
     {"lang.<id>.lsp", NULL, "Language server for one language, e.g. lang.cpp.lsp.", false},
@@ -499,6 +500,11 @@ static const char kDefaultConfigTemplate[] =
     "# off / absolute / relative (relative shows distance from the current\n"
     "# line, Vim-style, except the current line itself which stays absolute).\n"
     "line_numbers = absolute\n"
+    "\n"
+    "# Animation runs at the display's refresh rate -- a 144Hz screen\n"
+    "# animates at 144Hz. Set this to cap it (battery), not to raise it:\n"
+    "# the display's own rate is always the ceiling.\n"
+    "# max_fps = 60\n"
     "\n"
     "# On by default. Modal (Vim-style) editing: Normal/Insert/Visual\n"
     "# modes, motions, operators, counts. Set false for plain, always-\n"
