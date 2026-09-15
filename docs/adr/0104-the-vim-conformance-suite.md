@@ -29,12 +29,12 @@ behaviour down between sessions.
 
 ### In process, not through the GUI driver
 
-The driver that has been used for verification lives in `.claude/` and
-is deliberately untracked, so a committed test cannot use it. That
-constraint turned out to be a favour: the suite constructs a real
+The GUI driver used for manual verification is deliberately untracked,
+so a committed test cannot rely on it. That constraint turned out to be
+a favour: the suite constructs a real
 `EditorViewport`, sends `QKeyEvent`s to it, and reads the buffer back.
 No VNC, no screenshots, no sleeps. **91 cases in 0.03 seconds**, against
-several seconds *per case* through the driver.
+several seconds *per case* through that driver.
 
 `gui/` now builds an `ase_gui_objects` object library that both the
 executable and the test link, so the test drives the same widgets the
@@ -76,15 +76,24 @@ and `l` were: the vim path clamps to `vimLastLine()`, the arrow keys are
 left alone, because that position is a real navigable line in the
 non-vim editing profile and is not one in vim.
 
-91 cases now cover deletes and counts, `D`/`C` asymmetry, word motions
-under operators, the charwise-to-linewise promotion, `h`/`l` clamping,
-yank and paste, undo, open and replace, `J` and `gJ` spacing, every text
-object, marks as motions and as operator targets, macros, and `.` repeat.
+**112 cases in two tables.** 91 key sequences cover deletes and counts,
+`D`/`C` asymmetry, word motions under operators, the charwise-to-linewise
+promotion, `h`/`l` and `j` clamping, yank and paste, undo, open and
+replace, `J` and `gJ` spacing, every text object, marks as motions and as
+operator targets, macros, and `.` repeat.
 
-Deliberately not covered yet: `:` commands including `:s`, which go
-through `runCommand` rather than key events and want their own data
-table; and anything needing a panel — completion, hover, the find bar —
-since those are set on the viewport by the window.
+19 more cover `:` commands, which arrive through `runCommand` rather than
+the key dispatch and so get their own table: `:s` with ranges, `g` and
+`i` flags, an alternate separator, `&`, and the vim-dialect patterns from
+[ADR 0102](0102-substitute.md) — `\(`grouping, bare parens as literals,
+`\+` against `+`, word boundaries, alternation.
+
+Regeneration is idempotent: running the generator twice produces
+byte-identical files, so a committed generated file never churns a diff.
+
+Not covered: anything needing a panel — completion, hover, the find bar —
+since the window installs those on the viewport, and a test that built a
+`MainWindow` would be testing the wiring rather than the behaviour.
 
 Verified that the suite fails when it should: reverting the `j` fix
 turns it red on the exact case, with the differing bytes printed.

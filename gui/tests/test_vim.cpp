@@ -93,6 +93,8 @@ class VimConformance : public QObject {
 private slots:
     void keySequences_data();
     void keySequences();
+    void commands_data();
+    void commands();
 };
 
 void VimConformance::keySequences_data() {
@@ -134,6 +136,49 @@ void VimConformance::keySequences() {
 
     /* Read straight from the buffer, so the test needs no accessor the
      * editor would not otherwise have. */
+    size_t length = ase_buffer_length(buffer);
+    QByteArray actual(static_cast<int>(length), '\0');
+    if (length > 0) {
+        ase_buffer_get_text(buffer, 0, length, actual.data());
+    }
+    QCOMPARE(QString::fromUtf8(actual), expected);
+}
+
+void VimConformance::commands_data() {
+    QTest::addColumn<QString>("input");
+    QTest::addColumn<int>("line");
+    QTest::addColumn<int>("column");
+    QTest::addColumn<QString>("command");
+    QTest::addColumn<QString>("expected");
+
+    static const Case kCases[] = {
+#include "vim_command_cases.inc"
+    };
+    for (const Case &c : kCases) {
+        QTest::newRow(c.name) << QString::fromUtf8(c.input) << c.line << c.column
+                              << QString::fromUtf8(c.keys) << QString::fromUtf8(c.expected);
+    }
+}
+
+/* `:` commands arrive through runCommand rather than the key dispatch,
+ * so they are driven directly rather than typed. */
+void VimConformance::commands() {
+    QFETCH(QString, input);
+    QFETCH(int, line);
+    QFETCH(int, column);
+    QFETCH(QString, command);
+    QFETCH(QString, expected);
+
+    QByteArray bytes = input.toUtf8();
+    AseBuffer *buffer = ase_buffer_create();
+    QVERIFY(buffer != nullptr);
+    QVERIFY(ase_buffer_insert(buffer, 0, bytes.constData(), static_cast<size_t>(bytes.size())));
+
+    EditorViewport viewport(buffer, QString());
+    viewport.resize(800, 600);
+    viewport.goToLineColumn(line, column);
+    viewport.runCommand(command);
+
     size_t length = ase_buffer_length(buffer);
     QByteArray actual(static_cast<int>(length), '\0');
     if (length > 0) {
