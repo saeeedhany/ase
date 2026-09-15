@@ -80,7 +80,8 @@ mapping most vim users add by hand, on the key they already press.
 ### `Ctrl+F` is untouched
 
 It has two fields, which do not fit on one status-bar line, and vim's
-own answer to replace is `:s/a/b/` through the command line anyway. The
+own answer to replace is `:s/a/b/` through the command line anyway
+(added in [ADR 0102](0102-substitute.md)). The
 split is by shape, not by audience: one field on the bar, two in the
 panel.
 

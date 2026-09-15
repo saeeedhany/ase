@@ -420,6 +420,9 @@ private:
     /* `J` joins with a space and drops the next line's indent; `gJ`
      * takes both lines verbatim. See docs/adr/0101. */
     void vimJoinLines(int count, bool withSpace);
+    /* `:[range]s/pat/rep/[flags]`. False when `command` is not a
+     * substitute at all, so the caller can keep looking. */
+    bool runSubstitute(const QString &command);
     void vimEnterReplaceMode(int count);
     /* One typed character, overwriting what is under the cursor, or
      * appending when the line has run out. */

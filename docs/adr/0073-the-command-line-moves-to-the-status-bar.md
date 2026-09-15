@@ -68,7 +68,7 @@ no new duration.
 
 `Ctrl+F` is unchanged. It has two fields, which do not fit on one line,
 and vim's own answer to replace is `:s/a/b/` — through the command line
-anyway. So the division is by shape, not by audience:
+anyway ([ADR 0102](0102-substitute.md) added it). So the division is by shape, not by audience:
 
 - **status bar line** — `:` commands, and `/` `?` search: one field
 - **floating FindBar** — find *and* replace: two fields

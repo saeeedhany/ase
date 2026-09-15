@@ -138,6 +138,8 @@ QVector<HelpSection> helpSections() {
           {":compile &nbsp; :output", "Build / toggle the output panel"},
           {":config", "Open your config file"},
           {":42", "Jump to line 42"},
+          {":s/old/new/g", "Substitute on this line (g = every match)"},
+          {":%s/old/new/g", "Substitute in the whole file (or :1,10s/…)"},
           {":&lt;name&gt;", "Run a plugin command"}}},
 
         {"Build", "build_command",

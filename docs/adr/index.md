@@ -109,3 +109,4 @@ what changed.
 | [0099](0099-vim-conformance-fixes.md) | Four vim rules the editor was missing |
 | [0100](0100-text-objects.md) | Text objects |
 | [0101](0101-join-lines.md) | `J` joins lines |
+| [0102](0102-substitute.md) | `:s`, and the regex dialect it speaks |

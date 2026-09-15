@@ -13,6 +13,8 @@ constexpr int kProjectFileCap = 20000;
 constexpr int kProjectSearchHitCap = 1000;
 } // namespace
 
+#include <QRegularExpression>
+
 #include <QDir>
 #include <QFileInfo>
 #include <QTimer>
@@ -52,6 +54,280 @@ void EditorViewport::saveAs(const QString &path) {
     save();
 }
 
+namespace {
+
+/* vim's default "magic" level against PCRE: the two disagree about which
+ * of ( ) | + ? { } need a backslash, and agree about . * [ ] ^ $. So the
+ * translation is mostly swapping that escaping over. Documented in
+ * docs/adr/0102 — patterns are vim's dialect, not PCRE's. */
+QString vimPatternToPcre(const QString &pattern) {
+    static const QString swapped = QStringLiteral("()|+?{}");
+    QString out;
+    out.reserve(pattern.size() + 8);
+    for (int i = 0; i < pattern.size(); ++i) {
+        QChar c = pattern.at(i);
+        if (c != QLatin1Char('\\')) {
+            /* Bare, these are literal in vim and special in PCRE. */
+            if (swapped.contains(c)) {
+                out += QLatin1Char('\\');
+            }
+            out += c;
+            continue;
+        }
+        if (i + 1 >= pattern.size()) {
+            out += QStringLiteral("\\\\");
+            break;
+        }
+        QChar next = pattern.at(++i);
+        if (swapped.contains(next)) {
+            out += next; /* \( is a group in vim, ( is one in PCRE */
+        } else if (next == QLatin1Char('=')) {
+            out += QLatin1Char('?'); /* vim's \= is "zero or one" */
+        } else if (next == QLatin1Char('<') || next == QLatin1Char('>')) {
+            out += QStringLiteral("\\b");
+        } else {
+            out += QLatin1Char('\\');
+            out += next;
+        }
+    }
+    return out;
+}
+
+/* Expanded here rather than through QString::replace, which knows
+ * `\1`..`\9` but has no spelling for the whole match — and `&` is the
+ * one every `:s` uses. */
+QString expandReplacement(const QRegularExpressionMatch &match, const QString &spec) {
+    QString out;
+    out.reserve(spec.size() + match.capturedLength());
+    for (int i = 0; i < spec.size(); ++i) {
+        QChar c = spec.at(i);
+        if (c == QLatin1Char('&')) {
+            out += match.captured(0);
+            continue;
+        }
+        if (c == QLatin1Char('\\') && i + 1 < spec.size()) {
+            QChar next = spec.at(++i);
+            if (next.isDigit()) {
+                out += match.captured(next.digitValue());
+            } else if (next == QLatin1Char('n')) {
+                out += QLatin1Char('\n');
+            } else if (next == QLatin1Char('t')) {
+                out += QLatin1Char('\t');
+            } else {
+                out += next; /* \& and \\ land here, as themselves */
+            }
+            continue;
+        }
+        out += c;
+    }
+    return out;
+}
+
+/* One address: a number, `.`, `$`, or either of those with +/- offsets.
+ * Returns false when `text` is not an address at all. */
+bool parseAddress(const QString &text, int currentLine, int lastLine, int *out) {
+    QString s = text.trimmed();
+    if (s.isEmpty()) {
+        return false;
+    }
+    int base = currentLine;
+    int i = 0;
+    if (s.at(0) == QLatin1Char('.')) {
+        i = 1;
+    } else if (s.at(0) == QLatin1Char('$')) {
+        base = lastLine;
+        i = 1;
+    } else if (s.at(0).isDigit()) {
+        int start = i;
+        while (i < s.size() && s.at(i).isDigit()) {
+            i++;
+        }
+        base = s.mid(start, i - start).toInt() - 1;
+    }
+    while (i < s.size()) {
+        QChar sign = s.at(i);
+        if (sign != QLatin1Char('+') && sign != QLatin1Char('-')) {
+            return false;
+        }
+        i++;
+        int start = i;
+        while (i < s.size() && s.at(i).isDigit()) {
+            i++;
+        }
+        int amount = (i > start) ? s.mid(start, i - start).toInt() : 1;
+        base += (sign == QLatin1Char('+')) ? amount : -amount;
+    }
+    *out = base;
+    return true;
+}
+
+} // namespace
+
+/* `:[range]s/pattern/replacement/[flags]`. The floating Find/Replace is
+ * untouched and remains the way to do this without vim — see
+ * docs/adr/0073 for why the two surfaces exist. */
+bool EditorViewport::runSubstitute(const QString &command) {
+    int i = 0;
+    while (i < command.size() && command.at(i) != QLatin1Char('s')) {
+        i++;
+    }
+    if (i >= command.size()) {
+        return false;
+    }
+    QString rangeText = command.left(i);
+    QString rest = command.mid(i + 1);
+    if (rest.isEmpty() || rest.at(0).isLetterOrNumber()) {
+        return false; /* `set`, `sort`, ... are not this command */
+    }
+
+    int lastLine = vimLastLine();
+    int currentLine = lineForOffset(m_cursors[0]);
+    int firstTarget = currentLine;
+    int lastTarget = currentLine;
+
+    QString range = rangeText.trimmed();
+    if (range == QLatin1String("%")) {
+        firstTarget = 0;
+        lastTarget = lastLine;
+    } else if (!range.isEmpty()) {
+        int comma = range.indexOf(QLatin1Char(','));
+        if (comma < 0) {
+            if (!parseAddress(range, currentLine, lastLine, &firstTarget)) {
+                return false;
+            }
+            lastTarget = firstTarget;
+        } else {
+            if (!parseAddress(range.left(comma), currentLine, lastLine, &firstTarget) ||
+                !parseAddress(range.mid(comma + 1), currentLine, lastLine, &lastTarget)) {
+                return false;
+            }
+        }
+    }
+
+    QChar separator = rest.at(0);
+    QStringList parts;
+    QString piece;
+    for (int k = 1; k < rest.size(); ++k) {
+        QChar c = rest.at(k);
+        if (c == QLatin1Char('\\') && k + 1 < rest.size() && rest.at(k + 1) == separator) {
+            piece += separator; /* an escaped separator is data */
+            k++;
+            continue;
+        }
+        if (c == separator) {
+            parts << piece;
+            piece.clear();
+            continue;
+        }
+        piece += c;
+    }
+    parts << piece;
+
+    QString pattern = parts.value(0);
+    QString replacement = parts.value(1);
+    QString flags = parts.value(2);
+    if (pattern.isEmpty()) {
+        notify(NotifyLevel::Warning, QStringLiteral("no pattern"));
+        return true;
+    }
+
+    QRegularExpression::PatternOptions options = QRegularExpression::NoPatternOption;
+    if (flags.contains(QLatin1Char('i'))) {
+        options |= QRegularExpression::CaseInsensitiveOption;
+    }
+    QRegularExpression regex(vimPatternToPcre(pattern), options);
+    if (!regex.isValid()) {
+        notify(NotifyLevel::Error, QStringLiteral("bad pattern: %1").arg(regex.errorString()));
+        return true;
+    }
+    bool everyMatch = flags.contains(QLatin1Char('g'));
+
+    firstTarget = std::clamp(firstTarget, 0, lastLine);
+    lastTarget = std::clamp(lastTarget, 0, lastLine);
+    if (firstTarget > lastTarget) {
+        std::swap(firstTarget, lastTarget);
+    }
+
+    int changedLines = 0;
+    int changedCount = 0;
+    size_t landing = m_cursors[0];
+
+    beginUndoSession();
+    /* Bottom-up: replacing a line shifts every offset below it. */
+    for (int line = lastTarget; line >= firstTarget; --line) {
+        size_t start = static_cast<size_t>(m_lineStarts[line]);
+        size_t end = vimLineEndOffset(line);
+        QString text = QString::fromUtf8(m_cache.mid(static_cast<int>(start),
+                                                      static_cast<int>(end - start)));
+        QString updated;
+        int hits = 0;
+        int consumed = 0;
+        QRegularExpressionMatchIterator it = regex.globalMatch(text);
+        while (it.hasNext()) {
+            QRegularExpressionMatch match = it.next();
+            updated += text.mid(consumed, match.capturedStart() - consumed);
+            updated += expandReplacement(match, replacement);
+            consumed = match.capturedEnd();
+            hits++;
+            if (!everyMatch) {
+                break;
+            }
+            if (match.capturedLength() == 0) {
+                /* A zero-width match would otherwise sit still forever. */
+                if (consumed < text.size()) {
+                    updated += text.at(consumed);
+                }
+                consumed++;
+            }
+        }
+        updated += text.mid(std::min(consumed, static_cast<int>(text.size())));
+
+        if (hits == 0) {
+            continue;
+        }
+
+        QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
+        QByteArray inserted = updated.toUtf8();
+        beginUndoStep();
+        if (ase_buffer_delete(m_buffer, start, end - start)) {
+            ase_undo_record_delete(m_undo, start, removed.constData(),
+                                    static_cast<size_t>(removed.size()));
+        }
+        if (!inserted.isEmpty() &&
+            ase_buffer_insert(m_buffer, start, inserted.constData(),
+                               static_cast<size_t>(inserted.size()))) {
+            ase_undo_record_insert(m_undo, start, inserted.constData(),
+                                    static_cast<size_t>(inserted.size()));
+        }
+        endUndoStep();
+        refreshCache();
+
+        changedLines++;
+        changedCount += hits;
+        landing = start;
+    }
+    endUndoSession();
+
+    if (changedCount == 0) {
+        notify(NotifyLevel::Warning, QStringLiteral("pattern not found: %1").arg(pattern));
+        return true;
+    }
+
+    collapseToOneCursor();
+    landing = std::min(landing, static_cast<size_t>(m_cache.size()));
+    m_cursors[0] = landing;
+    m_selectionAnchors[0] = landing;
+    vimMarkChange();
+    ensureCursorVisible();
+    update();
+    notify(NotifyLevel::Info, QStringLiteral("%1 substitution%2 on %3 line%4")
+                                   .arg(changedCount)
+                                   .arg(changedCount == 1 ? QString() : QStringLiteral("s"))
+                                   .arg(changedLines)
+                                   .arg(changedLines == 1 ? QString() : QStringLiteral("s")));
+    return true;
+}
+
 void EditorViewport::runCommand(const QString &command) {
     QString trimmed = command.trimmed();
     if (trimmed == QLatin1String("w")) {
@@ -66,6 +342,8 @@ void EditorViewport::runCommand(const QString &command) {
         toggleOutputPanel();
     } else if (trimmed == QLatin1String("config")) {
         openConfigFile();
+    } else if (runSubstitute(trimmed)) {
+        /* Reported its own outcome, including "not found". */
     } else {
         /* Not gated on vim_mode. vimGotoLine is safe either way: no
          * operator can be pending, since ex-commands bypass Vim's own
