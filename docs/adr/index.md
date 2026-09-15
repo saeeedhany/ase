@@ -94,3 +94,4 @@ what changed.
 | [0084](0084-bracket-matching-and-word-search.md) | `%`, `*`/`#`, and where a search lands |
 | [0085](0085-a-second-grammar-for-cpp.md) | A second grammar for C++ |
 | [0086](0086-one-language-gate-and-per-language-keys.md) | One language gate, and per-language config keys |
+| [0087](0087-project-config-says-what-files-mean.md) | A project file says what files mean, never what to run |

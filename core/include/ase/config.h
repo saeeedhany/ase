@@ -2,6 +2,7 @@
 #define ASE_CONFIG_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -49,6 +50,27 @@ const char *ase_config_language_for_path(const AseConfig *config, const char *pa
  * callers can fall back to a global key of their own choosing. */
 const char *ase_config_get_lang_string(const AseConfig *config, const char *language,
                                         const char *key);
+
+/* The per-project config file's name, looked for beside a file and in
+ * each directory above it. */
+#define ASE_PROJECT_CONFIG_NAME ".ase.conf"
+
+/* Whether a project config file may set `key`. Default-deny: a key is
+ * refused unless it describes what files *mean*, never what commands to
+ * *run*, since a cloned repository writes this file — see
+ * docs/adr/0087. */
+bool ase_config_key_allowed_in_project(const char *key);
+
+/* The nearest ASE_PROJECT_CONFIG_NAME at or above `start_path`'s own
+ * directory. `start_path` should be absolute. Caller owns the result
+ * (free()); NULL if there is none. */
+char *ase_config_find_project_file(const char *start_path);
+
+/* Overlays the project config at `path` onto `config`, applying only
+ * the keys ase_config_key_allowed_in_project accepts. `refused_out`
+ * (may be NULL) receives how many keys were ignored, so a caller can
+ * say so rather than failing silently. False if `path` is unreadable. */
+bool ase_config_overlay_project(AseConfig *config, const char *path, size_t *refused_out);
 
 /* This platform's config file path
  * ($XDG_CONFIG_HOME or ~/.config on Unix, %APPDATA% on Windows, then

@@ -115,7 +115,14 @@ AseConfig *ase_config_create_default(void) {
     return config;
 }
 
-static void config_parse_line(AseConfig *config, char *line) {
+bool ase_config_key_allowed_in_project(const char *key) {
+    if (key == NULL) {
+        return false;
+    }
+    return strncmp(key, "filetype.", sizeof("filetype.") - 1) == 0;
+}
+
+static void config_parse_line(AseConfig *config, char *line, bool project, size_t *refused) {
     char *trimmed = trim(line);
     if (*trimmed == '\0' || *trimmed == '#') {
         return;
@@ -130,6 +137,12 @@ static void config_parse_line(AseConfig *config, char *line) {
     char *key = trim(trimmed);
     char *value = trim(eq + 1);
     if (*key == '\0') {
+        return;
+    }
+    if (project && !ase_config_key_allowed_in_project(key)) {
+        if (refused != NULL) {
+            (*refused)++;
+        }
         return;
     }
 
@@ -149,7 +162,7 @@ AseConfig *ase_config_load(const char *path) {
 
     char line[512];
     while (fgets(line, sizeof(line), f) != NULL) {
-        config_parse_line(config, line);
+        config_parse_line(config, line, false, NULL);
     }
     fclose(f);
 
@@ -229,6 +242,86 @@ static bool suffix_to_lower(const char *suffix, char *out, size_t out_size) {
         out[i] = (char)tolower((unsigned char)suffix[i]);
     }
     out[len] = '\0';
+    return true;
+}
+
+static bool is_sep(char c) {
+#if defined(_WIN32)
+    return c == '/' || c == '\\';
+#else
+    return c == '/';
+#endif
+}
+
+static bool file_exists(const char *path) {
+    FILE *f = fopen(path, "r");
+    if (f == NULL) {
+        return false;
+    }
+    fclose(f);
+    return true;
+}
+
+char *ase_config_find_project_file(const char *start_path) {
+    if (start_path == NULL) {
+        return NULL;
+    }
+
+    size_t path_len = strlen(start_path);
+    size_t name_len = strlen(ASE_PROJECT_CONFIG_NAME);
+    char *buf = (char *)malloc(path_len + name_len + 2);
+    if (buf == NULL) {
+        return NULL;
+    }
+
+    /* `len` is how much of start_path forms the directory being tried,
+     * trailing separator included. */
+    size_t len = path_len;
+    while (len > 0 && !is_sep(start_path[len - 1])) {
+        len--;
+    }
+
+    /* A relative path runs out at len == 0 rather than reaching a root;
+     * the depth cap is only a guard against a pathological path. */
+    for (int depth = 0; depth < 64 && len > 0; depth++) {
+        memcpy(buf, start_path, len);
+        memcpy(buf + len, ASE_PROJECT_CONFIG_NAME, name_len + 1);
+        if (file_exists(buf)) {
+            return buf;
+        }
+        len--;
+        while (len > 0 && !is_sep(start_path[len - 1])) {
+            len--;
+        }
+    }
+
+    free(buf);
+    return NULL;
+}
+
+bool ase_config_overlay_project(AseConfig *config, const char *path, size_t *refused_out) {
+    if (refused_out != NULL) {
+        *refused_out = 0;
+    }
+    if (config == NULL || path == NULL) {
+        return false;
+    }
+
+    FILE *f = fopen(path, "r");
+    if (f == NULL) {
+        return false;
+    }
+
+    size_t refused = 0;
+    char line[512];
+    while (fgets(line, sizeof(line), f) != NULL) {
+        config_parse_line(config, line, true, &refused);
+    }
+    fclose(f);
+
+    if (refused_out != NULL) {
+        *refused_out = refused;
+    }
     return true;
 }
 
@@ -417,7 +510,13 @@ static const char kDefaultConfigTemplate[] =
     "# about, since a C++ project that uses .h headers wants this. The\n"
     "# name is both the highlighting language and the LSP languageId, so\n"
     "# a language with no grammar can still have a server.\n"
-    "# filetype.h = cpp\n";
+    "# filetype.h = cpp\n"
+    "\n"
+    "# Per-project settings go in a .ase.conf beside your code (the\n"
+    "# nearest one at or above the file wins). It may only set what files\n"
+    "# mean -- filetype.* -- and never what commands to run, because a\n"
+    "# repository you cloned writes it. Anything else in it is ignored,\n"
+    "# and the editor says so. See docs/adr/0087.\n";
 
 /* Creates only the immediate parent directory, not any missing
  * grandparent — see docs/adr/0008, decision 5. */

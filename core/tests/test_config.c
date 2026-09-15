@@ -5,6 +5,20 @@
 
 #include "ase/config.h"
 
+#if defined(_WIN32)
+#include <direct.h>
+#define ase_test_mkdir(p) _mkdir(p)
+#define ase_test_rmdir(p) _rmdir(p)
+#define ase_test_getcwd(b, n) _getcwd(b, n)
+#else
+#include <sys/stat.h>
+#include <unistd.h>
+#define ase_test_mkdir(p) mkdir(p, 0755)
+#define ase_test_rmdir(p) rmdir(p)
+#define ase_test_getcwd(b, n) getcwd(b, n)
+#endif
+
+
 static void test_defaults(void) {
     AseConfig *config = ase_config_create_default();
     CHECK(config != NULL);
@@ -198,6 +212,105 @@ static void test_lang_string(void) {
     remove(path);
 }
 
+static void test_project_key_allowlist(void) {
+    CHECK(ase_config_key_allowed_in_project("filetype.h"));
+    CHECK(ase_config_key_allowed_in_project("filetype.rs"));
+
+    /* The rule: what files mean, never what commands to run. */
+    CHECK(!ase_config_key_allowed_in_project("lsp_command"));
+    CHECK(!ase_config_key_allowed_in_project("build_command"));
+    CHECK(!ase_config_key_allowed_in_project("lang.cpp.lsp"));
+
+    /* Default-deny, so anything added later is refused until someone
+     * decides otherwise. */
+    CHECK(!ase_config_key_allowed_in_project("font_family"));
+    CHECK(!ase_config_key_allowed_in_project("background"));
+    CHECK(!ase_config_key_allowed_in_project("vim_mode"));
+    CHECK(!ase_config_key_allowed_in_project("filetype"));
+    CHECK(!ase_config_key_allowed_in_project(""));
+    CHECK(!ase_config_key_allowed_in_project(NULL));
+}
+
+static void test_project_overlay_refuses_commands(void) {
+    const char *path = "test_project_overlay.tmp";
+    FILE *f = fopen(path, "w");
+    CHECK(f != NULL);
+    fputs("filetype.h = cpp\n"
+          "lsp_command = /bin/evil\n"
+          "build_command = rm -rf /\n"
+          "lang.cpp.lsp = /bin/evil\n"
+          "font_family = Comic Sans\n",
+          f);
+    fclose(f);
+
+    AseConfig *config = ase_config_create_default();
+    CHECK(config != NULL);
+
+    size_t refused = 0;
+    CHECK(ase_config_overlay_project(config, path, &refused));
+    CHECK(refused == 4);
+
+    CHECK(strcmp(ase_config_language_for_path(config, "a.h"), "cpp") == 0);
+    CHECK(ase_config_get_string(config, "lsp_command") == NULL);
+    CHECK(ase_config_get_string(config, "build_command") == NULL);
+    CHECK(ase_config_get_lang_string(config, "cpp", "lsp") == NULL);
+    CHECK(strcmp(ase_config_get_string(config, "font_family"), "monospace") == 0);
+
+    ase_config_destroy(config);
+    remove(path);
+}
+
+static void test_project_overlay_missing_file(void) {
+    AseConfig *config = ase_config_create_default();
+    size_t refused = 123;
+    CHECK(!ase_config_overlay_project(config, "no_such_project_file.tmp", &refused));
+    CHECK(refused == 0);
+    CHECK(!ase_config_overlay_project(config, NULL, NULL));
+    ase_config_destroy(config);
+}
+
+static void test_find_project_file_walks_up(void) {
+    /* A file two directories below the one holding .ase.conf. */
+    ase_test_mkdir("test_proj");
+    ase_test_mkdir("test_proj/sub");
+    ase_test_mkdir("test_proj/sub/deeper");
+
+    FILE *f = fopen("test_proj/.ase.conf", "w");
+    CHECK(f != NULL);
+    fputs("filetype.h = cpp\n", f);
+    fclose(f);
+
+    char cwd[1024];
+    CHECK(ase_test_getcwd(cwd, sizeof(cwd)) != NULL);
+
+    char start[2048];
+    snprintf(start, sizeof(start), "%s/test_proj/sub/deeper/a.h", cwd);
+    char *found = ase_config_find_project_file(start);
+    CHECK(found != NULL);
+    CHECK(strstr(found, "test_proj/.ase.conf") != NULL);
+    /* The nearest one wins, not the first from the top. */
+    CHECK(strstr(found, "sub") == NULL);
+    free(found);
+
+    /* A nearer file takes over. */
+    f = fopen("test_proj/sub/.ase.conf", "w");
+    CHECK(f != NULL);
+    fputs("filetype.h = c\n", f);
+    fclose(f);
+    found = ase_config_find_project_file(start);
+    CHECK(found != NULL);
+    CHECK(strstr(found, "sub/.ase.conf") != NULL);
+    free(found);
+
+    CHECK(ase_config_find_project_file(NULL) == NULL);
+
+    remove("test_proj/sub/.ase.conf");
+    remove("test_proj/.ase.conf");
+    ase_test_rmdir("test_proj/sub/deeper");
+    ase_test_rmdir("test_proj/sub");
+    ase_test_rmdir("test_proj");
+}
+
 int main(void) {
     test_defaults();
     test_load_missing_file_keeps_defaults();
@@ -208,6 +321,10 @@ int main(void) {
     test_language_for_path();
     test_filetype_override();
     test_lang_string();
+    test_project_key_allowlist();
+    test_project_overlay_refuses_commands();
+    test_project_overlay_missing_file();
+    test_find_project_file_walks_up();
 
     printf("all config tests passed\n");
     return 0;

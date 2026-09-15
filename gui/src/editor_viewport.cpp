@@ -38,17 +38,7 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
         m_vimMode = VimMode::Normal;
     }
 
-    /* A language with no grammar still highlights nothing, but it is
-     * the same answer the LSP gate gets — see docs/adr/0086. */
-    const char *language =
-        ase_config_language_for_path(m_config, m_filePath.toUtf8().constData());
-    if (language != nullptr) {
-        if (strcmp(language, "c") == 0) {
-            m_syntax = ase_syntax_create(ASE_LANG_C);
-        } else if (strcmp(language, "cpp") == 0) {
-            m_syntax = ase_syntax_create(ASE_LANG_CPP);
-        }
-    }
+    rebuildSyntax();
 
     refreshCache();
 
@@ -95,6 +85,24 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     m_hoverTimer = new QTimer(this);
     m_hoverTimer->setSingleShot(true);
     connect(m_hoverTimer, &QTimer::timeout, this, [this]() { requestHoverNow(); });
+}
+
+/* A language with no grammar still highlights nothing, but it is the
+ * same answer the LSP gate gets — see docs/adr/0086. */
+void EditorViewport::rebuildSyntax() {
+    ase_syntax_destroy(m_syntax);
+    m_syntax = nullptr;
+
+    const char *language =
+        ase_config_language_for_path(m_config, m_filePath.toUtf8().constData());
+    if (language == nullptr) {
+        return;
+    }
+    if (strcmp(language, "c") == 0) {
+        m_syntax = ase_syntax_create(ASE_LANG_C);
+    } else if (strcmp(language, "cpp") == 0) {
+        m_syntax = ase_syntax_create(ASE_LANG_CPP);
+    }
 }
 
 EditorViewport::~EditorViewport() {

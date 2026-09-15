@@ -15,6 +15,7 @@
 #include <QFileInfo>
 #include <QFontDatabase>
 #include <QFontMetrics>
+#include <QTimer>
 
 namespace {
 /* Ctrl+=/Ctrl+- clamp range — see docs/adr/0050. Generous enough to be
@@ -33,11 +34,43 @@ void EditorViewport::loadConfig() {
         ase_config_write_default_if_missing(m_configPath.toUtf8().constData());
     }
 
-    m_config = ase_config_load(m_configPath.isEmpty() ? nullptr : m_configPath.toUtf8().constData());
+    rebuildConfig();
     applyConfig();
 
     if (!m_configPath.isEmpty()) {
         m_configModified = QFileInfo(m_configPath).lastModified();
+    }
+}
+
+void EditorViewport::rebuildConfig() {
+    m_config = ase_config_load(m_configPath.isEmpty() ? nullptr : m_configPath.toUtf8().constData());
+
+    m_projectConfigPath.clear();
+    m_projectConfigModified = QDateTime();
+    if (m_filePath.isEmpty()) {
+        return;
+    }
+
+    QByteArray absolute = QFileInfo(m_filePath).absoluteFilePath().toUtf8();
+    char *found = ase_config_find_project_file(absolute.constData());
+    if (found == nullptr) {
+        return;
+    }
+    m_projectConfigPath = QString::fromLocal8Bit(found);
+    free(found);
+
+    size_t refused = 0;
+    ase_config_overlay_project(m_config, m_projectConfigPath.toUtf8().constData(), &refused);
+    m_projectConfigModified = QFileInfo(m_projectConfigPath).lastModified();
+
+    if (refused > 0) {
+        /* Queued: the first call runs from the constructor, before
+         * anything is connected to messagePosted. See docs/adr/0087. */
+        QString message = QStringLiteral("%1: ignored %2 key%3 a project file may not set")
+                              .arg(QLatin1String(ASE_PROJECT_CONFIG_NAME))
+                              .arg(refused)
+                              .arg(refused == 1 ? QString() : QStringLiteral("s"));
+        QTimer::singleShot(0, this, [this, message]() { notify(NotifyLevel::Warning, message); });
     }
 }
 
@@ -146,19 +179,46 @@ void EditorViewport::resetFontSize() {
 }
 
 void EditorViewport::checkConfigReload() {
-    if (m_configPath.isEmpty()) {
+    QDateTime modified = m_configPath.isEmpty() ? QDateTime() : QFileInfo(m_configPath).lastModified();
+    bool userChanged = !m_configPath.isEmpty() && modified.isValid() && modified != m_configModified;
+
+    /* Re-resolved rather than remembered, so a .ase.conf that appears
+     * after the file was opened — or a nearer one — is picked up. It is
+     * a handful of stat()s on the same timer that already stats one. */
+    QString projectPath;
+    if (!m_filePath.isEmpty()) {
+        QByteArray absolute = QFileInfo(m_filePath).absoluteFilePath().toUtf8();
+        char *found = ase_config_find_project_file(absolute.constData());
+        if (found != nullptr) {
+            projectPath = QString::fromLocal8Bit(found);
+            free(found);
+        }
+    }
+    QDateTime projectModified =
+        projectPath.isEmpty() ? QDateTime() : QFileInfo(projectPath).lastModified();
+    bool projectChanged =
+        projectPath != m_projectConfigPath || projectModified != m_projectConfigModified;
+
+    if (!userChanged && !projectChanged) {
         return;
+    }
+    if (userChanged) {
+        m_configModified = modified;
     }
 
-    QDateTime modified = QFileInfo(m_configPath).lastModified();
-    if (!modified.isValid() || modified == m_configModified) {
-        return;
-    }
-    m_configModified = modified;
+    const char *before = ase_config_language_for_path(m_config, m_filePath.toUtf8().constData());
+    QString languageBefore = before != nullptr ? QString::fromUtf8(before) : QString();
 
     ase_config_destroy(m_config);
-    m_config = ase_config_load(m_configPath.toUtf8().constData());
+    rebuildConfig();
     applyConfig();
+
+    const char *after = ase_config_language_for_path(m_config, m_filePath.toUtf8().constData());
+    QString languageAfter = after != nullptr ? QString::fromUtf8(after) : QString();
+    if (languageAfter != languageBefore) {
+        rebuildSyntax();
+        refreshCache();
+    }
     /* The hot-reload has always been silent, which is fine when the
      * change is visible (a colour) and confusing when it isn't (a
      * keybinding-adjacent setting, or a typo that made the file parse to

@@ -210,6 +210,10 @@ private:
     void loadConfig();
     void applyConfig();
     void checkConfigReload();
+    /* Defaults, then the user file, then the nearest .ase.conf above
+     * this buffer's own file. */
+    void rebuildConfig();
+    void rebuildSyntax();
     /* Rebuilds the font and its cached metrics; touches no config. */
     void rebuildFont(int pointSize);
     /* Ctrl+=/Ctrl+-. A hot-reload doesn't clear an active override;
@@ -571,6 +575,8 @@ private:
     AseConfig *m_config = nullptr;
     QString m_configPath;
     QDateTime m_configModified;
+    QString m_projectConfigPath;
+    QDateTime m_projectConfigModified;
     QTimer *m_configTimer;
     QColor m_backgroundColor;
     QColor m_textColor;
