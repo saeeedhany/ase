@@ -414,9 +414,12 @@ static void wait_state_callback(void *user_data, const AseJsonValue *result, con
 }
 
 /* Polls until `state->done`, the client dies, or `timeout_ms` elapses. */
+/* Fine-grained at first, backing off if the wait drags: a reply that is
+ * already on the pipe should not cost a flat 10ms, and both callers are
+ * on the UI thread. */
 static void wait_for(AseLspClient *client, WaitState *state, int timeout_ms) {
     int elapsed = 0;
-    const int step_ms = 10;
+    int step_ms = 1;
     while (!state->done && client->alive && elapsed < timeout_ms) {
         ase_lsp_client_poll(client);
         if (state->done) {
@@ -424,6 +427,9 @@ static void wait_for(AseLspClient *client, WaitState *state, int timeout_ms) {
         }
         sleep_ms(step_ms);
         elapsed += step_ms;
+        if (step_ms < 10) {
+            step_ms++;
+        }
     }
 }
 

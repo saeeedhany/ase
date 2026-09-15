@@ -90,11 +90,13 @@ protected:
 private:
     EditorViewport *activeViewport() const;
     void setActiveIndex(int index);
-    void closeBuffer(int index);
+    void closeBuffer(int index, bool force = false);
     void cycleBuffer(int delta);
     void refreshBufferBar();
     bool confirmDiscard(const QString &message);
 
+    /* Set by :q! so closeEvent does not re-ask what :q! already answered. */
+    bool m_forceClose = false;
     QStackedWidget *m_stack = nullptr;
     BufferBar *m_bufferBar = nullptr;
     OutputPanel *m_outputPanel = nullptr;
@@ -353,6 +355,9 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
      * status readout follows, and for the same reason: a message about a
      * file in another tab, with nothing naming that file, reads as a
      * message about this one. */
+    connect(viewport, &EditorViewport::closeRequested, this, [this, viewport](bool force) {
+        closeBuffer(m_viewports.indexOf(viewport), force);
+    });
     connect(viewport, &EditorViewport::lspStateChanged, this,
             [this, viewport](LspState state, const QString &serverName) {
                 if (viewport == activeViewport()) {
@@ -612,21 +617,26 @@ void MainWindow::setActiveIndex(int index) {
     viewport->emitInitialStatus();
 }
 
-void MainWindow::closeBuffer(int index) {
+void MainWindow::closeBuffer(int index, bool force) {
     if (index < 0 || index >= m_viewports.size()) {
-        return;
-    }
-    /* close(), not delete, so the unsaved-changes confirmation stays in
-     * one place. */
-    if (m_viewports.size() == 1) {
-        close();
         return;
     }
 
     EditorViewport *viewport = m_viewports[index];
-    if (viewport->isDirty() &&
+    if (!force && viewport->isDirty() &&
         !confirmDiscard(QStringLiteral("\"%1\" has unsaved changes. Close it anyway?")
                              .arg(bufferLabelFor(viewport->filePath())))) {
+        return;
+    }
+
+    /* The last buffer closing is the window closing. Asked after the
+     * dirty check, so :q! skips the prompt here too rather than meeting
+     * closeEvent's. */
+    if (m_viewports.size() == 1) {
+        if (force) {
+            m_forceClose = true;
+        }
+        close();
         return;
     }
 
@@ -691,6 +701,11 @@ bool MainWindow::confirmDiscard(const QString &message) {
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
+    if (m_forceClose) {
+        event->accept();
+        return;
+    }
+
     QVector<EditorViewport *> dirty;
     for (EditorViewport *viewport : m_viewports) {
         if (viewport->isDirty()) {

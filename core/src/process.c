@@ -135,16 +135,20 @@ static void platform_terminate(long pid, int read_fd, int write_fd) {
     if (pid > 0) {
         pid_t p = (pid_t)pid;
         int status;
-        if (waitpid(p, &status, WNOHANG) == 0) {
+        /* Closing the pipes makes a well-behaved child exit within a few
+         * milliseconds, so poll for that instead of sleeping the whole
+         * grace period first — this runs on the UI thread. */
+        for (int elapsed_us = 0; elapsed_us < 200000; elapsed_us += 1000) {
+            if (waitpid(p, &status, WNOHANG) != 0) {
+                return;
+            }
             struct timespec ts;
             ts.tv_sec = 0;
-            ts.tv_nsec = 200L * 1000000L;
+            ts.tv_nsec = 1000L * 1000L;
             nanosleep(&ts, NULL);
-            if (waitpid(p, &status, WNOHANG) == 0) {
-                kill(p, SIGKILL);
-                waitpid(p, &status, 0);
-            }
         }
+        kill(p, SIGKILL);
+        waitpid(p, &status, 0);
     }
 }
 

@@ -57,7 +57,9 @@ void EditorViewport::runCommand(const QString &command) {
     if (trimmed == QLatin1String("w")) {
         save();
     } else if (trimmed == QLatin1String("q")) {
-        window()->close();
+        emit closeRequested(false);
+    } else if (trimmed == QLatin1String("q!")) {
+        emit closeRequested(true);
     } else if (trimmed == QLatin1String("compile")) {
         compile();
     } else if (trimmed == QLatin1String("output")) {

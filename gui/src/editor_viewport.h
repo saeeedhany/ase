@@ -196,6 +196,10 @@ signals:
     void messagePosted(NotifyLevel level, const QString &text);
     /* Only on an actual change. */
     void lspStateChanged(LspState state, const QString &serverName);
+    /* :q / :q!. The window owns the buffer list, so it decides what
+     * closing the last one means. force skips the unsaved-changes
+     * prompt. */
+    void closeRequested(bool force);
 
 protected:
     void paintEvent(QPaintEvent *event) override;

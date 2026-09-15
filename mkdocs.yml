@@ -109,6 +109,7 @@ nav:
     - adr/0086-one-language-gate-and-per-language-keys.md
     - adr/0087-project-config-says-what-files-mean.md
     - adr/0088-config-documents-itself.md
+    - adr/0089-closing-a-buffer.md
 
 theme:
   name: material

@@ -122,7 +122,8 @@ QVector<HelpSection> helpSections() {
 
         {"Command line", nullptr,
          {{"Ctrl+; &nbsp;(or : in Vim mode)", "Open command line"},
-          {":w &nbsp; :q", "Save / quit"},
+          {":w", "Save"},
+          {":q &nbsp; :q!", "Close this buffer / discard changes and close"},
           {":compile &nbsp; :output", "Build / toggle the output panel"},
           {":config", "Open your config file"},
           {":42", "Jump to line 42"},
