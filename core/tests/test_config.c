@@ -156,6 +156,17 @@ static void test_language_for_path(void) {
     CHECK(strcmp(ase_config_language_for_path(config, "a.cpp"), "cpp") == 0);
     CHECK(strcmp(ase_config_language_for_path(config, "a.HXX"), "cpp") == 0);
 
+    /* The languageId is the LSP spec's spelling, not the suffix: a
+     * server keys off "python", never "py". */
+    CHECK(strcmp(ase_config_language_for_path(config, "a.py"), "python") == 0);
+    CHECK(strcmp(ase_config_language_for_path(config, "a.rs"), "rust") == 0);
+    CHECK(strcmp(ase_config_language_for_path(config, "a.js"), "javascript") == 0);
+    CHECK(strcmp(ase_config_language_for_path(config, "a.jsx"), "javascriptreact") == 0);
+    CHECK(strcmp(ase_config_language_for_path(config, "a.lua"), "lua") == 0);
+    CHECK(strcmp(ase_config_language_for_path(config, "a.html"), "html") == 0);
+    CHECK(strcmp(ase_config_language_for_path(config, "a.css"), "css") == 0);
+    CHECK(strcmp(ase_config_language_for_path(config, "a.sh"), "shellscript") == 0);
+
     CHECK(ase_config_language_for_path(config, "notes.txt") == NULL);
     CHECK(ase_config_language_for_path(config, "Makefile") == NULL);
     CHECK(ase_config_language_for_path(config, NULL) == NULL);

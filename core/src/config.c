@@ -241,8 +241,42 @@ static const struct {
     const char *suffix;
     const char *language;
 } kBuiltinFiletypes[] = {
-    {"c", "c"},     {"h", "c"},     {"cpp", "cpp"}, {"cc", "cpp"},
-    {"cxx", "cpp"}, {"hpp", "cpp"}, {"hh", "cpp"},  {"hxx", "cpp"},
+    /* The language name is the LSP `languageId`, so these are the
+     * spec's spellings rather than the suffix — a server keys off
+     * "python", never "py". A suffix missing here means no server can
+     * start for it however it is configured, which is why the list is
+     * broad; see docs/adr/0103. */
+    {"c", "c"},           {"h", "c"},
+    {"cpp", "cpp"},       {"cc", "cpp"},       {"cxx", "cpp"},
+    {"hpp", "cpp"},       {"hh", "cpp"},       {"hxx", "cpp"},
+    {"cs", "csharp"},     {"mm", "objective-cpp"},
+
+    {"py", "python"},     {"pyi", "python"},
+    {"rs", "rust"},       {"go", "go"},
+    {"rb", "ruby"},       {"php", "php"},
+    {"java", "java"},     {"kt", "kotlin"},    {"kts", "kotlin"},
+    {"swift", "swift"},   {"scala", "scala"},
+    {"hs", "haskell"},    {"ml", "ocaml"},     {"mli", "ocaml"},
+    {"zig", "zig"},       {"dart", "dart"},    {"nim", "nim"},
+    {"ex", "elixir"},     {"exs", "elixir"},
+    {"erl", "erlang"},    {"hrl", "erlang"},
+    {"jl", "julia"},      {"r", "r"},
+    {"pl", "perl"},       {"pm", "perl"},
+    {"lua", "lua"},       {"vim", "vim"},
+
+    {"js", "javascript"}, {"mjs", "javascript"}, {"cjs", "javascript"},
+    {"jsx", "javascriptreact"},
+    {"ts", "typescript"}, {"mts", "typescript"}, {"cts", "typescript"},
+    {"tsx", "typescriptreact"},
+    {"html", "html"},     {"htm", "html"},
+    {"css", "css"},       {"scss", "scss"},    {"less", "less"},
+
+    {"sh", "shellscript"}, {"bash", "shellscript"}, {"zsh", "shellscript"},
+    {"ps1", "powershell"},
+    {"sql", "sql"},       {"proto", "proto"},  {"tf", "terraform"},
+    {"json", "json"},     {"jsonc", "jsonc"},
+    {"yaml", "yaml"},     {"yml", "yaml"},
+    {"toml", "toml"},     {"xml", "xml"},      {"cmake", "cmake"},
 };
 
 /* Lowercased into `out` so FOO.C resolves; anything longer than the
