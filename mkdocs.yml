@@ -118,6 +118,7 @@ nav:
     - adr/0095-the-performance-baseline.md
     - adr/0096-one-server-per-language-and-project.md
     - adr/0097-marks-and-macros.md
+    - adr/0098-global-marks.md
 
 theme:
   name: material

@@ -878,6 +878,11 @@ void EditorViewport::vimPlayMacro(char name, int count) {
  * a mark leaves it pointing at the old line number — see docs/adr/0097. */
 void EditorViewport::vimSetMark(char name) {
     m_vimMarks.insert(name, qMakePair(cursorLine(), cursorColumn()));
+    /* Kept locally too, so an operator can use it while this is the
+     * buffer it lives in — vim errors on one in another file. */
+    if (name >= 'A' && name <= 'Z') {
+        emit globalMarkSetRequested(name);
+    }
 }
 
 void EditorViewport::vimApplyOperatorToMark(char name, bool exact) {
@@ -907,6 +912,12 @@ void EditorViewport::vimApplyOperatorToMark(char name, bool exact) {
 }
 
 void EditorViewport::vimJumpToMark(char name, bool exact) {
+    /* Always via the window: it knows which buffer the mark is in, and
+     * the answer may be one that is not even open. */
+    if (name >= 'A' && name <= 'Z') {
+        emit globalMarkJumpRequested(name, exact);
+        return;
+    }
     auto it = m_vimMarks.constFind(name);
     if (it == m_vimMarks.constEnd()) {
         notify(NotifyLevel::Warning, QStringLiteral("mark %1 not set").arg(QChar(name)));

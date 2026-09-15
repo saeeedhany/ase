@@ -82,10 +82,9 @@ rewritten is how that ends.
 
 ## Consequences
 
-Uppercase marks (`A-Z`) are accepted and stored, but they are
-buffer-local like the lowercase ones rather than global as vim has them.
-A global mark has to name a file as well as a position, which is the
-jumplist's problem too and should be solved once for both.
+Uppercase marks (`A-Z`) are global — they name a file as well as a
+position — and are covered by [ADR 0098](0098-global-marks.md), which
+solves it the way this one predicted: by reusing the jumplist's entry.
 
 ### Marks as operator targets
 

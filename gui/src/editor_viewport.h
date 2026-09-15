@@ -89,6 +89,8 @@ public:
     void setAboutPanel(AboutPanel *panel) { m_aboutPanel = panel; }
     /* One per window, like the output panel — see docs/adr/0096. */
     void setLspRegistry(LspRegistry *registry) { m_lspRegistry = registry; }
+    /* Dropped when another buffer claims the same uppercase letter. */
+    void clearLocalMark(char name) { m_vimMarks.remove(name); }
     /* Called by the registry when this buffer's shared server changes
      * state, including when it joins one that is already up. */
     void onLspStateChanged(LspState state, const QString &serverName);
@@ -198,6 +200,10 @@ signals:
     void messagePosted(NotifyLevel level, const QString &text);
     /* Only on an actual change. */
     void lspStateChanged(LspState state, const QString &serverName);
+    /* Uppercase marks name a file as well as a position, which only the
+     * window knows about — see docs/adr/0098. */
+    void globalMarkSetRequested(char name);
+    void globalMarkJumpRequested(char name, bool exact);
     /* :q / :q!. The window owns the buffer list, so it decides what
      * closing the last one means. force skips the unsaved-changes
      * prompt. */

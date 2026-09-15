@@ -71,7 +71,11 @@ public:
 
     void recordJump();
     void jumpBy(int direction);
-    bool restoreJump(const JumpEntry &entry);
+    /* exact=false lands on the line's first non-blank, which is what
+     * `'A` means against `` `A ``. */
+    bool restoreJump(const JumpEntry &entry, bool exact = true);
+    void setGlobalMark(EditorViewport *owner, char name);
+    void jumpToGlobalMark(EditorViewport *asker, char name, bool exact);
 
     void showMessage(NotifyLevel level, const QString &text);
     void showLspState(LspState state, const QString &serverName);
@@ -124,6 +128,9 @@ private:
     QVector<EditorViewport *> m_viewports;
     /* Same shape as the undo stack: a new entry truncates everything
      * after the cursor. index == size() means "at the present". */
+    /* A-Z, shared by every buffer: a global mark names a file as well
+     * as a position, which is the jumplist's shape exactly. */
+    QHash<char, JumpEntry> m_globalMarks;
     QVector<JumpEntry> m_jumps;
     int m_jumpIndex = 0;
 };
@@ -345,6 +352,10 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
                 refreshBufferBar(); /* the name may have changed via Save-As */
             });
     connect(viewport, &EditorViewport::jumpRecorded, this, [this]() { recordJump(); });
+    connect(viewport, &EditorViewport::globalMarkSetRequested, this,
+            [this, viewport](char name) { setGlobalMark(viewport, name); });
+    connect(viewport, &EditorViewport::globalMarkJumpRequested, this,
+            [this, viewport](char name, bool exact) { jumpToGlobalMark(viewport, name, exact); });
     connect(viewport, &EditorViewport::fileOpenRequested, this, [this](const QString &path) {
         /* Opening a file is a jump. */
         recordJump();
@@ -467,11 +478,15 @@ void MainWindow::jumpBy(int direction) {
     }
 }
 
-bool MainWindow::restoreJump(const JumpEntry &entry) {
+bool MainWindow::restoreJump(const JumpEntry &entry, bool exact) {
     for (int i = 0; i < m_viewports.size(); ++i) {
         if (reinterpret_cast<quintptr>(m_viewports[i]) == entry.bufferId) {
             setActiveIndex(i);
-            m_viewports[i]->goToLineColumn(entry.line, entry.column);
+            if (exact) {
+                m_viewports[i]->goToLineColumn(entry.line, entry.column);
+            } else {
+                m_viewports[i]->goToLine(entry.line);
+            }
             m_viewports[i]->setFocus();
             return true;
         }
@@ -485,9 +500,44 @@ bool MainWindow::restoreJump(const JumpEntry &entry) {
     if (opened == nullptr) {
         return false;
     }
-    opened->goToLineColumn(entry.line, entry.column);
+    if (exact) {
+        opened->goToLineColumn(entry.line, entry.column);
+    } else {
+        opened->goToLine(entry.line);
+    }
     opened->setFocus();
     return true;
+}
+
+void MainWindow::setGlobalMark(EditorViewport *owner, char name) {
+    JumpEntry entry;
+    entry.path = owner->filePath();
+    entry.bufferId = reinterpret_cast<quintptr>(owner);
+    entry.line = owner->cursorLine();
+    entry.column = owner->cursorColumn();
+    m_globalMarks.insert(name, entry);
+
+    /* One letter, one place. Without this a buffer that used to hold the
+     * mark would still answer `d'A` from its stale local copy. */
+    for (EditorViewport *viewport : m_viewports) {
+        if (viewport != owner) {
+            viewport->clearLocalMark(name);
+        }
+    }
+}
+
+void MainWindow::jumpToGlobalMark(EditorViewport *asker, char name, bool exact) {
+    auto it = m_globalMarks.constFind(name);
+    if (it == m_globalMarks.constEnd()) {
+        asker->notify(NotifyLevel::Warning, QStringLiteral("mark %1 not set").arg(QChar(name)));
+        return;
+    }
+    /* Recorded before moving, so Ctrl+O comes back across the file
+     * change too. */
+    recordJump();
+    if (!restoreJump(*it, exact)) {
+        asker->notify(NotifyLevel::Warning, QStringLiteral("mark %1 is gone").arg(QChar(name)));
+    }
 }
 
 void MainWindow::showMessage(NotifyLevel level, const QString &text) {
