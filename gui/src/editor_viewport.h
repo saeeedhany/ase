@@ -361,15 +361,18 @@ private:
     /* '\n' counts as Blank — see vimClassifyAt in the .cpp. */
     enum class VimCharClass { Blank, Word, Punct };
     VimCharClass vimClassifyAt(size_t pos) const;
+    /* A WORD is only blank versus non-blank, so `big` folds Punct into
+     * Word and the same three motions serve w/e/b and W/E/B. */
+    VimCharClass vimClassifyAt(size_t pos, bool big) const;
     size_t vimNextCharBoundary(size_t pos) const;
     size_t vimPrevCharBoundary(size_t pos) const;
-    size_t vimWordForward(size_t pos) const;
-    size_t vimWordEnd(size_t pos) const;
+    size_t vimWordForward(size_t pos, bool big = false) const;
+    size_t vimWordEnd(size_t pos, bool big = false) const;
     /* End of the character-class run `pos` sits in. Unlike vimWordEnd,
      * which is `e` and steps on to the next word when already at a run's
      * end, this stops where the run does — what `cw` needs. */
-    size_t vimWordRunEnd(size_t pos) const;
-    size_t vimWordBackward(size_t pos) const;
+    size_t vimWordRunEnd(size_t pos, bool big = false) const;
+    size_t vimWordBackward(size_t pos, bool big = false) const;
     /* First non-blank on `line`, or its end if entirely blank. */
     /* A buffer ending in a newline gets a final m_lineStarts entry at
      * EOF, which is a position but not a line vim would count. */
@@ -378,6 +381,10 @@ private:
     /* A linewise range at the buffer's end has no trailing '\n' to
      * remove, so take the preceding one instead — that deletes the line
      * rather than emptying it. See docs/adr/0060. */
+    void vimReplaceRange(size_t start, size_t end, const QByteArray &text);
+    void vimToggleCase(int count);
+    void vimIndentLines(int startLine, int lineCount, bool right);
+    void vimAddToNumber(int delta);
     size_t vimLinewiseDeleteStart(size_t start, size_t end) const;
     /* Never crosses a line. A miss returns the cursor unchanged.
      * See docs/adr/0069. */

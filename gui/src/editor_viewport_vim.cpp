@@ -77,6 +77,14 @@ EditorViewport::VimCharClass EditorViewport::vimClassifyAt(size_t pos) const {
     return VimCharClass::Punct;
 }
 
+EditorViewport::VimCharClass EditorViewport::vimClassifyAt(size_t pos, bool big) const {
+    VimCharClass cls = vimClassifyAt(pos);
+    if (big && cls == VimCharClass::Punct) {
+        return VimCharClass::Word;
+    }
+    return cls;
+}
+
 size_t EditorViewport::vimNextCharBoundary(size_t pos) const {
     size_t len = static_cast<size_t>(m_cache.size());
     if (pos >= len) {
@@ -100,72 +108,72 @@ size_t EditorViewport::vimPrevCharBoundary(size_t pos) const {
     return pos;
 }
 
-size_t EditorViewport::vimWordForward(size_t pos) const {
+size_t EditorViewport::vimWordForward(size_t pos, bool big) const {
     size_t len = static_cast<size_t>(m_cache.size());
     if (pos >= len) {
         return len;
     }
-    VimCharClass start = vimClassifyAt(pos);
+    VimCharClass start = vimClassifyAt(pos, big);
     if (start != VimCharClass::Blank) {
-        while (pos < len && vimClassifyAt(pos) == start) {
+        while (pos < len && vimClassifyAt(pos, big) == start) {
             pos = vimNextCharBoundary(pos);
         }
     }
-    while (pos < len && vimClassifyAt(pos) == VimCharClass::Blank) {
+    while (pos < len && vimClassifyAt(pos, big) == VimCharClass::Blank) {
         pos = vimNextCharBoundary(pos);
     }
     return pos;
 }
 
-size_t EditorViewport::vimWordRunEnd(size_t pos) const {
+size_t EditorViewport::vimWordRunEnd(size_t pos, bool big) const {
     size_t len = static_cast<size_t>(m_cache.size());
     if (pos >= len) {
         return pos;
     }
-    VimCharClass cls = vimClassifyAt(pos);
+    VimCharClass cls = vimClassifyAt(pos, big);
     size_t p = pos;
-    while (p < len && vimClassifyAt(p) == cls) {
+    while (p < len && vimClassifyAt(p, big) == cls) {
         p = vimNextCharBoundary(p);
     }
     return p;
 }
 
-size_t EditorViewport::vimWordEnd(size_t pos) const {
+size_t EditorViewport::vimWordEnd(size_t pos, bool big) const {
     size_t len = static_cast<size_t>(m_cache.size());
     if (pos >= len) {
         return pos;
     }
     pos = vimNextCharBoundary(pos);
-    while (pos < len && vimClassifyAt(pos) == VimCharClass::Blank) {
+    while (pos < len && vimClassifyAt(pos, big) == VimCharClass::Blank) {
         pos = vimNextCharBoundary(pos);
     }
     if (pos >= len) {
         return len;
     }
-    VimCharClass cls = vimClassifyAt(pos);
+    VimCharClass cls = vimClassifyAt(pos, big);
     size_t next = vimNextCharBoundary(pos);
-    while (next < len && vimClassifyAt(next) == cls) {
+    while (next < len && vimClassifyAt(next, big) == cls) {
         pos = next;
         next = vimNextCharBoundary(next);
     }
     return pos;
 }
 
-size_t EditorViewport::vimWordBackward(size_t pos) const {
+size_t EditorViewport::vimWordBackward(size_t pos, bool big) const {
     if (pos == 0) {
         return 0;
     }
     pos = vimPrevCharBoundary(pos);
-    while (pos > 0 && vimClassifyAt(pos) == VimCharClass::Blank) {
+    while (pos > 0 && vimClassifyAt(pos, big) == VimCharClass::Blank) {
         pos = vimPrevCharBoundary(pos);
     }
-    if (vimClassifyAt(pos) == VimCharClass::Blank) {
+    if (vimClassifyAt(pos, big) == VimCharClass::Blank) {
         return 0;
     }
-    VimCharClass cls = vimClassifyAt(pos);
+    VimCharClass cls = vimClassifyAt(pos, big);
     while (pos > 0) {
         size_t prev = vimPrevCharBoundary(pos);
-        if (vimClassifyAt(prev) != cls) {
+        if (vimClassifyAt(prev, big) != cls) {
             break;
         }
         pos = prev;
@@ -403,24 +411,27 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
                 }
                 return;
             }
-            case 'w': {
-                size_t target = vimWordForward(m_cursors[0]);
+            case 'w':
+            case 'W': {
+                size_t target = vimWordForward(m_cursors[0], m == 'W');
                 m_cursors[0] = target;
                 if (!visual) {
                     m_selectionAnchors[0] = target;
                 }
                 break;
             }
-            case 'b': {
-                size_t target = vimWordBackward(m_cursors[0]);
+            case 'b':
+            case 'B': {
+                size_t target = vimWordBackward(m_cursors[0], m == 'B');
                 m_cursors[0] = target;
                 if (!visual) {
                     m_selectionAnchors[0] = target;
                 }
                 break;
             }
-            case 'e': {
-                size_t target = vimWordEnd(m_cursors[0]);
+            case 'e':
+            case 'E': {
+                size_t target = vimWordEnd(m_cursors[0], m == 'E');
                 m_cursors[0] = target;
                 if (!visual) {
                     m_selectionAnchors[0] = target;
@@ -495,7 +506,7 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
          * while `cw` changes only the `.`. Only the first step is
          * special; the rest of a count behave like `e`.
          */
-        bool changeToWordEnd = (m == 'w' && m_vimPendingOperator == 'c' &&
+        bool changeToWordEnd = ((m == 'w' || m == 'W') && m_vimPendingOperator == 'c' &&
                                 before < static_cast<size_t>(m_cache.size()) &&
                                 vimClassifyAt(before) != VimCharClass::Blank);
         for (int n = 0; n < count; ++n) {
@@ -513,16 +524,18 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
                 }
                 break;
             case 'w':
+            case 'W':
                 if (!changeToWordEnd) {
-                    after = vimWordForward(after);
+                    after = vimWordForward(after, m == 'W');
                 } else if (n == 0) {
-                    after = vimWordRunEnd(after);
+                    after = vimWordRunEnd(after, m == 'W');
                 } else {
-                    after = vimNextCharBoundary(vimWordEnd(after));
+                    after = vimNextCharBoundary(vimWordEnd(after, m == 'W'));
                 }
                 break;
             case 'b':
-                after = vimWordBackward(after);
+            case 'B':
+                after = vimWordBackward(after, m == 'B');
                 break;
             case '}':
                 after = vimParagraphForward(after);
@@ -531,8 +544,9 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
                 after = vimParagraphBackward(after);
                 break;
             case 'e':
+            case 'E':
                 /* Inclusive of the landed-on char, unlike a plain 'e'. */
-                after = vimNextCharBoundary(vimWordEnd(after));
+                after = vimNextCharBoundary(vimWordEnd(after, m == 'E'));
                 break;
             default:
                 break;
@@ -586,6 +600,13 @@ void EditorViewport::vimApplyPendingOperatorCharwise(size_t start, size_t end) {
     case 'y':
         vimYankRange(start, end, false);
         break;
+    case '>':
+    case '<': {
+        /* `>` is always linewise, whatever motion delimited it. */
+        int startLine = lineForOffset(start);
+        vimIndentLines(startLine, lineForOffset(end) - startLine + 1, op == '>');
+        break;
+    }
     case 'c':
         /* Before the deletion: vim undoes a `c` and the typing that
          * follows it as one. */
@@ -610,6 +631,10 @@ void EditorViewport::vimApplyPendingOperatorLinewise(int startLine, int lineCoun
         break;
     case 'y':
         vimYankLines(startLine, lineCount);
+        break;
+    case '>':
+    case '<':
+        vimIndentLines(startLine, lineCount, op == '>');
         break;
     case 'c': {
         /* Empties the lines and keeps one to type on, rather than
@@ -670,6 +695,139 @@ void EditorViewport::vimDeleteRange(size_t start, size_t end, bool linewise) {
     m_selectionAnchors[0] = start;
     endUndoStep();
     refreshCache();
+    ensureCursorVisible();
+    update();
+}
+
+/* Delete-then-insert as one undo step, leaving the registers alone:
+ * `~`, `>>` and Ctrl+A rewrite text without yanking it. */
+void EditorViewport::vimReplaceRange(size_t start, size_t end, const QByteArray &text) {
+    QByteArray removed = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
+    beginUndoStep();
+    if (end > start && ase_buffer_delete(m_buffer, start, end - start)) {
+        ase_undo_record_delete(m_undo, start, removed.constData(), static_cast<size_t>(removed.size()));
+    }
+    if (!text.isEmpty() &&
+        ase_buffer_insert(m_buffer, start, text.constData(), static_cast<size_t>(text.size()))) {
+        ase_undo_record_insert(m_undo, start, text.constData(), static_cast<size_t>(text.size()));
+    }
+    endUndoStep();
+    refreshCache();
+}
+
+/* ASCII only, like vim's default: a byte outside it is left as it is
+ * rather than guessed at. */
+void EditorViewport::vimToggleCase(int count) {
+    size_t pos = m_cursors[0];
+    size_t lineEnd = vimLineEndOffset(lineForOffset(pos));
+    size_t end = pos;
+    for (int n = 0; n < count && end < lineEnd; ++n) {
+        end = vimNextCharBoundary(end);
+    }
+    if (end <= pos) {
+        return;
+    }
+
+    QByteArray text = m_cache.mid(static_cast<int>(pos), static_cast<int>(end - pos));
+    for (char &ch : text) {
+        unsigned char u = static_cast<unsigned char>(ch);
+        if (u >= 'a' && u <= 'z') {
+            ch = static_cast<char>(u - 'a' + 'A');
+        } else if (u >= 'A' && u <= 'Z') {
+            ch = static_cast<char>(u - 'A' + 'a');
+        }
+    }
+
+    vimReplaceRange(pos, end, text);
+    /* One past the last byte touched, clamped back on to the line —
+     * `~` on the final character leaves the cursor there. */
+    lineEnd = vimLineEndOffset(lineForOffset(pos));
+    m_cursors[0] = std::min(end, lineEnd > pos ? vimPrevCharBoundary(lineEnd) : pos);
+    m_selectionAnchors[0] = m_cursors[0];
+    vimMarkChange();
+    ensureCursorVisible();
+    update();
+}
+
+/* Four spaces, matching what Tab inserts — the render path has no
+ * tab-stop expansion, so a literal tab would measure ~0 wide. See
+ * docs/adr/0031. */
+void EditorViewport::vimIndentLines(int startLine, int lineCount, bool right) {
+    static const int kIndent = 4;
+    int lastLine = std::min(startLine + lineCount - 1, vimLastLine());
+    if (startLine > lastLine) {
+        return;
+    }
+
+    beginUndoSession();
+    /* Bottom-up: every edit shifts the offsets of the lines below it. */
+    for (int line = lastLine; line >= startLine; --line) {
+        size_t lineStart = static_cast<size_t>(m_lineStarts[line]);
+        size_t lineEnd = vimLineEndOffset(line);
+        if (right) {
+            /* vim leaves an empty line empty rather than indenting it. */
+            if (lineEnd > lineStart) {
+                vimReplaceRange(lineStart, lineStart, QByteArray(kIndent, ' '));
+            }
+        } else {
+            size_t scan = lineStart;
+            while (scan < lineEnd && scan - lineStart < static_cast<size_t>(kIndent) &&
+                   m_cache[static_cast<int>(scan)] == ' ') {
+                scan++;
+            }
+            if (scan > lineStart) {
+                vimReplaceRange(lineStart, scan, QByteArray());
+            }
+        }
+    }
+    endUndoSession();
+
+    m_cursors[0] = vimFirstNonBlank(std::min(startLine, vimLastLine()));
+    m_selectionAnchors[0] = m_cursors[0];
+    vimMarkChange();
+    ensureCursorVisible();
+    update();
+}
+
+/* The first number at or after the cursor on this line, as vim scans:
+ * a run of digits, taking a `-` immediately before it as a sign. A `.`
+ * is not part of it, so 1.9 increments to 2.9. */
+void EditorViewport::vimAddToNumber(int delta) {
+    size_t pos = m_cursors[0];
+    int line = lineForOffset(pos);
+    size_t lineStart = static_cast<size_t>(m_lineStarts[line]);
+    size_t lineEnd = vimLineEndOffset(line);
+
+    size_t scan = pos;
+    while (scan < lineEnd && !isdigit(static_cast<unsigned char>(m_cache[static_cast<int>(scan)]))) {
+        scan++;
+    }
+    if (scan >= lineEnd) {
+        return;
+    }
+
+    size_t start = scan;
+    while (start > lineStart && isdigit(static_cast<unsigned char>(m_cache[static_cast<int>(start) - 1]))) {
+        start--;
+    }
+    size_t end = scan;
+    while (end < lineEnd && isdigit(static_cast<unsigned char>(m_cache[static_cast<int>(end)]))) {
+        end++;
+    }
+    bool negative = start > lineStart && m_cache[static_cast<int>(start) - 1] == '-';
+    if (negative) {
+        start--;
+    }
+
+    long long value = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start)).toLongLong();
+    QByteArray text = QByteArray::number(value + delta);
+    vimReplaceRange(start, end, text);
+
+    /* On the last digit of the result, where vim leaves it. */
+    size_t landing = start + static_cast<size_t>(text.size());
+    m_cursors[0] = (landing > start) ? vimPrevCharBoundary(landing) : start;
+    m_selectionAnchors[0] = m_cursors[0];
+    vimMarkChange();
     ensureCursorVisible();
     update();
 }
@@ -1982,6 +2140,7 @@ bool EditorViewport::vimApplyMotionKey(char c, int count) {
         return true;
     }
     if (c == 'h' || c == 'l' || c == 'j' || c == 'k' || c == '0' || c == '^' || c == '$' || c == 'w' ||
+        c == 'W' || c == 'E' || c == 'B' ||
         c == 'b' || c == 'e' || c == '{' || c == '}' || c == '%') {
         if ((c == '{' || c == '}') && m_vimPendingOperator == '\0') {
             /* Far enough to be worth coming back from; h/j/k/l are
@@ -2030,6 +2189,41 @@ void EditorViewport::vimApplyVisualKey(char c) {
             std::swap(m_vimVisualAnchorLine, m_vimVisualCursorLine);
             vimNormalizeLinewiseSelection();
         }
+        break;
+    }
+    case '>':
+    case '<': {
+        /* Always whole lines, charwise selection or not. */
+        int startLine = lineForOffset(selectionMinAt(0));
+        int endLine = lineForOffset(vimVisualEnd(0) > selectionMinAt(0) ? vimVisualEnd(0) - 1
+                                                                       : selectionMinAt(0));
+        collapseToOneCursor();
+        m_vimMode = VimMode::Normal;
+        m_vimVisualLinewise = false;
+        vimIndentLines(startLine, endLine - startLine + 1, c == '>');
+        break;
+    }
+    case '~': {
+        size_t start = selectionMinAt(0);
+        size_t end = vimVisualEnd(0);
+        if (end > start) {
+            QByteArray text = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
+            for (char &ch : text) {
+                unsigned char u = static_cast<unsigned char>(ch);
+                if (u >= 'a' && u <= 'z') {
+                    ch = static_cast<char>(u - 'a' + 'A');
+                } else if (u >= 'A' && u <= 'Z') {
+                    ch = static_cast<char>(u - 'A' + 'a');
+                }
+            }
+            vimReplaceRange(start, end, text);
+            vimMarkChange();
+        }
+        collapseToOneCursor();
+        m_cursors[0] = start;
+        m_selectionAnchors[0] = start;
+        m_vimMode = VimMode::Normal;
+        m_vimVisualLinewise = false;
         break;
     }
     case 'x':
@@ -2114,7 +2308,7 @@ void EditorViewport::vimApplyVisualKey(char c) {
 void EditorViewport::vimApplyNormalKey(char c, int count) {
     /* Normal-mode-only from here: operators, x/p/P/u, mode entry. */
 
-    if (c == 'd' || c == 'y' || c == 'c') {
+    if (c == 'd' || c == 'y' || c == 'c' || c == '>' || c == '<') {
         if (m_vimPendingOperator == c) {
             vimApplyPendingOperatorLinewise(lineForOffset(m_cursors[0]), count);
         } else if (m_vimPendingOperator == '\0') {
@@ -2244,6 +2438,9 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
     case 'J':
         vimJoinLines(count, true);
         break;
+    case '~':
+        vimToggleCase(count);
+        break;
     case 'r':
         m_vimPendingReplace = true;
         return; /* the count is still needed when the target arrives */
@@ -2334,6 +2531,20 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
 
 bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     if (event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) {
+        /* The only two Normal-mode commands that are chords; everything
+         * else with a modifier belongs to the editor, not to vim. This
+         * shadows Ctrl+A (select all) and Ctrl+X (cut) in Normal mode
+         * only, the way Ctrl+D/Ctrl+U already do — see docs/adr/0059.
+         * Insert, Visual and vim_mode = false keep the editor's. */
+        bool ctrlOnly = (event->modifiers() & (Qt::AltModifier | Qt::MetaModifier)) == 0 &&
+                        (event->modifiers() & Qt::ControlModifier) != 0;
+        if (ctrlOnly && m_vimMode == VimMode::Normal &&
+            (event->key() == Qt::Key_A || event->key() == Qt::Key_X)) {
+            int count = std::max(1, m_vimCount1) * std::max(1, m_vimCount2);
+            vimAddToNumber(event->key() == Qt::Key_A ? count : -count);
+            resetVimPendingState();
+            return true;
+        }
         return false;
     }
     if (m_cursors.size() > 1) {

@@ -126,6 +126,7 @@ nav:
     - adr/0103-the-mainstream-languages.md
     - adr/0104-the-vim-conformance-suite.md
     - adr/0105-named-registers.md
+    - adr/0106-words-case-indent-numbers.md
 
 theme:
   name: material

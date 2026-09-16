@@ -125,6 +125,55 @@ CASES = [
     # so `@a` comes back empty and the file is unchanged. These are in
     # MANUAL_CASES below with the reasoning instead.
 
+    # --- WORD motions: blank versus non-blank, where w/e/b split on
+    # character class as well. ---
+    ("dW",                "foo.bar baz qux\n",        1, 1, "dW"),
+    ("dE",                "foo.bar baz qux\n",        1, 1, "dE"),
+    ("2dW",               "foo.bar baz qux\n",        1, 1, "2dW"),
+    ("W then x",          "foo.bar baz qux\n",        1, 1, "WWx"),
+    ("E then x",          "foo.bar baz qux\n",        1, 1, "Ex"),
+    ("B then x",          "foo.bar baz qux\n",        1, 9, "Bx"),
+    ("dB",                "foo.bar baz qux\n",        1, 9, "dB"),
+    ("cW",                "foo.bar baz\n",            1, 1, "cWZZ<Esc>"),
+    ("yW then P",         "foo.bar baz\n",            1, 1, "yWP"),
+
+    # --- toggle case, indent, increment ---
+    ("~",                 "Hello World\n",            1, 1, "~"),
+    ("5~",                "Hello World\n",            1, 1, "5~"),
+    ("~ past line end",   "ab\ncd\n",                 1, 1, "9~"),
+    ("~ on punctuation",  "a-b\n",                    1, 2, "~"),
+
+    (">>",                "aaa\nbbb\nccc\n",          1, 1, ">>"),
+    ("2>>",               "aaa\nbbb\nccc\n",          1, 1, "2>>"),
+    (">j",                "aaa\nbbb\nccc\n",          1, 1, ">j"),
+    ("<< when unindented","aaa\nbbb\nccc\n",          1, 1, "<<"),
+    (">> then <<",        "aaa\nbbb\nccc\n",          1, 1, ">><<"),
+    (">> on empty line",  "aaa\n\nccc\n",             2, 1, ">>"),
+    ("2>> then u",        "aaa\nbbb\nccc\n",          1, 1, "2>>u"),
+
+    # Chained with x, so the cursor's landing is compared too — the
+    # expectations are file contents, and a bare `~` hides it.
+    ("~ then x",          "Hello World\n",            1, 1, "~x"),
+    ("3~ then x",         "Hello World\n",            1, 1, "3~x"),
+    ("~ at line end",     "ab\ncd\n",                 1, 2, "~x"),
+    (">> then x",         "  aaa\nbbb\n",             1, 1, ">>x"),
+    ("<< then x",         "        aaa\nbbb\n",       1, 1, "<<x"),
+
+    ("V then >",          "aaa\nbbb\nccc\n",          1, 1, "Vj>"),
+    ("V then <",          "    aaa\n    bbb\n",       1, 1, "Vj<"),
+    ("v then > partial",  "aaa\nbbb\nccc\n",          1, 2, "vj>"),
+    ("v then ~",          "Hello World\n",            1, 1, "v4l~"),
+    ("V then ~",          "Hello World\nbye\n",       1, 1, "V~"),
+
+    ("Ctrl-A on digit",   "x = 41 here\n",            1, 5, "<C-a>"),
+    ("Ctrl-A before",     "x = 41 here\n",            1, 1, "<C-a>"),
+    ("5 Ctrl-A",          "x = 41 here\n",            1, 1, "5<C-a>"),
+    ("Ctrl-X",            "x = 41 here\n",            1, 1, "<C-x>"),
+    ("Ctrl-A on 1.9",     "ver 1.9 z\n",              1, 1, "<C-a>"),
+    ("Ctrl-A on -3",      "num -3 end\n",             1, 1, "<C-a>"),
+    ("Ctrl-A no number",  "no digits\n",              1, 1, "<C-a>"),
+    ("Ctrl-A then x",     "x = 41 here\n",            1, 1, "<C-a>x"),
+
     # --- named registers ---
     # `"` was unhandled before: the letter after it entered Insert and the
     # rest of the command was typed into the buffer.
@@ -186,7 +235,8 @@ COMMAND_CASES = [
     ("goto line",         "aa\nbb\ncc\n",                         1, 1, "2"),
 ]
 
-VIM_KEY = {"<Esc>": r"\<Esc>", "<CR>": r"\<CR>", "<BS>": r"\<BS>", "<Tab>": r"\<Tab>"}
+VIM_KEY = {"<Esc>": r"\<Esc>", "<CR>": r"\<CR>", "<BS>": r"\<BS>", "<Tab>": r"\<Tab>",
+           "<C-a>": r"\<C-a>", "<C-x>": r"\<C-x>"}
 
 
 def to_vim(keys):
@@ -213,6 +263,8 @@ def main():
         open(os.path.join(work, "in.txt"), "w").write(text)
         script = (
             "set nofixeol\n"
+            # The editor's indent unit is four spaces; see docs/adr/0031.
+            "set shiftwidth=4 expandtab\n"
             "call cursor(%d,%d)\n"
             'execute "normal %s"\n'
             "write! %s/out.txt\nq!\n" % (line, col, to_vim(keys), work)
