@@ -116,3 +116,4 @@ what changed.
 | [0106](0106-words-case-indent-numbers.md) | WORDs, case, indent and numbers |
 | [0107](0107-the-large-file-wall.md) | The large-file wall |
 | [0108](0108-the-half-typed-command.md) | The half-typed command |
+| [0109](0109-saving-without-losing-the-file.md) | Saving without losing the file |

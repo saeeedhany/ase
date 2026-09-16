@@ -5,6 +5,14 @@
 
 #include "ase/buffer.h"
 
+#if !defined(_WIN32)
+#include <dirent.h>
+#include <signal.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 static void expect_content(AseBuffer *buf, const char *expected) {
     size_t len = strlen(expected);
     CHECK(ase_buffer_length(buf) == len);
@@ -191,6 +199,150 @@ static void test_file_round_trip(void) {
     ase_buffer_destroy(buf);
 }
 
+/* The pillar in docs/SPEC.md is "never loses user data", and a save that
+ * truncates before it writes breaks it: a write that fails partway has
+ * already destroyed what was there. Capping the file size makes the
+ * failure happen on demand. */
+#if !defined(_WIN32)
+static void test_failed_save_leaves_the_original_intact(void) {
+    const char *path = "test_buffer_atomic.tmp";
+    const char *precious = "the user spent all day on this\n";
+
+    FILE *f = fopen(path, "wb");
+    CHECK(f != NULL);
+    fwrite(precious, 1, strlen(precious), f);
+    fclose(f);
+
+    AseBuffer *buf = ase_buffer_create();
+    CHECK(buf != NULL);
+    char *big = (char *)malloc(200000);
+    CHECK(big != NULL);
+    memset(big, 'x', 200000);
+    CHECK(ase_buffer_insert(buf, 0, big, 200000));
+    free(big);
+
+    void (*previous)(int) = signal(SIGXFSZ, SIG_IGN);
+    struct rlimit saved;
+    getrlimit(RLIMIT_FSIZE, &saved);
+    struct rlimit capped;
+    capped.rlim_cur = 8192;
+    capped.rlim_max = saved.rlim_max;
+    CHECK(setrlimit(RLIMIT_FSIZE, &capped) == 0);
+
+    bool saved_ok = ase_buffer_save_to_file(buf, path);
+
+    setrlimit(RLIMIT_FSIZE, &saved);
+    signal(SIGXFSZ, previous);
+
+    CHECK(!saved_ok); /* it must report the failure... */
+
+    /* ...and the file must still be what it was. */
+    char read_back[256] = {0};
+    FILE *check = fopen(path, "rb");
+    CHECK(check != NULL);
+    size_t n = fread(read_back, 1, sizeof(read_back) - 1, check);
+    fclose(check);
+    read_back[n] = '\0';
+    if (strcmp(read_back, precious) != 0) {
+        printf("failed save destroyed the file: %zu bytes left, expected %zu\n", n,
+               strlen(precious));
+    }
+    CHECK(strcmp(read_back, precious) == 0);
+
+    ase_buffer_destroy(buf);
+    remove(path);
+}
+
+/* A scratch file left next to the user's own is litter, and one left
+ * with their content in it is worse. */
+static void test_save_leaves_no_scratch_file(void) {
+    const char *path = "test_buffer_scratch.tmp";
+    AseBuffer *buf = ase_buffer_create();
+    CHECK(ase_buffer_insert(buf, 0, "hello\n", 6));
+    CHECK(ase_buffer_save_to_file(buf, path));
+
+    DIR *dir = opendir(".");
+    CHECK(dir != NULL);
+    int strays = 0;
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strstr(entry->d_name, "test_buffer_scratch") != NULL &&
+            strcmp(entry->d_name, path) != 0) {
+            printf("left behind: %s\n", entry->d_name);
+            strays++;
+        }
+    }
+    closedir(dir);
+    CHECK(strays == 0);
+
+    ase_buffer_destroy(buf);
+    remove(path);
+}
+
+/* A file the user chmodded stays that way; a fresh temp file would
+ * otherwise hand it back at whatever the umask says. */
+static void test_save_preserves_permissions(void) {
+    const char *path = "test_buffer_perm.tmp";
+    FILE *f = fopen(path, "wb");
+    CHECK(f != NULL);
+    fwrite("x\n", 1, 2, f);
+    fclose(f);
+    CHECK(chmod(path, 0600) == 0);
+
+    AseBuffer *buf = ase_buffer_create();
+    CHECK(ase_buffer_insert(buf, 0, "changed\n", 8));
+    CHECK(ase_buffer_save_to_file(buf, path));
+
+    struct stat st;
+    CHECK(stat(path, &st) == 0);
+    if ((st.st_mode & 0777) != 0600) {
+        printf("permissions became %o, expected 600\n", st.st_mode & 0777);
+    }
+    CHECK((st.st_mode & 0777) == 0600);
+
+    ase_buffer_destroy(buf);
+    remove(path);
+}
+
+/* Saving through a symlink must write what it points at. Replacing the
+ * link itself is how an editor silently detaches a dotfile from the
+ * repository it is checked into. */
+static void test_save_follows_symlinks(void) {
+    const char *target = "test_buffer_target.tmp";
+    const char *link = "test_buffer_link.tmp";
+    remove(link);
+
+    FILE *f = fopen(target, "wb");
+    CHECK(f != NULL);
+    fwrite("old\n", 1, 4, f);
+    fclose(f);
+    CHECK(symlink(target, link) == 0);
+
+    AseBuffer *buf = ase_buffer_create();
+    CHECK(ase_buffer_insert(buf, 0, "new\n", 4));
+    CHECK(ase_buffer_save_to_file(buf, link));
+
+    struct stat st;
+    CHECK(lstat(link, &st) == 0);
+    if (!S_ISLNK(st.st_mode)) {
+        printf("the symlink was replaced by a regular file\n");
+    }
+    CHECK(S_ISLNK(st.st_mode));
+
+    char read_back[64] = {0};
+    FILE *check = fopen(target, "rb");
+    CHECK(check != NULL);
+    size_t n = fread(read_back, 1, sizeof(read_back) - 1, check);
+    fclose(check);
+    read_back[n] = '\0';
+    CHECK(strcmp(read_back, "new\n") == 0);
+
+    ase_buffer_destroy(buf);
+    remove(link);
+    remove(target);
+}
+#endif
+
 static void test_create_from_missing_file_fails(void) {
     AseBuffer *buf = ase_buffer_create_from_file("this_file_does_not_exist.tmp");
     CHECK(buf == NULL);
@@ -209,6 +361,12 @@ int main(void) {
     test_get_text_partial_ranges();
     test_file_round_trip();
     test_create_from_missing_file_fails();
+#if !defined(_WIN32)
+    test_failed_save_leaves_the_original_intact();
+    test_save_leaves_no_scratch_file();
+    test_save_preserves_permissions();
+    test_save_follows_symlinks();
+#endif
 
     printf("all buffer tests passed\n");
     return 0;
