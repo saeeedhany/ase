@@ -68,6 +68,16 @@ bool ase_undo_redo(AseUndoStack *stack, AseBuffer *buffer, size_t **out_cursors,
  */
 size_t ase_undo_state_id(const AseUndoStack *stack);
 
+/* True while a group is open and has already recorded an edit.
+ *
+ * A state id only appears when a group is committed, so between
+ * begin_group and end_group the buffer has changed and the id has not.
+ * Insert mode is one long group, which made a buffer being actively
+ * typed into report itself unmodified: no dirty marker, and closing it
+ * discarded the work without asking. Callers asking "is this modified?"
+ * need this as well as the id. */
+bool ase_undo_has_uncommitted(const AseUndoStack *stack);
+
 #ifdef __cplusplus
 }
 #endif

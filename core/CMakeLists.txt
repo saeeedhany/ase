@@ -39,6 +39,7 @@ endif()
 
 add_library(ase_core
     src/core.c
+    src/internal.c
     src/buffer.c
     src/config.c
     src/plugin_host.c
@@ -46,6 +47,7 @@ add_library(ase_core
     src/process.c
     src/lsp_client.c
     src/undo.c
+    src/recovery.c
 )
 
 target_include_directories(ase_core

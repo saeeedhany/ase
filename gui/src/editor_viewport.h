@@ -191,6 +191,12 @@ public:
      * being shown without colours. */
     bool syntaxSkippedForSize() const { return m_syntaxOverSizeCap; }
 
+    /* Unsaved work from a session that did not end cleanly — see
+     * docs/adr/0110. */
+    bool hasRecoverySnapshot() const;
+    bool restoreFromRecovery();
+    void discardRecovery();
+
 signals:
     void fileOpenRequested(const QString &path);
     /* 1-based line. The window owns the buffer list, this owns the
@@ -236,6 +242,11 @@ private:
      * than run on the keystroke — see docs/adr/0107. */
     static constexpr int kSyncHighlightBytes = 256 * 1024;
     static constexpr int kHighlightDelayMs = 40;
+    /* Long enough that a burst of typing writes one snapshot, short
+     * enough that little is at risk. */
+    static constexpr int kRecoveryDelayMs = 900;
+    void armRecoverySnapshot();
+    void writeRecoverySnapshot();
     void openConfigFile();
     /* Rebuilds the font and its cached metrics; touches no config. */
     void rebuildFont(int pointSize);
@@ -644,6 +655,8 @@ private:
     bool m_historyDiscardedWhileDirty = false;
 
     QTimer *m_highlightTimer = nullptr;
+    QTimer *m_recoveryTimer = nullptr;
+    QString m_recoveryDir;
     bool m_syntaxOverSizeCap = false;
     AseConfig *m_config = nullptr;
     QString m_configPath;

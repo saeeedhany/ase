@@ -1,5 +1,7 @@
 #include "editor_viewport.h"
 
+#include "ase/recovery.h"
+
 #include "file_browser_panel.h"
 #include "output_panel.h"
 #include "project_files.h"
@@ -36,6 +38,7 @@ void EditorViewport::save() {
         /* Every later dirty check is a comparison against this id. */
         m_savedStateId = ase_undo_state_id(m_undo);
         m_historyDiscardedWhileDirty = false;
+        discardRecovery(); /* the file is the work now */
         ensureCursorVisible(); /* pushes the cleared dirty flag (and title) through statusChanged */
         notify(NotifyLevel::Info, QStringLiteral("saved %1").arg(QFileInfo(m_filePath).fileName()));
     }
@@ -45,7 +48,12 @@ void EditorViewport::save() {
  * id recorded at save. A discarded history is the one case an id
  * cannot describe, hence the flag. */
 bool EditorViewport::isDirty() const {
-    return m_historyDiscardedWhileDirty || ase_undo_state_id(m_undo) != m_savedStateId;
+    /* has_uncommitted as well as the id: Insert mode is one open undo
+     * group, so a buffer being typed into has changed while its state id
+     * has not. Without it the dirty dot stayed off mid-insert and
+     * closing the buffer threw the work away without asking. */
+    return m_historyDiscardedWhileDirty || ase_undo_has_uncommitted(m_undo) ||
+           ase_undo_state_id(m_undo) != m_savedStateId;
 }
 
 /* Defers to save(), so dirty-clearing happens in one place. */
@@ -542,4 +550,83 @@ void EditorViewport::pollCompile() {
         m_compileProcess = nullptr;
         m_compilePollTimer->stop();
     }
+}
+
+/* ---- unsaved work, kept somewhere a crash cannot reach (ADR 0110) ---- */
+
+/* Every edit restarts the timer, so a burst of typing writes one
+ * snapshot at the end of it rather than one per keystroke. A buffer
+ * that matches its file has nothing worth keeping. */
+void EditorViewport::armRecoverySnapshot() {
+    if (m_recoveryTimer == nullptr || m_recoveryDir.isEmpty() || m_filePath.isEmpty()) {
+        return;
+    }
+    if (!isDirty()) {
+        discardRecovery();
+        return;
+    }
+    m_recoveryTimer->start(kRecoveryDelayMs);
+}
+
+void EditorViewport::writeRecoverySnapshot() {
+    if (m_recoveryDir.isEmpty() || m_filePath.isEmpty() || !isDirty()) {
+        return;
+    }
+    ase_recovery_write(m_recoveryDir.toUtf8().constData(), m_filePath.toUtf8().constData(),
+                        m_cache.constData(), static_cast<size_t>(m_cache.size()));
+}
+
+bool EditorViewport::hasRecoverySnapshot() const {
+    if (m_recoveryDir.isEmpty() || m_filePath.isEmpty()) {
+        return false;
+    }
+    return ase_recovery_exists(m_recoveryDir.toUtf8().constData(), m_filePath.toUtf8().constData());
+}
+
+void EditorViewport::discardRecovery() {
+    if (m_recoveryTimer != nullptr) {
+        m_recoveryTimer->stop();
+    }
+    if (m_recoveryDir.isEmpty() || m_filePath.isEmpty()) {
+        return;
+    }
+    ase_recovery_remove(m_recoveryDir.toUtf8().constData(), m_filePath.toUtf8().constData());
+}
+
+/* Restored as an ordinary edit, so the buffer is dirty afterwards and
+ * `u` walks back to what is actually on disk. Recovering is then a
+ * decision the user can reverse, not one they are stuck with. */
+bool EditorViewport::restoreFromRecovery() {
+    if (m_recoveryDir.isEmpty() || m_filePath.isEmpty()) {
+        return false;
+    }
+    size_t len = 0;
+    char *content = ase_recovery_read(m_recoveryDir.toUtf8().constData(),
+                                       m_filePath.toUtf8().constData(), &len);
+    if (content == nullptr) {
+        return false;
+    }
+
+    size_t existing = ase_buffer_length(m_buffer);
+    QByteArray removed = m_cache;
+    beginUndoSession();
+    beginUndoStep();
+    if (existing > 0 && ase_buffer_delete(m_buffer, 0, existing)) {
+        ase_undo_record_delete(m_undo, 0, removed.constData(), static_cast<size_t>(removed.size()));
+    }
+    if (len > 0 && ase_buffer_insert(m_buffer, 0, content, len)) {
+        ase_undo_record_insert(m_undo, 0, content, len);
+    }
+    endUndoStep();
+    endUndoSession();
+    free(content);
+
+    collapseToOneCursor();
+    m_cursors[0] = 0;
+    m_selectionAnchors[0] = 0;
+    refreshCache();
+    ensureCursorVisible();
+    update();
+    notify(NotifyLevel::Info, QStringLiteral("recovered unsaved changes"));
+    return true;
 }

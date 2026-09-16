@@ -21,6 +21,13 @@ add_executable(ase_vim_tests test_vim.cpp)
 target_link_libraries(ase_vim_tests PRIVATE ase_gui_objects Qt6::Test ase_warnings)
 
 add_test(NAME ase_vim_tests COMMAND ase_vim_tests)
+
+add_executable(ase_recovery_flow_tests test_recovery_flow.cpp)
+target_link_libraries(ase_recovery_flow_tests PRIVATE ase_gui_objects Qt6::Test ase_warnings)
+add_test(NAME ase_recovery_flow_tests COMMAND ase_recovery_flow_tests)
+set_tests_properties(ase_recovery_flow_tests PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/config"
+)
 # Offscreen so it needs no display; a private config dir so it never
 # reads or writes the developer's own settings.
 set_tests_properties(ase_vim_tests PROPERTIES

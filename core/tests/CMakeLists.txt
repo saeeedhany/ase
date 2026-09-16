@@ -28,6 +28,17 @@ add_executable(ase_undo_tests
 target_link_libraries(ase_undo_tests PRIVATE ase_core)
 add_test(NAME ase_undo_tests COMMAND ase_undo_tests)
 
+# POSIX-only: the collision test rewrites a snapshot in place using
+# dirent.h and memmem() to find it, neither of which Windows has. The
+# module itself builds and works there.
+if(NOT WIN32)
+    add_executable(ase_recovery_tests
+        test_recovery.c
+    )
+    target_link_libraries(ase_recovery_tests PRIVATE ase_core)
+    add_test(NAME ase_recovery_tests COMMAND ase_recovery_tests)
+endif()
+
 # POSIX-only, by the test's own design, not just ase/process.h's: it
 # spawns /bin/echo, /bin/pwd, /bin/cat, /bin/sh directly and includes
 # <unistd.h> for usleep() — none of which exist on Windows, where

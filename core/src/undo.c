@@ -277,3 +277,10 @@ bool ase_undo_redo(AseUndoStack *stack, AseBuffer *buffer, size_t **out_cursors,
 size_t ase_undo_state_id(const AseUndoStack *stack) {
     return (stack == NULL) ? 0 : stack->current_seq;
 }
+
+bool ase_undo_has_uncommitted(const AseUndoStack *stack) {
+    /* has_pending alone is not enough: begin_group sets it before any
+     * edit is recorded, and an open group with nothing in it has changed
+     * nothing. */
+    return stack != NULL && stack->has_pending && stack->pending.count > 0;
+}

@@ -55,6 +55,18 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 
     m_undo = ase_undo_create();
 
+    /* <config dir>/recovery/, alongside plugins/. Snapshots live here
+     * rather than beside the user's files so they never turn up in a
+     * project directory or a commit. See docs/adr/0110. */
+    if (!m_configPath.isEmpty()) {
+        m_recoveryDir = QFileInfo(m_configPath).dir().filePath(QStringLiteral("recovery"));
+    }
+    /* Restarted by every edit, so the snapshot is written once typing
+     * pauses rather than on the keystroke. */
+    m_recoveryTimer = new QTimer(this);
+    m_recoveryTimer->setSingleShot(true);
+    connect(m_recoveryTimer, &QTimer::timeout, this, [this]() { writeRecoverySnapshot(); });
+
     /* <config dir>/plugins/. A missing directory is not an error. */
     m_pluginHost = ase_plugin_host_create();
     if (m_pluginHost != nullptr && !m_configPath.isEmpty()) {
@@ -143,6 +155,10 @@ void EditorViewport::rebuildSyntax() {
 }
 
 EditorViewport::~EditorViewport() {
+    /* A snapshot outlives only a crash. Closing normally means the work
+     * was saved or the user chose to drop it, and either way there is
+     * nothing to recover. */
+    discardRecovery();
     ase_plugin_host_destroy(m_pluginHost);
     releaseLspClient();
     ase_process_destroy(m_compileProcess);
@@ -200,6 +216,7 @@ void EditorViewport::refreshCache() {
     recomputeMatches();
     sendLspDidChange();
     requestCompletionIfAppropriate();
+    armRecoverySnapshot();
 }
 
 /* Whole-file highlighting cost 14,402 spans and 64ms on a 10,800-line

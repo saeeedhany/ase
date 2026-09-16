@@ -413,7 +413,8 @@ size_t ase_buffer_get_text(const AseBuffer *buf, size_t at, size_t len, char *ou
 }
 
 /* Every piece, in order, into an already-open stream. */
-static bool buffer_write_pieces(const AseBuffer *buf, FILE *f) {
+static bool buffer_write_pieces(FILE *f, void *user) {
+    const AseBuffer *buf = (const AseBuffer *)user;
     for (Piece *p = buf->head; p != NULL; p = p->next) {
         const char *base = (p->source == PIECE_SOURCE_ORIGINAL) ? buf->original : buf->add;
         if (p->length > 0 && fwrite(base + p->start, 1, p->length, f) != p->length) {
@@ -423,85 +424,12 @@ static bool buffer_write_pieces(const AseBuffer *buf, FILE *f) {
     return true;
 }
 
-/* The old path, kept only for the case below where no temporary file can
- * be created. It truncates before it writes, so a failure part-way
- * destroys what was there. */
-static bool buffer_write_in_place(const AseBuffer *buf, const char *path) {
-    FILE *f = fopen(path, "wb");
-    if (f == NULL) {
-        return false;
-    }
-    if (!buffer_write_pieces(buf, f)) {
-        fclose(f);
-        return false;
-    }
-    return fclose(f) == 0;
-}
-
-/*
- * Writes beside the target, then renames over it. rename() is atomic, so
- * the file on disk is either entirely the old contents or entirely the
- * new ones — never the half that a failed write leaves behind. The
- * "never loses user data" pillar in docs/SPEC.md is the reason; a capped
- * filesystem used to leave a truncated file and an honest "could not
- * write". See docs/adr/0109.
- *
- * The temporary has to live in the same directory: rename() is only
- * atomic within a filesystem, and /tmp is frequently a different one.
- */
+/* Written beside the file and renamed over it, so a write that fails
+ * part-way leaves the original alone rather than a truncated ruin of
+ * it. See docs/adr/0109. */
 bool ase_buffer_save_to_file(const AseBuffer *buf, const char *path) {
     if (buf == NULL || path == NULL) {
         return false;
     }
-
-    /* Through a symlink, not over it: replacing the link is how an
-     * editor silently detaches a dotfile from the repository it is
-     * checked into. A path that does not exist yet resolves to itself. */
-    char *resolved = ase_real_path(path);
-    const char *target = (resolved != NULL) ? resolved : path;
-
-    char *tmp = ase_temp_path_beside(target);
-    if (tmp == NULL) {
-        free(resolved);
-        return false;
-    }
-
-    FILE *f = ase_open_private(tmp);
-    if (f == NULL) {
-        /* No temporary is possible — a directory that is not writable
-         * while the file itself is. Refusing to save at all would strand
-         * the user's work, so this falls back to the unsafe write rather
-         * than to nothing. It is the one path that can still lose data. */
-        free(tmp);
-        bool ok = buffer_write_in_place(buf, target);
-        free(resolved);
-        return ok;
-    }
-
-    bool ok = buffer_write_pieces(buf, f);
-    if (ok) {
-        ok = (fflush(f) == 0) && ase_fsync_stream(f);
-    }
-    if (fclose(f) != 0) {
-        ok = false;
-    }
-
-    /* Before the rename, so the file is never briefly world-readable. */
-    if (ok) {
-        ase_copy_permissions(target, tmp);
-    }
-
-    if (!ok || !ase_rename_over(tmp, target)) {
-        remove(tmp);
-        free(tmp);
-        free(resolved);
-        return false;
-    }
-
-    /* The rename itself is only durable once the directory entry is. */
-    ase_fsync_parent_directory(target);
-
-    free(tmp);
-    free(resolved);
-    return true;
+    return ase_write_atomically(path, buffer_write_pieces, (void *)buf);
 }

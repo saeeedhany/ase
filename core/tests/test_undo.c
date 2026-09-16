@@ -282,6 +282,40 @@ static void test_state_id_unchanged_by_noop_group(void) {
     ase_undo_destroy(undo);
 }
 
+/* A state id only appears at end_group, so between begin and end the
+ * buffer has changed and the id has not. Insert mode is one long group,
+ * which made a buffer being typed into report itself unmodified. */
+static void test_uncommitted_group_is_visible(void) {
+    AseBuffer *buffer = ase_buffer_create();
+    AseUndoStack *undo = ase_undo_create();
+    size_t cursor = 0;
+
+    CHECK(!ase_undo_has_uncommitted(undo));
+
+    /* An open group with nothing recorded has changed nothing. */
+    ase_undo_begin_group(undo, &cursor, 1);
+    CHECK(!ase_undo_has_uncommitted(undo));
+
+    size_t before = ase_undo_state_id(undo);
+    ase_buffer_insert(buffer, 0, "typed", 5);
+    ase_undo_record_insert(undo, 0, "typed", 5);
+    CHECK(ase_undo_has_uncommitted(undo));
+    /* The whole point: the id has not moved yet. */
+    CHECK(ase_undo_state_id(undo) == before);
+
+    cursor = 5;
+    ase_undo_end_group(undo, &cursor, 1);
+    CHECK(!ase_undo_has_uncommitted(undo));
+    CHECK(ase_undo_state_id(undo) != before);
+
+    ase_undo_destroy(undo);
+    ase_buffer_destroy(buffer);
+}
+
+static void test_uncommitted_handles_null(void) {
+    CHECK(!ase_undo_has_uncommitted(NULL));
+}
+
 int main(void) {
     test_single_insert_undo_redo();
     test_single_delete_undo_redo();
@@ -292,6 +326,9 @@ int main(void) {
     test_state_id_returns_after_undo();
     test_state_id_is_not_a_group_count();
     test_state_id_unchanged_by_noop_group();
+
+    test_uncommitted_group_is_visible();
+    test_uncommitted_handles_null();
 
     printf("all undo tests passed\n");
     return 0;

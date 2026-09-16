@@ -100,6 +100,7 @@ private:
     void cycleBuffer(int delta);
     void refreshBufferBar();
     bool confirmDiscard(const QString &message);
+    void askAboutRecovery(EditorViewport *viewport, const QString &path);
 
     /* Set by :q! so closeEvent does not re-ask what :q! already answered. */
     bool m_forceClose = false;
@@ -395,6 +396,19 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
     m_viewports.push_back(viewport);
     m_stack->addWidget(viewport);
     setActiveIndex(m_viewports.size() - 1);
+    /* Deferred rather than asked here: addBuffer runs before the window
+     * is shown, and the dialog would open over an unpainted black
+     * rectangle. Queued, it arrives once there is an editor behind it. */
+    if (viewport->hasRecoverySnapshot()) {
+        QPointer<EditorViewport> pending = viewport;
+        QTimer::singleShot(0, this, [this, pending, path]() {
+            if (pending.isNull() || !pending->hasRecoverySnapshot()) {
+                return;
+            }
+            askAboutRecovery(pending, path);
+        });
+    }
+
     return viewport;
 }
 
@@ -611,6 +625,25 @@ void MainWindow::updateMessageElision() {
 void MainWindow::resizeEvent(QResizeEvent *event) {
     QMainWindow::resizeEvent(event);
     updateMessageElision();
+}
+
+/* A snapshot only outlives a crash, so finding one means the last
+ * session ended badly. Asked rather than restored silently: the file may
+ * have been changed by something else since, and only the user knows
+ * which version they want. Recovering is the default because it is the
+ * reversible answer — the restore is an undoable edit, and discarding is
+ * not. See docs/adr/0110. */
+void MainWindow::askAboutRecovery(EditorViewport *viewport, const QString &path) {
+    bool discard = confirmDestructive(
+        this, viewport, QStringLiteral("Unsaved changes recovered"),
+        QStringLiteral("\"%1\" has unsaved changes from a session that ended unexpectedly.")
+            .arg(QFileInfo(path).fileName()),
+        QStringLiteral("Discard them"), QStringLiteral("Recover"));
+    if (discard) {
+        viewport->discardRecovery();
+    } else {
+        viewport->restoreFromRecovery();
+    }
 }
 
 void MainWindow::showLspState(LspState state, const QString &serverName) {

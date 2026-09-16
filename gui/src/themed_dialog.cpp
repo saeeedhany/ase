@@ -6,14 +6,16 @@
 #include <QPushButton>
 
 bool confirmDestructive(QWidget *parent, const EditorViewport *theme, const QString &title,
-                        const QString &message, const QString &destructiveLabel) {
+                        const QString &message, const QString &destructiveLabel,
+                        const QString &safeLabel) {
     QMessageBox box(parent);
     box.setIcon(QMessageBox::NoIcon);
     box.setWindowTitle(title);
     box.setText(message);
     QPushButton *destructive = box.addButton(destructiveLabel, QMessageBox::DestructiveRole);
-    QPushButton *cancel = box.addButton(QStringLiteral("Cancel"), QMessageBox::RejectRole);
-    box.setDefaultButton(cancel);
+    QPushButton *safe = box.addButton(
+        safeLabel.isEmpty() ? QStringLiteral("Cancel") : safeLabel, QMessageBox::RejectRole);
+    box.setDefaultButton(safe);
     if (theme != nullptr) {
         box.setStyleSheet(QStringLiteral("QMessageBox { background-color: %1; }"
                                           "QMessageBox QLabel { color: %2; }"

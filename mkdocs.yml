@@ -130,6 +130,7 @@ nav:
     - adr/0107-the-large-file-wall.md
     - adr/0108-the-half-typed-command.md
     - adr/0109-saving-without-losing-the-file.md
+    - adr/0110-unsaved-work-survives-a-crash.md
 
 theme:
   name: material
