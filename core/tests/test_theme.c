@@ -160,12 +160,68 @@ static void test_default_theme_matches_the_defaults(void) {
     ase_config_destroy(themed);
 }
 
+/* The reported bug. Every config.ase written before themes existed
+ * contains all nine colours, because the starter file wrote them. If
+ * being in the file counted as a choice, a theme would change nothing
+ * for anyone who had ever run the editor — which is what happened. */
+static void test_a_config_full_of_shipped_defaults_still_themes(void) {
+    AseConfig *config = config_from(
+        "background = #282828\n"
+        "text = #F5E6C8\n"
+        "selection = #45403866\n"
+        "find_match = #45403899\n"
+        "panel_background = #282828E6\n"
+        "diagnostic_error = #E06C75\n"
+        "diagnostic_warning = #E5C07B\n"
+        "syntax_type = #689d6a\n"   /* the starter file's own lowercase */
+        "syntax_string = #d79921\n");
+    CHECK(ase_config_apply_theme(config, "simple-nord"));
+    expect_colour(config, "background", "#2E3440");
+    expect_colour(config, "text", "#D8DEE9");
+    expect_colour(config, "selection", "#434C5E66");
+    expect_colour(config, "syntax_type", "#8FBCBB");
+    expect_colour(config, "syntax_string", "#EBCB8B");
+    expect_colour(config, "diagnostic_error", "#BF616A");
+
+    /* And none of them counts as a hand-made choice, so nothing is
+     * reported as shadowing the theme. */
+    static const char *kColours[] = {"background", "text", "selection", "find_match",
+                                     "panel_background", "syntax_type", "syntax_string",
+                                     "diagnostic_error", "diagnostic_warning"};
+    for (size_t i = 0; i < sizeof(kColours) / sizeof(kColours[0]); i++) {
+        if (ase_config_is_chosen_by_hand(config, kColours[i])) {
+            printf("%s counted as hand-chosen when it is the shipped value\n", kColours[i]);
+            fflush(stdout);
+            CHECK(0);
+        }
+    }
+    ase_config_destroy(config);
+}
+
+/* ...and one genuinely changed colour among them is still honoured. */
+static void test_one_real_choice_among_defaults_survives(void) {
+    AseConfig *config = config_from(
+        "background = #282828\n"      /* shipped */
+        "text = #FF00FF\n"            /* theirs */
+        "syntax_type = #689d6a\n");   /* shipped */
+    CHECK(ase_config_apply_theme(config, "simple-nord"));
+    expect_colour(config, "background", "#2E3440");  /* themed */
+    expect_colour(config, "text", "#FF00FF");        /* kept */
+    expect_colour(config, "syntax_type", "#8FBCBB"); /* themed */
+
+    CHECK(ase_config_is_chosen_by_hand(config, "text"));
+    CHECK(!ase_config_is_chosen_by_hand(config, "background"));
+    ase_config_destroy(config);
+}
+
 int main(void) {
     test_every_theme_is_complete();
     test_names_are_unique();
     test_lookup();
     test_applying_replaces_the_defaults();
     test_a_hand_set_colour_survives();
+    test_a_config_full_of_shipped_defaults_still_themes();
+    test_one_real_choice_among_defaults_survives();
     test_switching_themes_leaves_nothing_behind();
     test_hand_set_survives_switching();
     test_unknown_theme_changes_nothing();

@@ -711,7 +711,7 @@ void EditorViewport::runTheme(const QString &argument) {
         "diagnostic_warning"};
     QStringList shadowed;
     for (const char *colour : kThemeColours) {
-        if (ase_config_is_from_file(m_config, colour)) {
+        if (ase_config_is_chosen_by_hand(m_config, colour)) {
             shadowed << QString::fromLatin1(colour);
         }
     }

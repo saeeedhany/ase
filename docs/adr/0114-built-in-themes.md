@@ -39,12 +39,24 @@ Solarized is dark only. The panel alpha, the dimmed comment tier and the
 gutter are tuned for a dark ground; a light theme is a second set of
 rules rather than a second row in the table.
 
-### A theme yields to a colour set by hand
+### A theme yields to a colour someone chose, not to one they were given
 
-`theme = simple-nord` supplies the palette, and any colour in
-`config.ase` wins over it. Picking a theme should never quietly undo a
-choice someone made, and the more specific setting is obviously the one
-meant.
+`theme = simple-nord` supplies the palette, and a colour in `config.ase`
+wins over it — but only if it has actually been changed. A value still
+equal to what the starter file shipped is not a decision, and a theme
+may replace it.
+
+The first version of this rule was "anything in the file wins", which is
+the obvious rule and was wrong in practice. Every `config.ase` written
+before themes existed contains all nine colours, because the starter
+file wrote them out; treating those as choices made `:theme` a no-op for
+everyone who had ever run the editor. It was reported within minutes of
+being built, against exactly that config.
+
+Being in the file is not the same as having been chosen. Commenting the
+colours out of the starter file fixes it for new installs; this fixes it
+for existing ones, which is the larger group and the one that was
+actually broken.
 
 This is also what makes `:theme` honest. A session theme layers in
 exactly the place `theme =` does, so previewing a palette and saving it
@@ -74,17 +86,28 @@ code — the palette switched and the background did not move. A test now
 fails if any colour key reappears uncommented in the starter file, and
 that test was checked by putting one back.
 
-**Anyone with an existing `config.ase` keeps their explicit colours**,
-and a theme will appear not to work for them. So `:theme <name>` names
-what is shadowing it: *"simple-nord — your config still sets background,
+**A colour genuinely changed still shadows the theme**, and `:theme
+<name>` names it when it does: *"simple-nord — your config still sets
 text"*. That turns "this theme is broken" into "oh, that is my line",
-which is the same reasoning as the `no highlight (large file)` label in
-ADR 0107.
+the same reasoning as the `no highlight (large file)` label in ADR 0107.
+Because unchanged defaults no longer count, this now fires rarely and
+means something when it does.
 
-Nine core tests cover the layering, including that switching themes
-twice leaves nothing of the first behind and that `ase-default` is
-exactly the defaults — otherwise selecting it would change the editor's
-look.
+The comparison is case-insensitive: the starter file writes
+`syntax_type = #689d6a` and the theme table `#689D6A`, and a rule that
+called those different would have left exactly the two accent colours
+un-themed while everything else changed.
+
+Eleven core tests cover the layering, including a config containing all
+nine shipped colours (the reported case), one genuinely changed colour
+among them, switching themes twice leaving nothing of the first behind,
+and `ase-default` being exactly the defaults — otherwise selecting it
+would change the editor's look.
+
+One subtlety the tests caught: `from_file` only ever accumulated, so a
+theme taking a slot left the entry still marked as the user's, and the
+theme's own colour then looked hand-chosen to anything that asked. A
+theme that legitimately takes a slot clears the flag.
 
 What this is not is theme *files*. `EXTENSIBILITY.md`'s recommendation 5
 wants `theme = gruvbox` loading `~/.config/ase/themes/gruvbox.ase`, and

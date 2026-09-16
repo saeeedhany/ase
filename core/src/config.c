@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #if defined(_WIN32)
 #include <direct.h>
@@ -483,16 +484,70 @@ bool ase_config_is_from_file(const AseConfig *config, const char *key) {
     return false;
 }
 
+/* The value the starter file ships for `key`, or NULL if it has none. */
+static const char *shipped_default(const char *key) {
+    for (size_t i = 0; i < sizeof(kKeyDocs) / sizeof(kKeyDocs[0]); i++) {
+        if (kKeyDocs[i].value != NULL && strcmp(kKeyDocs[i].key, key) == 0) {
+            return kKeyDocs[i].value;
+        }
+    }
+    return NULL;
+}
+
 void ase_config_set_themed(AseConfig *config, const char *key, const char *value) {
     if (config == NULL || key == NULL || value == NULL) {
         return;
     }
     for (size_t i = 0; i < config->count; i++) {
-        if (strcmp(config->entries[i].key, key) == 0 && config->entries[i].from_file) {
+        if (strcmp(config->entries[i].key, key) != 0 || !config->entries[i].from_file) {
+            continue;
+        }
+        /* Being in the file is not the same as having been chosen. The
+         * starter config used to write all nine colours out, so an
+         * existing config.ase is full of values its owner never picked —
+         * treating those as choices made every theme a no-op, which is
+         * exactly how it was reported. A value still equal to what was
+         * shipped is not a decision, so a theme may replace it; a value
+         * someone actually changed still wins. Compared case-insensitively
+         * because the starter file writes #689d6a and the theme table
+         * #689D6A. See docs/adr/0114. */
+        const char *shipped = shipped_default(key);
+        if (shipped == NULL || strcasecmp(config->entries[i].value, shipped) != 0) {
             return;
         }
+        /* The theme takes this slot, so the entry stops being the
+         * user's: config_set_from only ever adds from_file, and leaving
+         * it set would make the theme's own colour look hand-chosen the
+         * next time anything asked. */
+        char *replacement = ase_strdup(value);
+        if (replacement == NULL) {
+            return;
+        }
+        free(config->entries[i].value);
+        config->entries[i].value = replacement;
+        config->entries[i].from_file = false;
+        return;
     }
     config_set_from(config, key, value, false);
+}
+
+/* True when `key` was set in a file *and* changed from what was shipped
+ * — a colour a theme will not touch. */
+bool ase_config_is_chosen_by_hand(const AseConfig *config, const char *key) {
+    if (config == NULL || key == NULL) {
+        return false;
+    }
+    for (size_t i = 0; i < config->count; i++) {
+        if (strcmp(config->entries[i].key, key) != 0) {
+            continue;
+        }
+        if (!config->entries[i].from_file) {
+            return false;
+        }
+        const char *shipped = shipped_default(key);
+        return shipped == NULL || strcasecmp(config->entries[i].value, shipped) != 0;
+    }
+    return false;
 }
 
 const char *ase_config_get_lang_string(const AseConfig *config, const char *language,

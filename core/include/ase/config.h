@@ -55,6 +55,12 @@ void ase_config_set_themed(AseConfig *config, const char *key, const char *value
  * default or supplied by a theme. */
 bool ase_config_is_from_file(const AseConfig *config, const char *key);
 
+/* True when `key` was set in a file *and* differs from the value the
+ * starter file ships — i.e. someone actually chose it, rather than it
+ * being a default that happened to be written down. Themes yield to
+ * these and replace the rest. */
+bool ase_config_is_chosen_by_hand(const AseConfig *config, const char *key);
+
 /* Every setting whose key begins with `prefix`, in the order the file
  * listed them. `count` is how many entries the arrays hold; both point
  * into the config and stay valid until it is destroyed or reloaded.
