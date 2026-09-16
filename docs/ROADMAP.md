@@ -1,6 +1,6 @@
 # Roadmap
 
-Tracks progress against the build order defined in [SPEC.md](SPEC.md#7-build-order--phases).
+Tracks progress against the build order defined in [SPEC.md](SPEC.md#7-build-order-phases).
 Each phase should land with tests/benchmarks before the next begins.
 
 ## Phases

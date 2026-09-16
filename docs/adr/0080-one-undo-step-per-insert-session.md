@@ -19,7 +19,7 @@ its own group, so it applied to ordinary typing as much as to `i`.
 The core undo stack does not nest groups — `ase_undo_begin_group()` is
 ignored when one is already open, and a matching `end_group()` would
 close the outer one early
-([core/include/ase/undo.h](../../core/include/ase/undo.h)). So rather
+([core/include/ase/undo.h](https://github.com/saeeedhany/ase/blob/main/core/include/ase/undo.h)). So rather
 than adding a depth count to the core, the GUI routes all fourteen of
 its group sites through `beginUndoStep()`/`endUndoStep()`, which do
 nothing while a session is open.
