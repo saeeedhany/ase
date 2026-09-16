@@ -147,10 +147,20 @@ Each phase should land with tests/benchmarks before the next begins.
 
 ## Current status
 
-All seven phases from the spec's build order are done (see above).
-Nothing left on the original phase list — remaining work is the
-tracked follow-ups below (mostly: wiring the plugin host and LSP client
-into the GUI) and the still-open license decision.
+All seven phases from the spec's build order are done (see above), and
+so is everything the "wiring" note below used to point at: the plugin
+host and the LSP client are both in the GUI, and the license decision
+was settled by [ADR 0033](adr/0033-license-apache-2.0-and-first-alpha-release.md).
+
+At `v0.3.0-alpha` the editor has a Vim mode pinned by 220 conformance
+cases generated from real vim, Tree-sitter highlighting for seven
+languages, an LSP client with diagnostics/completion/hover/go-to-
+definition sharing one server per language per project, built-in
+palettes, keybindings as data, session restore, git gutter marks, an
+atomic save and crash recovery for unsaved work.
+
+What is still open is in *Beyond v1* below, which has been pruned of
+everything since finished.
 
 ## Post-v1 fixes
 
@@ -870,26 +880,31 @@ something else.
   loads at startup and `:name` runs any registered command (ADR 0054).
   The ABI is still the narrow one; widening it is the next plugin step,
   see [EXTENSIBILITY.md](EXTENSIBILITY.md).
-- **One language server per project, not per visited file.** Buffers now
-  start their own `clangd` on first activation (ADR 0054), so N visited C
-  files means N servers. LSP is designed for one server holding several
-  `didOpen` documents; doing that is the fix, and it is the main
-  resource cost multi-buffer introduced.
+- ~~**One language server per project, not per visited file.**~~ Done —
+  a registry keyed by language and project root, so four C buffers share
+  one `clangd` instead of four. Measured at the time: 1601 MB to 919 MB
+  ([ADR 0096](adr/0096-one-server-per-language-and-project.md)).
 - ~~**Show unsaved state in the buffer bar.**~~ Done — the dot now marks
   unsaved changes rather than the active buffer, and stays readable on a
   dimmed entry ([ADR 0055](adr/0055-dirty-dot-new-file-panel-fixes.md)).
 - ~~**Buffer bar overflow.**~~ Done — `Shift`+wheel pans the strip
   ([ADR 0057](adr/0057-always-on-tab-strip-and-welcome-rework.md)). Tabs
   still don't elide long names, which is the remaining half.
-- **Large-file sanity pass.** Sub-frame budgets hold now at ~8k lines;
-  find a real ceiling (100k? 1M?) and either fix it or document it
-  honestly rather than discovering it from a bug report.
+- ~~**Large-file sanity pass.**~~ Done, and the ceiling was real: the
+  Tree-sitter parse is linear in file size and lands on the UI thread
+  twice — 1.07s to open 4.5MB of C, and 20ms per keystroke after that.
+  The re-highlight now waits for a pause in typing, and past
+  `syntax_max_kb` a file opens with no colours rather than freezing
+  first, saying so in the status bar
+  ([ADR 0107](adr/0107-the-large-file-wall.md)).
 
 ### Tier 2 — the table stakes of a daily driver
 
-- **Keybindings as data** — the biggest customization gap, and the thing
-  that makes built-ins and plugin commands one mechanism. See
-  EXTENSIBILITY.md, recommendation 4.
+- ~~**Keybindings as data**~~ Done — `key.<chord> = <command>` in
+  `config.ase`, with built-ins, window actions and plugin commands in one
+  registry, so binding a key to a plugin needs no new API. Vim's own
+  `dd`/`gg` sequences are still not chords and stay as they are
+  ([ADR 0113](adr/0113-keybindings-as-data.md)).
 - ~~**Project-wide search**~~ Done for the read-only half — search, and
   jump to a hit ([ADR 0066](adr/0066-project-wide-search.md)). **Replace
   across files** is deliberately still open: editing every file in a
@@ -897,16 +912,21 @@ something else.
   undo story spanning buffers), not a ride-along on a read-only
   feature.
 - **The rest of LSP's useful half**: ~~go-to-definition~~ (done,
-  [ADR 0067](adr/0067-go-to-definition.md)), find-references, rename,
-  document symbols — plus a **jumplist**, which go-to-definition makes
-  conspicuous: you can follow a name into a file and have no way back.
-- **Git gutter marks** — added/changed/deleted per line. Cheap next to
-  the existing diagnostic-gutter machinery, and disproportionately useful.
-- **Session restore** — reopen the files, cursors, and scroll positions
-  from last time.
-- **More languages.** C-only is the current reality. Each new grammar is
-  mostly a `.scm` query file plus a build entry; the capture set is
-  already language-agnostic.
+  [ADR 0067](adr/0067-go-to-definition.md)) and ~~a jumplist~~ (done,
+  [ADR 0070](adr/0070-the-jumplist.md)) are in. **find-references,
+  rename and document symbols are not**, and they are now the largest
+  functional gap for anyone navigating a real codebase: you can follow a
+  name to where it is defined and not ask who calls it.
+- ~~**Git gutter marks**~~ Done — added, changed and deleted per line,
+  from `git diff -U0`'s hunk headers, hidden while an unsaved edit has
+  moved the lines around ([ADR 0112](adr/0112-git-gutter-marks.md)).
+- ~~**Session restore**~~ Done — files, carets and scroll positions, only
+  when started with no file argument
+  ([ADR 0111](adr/0111-session-restore.md)).
+- ~~**More languages.**~~ Done — C, C++, Python, JavaScript, CSS, HTML
+  and Lua, each a `.scm` query plus a build entry, with the LSP language
+  table widened to match
+  ([ADR 0103](adr/0103-the-mainstream-languages.md)).
 
 ### Tier 3 — the bets that would make it distinctive
 
@@ -935,6 +955,29 @@ something else.
 - **Remote/SSH editing** and **collaborative editing** stay explicit
   non-goals below — listed here only to say they were considered and
   deliberately declined, not overlooked.
+
+### Still open, in rough order of value
+
+1. **find-references, rename, document symbols** — see Tier 2 above.
+2. **Theme files** — `theme = gruvbox` loading
+   `~/.config/ase/themes/gruvbox.ase`. The built-in half is done
+   ([ADR 0114](adr/0114-built-in-themes.md)); files are not.
+3. **Vim sequences as data** — `dd` and `gg` go through a stateful
+   Normal-mode dispatcher, not the chord table, so they cannot be
+   rebound ([ADR 0113](adr/0113-keybindings-as-data.md)).
+4. **An unnamed buffer gets no crash snapshot**, because the snapshot is
+   keyed on the file path. That is where unsaved work is most exposed
+   ([ADR 0110](adr/0110-unsaved-work-survives-a-crash.md)).
+5. **Snapshots are never pruned** — one for a file crashed on and never
+   reopened stays indefinitely.
+6. **A concurrent parse**, which would give both an instant open *and*
+   colours on a large file; the size cap is the cheap answer until then
+   ([ADR 0107](adr/0107-the-large-file-wall.md)).
+7. **Replace across files** — the read-only half of project search is
+   done; editing every file in a project from one keystroke wants its
+   own design pass.
+8. **Per-capture syntax colours as data** — EXTENSIBILITY.md,
+   recommendation 5.
 
 ## Explicit non-goals for v1
 

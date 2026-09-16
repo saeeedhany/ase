@@ -103,7 +103,17 @@ void EditorViewport::reportKeybindingProblems() {
     if (m_commands == nullptr) {
         return;
     }
-    const QStringList problems = keys::problems(m_config, *m_commands);
+    /* Plugin commands are registered with the host, not the registry, so
+     * they have to be named here or every binding to one reads as a
+     * mistake. */
+    QStringList fromPlugins;
+    for (size_t i = 0; i < ase_plugin_host_command_count(m_pluginHost); i++) {
+        const char *name = ase_plugin_host_command_name(m_pluginHost, i);
+        if (name != nullptr) {
+            fromPlugins << QString::fromUtf8(name);
+        }
+    }
+    const QStringList problems = keys::problems(m_config, *m_commands, fromPlugins);
     if (problems.isEmpty()) {
         return;
     }

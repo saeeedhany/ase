@@ -36,6 +36,10 @@ bool ase_plugin_host_run_command(AsePluginHost *host, const char *name, AseBuffe
 
 size_t ase_plugin_host_command_count(const AsePluginHost *host);
 
+/* The name of command `index`, or NULL when out of range. Valid until
+ * the host is destroyed or another command is registered. */
+const char *ase_plugin_host_command_name(const AsePluginHost *host, size_t index);
+
 /* Loads every .lua script (run through the embedded Lua VM) and every
  * native plugin (.so / .dylib / .dll per platform, via dlopen) in `dir`,
  * non-recursively. Both register commands into `host` the same way —

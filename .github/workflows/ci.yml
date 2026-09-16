@@ -90,3 +90,28 @@ jobs:
             exit 1
           fi
           echo "ase_gui stayed up"
+
+  # The GUI is 10,600 of the project's 14,200 lines and had no sanitizer
+  # coverage at all until ADR 0107 wired it up — where it immediately
+  # caught a null dereference in the change being made. Wiring it and
+  # then not running it in CI leaves that to whoever remembers.
+  gui-sanitizers:
+    name: gui (ASan/UBSan, ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt6
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            build-essential cmake qt6-base-dev libgl-dev
+      - name: Configure
+        run: cmake -B build -DASE_BUILD_GUI=ON -DASE_BUILD_TESTS=ON -DASE_ENABLE_SANITIZERS=ON -DCMAKE_BUILD_TYPE=Debug
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+      - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
+          ASAN_OPTIONS: detect_leaks=1
+          UBSAN_OPTIONS: print_stacktrace=1
+        run: ctest --test-dir build --output-on-failure

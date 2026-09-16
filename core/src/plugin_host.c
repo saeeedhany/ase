@@ -258,6 +258,16 @@ size_t ase_plugin_host_command_count(const AsePluginHost *host) {
     return host == NULL ? 0 : host->command_count;
 }
 
+/* Lets the editor treat a plugin's commands as commands: bind one to a
+ * key, list it, or say a binding names nothing. Without a way to read
+ * the names back, a plugin command could only ever be typed. */
+const char *ase_plugin_host_command_name(const AsePluginHost *host, size_t index) {
+    if (host == NULL || index >= host->command_count) {
+        return NULL;
+    }
+    return host->commands[index].name;
+}
+
 static bool has_suffix(const char *name, const char *suffix) {
     size_t name_len = strlen(name);
     size_t suffix_len = strlen(suffix);

@@ -41,7 +41,8 @@ QString commandFor(const AseConfig *config, const QString &chord, const QString 
 /* Every problem in the user's `key.*` settings: an unparseable chord, or
  * a command no one registered. Returned rather than printed so the
  * caller decides how to say it. */
-QStringList problems(const AseConfig *config, const CommandRegistry &registry);
+QStringList problems(const AseConfig *config, const CommandRegistry &registry,
+                     const QStringList &alsoKnown = QStringList());
 
 /* Every chord that runs `command`: the user's bindings for it, plus any
  * default the user has not pointed somewhere else. The reverse of

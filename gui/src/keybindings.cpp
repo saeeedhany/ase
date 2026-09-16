@@ -179,7 +179,8 @@ QString keys::commandFor(const AseConfig *config, const QString &chord, const QS
     return QString();
 }
 
-QStringList keys::problems(const AseConfig *config, const CommandRegistry &registry) {
+QStringList keys::problems(const AseConfig *config, const CommandRegistry &registry,
+                            const QStringList &alsoKnown) {
     QStringList found;
     if (config == nullptr) {
         return found;
@@ -215,7 +216,7 @@ QStringList keys::problems(const AseConfig *config, const CommandRegistry &regis
         if (command == QLatin1String("none")) {
             continue;
         }
-        if (!registry.contains(command)) {
+        if (!registry.contains(command) && !alsoKnown.contains(command)) {
             found << QStringLiteral("%1: no command called '%2'").arg(setting, command);
         }
     }

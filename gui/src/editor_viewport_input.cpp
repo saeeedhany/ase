@@ -188,7 +188,14 @@ bool EditorViewport::handleBoundChord(QKeyEvent *event) {
     if (m_commands->run(command)) {
         return true;
     }
-    /* A binding naming a command nobody registered. Silence would be
+    /* Plugins register with the host rather than the registry, so a
+     * binding naming one lands here. Falling through to it is what makes
+     * `key.f5 = myplugin.reformat` work with no new API — the claim
+     * ADR 0113 makes, which was not true until this line existed. */
+    if (runPluginCommand(command)) {
+        return true;
+    }
+    /* A binding naming nothing at all. Silence would be
      * indistinguishable from a dead key. */
     notify(NotifyLevel::Warning, QStringLiteral("no command called '%1'").arg(command));
     return true;

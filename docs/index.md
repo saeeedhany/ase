@@ -23,11 +23,18 @@ top of it. See [ADR 0002](adr/0002-headless-core-separation.md) for why.
 
 ## Status
 
-First alpha release, `v0.1.0-alpha`, licensed under the
+**`v0.3.0-alpha`**, licensed under the
 [Apache License 2.0](https://github.com/saeeedhany/ase/blob/main/LICENSE).
-All seven original spec phases plus the full "complete normal editor" pass:
-undo/redo, multi-cursor selection, clipboard, find/replace, viewport/scroll
-polish, a floating command line with `:compile`, an LSP client (diagnostics,
-completion, hover) wired into the GUI, and Linux packaging (AppImage, Arch
-`PKGBUILD`, `.deb`). Vim mode is next — see the [roadmap](ROADMAP.md) for
-everything else still open.
+
+All seven original spec phases, the "complete normal editor" pass, and a
+Vim mode well past its original scope — motions, operators with counts,
+text objects, marks, macros, named registers, `.` repeat, Visual and
+Replace modes, `/` search and `:s`, pinned by 220 conformance cases
+generated from real vim.
+
+Tree-sitter highlighting for seven languages, an LSP client with
+diagnostics, completion, hover and go-to-definition, three built-in
+palettes, keybindings as data, session restore, git gutter marks, and a
+save path that cannot lose the file it is writing.
+
+See the [roadmap](ROADMAP.md) for what is still open.

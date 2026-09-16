@@ -21,18 +21,49 @@ preview, `mkdocs gh-deploy` to publish; see
 
 ## Status
 
-**First alpha release (v0.1.0-alpha).** All seven original spec phases
-are done, plus the full "complete normal editor" pass on top: undo/
-redo, multi-cursor selection, clipboard, find/replace, viewport/scroll
-polish, a floating command line with `:compile`, and an LSP client
-(process-isolated, diagnostics + completion + hover, POSIX only so
-far) wired directly into the GUI — squiggle/gutter diagnostics, an
-automatic completion popup, and mouse-hover info, all driven by
-`lsp_command` in `config.ase`. See [`docs/ROADMAP.md`](docs/ROADMAP.md)
-for the full phase-by-phase history and what's still open (Vim mode is
-next). The plugin host (Lua + native `dlopen` plugins) still has no
-keybinding/command-palette wiring in the GUI — commands run
-programmatically only for now.
+**`v0.3.0-alpha`**, licensed under the
+[Apache License 2.0](LICENSE). All seven original spec phases are done,
+plus the "complete normal editor" pass and a Vim mode that has grown well
+past its original scope.
+
+**Editing** — undo/redo with one step per insert session, multi-cursor,
+clipboard, find/replace, project-wide search, quick-open by fuzzy name,
+and a command line in the status bar.
+
+**Vim mode** (`vim_mode = true`, on by default) — motions including
+`w`/`b`/`e` and their WORD forms, operators with counts, text objects,
+marks (local and global), macros, named registers, `.` repeat, Visual
+and Replace modes, `/` search with `n`/`N`, `:s` in vim's own regex
+dialect, and a jumplist. Its behaviour is pinned by **220 conformance
+cases generated from real vim**, so the suite runs without vim
+installed and still agrees with it.
+
+**Languages** — Tree-sitter highlighting for C, C++, Python, JavaScript,
+CSS, HTML and Lua, parsed incrementally. An LSP client
+(process-isolated, JSON-RPC over stdio) gives diagnostics, completion,
+hover and go-to-definition, with one server per language per project
+rather than per open file.
+
+**Your editor** — three built-in palettes (`:theme`, or `theme =` in
+the config), every keybinding rebindable as data
+(`key.ctrl+s = editor.save`), session restore, and git gutter marks for
+what changed since the last commit.
+
+**Plugins** — Lua and native (`dlopen`) commands from
+`~/.config/ase/plugins/`, runnable as `:name` or bound to a key like any
+built-in (`key.f5 = my_command`), since both go through one command
+table.
+
+**Not losing your work** — saving writes beside the file and renames
+over it, so a failed write leaves the original intact; unsaved changes
+are snapshotted where a crash cannot reach them and offered back on the
+next launch.
+
+Everything above is covered by 17 test suites: the core builds and runs
+on Linux, macOS and Windows in CI, the GUI suites run on Linux against
+the Qt 6.2 floor, and both are built again under ASan and UBSan. See
+[`docs/ROADMAP.md`](docs/ROADMAP.md) for what is still open and
+[`docs/adr/`](docs/adr/) for why any of it is the way it is.
 
 ## Architecture
 
@@ -43,7 +74,7 @@ programmatically only for now.
 │  - custom-painted text viewport            │
 ├───────────────────────────────────────────┤
 │           Editor Core (C library)          │
-│  - buffer engine (rope or piece table)     │
+│  - buffer engine (piece table)             │
 │  - undo/redo history                       │
 │  - config & theme parser                   │
 │  - plugin ABI + Lua scripting host         │

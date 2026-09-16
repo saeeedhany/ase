@@ -32,6 +32,12 @@ and the whole UI layout is fixed.
 
 ## Recommendation 1 — wire the host in before widening the ABI
 
+> **Done**, in [ADR 0054](adr/0054-multiple-buffers-and-plugin-host-wiring.md):
+> `<config dir>/plugins/` loads at startup and `:name` runs any
+> registered command. Since ADR 0113 a plugin command can also be bound
+> to a key. The ABI is still the narrow one.
+
+
 The single highest-value step, and it's small: load
 `~/.config/ase/plugins/` at startup and route `:<name>` in the command
 line to `ase_plugin_host_run_command()`.
@@ -103,6 +109,16 @@ Two constraints worth writing into the ADR up front:
 
 ## Recommendation 4 — make keybindings data, and do it once for everything
 
+> **Done**, in [ADR 0113](adr/0113-keybindings-as-data.md). The shape
+> below is what was built, with two differences: the family is
+> `key.<chord> = <command>` rather than a `[keys]` section, because
+> `config.ase` has no sections and already has two dotted families; and
+> Vim's own `dd`/`gg` sequences are still not chords, so the
+> `normal:dd` example remains undone. Everything else — the shared
+> registry, plugin commands bindable with no new API, mode-qualified
+> bindings — is in.
+
+
 This is the biggest customization gap and it is **not Vim-specific** —
 ADR 0046 already flagged that building rebinding just for Vim would be
 the wrong shape.
@@ -152,6 +168,9 @@ A single `animation_speed` multiplier over all of them would be the
 right shape if this is ever wanted.
 
 ## Suggested order
+
+> Steps 1 and 3 are done; 2, 4 and 5 are open.
+
 
 The ordering matters more than the list — each step makes the next one
 informed rather than speculative:
