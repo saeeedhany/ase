@@ -67,6 +67,12 @@ packaging/arch/*.tar.gz
 .venv-docs/
 site/
 
+# Scratch files the tests write into whatever the working directory
+# happens to be. test_config.c removes its own on the way out, but not
+# when a CHECK fails partway through, and one has been committed by
+# accident already.
+*.tmp
+
 # Screenshots taken while verifying the GUI on a real display. They are
 # written next to whatever the working directory happened to be, and a
 # batch of them has been committed by accident once already — capture
