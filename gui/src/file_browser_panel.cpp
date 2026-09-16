@@ -1,5 +1,7 @@
 #include "file_browser_panel.h"
 
+#include "themed_dialog.h"
+
 #include "editor_viewport.h"
 #include "fuzzy_match.h"
 #include "letter_badge.h"
@@ -180,25 +182,10 @@ bool FileBrowserPanel::looksLikePath(const QString &text) {
 }
 
 bool FileBrowserPanel::confirmOverwrite(const QString &path) {
-    QColor bg = m_viewport->panelBackgroundColor();
-    QColor border = m_viewport->panelBorderColor();
-    QColor text = m_viewport->textColor();
-
-    QMessageBox box(this);
-    box.setIcon(QMessageBox::NoIcon);
-    box.setWindowTitle(QStringLiteral("Overwrite file"));
-    box.setText(QStringLiteral("\"%1\" already exists. Overwrite it?").arg(QFileInfo(path).fileName()));
-    QPushButton *overwriteButton = box.addButton(QStringLiteral("Overwrite"), QMessageBox::DestructiveRole);
-    QPushButton *cancelButton = box.addButton(QStringLiteral("Cancel"), QMessageBox::RejectRole);
-    box.setDefaultButton(cancelButton);
-    box.setStyleSheet(QStringLiteral("QMessageBox { background-color: %1; }"
-                                      "QMessageBox QLabel { color: %2; }"
-                                      "QPushButton { background-color: %1; color: %2; border: 1px solid %3; "
-                                      "padding: 4px 14px; min-width: 60px; }"
-                                      "QPushButton:hover, QPushButton:default { border-color: %2; }")
-                           .arg(bg.name(), text.name(), border.name()));
-    box.exec();
-    return box.clickedButton() == overwriteButton;
+    return confirmDestructive(this, m_viewport, QStringLiteral("Overwrite file"),
+                              QStringLiteral("\"%1\" already exists. Overwrite it?")
+                                  .arg(QFileInfo(path).fileName()),
+                              QStringLiteral("Overwrite"));
 }
 
 void FileBrowserPanel::setDirectory(const QString &dir) {

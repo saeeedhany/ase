@@ -24,6 +24,7 @@
 #include "command_line.h"
 #include "completion_popup.h"
 #include "editor_viewport.h"
+#include "themed_dialog.h"
 #include "lsp_registry.h"
 #include "file_browser_panel.h"
 #include "find_bar.h"
@@ -745,25 +746,8 @@ bool MainWindow::confirmDiscard(const QString &message) {
     if (themeSource == nullptr) {
         return true;
     }
-    QColor bg = themeSource->panelBackgroundColor();
-    QColor border = themeSource->panelBorderColor();
-    QColor text = themeSource->textColor();
-
-    QMessageBox box(this);
-    box.setIcon(QMessageBox::NoIcon);
-    box.setWindowTitle(QStringLiteral("Unsaved changes"));
-    box.setText(message);
-    QPushButton *discardButton = box.addButton(QStringLiteral("Discard"), QMessageBox::DestructiveRole);
-    QPushButton *cancelButton = box.addButton(QStringLiteral("Cancel"), QMessageBox::RejectRole);
-    box.setDefaultButton(cancelButton);
-    box.setStyleSheet(QStringLiteral("QMessageBox { background-color: %1; }"
-                                      "QMessageBox QLabel { color: %2; }"
-                                      "QPushButton { background-color: %1; color: %2; border: 1px solid %3; "
-                                      "padding: 4px 14px; min-width: 60px; }"
-                                      "QPushButton:hover, QPushButton:default { border-color: %2; }")
-                           .arg(bg.name(), text.name(), border.name()));
-    box.exec();
-    return box.clickedButton() == discardButton;
+    return confirmDestructive(this, themeSource, QStringLiteral("Unsaved changes"), message,
+                              QStringLiteral("Discard"));
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {

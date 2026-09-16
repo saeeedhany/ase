@@ -726,6 +726,17 @@ void EditorViewport::vimReplaceRange(size_t start, size_t end, const QByteArray 
 
 /* ASCII only, like vim's default: a byte outside it is left as it is
  * rather than guessed at. */
+void EditorViewport::vimToggleCaseInPlace(QByteArray &text) {
+    for (char &ch : text) {
+        unsigned char u = static_cast<unsigned char>(ch);
+        if (u >= 'a' && u <= 'z') {
+            ch = static_cast<char>(u - 'a' + 'A');
+        } else if (u >= 'A' && u <= 'Z') {
+            ch = static_cast<char>(u - 'A' + 'a');
+        }
+    }
+}
+
 void EditorViewport::vimToggleCase(int count) {
     size_t pos = m_cursors[0];
     size_t lineEnd = vimLineEndOffset(lineForOffset(pos));
@@ -738,14 +749,7 @@ void EditorViewport::vimToggleCase(int count) {
     }
 
     QByteArray text = m_cache.mid(static_cast<int>(pos), static_cast<int>(end - pos));
-    for (char &ch : text) {
-        unsigned char u = static_cast<unsigned char>(ch);
-        if (u >= 'a' && u <= 'z') {
-            ch = static_cast<char>(u - 'a' + 'A');
-        } else if (u >= 'A' && u <= 'Z') {
-            ch = static_cast<char>(u - 'A' + 'a');
-        }
-    }
+    vimToggleCaseInPlace(text);
 
     vimReplaceRange(pos, end, text);
     /* One past the last byte touched, clamped back on to the line —
@@ -924,6 +928,29 @@ void EditorViewport::vimYankLines(int startLine, int count) {
     update();
 }
 
+/* The half of `p` and `P` that does not depend on which one it is:
+ * insert, record one undo step, and land the cursor. Charwise leaves it
+ * on the *last* character pasted, not the first — real vim's rule, and
+ * the one that makes a second `p` continue the text rather than paste
+ * into the middle of it. Linewise is the opposite: first non-blank of
+ * the first pasted line. Reported by an external tester, who expected
+ * "the end" for both; see docs/adr/0059. */
+void EditorViewport::vimInsertPaste(size_t insertAt, const QByteArray &bytes, bool linewise) {
+    beginUndoStep();
+    if (ase_buffer_insert(m_buffer, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()))) {
+        ase_undo_record_insert(m_undo, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()));
+    }
+    endUndoStep();
+    refreshCache();
+    size_t target = linewise
+                        ? vimFirstNonBlank(lineForOffset(insertAt))
+                        : vimPrevCharBoundary(insertAt + static_cast<size_t>(bytes.size()));
+    m_cursors[0] = target;
+    m_selectionAnchors[0] = target;
+    ensureCursorVisible();
+    update();
+}
+
 void EditorViewport::vimPasteAfter() {
     const VimRegister &reg = VimRegister::read(vimTakeRegister());
     if (reg.isEmpty()) {
@@ -968,25 +995,7 @@ void EditorViewport::vimPasteAfter() {
         bool atNewline = cur < static_cast<size_t>(m_cache.size()) && m_cache[static_cast<int>(cur)] == '\n';
         insertAt = atNewline ? cur : vimNextCharBoundary(cur);
     }
-    beginUndoStep();
-    if (ase_buffer_insert(m_buffer, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()))) {
-        ase_undo_record_insert(m_undo, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()));
-    }
-    endUndoStep();
-    refreshCache();
-    /* Charwise paste leaves the cursor on the *last* character of what
-     * was pasted, not the first — real vim's rule, and the one that
-     * makes a second `p` continue the text rather than re-paste into
-     * the middle of it. Linewise is the opposite and already right:
-     * first non-blank of the first pasted line. Reported by an external
-     * tester, who expected "the end" for both; see docs/adr/0059. */
-    size_t target = linewise
-                        ? vimFirstNonBlank(lineForOffset(insertAt))
-                        : vimPrevCharBoundary(insertAt + static_cast<size_t>(bytes.size()));
-    m_cursors[0] = target;
-    m_selectionAnchors[0] = target;
-    ensureCursorVisible();
-    update();
+    vimInsertPaste(insertAt, bytes, linewise);
 }
 
 void EditorViewport::vimPasteBefore() {
@@ -998,25 +1007,7 @@ void EditorViewport::vimPasteBefore() {
     bool linewise = reg.isLinewise();
     size_t insertAt = linewise ? static_cast<size_t>(m_lineStarts[lineForOffset(m_cursors[0])])
                                : m_cursors[0];
-    beginUndoStep();
-    if (ase_buffer_insert(m_buffer, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()))) {
-        ase_undo_record_insert(m_undo, insertAt, bytes.constData(), static_cast<size_t>(bytes.size()));
-    }
-    endUndoStep();
-    refreshCache();
-    /* Charwise paste leaves the cursor on the *last* character of what
-     * was pasted, not the first — real vim's rule, and the one that
-     * makes a second `p` continue the text rather than re-paste into
-     * the middle of it. Linewise is the opposite and already right:
-     * first non-blank of the first pasted line. Reported by an external
-     * tester, who expected "the end" for both; see docs/adr/0059. */
-    size_t target = linewise
-                        ? vimFirstNonBlank(lineForOffset(insertAt))
-                        : vimPrevCharBoundary(insertAt + static_cast<size_t>(bytes.size()));
-    m_cursors[0] = target;
-    m_selectionAnchors[0] = target;
-    ensureCursorVisible();
-    update();
+    vimInsertPaste(insertAt, bytes, linewise);
 }
 
 void EditorViewport::vimOpenLineAbove() {
@@ -2230,14 +2221,7 @@ void EditorViewport::vimApplyVisualKey(char c) {
         size_t end = vimVisualEnd(0);
         if (end > start) {
             QByteArray text = m_cache.mid(static_cast<int>(start), static_cast<int>(end - start));
-            for (char &ch : text) {
-                unsigned char u = static_cast<unsigned char>(ch);
-                if (u >= 'a' && u <= 'z') {
-                    ch = static_cast<char>(u - 'a' + 'A');
-                } else if (u >= 'A' && u <= 'Z') {
-                    ch = static_cast<char>(u - 'A' + 'a');
-                }
-            }
+            vimToggleCaseInPlace(text);
             vimReplaceRange(start, end, text);
             vimMarkChange();
         }

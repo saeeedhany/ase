@@ -14,18 +14,9 @@
 #else
 #include <dirent.h>
 #include <dlfcn.h>
-#endif
 
-/* Plain ISO C90 strdup — avoids relying on POSIX strdup/MSVC's _strdup. */
-static char *ase_strdup(const char *s) {
-    size_t len = strlen(s) + 1;
-    char *copy = (char *)malloc(len);
-    if (copy == NULL) {
-        return NULL;
-    }
-    memcpy(copy, s, len);
-    return copy;
-}
+#include "internal.h"
+#endif
 
 typedef struct {
     char *name;

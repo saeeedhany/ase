@@ -9,6 +9,8 @@
 #include <direct.h>
 #else
 #include <sys/stat.h>
+
+#include "internal.h"
 #endif
 
 typedef struct {
@@ -21,17 +23,6 @@ struct AseConfig {
     size_t count;
     size_t capacity;
 };
-
-/* Plain ISO C90 strdup — avoids relying on POSIX strdup/MSVC's _strdup. */
-static char *ase_strdup(const char *s) {
-    size_t len = strlen(s) + 1;
-    char *copy = (char *)malloc(len);
-    if (copy == NULL) {
-        return NULL;
-    }
-    memcpy(copy, s, len);
-    return copy;
-}
 
 static void config_set(AseConfig *config, const char *key, const char *value) {
     for (size_t i = 0; i < config->count; i++) {

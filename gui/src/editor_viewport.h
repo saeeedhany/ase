@@ -391,6 +391,8 @@ private:
      * rather than emptying it. See docs/adr/0060. */
     void vimReplaceRange(size_t start, size_t end, const QByteArray &text);
     void vimToggleCase(int count);
+    void vimToggleCaseInPlace(QByteArray &text);
+    void vimInsertPaste(size_t insertAt, const QByteArray &bytes, bool linewise);
     void vimIndentLines(int startLine, int lineCount, bool right);
     void vimAddToNumber(int delta);
     size_t vimLinewiseDeleteStart(size_t start, size_t end) const;

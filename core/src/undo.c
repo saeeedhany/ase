@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "internal.h"
+
 typedef struct {
     size_t offset;
     /* Either an insert or a delete, never both, so no kind tag is
@@ -169,48 +171,36 @@ void ase_undo_end_group(AseUndoStack *stack, const size_t *cursors, size_t curso
     memset(&stack->pending, 0, sizeof(UndoGroup));
 }
 
-void ase_undo_record_insert(AseUndoStack *stack, size_t offset, const char *text, size_t len) {
+/* The two record calls differ only in which side of the entry the copy
+ * lands on. */
+static void undo_record(AseUndoStack *stack, size_t offset, const char *text, size_t len,
+                        bool inserted) {
     if (stack == NULL || !stack->has_pending || len == 0) {
         return;
     }
     if (!group_ensure_capacity(&stack->pending)) {
         return;
     }
-    char *copy = (char *)malloc(len);
+    char *copy = ase_memdup(text, len);
     if (copy == NULL) {
         return;
     }
-    memcpy(copy, text, len);
 
     UndoEntry *entry = &stack->pending.entries[stack->pending.count];
     entry->offset = offset;
-    entry->inserted = copy;
-    entry->inserted_len = len;
-    entry->removed = NULL;
-    entry->removed_len = 0;
+    entry->inserted = inserted ? copy : NULL;
+    entry->inserted_len = inserted ? len : 0;
+    entry->removed = inserted ? NULL : copy;
+    entry->removed_len = inserted ? 0 : len;
     stack->pending.count++;
 }
 
-void ase_undo_record_delete(AseUndoStack *stack, size_t offset, const char *text, size_t len) {
-    if (stack == NULL || !stack->has_pending || len == 0) {
-        return;
-    }
-    if (!group_ensure_capacity(&stack->pending)) {
-        return;
-    }
-    char *copy = (char *)malloc(len);
-    if (copy == NULL) {
-        return;
-    }
-    memcpy(copy, text, len);
+void ase_undo_record_insert(AseUndoStack *stack, size_t offset, const char *text, size_t len) {
+    undo_record(stack, offset, text, len, true);
+}
 
-    UndoEntry *entry = &stack->pending.entries[stack->pending.count];
-    entry->offset = offset;
-    entry->inserted = NULL;
-    entry->inserted_len = 0;
-    entry->removed = copy;
-    entry->removed_len = len;
-    stack->pending.count++;
+void ase_undo_record_delete(AseUndoStack *stack, size_t offset, const char *text, size_t len) {
+    undo_record(stack, offset, text, len, false);
 }
 
 bool ase_undo_undo(AseUndoStack *stack, AseBuffer *buffer, size_t **out_cursors, size_t *out_count) {
