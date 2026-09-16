@@ -46,6 +46,18 @@ void ase_config_destroy(AseConfig *config);
 /* NULL if `key` was never set (by defaults or the loaded file). */
 const char *ase_config_get_string(const AseConfig *config, const char *key);
 
+/* Every setting whose key begins with `prefix`, in the order the file
+ * listed them. `count` is how many entries the arrays hold; both point
+ * into the config and stay valid until it is destroyed or reloaded.
+ *
+ * Needed because a family like `key.*` has to be *reported on* — a
+ * binding naming a command nobody registered is a mistake worth saying
+ * out loud, and you cannot say it about settings you cannot enumerate.
+ * Returns false when nothing matches. */
+bool ase_config_entries_with_prefix(const AseConfig *config, const char *prefix,
+                                     const char *const **keys, const char *const **values,
+                                     size_t *count);
+
 /* `fallback` if `key` is missing or not a valid integer. */
 long ase_config_get_int(const AseConfig *config, const char *key, long fallback);
 

@@ -33,3 +33,10 @@ set_tests_properties(ase_recovery_flow_tests PROPERTIES
 set_tests_properties(ase_vim_tests PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/config"
 )
+
+add_executable(ase_keybinding_tests test_keybindings.cpp)
+target_link_libraries(ase_keybinding_tests PRIVATE ase_gui_objects Qt6::Test ase_warnings)
+add_test(NAME ase_keybinding_tests COMMAND ase_keybinding_tests)
+set_tests_properties(ase_keybinding_tests PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/config"
+)

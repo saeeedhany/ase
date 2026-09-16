@@ -30,6 +30,7 @@ set(CMAKE_AUTORCC ON)
 # An object library so the test suite can drive the real widgets in
 # process, rather than a second copy of the sources. See docs/adr/0104.
 add_library(ase_gui_objects OBJECT
+    src/keybindings.cpp
     src/editor_viewport_vcs.cpp
     src/themed_dialog.cpp
     src/motion.cpp

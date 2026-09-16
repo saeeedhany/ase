@@ -120,3 +120,4 @@ what changed.
 | [0110](0110-unsaved-work-survives-a-crash.md) | Unsaved work survives a crash |
 | [0111](0111-session-restore.md) | Session restore |
 | [0112](0112-git-gutter-marks.md) | Git gutter marks |
+| [0113](0113-keybindings-as-data.md) | Keybindings as data |

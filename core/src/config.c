@@ -22,6 +22,10 @@ struct AseConfig {
     ConfigEntry *entries;
     size_t count;
     size_t capacity;
+    /* Scratch for ase_config_entries_with_prefix; owned here so the
+     * caller never frees. */
+    const char **scan_keys;
+    const char **scan_values;
 };
 
 static void config_set(AseConfig *config, const char *key, const char *value) {
@@ -95,6 +99,7 @@ static const AseConfigKeyDoc kKeyDocs[] = {
     {"syntax_max_kb", "1024", "Skip highlighting past this file size, in KB.", false},
     {"restore_session", "true", "Reopen last session's files when started bare.", false},
     {"git_marks", "true", "Gutter bars for lines changed since the last commit.", false},
+    {"key.<chord>", NULL, "Run a command on a chord, e.g. key.ctrl+s = editor.save.", false},
     {"lang.<id>.lsp", NULL, "Language server for one language, e.g. lang.cpp.lsp.", false},
     {"filetype.<suffix>", NULL, "What a suffix means, e.g. filetype.h = cpp.", true},
 };
@@ -186,6 +191,8 @@ void ase_config_destroy(AseConfig *config) {
         free(config->entries[i].value);
     }
     free(config->entries);
+    free(config->scan_keys);
+    free(config->scan_values);
     free(config);
 }
 
@@ -397,6 +404,55 @@ const char *ase_config_language_for_path(const AseConfig *config, const char *pa
     return NULL;
 }
 
+/* The scratch arrays are owned by the config and rebuilt on each call,
+ * so the caller never frees and a second call invalidates the first. */
+bool ase_config_entries_with_prefix(const AseConfig *config, const char *prefix,
+                                     const char *const **keys, const char *const **values,
+                                     size_t *count) {
+    if (count != NULL) {
+        *count = 0;
+    }
+    if (config == NULL || prefix == NULL || keys == NULL || values == NULL || count == NULL) {
+        return false;
+    }
+    size_t prefix_len = strlen(prefix);
+    size_t matches = 0;
+    for (size_t i = 0; i < config->count; i++) {
+        if (strncmp(config->entries[i].key, prefix, prefix_len) == 0) {
+            matches++;
+        }
+    }
+    if (matches == 0) {
+        return false;
+    }
+
+    free(config->scan_keys);
+    free(config->scan_values);
+    AseConfig *mutable_config = (AseConfig *)config;
+    mutable_config->scan_keys = (const char **)malloc(matches * sizeof(char *));
+    mutable_config->scan_values = (const char **)malloc(matches * sizeof(char *));
+    if (mutable_config->scan_keys == NULL || mutable_config->scan_values == NULL) {
+        free(mutable_config->scan_keys);
+        free(mutable_config->scan_values);
+        mutable_config->scan_keys = NULL;
+        mutable_config->scan_values = NULL;
+        return false;
+    }
+
+    size_t at = 0;
+    for (size_t i = 0; i < config->count; i++) {
+        if (strncmp(config->entries[i].key, prefix, prefix_len) == 0) {
+            mutable_config->scan_keys[at] = config->entries[i].key;
+            mutable_config->scan_values[at] = config->entries[i].value;
+            at++;
+        }
+    }
+    *keys = mutable_config->scan_keys;
+    *values = mutable_config->scan_values;
+    *count = matches;
+    return true;
+}
+
 const char *ase_config_get_lang_string(const AseConfig *config, const char *language,
                                         const char *key) {
     if (language == NULL || key == NULL) {
@@ -545,6 +601,17 @@ static const char kDefaultConfigTemplate[] =
     "# instead of freezing first, and the status bar says so. Raise it if\n"
     "# you would rather wait, or set 0 to never skip. See docs/adr/0107.\n"
     "syntax_max_kb = 1024\n"
+    "\n"
+    "# Keys. `key.<chord> = <command>` binds a chord to a command; press\n"
+    "# F1 for every command name. A chord is modifiers and a key, in any\n"
+    "# order and any case: ctrl+s, Ctrl+Shift+F, alt+left, f5. Prefix it\n"
+    "# with a Vim mode to bind only there: key.normal.ctrl+d. Use `none`\n"
+    "# to switch a default off. Bare keys cannot be bound -- a chord needs\n"
+    "# Ctrl, Alt or Meta, or to be a function key -- so no binding can\n"
+    "# make the editor untypeable. See docs/adr/0113.\n"
+    "# key.ctrl+s = editor.save\n"
+    "# key.f5 = editor.compile\n"
+    "# key.ctrl+b = none\n"
     "\n"
     "# A thin bar in the gutter for each line added, changed or removed\n"
     "# since the last commit, read from `git diff`. Needs git on PATH; a\n"

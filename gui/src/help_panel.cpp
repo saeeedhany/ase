@@ -1,5 +1,7 @@
 #include "help_panel.h"
 
+#include "keybindings.h"
+
 #include "editor_viewport.h"
 
 #include "ase/config.h"
@@ -51,44 +53,86 @@ HelpSection configSection() {
     return {"Configuration", "~/.config/ase/config.ase &mdash; saved changes apply at once", rows};
 }
 
-QVector<HelpSection> helpSections() {
+/* The chord that actually runs a command, as the user's config has it.
+ * The panel is the map of the keyboard; hardcoding the keys here meant
+ * it went on describing the defaults after a rebinding. See
+ * docs/adr/0113. */
+static QString keysFor(const AseConfig *config, const char *command) {
+    QStringList spelled;
+    for (const QString &chord : keys::chordsFor(config, QString::fromLatin1(command))) {
+        QStringList parts;
+        for (const QString &part : chord.split(QLatin1Char('+'), Qt::SkipEmptyParts)) {
+            static const QHash<QString, QString> kPretty = {
+                {QStringLiteral("ctrl"), QStringLiteral("Ctrl")},
+                {QStringLiteral("alt"), QStringLiteral("Alt")},
+                {QStringLiteral("shift"), QStringLiteral("Shift")},
+                {QStringLiteral("meta"), QStringLiteral("Meta")},
+                {QStringLiteral("semicolon"), QStringLiteral(";")},
+                {QStringLiteral("equal"), QStringLiteral("=")},
+                {QStringLiteral("plus"), QStringLiteral("+")},
+                {QStringLiteral("minus"), QStringLiteral("-")},
+                {QStringLiteral("left"), QStringLiteral("Left")},
+                {QStringLiteral("right"), QStringLiteral("Right")},
+                {QStringLiteral("tab"), QStringLiteral("Tab")},
+            };
+            auto it = kPretty.constFind(part);
+            parts << (it != kPretty.constEnd() ? it.value() : part.toUpper());
+        }
+        spelled << parts.join(QLatin1Char('+'));
+    }
+    if (spelled.isEmpty()) {
+        return QStringLiteral("&mdash;"); /* switched off with `none` */
+    }
+    return spelled.join(QStringLiteral(" / ")).toHtmlEscaped();
+}
+
+QVector<HelpSection> helpSections(const AseConfig *config) {
     return {
         {"Navigation", nullptr,
          {{"&larr; &rarr; &uarr; &darr;", "Move cursor"},
           {"Shift + arrow", "Extend selection"},
           {"Home / End", "Line start / end"},
-          {"Ctrl+D", "Select next occurrence (Insert mode / Vim off)"}}},
+          {keysFor(config, "editor.cursor.add-next-occurrence"),
+           "Select next occurrence (Insert mode / Vim off)"}}},
 
         {"Editing", nullptr,
          {{"Backspace / Delete", "Delete character or selection"},
-          {"Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"},
-          {"Ctrl+C / Ctrl+X / Ctrl+V", "Copy / cut / paste"},
-          {"Ctrl+A", "Select all (Vim Normal mode uses it to add one)"}}},
+          {keysFor(config, "editor.undo") + " / " + keysFor(config, "editor.redo"),
+           "Undo / redo"},
+          {keysFor(config, "editor.copy") + " / " + keysFor(config, "editor.cut") + " / " +
+               keysFor(config, "editor.paste"),
+           "Copy / cut / paste"},
+          {keysFor(config, "editor.select-all"),
+           "Select all (Vim Normal mode uses it to add one)"}}},
 
         {"Files &amp; buffers", nullptr,
-         {{"Ctrl+N", "New file"},
+         {{keysFor(config, "buffer.new"), "New file"},
           {"(the + at the right of the tab strip)", "New file"},
-          {"Alt+O", "Open"},
-          {"Ctrl+P", "Open any file in the project by name"},
-          {"Ctrl+S", "Save"},
-          {"Ctrl+Shift+S", "Save as"},
-          {"Ctrl+Tab / Ctrl+Shift+Tab", "Next / previous buffer"},
-          {"Ctrl+W", "Close buffer"}}},
+          {keysFor(config, "editor.open"), "Open"},
+          {keysFor(config, "editor.open-in-project"), "Open any file in the project by name"},
+          {keysFor(config, "editor.save"), "Save"},
+          {keysFor(config, "editor.save-as"), "Save as"},
+          {keysFor(config, "buffer.next") + " / " + keysFor(config, "buffer.previous"),
+           "Next / previous buffer"},
+          {keysFor(config, "buffer.close"), "Close buffer"}}},
 
         {"Find &amp; replace", nullptr,
-         {{"Ctrl+F", "Find"},
-          {"Ctrl+Shift+F", "Search every file in the project"},
-          {"F12", "Go to definition (needs a language server)"},
-          {"Ctrl+O / Ctrl+I", "Jump back / forward (also Alt+Left / Alt+Right)"},
-          {"Ctrl+H", "Find and replace"},
+         {{keysFor(config, "editor.find"), "Find"},
+          {keysFor(config, "editor.find-in-project"), "Search every file in the project"},
+          {keysFor(config, "editor.go-to-definition"),
+           "Go to definition (needs a language server)"},
+          {keysFor(config, "editor.jump-back") + " / " + keysFor(config, "editor.jump-forward"),
+           "Jump back / forward"},
+          {keysFor(config, "editor.replace"), "Find and replace"},
           {"Enter / Shift+Enter", "Next / previous match"},
           {"Ctrl+Enter", "Replace all (from the replace field)"},
           {"n / N", "Repeat the last search, forwards / backwards"},
           {"", "&mdash; works with the bar closed, however you searched"}}},
 
         {"View", nullptr,
-         {{"Ctrl+= / Ctrl+-", "Larger / smaller font"},
-          {"Ctrl+0", "Reset font size"}}},
+         {{keysFor(config, "editor.font.larger") + " / " + keysFor(config, "editor.font.smaller"),
+           "Larger / smaller font"},
+          {keysFor(config, "editor.font.reset"), "Reset font size"}}},
 
         {"Vim mode", "vim_mode = true",
          {{"Esc / i / a", "Normal mode / insert / append"},
@@ -238,7 +282,7 @@ void HelpPanel::openHelp() {
 /* Two widgets per section: a section collapses as a unit and its rows
  * never need individual interaction. */
 void HelpPanel::buildSections() {
-    const QVector<HelpSection> data = helpSections();
+    const QVector<HelpSection> data = helpSections(m_viewport != nullptr ? m_viewport->config() : nullptr);
     for (const HelpSection &source : data) {
         Section section;
         section.title = QString::fromUtf8(source.title);

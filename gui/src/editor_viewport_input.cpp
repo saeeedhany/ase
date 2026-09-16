@@ -1,4 +1,6 @@
 #include "editor_viewport.h"
+#include "command_registry.h"
+#include "keybindings.h"
 
 #include "about_panel.h"
 #include "command_line.h"
@@ -40,170 +42,155 @@ bool EditorViewport::handleCompletionPopupKey(QKeyEvent *event) {
     return false;
 }
 
-/* About and Open moved to Alt so Ctrl+O/Ctrl+I could go to the
- * jumplist, which has no alternative keys. */
-bool EditorViewport::handleAltShortcut(QKeyEvent *event) {
-    if (!(event->modifiers() & Qt::AltModifier) || (event->modifiers() & Qt::ControlModifier)) {
-        return false;
+/*
+ * Every chord the editor answers to is a name in the registry and a row
+ * in keys::defaults(). What used to be two chains of `if (key == ...)`
+ * is now one lookup, which is what lets a user rebind any of it and a
+ * plugin be bound to a key without new API. See docs/adr/0113.
+ */
+void EditorViewport::registerCommands(CommandRegistry *registry) {
+    m_commands = registry;
+    if (registry == nullptr) {
+        return;
     }
-    if (event->key() == Qt::Key_O) {
+    auto add = [registry](const char *name, const char *description, std::function<void()> run) {
+        if (!registry->contains(QString::fromLatin1(name))) {
+            registry->add(QString::fromLatin1(name), QString::fromLatin1(description),
+                           std::move(run));
+        }
+    };
+
+    add("editor.save", "Save the file", [this]() { save(); });
+    add("editor.save-as", "Save under a different name", [this]() {
+        if (m_fileBrowser != nullptr) {
+            m_fileBrowser->openFor(FileBrowserPanel::Mode::SaveAs);
+        }
+    });
+    add("editor.open", "Open a file", [this]() {
         if (m_fileBrowser != nullptr) {
             m_fileBrowser->openFor(FileBrowserPanel::Mode::Open);
         }
-        return true;
-    }
-    if (event->key() == Qt::Key_I) {
-        if (m_aboutPanel == nullptr) {
-            m_aboutPanel = new AboutPanel(this);
-        }
-        {
-            m_aboutPanel->openAbout();
-        }
-        return true;
-    }
-    QWidget::keyPressEvent(event);
-    return true;
-}
-
-bool EditorViewport::handleCtrlShortcut(QKeyEvent *event) {
-    if (!(event->modifiers() & Qt::ControlModifier)) {
-        return false;
-    }
-    if (event->key() == Qt::Key_S) {
-        /* Ctrl+Shift+S always opens Save-As, even with a path
-         * already set — "save as" means "let me pick a
-         * different one," not "save.". Ctrl+S with no path set
-         * falls through to save()'s own Save-As fallback. */
-        if (event->modifiers() & Qt::ShiftModifier) {
-            if (m_fileBrowser != nullptr) {
-                m_fileBrowser->openFor(FileBrowserPanel::Mode::SaveAs);
-            }
-        } else {
-            save();
-        }
-        return true;
-    }
-    if (event->key() == Qt::Key_P) {
-        /* Ctrl+P — open any file in the project by typing part
-         * of its name, rather than walking there a directory at
-         * a time. Same panel as Ctrl+O in a different mode; see
-         * docs/adr/0065. */
+    });
+    add("editor.open-in-project", "Open any file in the project by name", [this]() {
         if (m_fileBrowser != nullptr) {
             m_fileBrowser->openFor(FileBrowserPanel::Mode::QuickOpen);
         }
-        return true;
-    }
-    if (event->key() == Qt::Key_O && (event->modifiers() & Qt::ShiftModifier)) {
-        /* Ctrl+Shift+O toggles the output panel directly,
-         * without going through :output. Plain Ctrl+O is Vim's
-         * jump-back now; Open moved to Alt+O (docs/adr/0068). */
-        toggleOutputPanel();
-        return true;
-    }
-    if (event->key() == Qt::Key_Semicolon) {
-        /* Command-line trigger — Ctrl+; here, not a bare `:`
-         * (that's the ex-command-line convention Vim mode will
-         * use later; in normal mode a bare `:` has to stay a
-         * literal, typeable character). See docs/adr/0025. */
-        if (m_commandLine != nullptr) {
-            m_commandLine->openPrompt(QLatin1Char(':'));
-        }
-        return true;
-    }
-    if (event->key() == Qt::Key_B) {
-        compile();
-        return true;
-    }
-    if (event->key() == Qt::Key_Q) {
-        window()->close();
-        return true;
-    }
-    if ((event->key() == Qt::Key_D || event->key() == Qt::Key_U) && vimModeActive() &&
-        m_vimMode != VimMode::Insert) {
-        /* The one place Vim mode *takes over* an existing
-         * Ctrl shortcut rather than adding one. ADR 0046 set
-         * out to keep the whole Ctrl chain mode-independent,
-         * and that holds everywhere else — but Ctrl+D is
-         * half-a-screen-down to anyone with vim in their
-         * fingers, and having it fan out multi-cursors in
-         * Normal mode is the kind of surprise that costs more
-         * than the rule saves. Only in Normal/Visual: Insert
-         * mode and `vim_mode = false` keep multi-cursor
-         * Ctrl+D untouched, which is where multi-cursor
-         * editing actually happens. See docs/adr/0059. */
-        vimHalfPageMotion(event->key() == Qt::Key_D ? 1 : -1);
-        return true;
-    }
-    if (event->key() == Qt::Key_D) {
-        addCursorAtNextOccurrence();
-        return true;
-    }
-    if (event->key() == Qt::Key_A) {
-        selectAll();
-        return true;
-    }
-    if (event->key() == Qt::Key_C) {
-        copySelection();
-        return true;
-    }
-    if (event->key() == Qt::Key_X) {
-        cutSelection();
-        return true;
-    }
-    if (event->key() == Qt::Key_V) {
-        pasteClipboard();
-        return true;
-    }
-    if (event->key() == Qt::Key_F) {
+    });
+    add("editor.quit", "Quit", [this]() { window()->close(); });
+
+    add("editor.find", "Find in this buffer", [this]() {
         if (m_findBar != nullptr) {
-            /* Ctrl+Shift+F searches every file in the project;
-             * Ctrl+F keeps its existing meaning, this buffer.
-             * Same split as Ctrl+O / Ctrl+Shift+O above. */
-            m_findBar->openFor((event->modifiers() & Qt::ShiftModifier) ? FindBar::Mode::Project
-                                                                       : FindBar::Mode::Find);
+            m_findBar->openFor(FindBar::Mode::Find);
         }
-        return true;
-    }
-    if (event->key() == Qt::Key_H) {
+    });
+    add("editor.find-in-project", "Find across the project", [this]() {
+        if (m_findBar != nullptr) {
+            m_findBar->openFor(FindBar::Mode::Project);
+        }
+    });
+    add("editor.replace", "Find and replace", [this]() {
         if (m_findBar != nullptr) {
             m_findBar->openFor(FindBar::Mode::Replace);
         }
-        return true;
-    }
-    if (event->key() == Qt::Key_Z) {
-        if (event->modifiers() & Qt::ShiftModifier) {
-            redo();
-        } else {
-            undo();
+    });
+
+    add("editor.help", "Show every keyboard shortcut", [this]() {
+        if (m_helpPanel != nullptr) {
+            m_helpPanel->openHelp();
         }
+    });
+    add("editor.about", "About this editor", [this]() {
+        if (m_aboutPanel == nullptr) {
+            m_aboutPanel = new AboutPanel(this);
+        }
+        m_aboutPanel->openAbout();
+    });
+    add("editor.output-panel", "Toggle the build output", [this]() { toggleOutputPanel(); });
+    add("editor.command-line", "Open the command line", [this]() {
+        if (m_commandLine != nullptr) {
+            m_commandLine->openPrompt(QLatin1Char(':'));
+        }
+    });
+
+    add("editor.copy", "Copy", [this]() { copySelection(); });
+    add("editor.cut", "Cut", [this]() { cutSelection(); });
+    add("editor.paste", "Paste the system clipboard", [this]() { pasteClipboard(); });
+    add("editor.select-all", "Select the whole buffer", [this]() { selectAll(); });
+    add("editor.undo", "Undo", [this]() { undo(); });
+    add("editor.redo", "Redo", [this]() { redo(); });
+    add("editor.cursor.add-next-occurrence", "Add a cursor at the next match",
+        [this]() { addCursorAtNextOccurrence(); });
+
+    add("editor.go-to-definition", "Go to definition", [this]() { goToDefinition(); });
+
+    add("editor.font.larger", "Larger text", [this]() { adjustFontSize(1); });
+    add("editor.font.smaller", "Smaller text", [this]() { adjustFontSize(-1); });
+    add("editor.font.reset", "Text back to the configured size", [this]() { resetFontSize(); });
+
+    add("editor.compile", "Run the build command", [this]() { compile(); });
+
+    add("vim.half-page-down", "Half a screen down", [this]() { vimHalfPageMotion(1); });
+    add("vim.half-page-up", "Half a screen up", [this]() { vimHalfPageMotion(-1); });
+    add("vim.number.increment", "Add one to the next number",
+        [this]() { vimAddToNumber(std::max(1, m_vimPending.count())); });
+    add("vim.number.decrement", "Subtract one from the next number",
+        [this]() { vimAddToNumber(-std::max(1, m_vimPending.count())); });
+
+    /* Now that every name exists, the config can be checked against
+     * them. */
+    reportKeybindingProblems();
+}
+
+/* Empty when Vim mode is off, so a Vim-only binding simply does not
+ * match and a non-Vim user never sees it. */
+QString EditorViewport::currentModeName() const {
+    if (!vimModeActive()) {
+        return QString();
+    }
+    switch (m_vimMode) {
+    case VimMode::Normal:
+        return QStringLiteral("normal");
+    case VimMode::Insert:
+        return QStringLiteral("insert");
+    case VimMode::Visual:
+        return QStringLiteral("visual");
+    }
+    return QString();
+}
+
+bool EditorViewport::handleBoundChord(QKeyEvent *event) {
+    if (m_commands == nullptr) {
+        return false;
+    }
+    /* Only chords a modifier or a function key names. Without this a
+     * user could bind `a` and make the editor untypeable, and every
+     * printable keystroke would go through a hash lookup on its way to
+     * the buffer. Shift alone does not count: Shift+A is typing. */
+    bool chorded = (event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) != 0;
+    bool functionKey = event->key() >= Qt::Key_F1 && event->key() <= Qt::Key_F12;
+    if (!chorded && !functionKey) {
+        return false;
+    }
+    QString chord = keys::chordFor(event);
+    if (chord.isEmpty()) {
+        return false;
+    }
+    QString command = keys::commandFor(m_config, chord, currentModeName());
+    if (command.isEmpty()) {
+        return false;
+    }
+    /* `none` is how a user switches a default off. It is handled, not
+     * unbound: falling through would hand the chord to whatever comes
+     * next, which is not what "off" means. */
+    if (command == QLatin1String("none")) {
         return true;
     }
-    if (event->key() == Qt::Key_Equal || event->key() == Qt::Key_Plus) {
-        /* Ctrl+= (the unshifted key '+' shares on most layouts)
-         * and Ctrl+Plus both zoom in, matching every other
-         * app's convention (browsers, VS Code, ...). Live,
-         * in-session only — see docs/adr/0050. */
-        adjustFontSize(1);
+    if (m_commands->run(command)) {
         return true;
     }
-    if (event->key() == Qt::Key_Minus) {
-        adjustFontSize(-1);
-        return true;
-    }
-    if (event->key() == Qt::Key_0) {
-        resetFontSize();
-        return true;
-    }
-    if (event->key() == Qt::Key_R && vimModeActive()) {
-        /* Vim's own redo binding, additive to the existing
-         * Ctrl+Shift+Z above — gated on vimModeActive() (not on
-         * m_vimMode) so it works from Insert too, matching how
-         * Ctrl+Z/Ctrl+Shift+Z are already mode-independent, and
-         * so non-Vim users see no new shortcut. */
-        redo();
-        return true;
-    }
-    QWidget::keyPressEvent(event);
+    /* A binding naming a command nobody registered. Silence would be
+     * indistinguishable from a dead key. */
+    notify(NotifyLevel::Warning, QStringLiteral("no command called '%1'").arg(command));
     return true;
 }
 
@@ -292,6 +279,13 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         }
         /* Falls through only for keys Vim doesn't claim. */
     }
+
+    /* Before the switch below, which claims F1, F12, Escape and the
+     * arrows by key code. A bound chord is a command whatever key it
+     * names, and the gate inside keeps this off the typing path. */
+    if (handleBoundChord(event)) {
+        return;
+    }
     switch (event->key()) {
     case Qt::Key_Left:
         moveCursorLeft(extend);
@@ -369,13 +363,6 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         }
         break;
     default:
-        if (handleAltShortcut(event)) {
-            return;
-        }
-        if (handleCtrlShortcut(event)) {
-            return;
-        }
-
         {
             const QString text = event->text();
             if (text.isEmpty() || !text.at(0).isPrint()) {

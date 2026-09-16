@@ -22,6 +22,12 @@ add_executable(ase_json_tests
 target_link_libraries(ase_json_tests PRIVATE ase_core)
 add_test(NAME ase_json_tests COMMAND ase_json_tests)
 
+add_executable(ase_keymap_tests
+    test_keymap.c
+)
+target_link_libraries(ase_keymap_tests PRIVATE ase_core)
+add_test(NAME ase_keymap_tests COMMAND ase_keymap_tests)
+
 add_executable(ase_vcs_tests
     test_vcs.c
 )

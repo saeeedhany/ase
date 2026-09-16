@@ -50,6 +50,7 @@ add_library(ase_core
     src/recovery.c
     src/session.c
     src/vcs.c
+    src/keymap.c
 )
 
 target_include_directories(ase_core

@@ -1,5 +1,7 @@
 #include "editor_viewport.h"
 
+#include "keybindings.h"
+
 #include "about_panel.h"
 #include "command_line.h"
 #include "completion_popup.h"
@@ -73,6 +75,24 @@ void EditorViewport::rebuildConfig() {
                               .arg(refused == 1 ? QString() : QStringLiteral("s"));
         QTimer::singleShot(0, this, [this, message]() { notify(NotifyLevel::Warning, message); });
     }
+}
+
+/* Said once, when the config is read, rather than when a key is pressed:
+ * a binding that names nothing is a mistake in the file, and the file is
+ * what the user is looking at. Silence would leave a dead key looking
+ * like a bug in the editor. */
+void EditorViewport::reportKeybindingProblems() {
+    if (m_commands == nullptr) {
+        return;
+    }
+    const QStringList problems = keys::problems(m_config, *m_commands);
+    if (problems.isEmpty()) {
+        return;
+    }
+    notify(NotifyLevel::Warning,
+           problems.size() == 1
+               ? problems.first()
+               : QStringLiteral("%1 (and %2 more)").arg(problems.first()).arg(problems.size() - 1));
 }
 
 void EditorViewport::applyConfig() {

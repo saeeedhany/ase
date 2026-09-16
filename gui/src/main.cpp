@@ -25,6 +25,9 @@
 #include "command_line.h"
 #include "completion_popup.h"
 #include "editor_viewport.h"
+#include "ase/keymap.h"
+#include "keybindings.h"
+#include "command_registry.h"
 #include "ase/session.h"
 #include "themed_dialog.h"
 #include "lsp_registry.h"
@@ -104,6 +107,9 @@ private:
     bool confirmDiscard(const QString &message);
     void askAboutRecovery(EditorViewport *viewport, const QString &path);
     void saveSession();
+    void registerWindowCommands();
+    void installWindowShortcuts();
+    CommandRegistry m_commands;
     bool m_restoringSession = false;
     QString m_lastSessionSignature;
 
@@ -301,14 +307,7 @@ MainWindow::MainWindow() {
     m_statusLabel = new QLabel(QStringLiteral("Ln 1, Col 1"));
     statusBar()->addPermanentWidget(m_statusLabel);
 
-    /* Window-level, not viewport keys: they act on the buffer list.
-     * Qt dispatches these before the focus widget sees them. */
-    auto *next = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Tab")), this);
-    connect(next, &QShortcut::activated, this, [this]() { cycleBuffer(1); });
-    auto *prev = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+Tab")), this);
-    connect(prev, &QShortcut::activated, this, [this]() { cycleBuffer(-1); });
-    auto *close = new QShortcut(QKeySequence(QStringLiteral("Ctrl+W")), this);
-    connect(close, &QShortcut::activated, this, [this]() { closeBuffer(m_stack->currentIndex()); });
+    registerWindowCommands();
 
     /* Buffer changes write the session immediately; this catches the
      * caret moving, which is far too hot to write on. Nothing is written
@@ -317,18 +316,56 @@ MainWindow::MainWindow() {
     auto *sessionTimer = new QTimer(this);
     connect(sessionTimer, &QTimer::timeout, this, [this]() { saveSession(); });
     sessionTimer->start(5000);
-    auto *newFile = new QShortcut(QKeySequence(QStringLiteral("Ctrl+N")), this);
-    connect(newFile, &QShortcut::activated, this, [this]() { newBuffer(); });
+    installWindowShortcuts();
+}
 
-    /* Window shortcuts: the jumplist spans buffers. */
-    auto *jumpBack = new QShortcut(QKeySequence(QStringLiteral("Ctrl+O")), this);
-    connect(jumpBack, &QShortcut::activated, this, [this]() { jumpBy(-1); });
-    auto *jumpBackAlt = new QShortcut(QKeySequence(QStringLiteral("Alt+Left")), this);
-    connect(jumpBackAlt, &QShortcut::activated, this, [this]() { jumpBy(-1); });
-    auto *jumpForward = new QShortcut(QKeySequence(QStringLiteral("Ctrl+I")), this);
-    connect(jumpForward, &QShortcut::activated, this, [this]() { jumpBy(1); });
-    auto *jumpForwardAlt = new QShortcut(QKeySequence(QStringLiteral("Alt+Right")), this);
-    connect(jumpForwardAlt, &QShortcut::activated, this, [this]() { jumpBy(1); });
+/* Window-level actions: they act on the buffer list or the jumplist,
+ * which span buffers and so belong to the window rather than to any one
+ * viewport. Registered into the same table the viewport uses, so a
+ * config binding reaches them the same way. See docs/adr/0113. */
+void MainWindow::registerWindowCommands() {
+    m_commands.add(QStringLiteral("buffer.new"), QStringLiteral("New buffer"),
+                    [this]() { newBuffer(); });
+    m_commands.add(QStringLiteral("buffer.close"), QStringLiteral("Close this buffer"),
+                    [this]() { closeBuffer(m_stack->currentIndex()); });
+    m_commands.add(QStringLiteral("buffer.next"), QStringLiteral("Next buffer"),
+                    [this]() { cycleBuffer(1); });
+    m_commands.add(QStringLiteral("buffer.previous"), QStringLiteral("Previous buffer"),
+                    [this]() { cycleBuffer(-1); });
+    m_commands.add(QStringLiteral("editor.jump-back"), QStringLiteral("Back to the previous jump"),
+                    [this]() { jumpBy(-1); });
+    m_commands.add(QStringLiteral("editor.jump-forward"), QStringLiteral("Forward again"),
+                    [this]() { jumpBy(1); });
+}
+
+/* Qt dispatches a QShortcut before the focus widget sees the key, which
+ * is what these need: closing a buffer has to work while a panel holds
+ * focus. They are built from the binding table rather than written out,
+ * so rebinding one in config.ase moves it here too. */
+void MainWindow::installWindowShortcuts() {
+    static const char *const kWindowCommands[] = {"buffer.new",      "buffer.close",
+                                                   "buffer.next",     "buffer.previous",
+                                                   "editor.jump-back", "editor.jump-forward"};
+    AseConfig *config = nullptr;
+    char *configPath = ase_config_default_path();
+    if (configPath != nullptr) {
+        config = ase_config_load(configPath);
+        free(configPath);
+    }
+
+    for (const char *name : kWindowCommands) {
+        const QString command = QString::fromLatin1(name);
+        for (const QString &chord : keys::chordsFor(config, command)) {
+            QKeySequence sequence = keys::sequenceFor(chord);
+            if (sequence.isEmpty()) {
+                continue;
+            }
+            auto *shortcut = new QShortcut(sequence, this);
+            connect(shortcut, &QShortcut::activated, this,
+                    [this, command]() { m_commands.run(command); });
+        }
+    }
+    ase_config_destroy(config);
 }
 
 EditorViewport *MainWindow::activeViewport() const {
@@ -415,6 +452,11 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
     saveSession();
     m_stack->addWidget(viewport);
     setActiveIndex(m_viewports.size() - 1);
+    /* After the signal connections above, not with the other setters:
+     * registering checks the config's bindings and reports the bad ones,
+     * and a message emitted before anything is listening is lost. */
+    viewport->registerCommands(&m_commands);
+
     /* Deferred rather than asked here: addBuffer runs before the window
      * is shown, and the dialog would open over an unpainted black
      * rectangle. Queued, it arrives once there is an editor behind it. */

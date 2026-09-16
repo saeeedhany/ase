@@ -15,6 +15,7 @@
 
 #include "notification.h"
 #include "ase/vcs.h"
+#include "command_registry.h"
 #include "vim_pending.h"
 
 extern "C" {
@@ -204,6 +205,15 @@ public:
     bool restoreFromRecovery();
     void discardRecovery();
 
+    /* The shared command table; the window owns it so built-ins,
+     * window actions and plugin commands are all one registry. See
+     * docs/adr/0113. */
+    void registerCommands(CommandRegistry *registry);
+
+    /* For the help panel, which has to show the bindings the user
+     * actually has rather than the defaults. */
+    const AseConfig *config() const { return m_config; }
+
 signals:
     void fileOpenRequested(const QString &path);
     /* 1-based line. The window owns the buffer list, this owns the
@@ -382,8 +392,9 @@ private:
     /* Claimed-key handlers keyPressEvent tries in order. True means the
      * key was consumed and nothing further should see it. */
     bool handleCompletionPopupKey(QKeyEvent *event);
-    bool handleAltShortcut(QKeyEvent *event);
-    bool handleCtrlShortcut(QKeyEvent *event);
+    bool handleBoundChord(QKeyEvent *event);
+    void reportKeybindingProblems();
+    QString currentModeName() const;
     bool handleVimNormalOrVisualKey(QKeyEvent *event);
     /* The pieces handleVimNormalOrVisualKey() dispatches to, in order.
      * Each runs its own reset/ensureCursorVisible/update tail, because
@@ -670,6 +681,7 @@ private:
     bool m_historyDiscardedWhileDirty = false;
 
     QTimer *m_highlightTimer = nullptr;
+    CommandRegistry *m_commands = nullptr;
     QTimer *m_recoveryTimer = nullptr;
     QTimer *m_vcsPollTimer = nullptr;
     AseProcess *m_vcsProcess = nullptr;

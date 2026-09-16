@@ -392,6 +392,47 @@ static void test_starter_file_documents_every_key(void) {
     remove(path);
 }
 
+/* A family like key.* has to be reportable, not just readable: a
+ * binding naming a command nobody registered is worth saying out loud,
+ * and that needs enumeration. */
+static void test_entries_with_prefix(void) {
+    const char *path = "test_config_prefix.tmp";
+    FILE *f = fopen(path, "w");
+    CHECK(f != NULL);
+    fputs("key.ctrl+s = editor.save\n"
+          "font_size = 14\n"
+          "key.ctrl+b = editor.compile\n"
+          "keyboard_layout = ignored\n"
+          "key.f5 = editor.reload\n",
+          f);
+    fclose(f);
+
+    AseConfig *config = ase_config_load(path);
+    CHECK(config != NULL);
+
+    const char *const *keys = NULL;
+    const char *const *values = NULL;
+    size_t count = 0;
+    CHECK(ase_config_entries_with_prefix(config, "key.", &keys, &values, &count));
+    /* Three, and not keyboard_layout, which merely starts with "key". */
+    if (count != 3) {
+        printf("prefix scan found %zu entries, expected 3\n", count);
+        CHECK(0);
+    }
+    CHECK(strcmp(keys[0], "key.ctrl+s") == 0);
+    CHECK(strcmp(values[0], "editor.save") == 0);
+    CHECK(strcmp(keys[1], "key.ctrl+b") == 0);
+    CHECK(strcmp(keys[2], "key.f5") == 0);
+
+    /* Nothing matching is not an error, just nothing. */
+    size_t none = 12345;
+    CHECK(!ase_config_entries_with_prefix(config, "nosuchprefix.", &keys, &values, &none));
+    CHECK(none == 0);
+
+    ase_config_destroy(config);
+    remove(path);
+}
+
 int main(void) {
     test_defaults();
     test_load_missing_file_keeps_defaults();
@@ -407,6 +448,7 @@ int main(void) {
     test_project_overlay_missing_file();
     test_find_project_file_walks_up();
     test_key_docs_cover_everything();
+    test_entries_with_prefix();
     test_starter_file_documents_every_key();
 
     printf("all config tests passed\n");
