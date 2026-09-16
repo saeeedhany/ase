@@ -39,6 +39,7 @@ void EditorViewport::save() {
         m_savedStateId = ase_undo_state_id(m_undo);
         m_historyDiscardedWhileDirty = false;
         discardRecovery(); /* the file is the work now */
+        refreshVcsMarks();  /* what changed since the commit just moved */
         ensureCursorVisible(); /* pushes the cleared dirty flag (and title) through statusChanged */
         notify(NotifyLevel::Info, QStringLiteral("saved %1").arg(QFileInfo(m_filePath).fileName()));
     }

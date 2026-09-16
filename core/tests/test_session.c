@@ -95,7 +95,9 @@ static void test_empty_session_removes_the_file(void) {
     CHECK(ase_session_add(session, "/a", 0, 0));
     CHECK(ase_session_save(session, kPath));
     ase_session_destroy(session);
-    CHECK(ase_session_load(kPath) != NULL);
+    AseSession *present = ase_session_load(kPath);
+    CHECK(present != NULL);
+    ase_session_destroy(present);
 
     AseSession *empty = ase_session_create();
     CHECK(ase_session_save(empty, kPath));

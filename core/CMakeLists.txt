@@ -49,6 +49,7 @@ add_library(ase_core
     src/undo.c
     src/recovery.c
     src/session.c
+    src/vcs.c
 )
 
 target_include_directories(ase_core

@@ -94,6 +94,7 @@ static const AseConfigKeyDoc kKeyDocs[] = {
     {"lsp_command", NULL, "Language server for any language without its own.", false},
     {"syntax_max_kb", "1024", "Skip highlighting past this file size, in KB.", false},
     {"restore_session", "true", "Reopen last session's files when started bare.", false},
+    {"git_marks", "true", "Gutter bars for lines changed since the last commit.", false},
     {"lang.<id>.lsp", NULL, "Language server for one language, e.g. lang.cpp.lsp.", false},
     {"filetype.<suffix>", NULL, "What a suffix means, e.g. filetype.h = cpp.", true},
 };
@@ -544,6 +545,13 @@ static const char kDefaultConfigTemplate[] =
     "# instead of freezing first, and the status bar says so. Raise it if\n"
     "# you would rather wait, or set 0 to never skip. See docs/adr/0107.\n"
     "syntax_max_kb = 1024\n"
+    "\n"
+    "# A thin bar in the gutter for each line added, changed or removed\n"
+    "# since the last commit, read from `git diff`. Needs git on PATH; a\n"
+    "# file outside a repository simply has no marks. They describe the\n"
+    "# file on disk, so they hide while an unsaved edit has moved the\n"
+    "# lines around, and come back on save. See docs/adr/0112.\n"
+    "git_marks = true\n"
     "\n"
     "# Started with no file argument, reopen whatever was open when you\n"
     "# last quit, with the caret and scroll position where you left them.\n"

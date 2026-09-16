@@ -230,6 +230,27 @@ void EditorViewport::paintEvent(QPaintEvent *) {
             painter.setPen(line == cursorLine ? current : dim);
             int y = (line - firstLine) * m_lineHeight;
 
+            /* A thin bar at the very edge, left of the diagnostic dot
+             * and the numbers. It is the quietest mark that still reads
+             * at a glance, which is what the gutter is for — see
+             * docs/adr/0112. */
+            AseVcsLineStatus vcs = vcsStatusForLine(line);
+            if (vcs != ASE_VCS_UNCHANGED) {
+                QColor bar = colorForVcsStatus(vcs);
+                painter.save();
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(bar);
+                if (vcs == ASE_VCS_DELETED) {
+                    /* Removed lines have no line of their own, so the
+                     * mark sits at the boundary rather than spanning a
+                     * line that is still there. */
+                    painter.drawRect(QRectF(0.0, y + m_lineHeight - 2.0, kVcsBarWidth, 2.0));
+                } else {
+                    painter.drawRect(QRectF(0.0, y, kVcsBarWidth, m_lineHeight));
+                }
+                painter.restore();
+            }
+
             /* In the left padding the right-aligned numbers never
              * reach. No wipe, but shares the underline's reveal. */
             int worstSeverity = worstSeverityForLine(line);

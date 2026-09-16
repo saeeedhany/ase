@@ -22,6 +22,12 @@ add_executable(ase_json_tests
 target_link_libraries(ase_json_tests PRIVATE ase_core)
 add_test(NAME ase_json_tests COMMAND ase_json_tests)
 
+add_executable(ase_vcs_tests
+    test_vcs.c
+)
+target_link_libraries(ase_vcs_tests PRIVATE ase_core)
+add_test(NAME ase_vcs_tests COMMAND ase_vcs_tests)
+
 add_executable(ase_session_tests
     test_session.c
 )

@@ -14,6 +14,7 @@
 #include <QWidget>
 
 #include "notification.h"
+#include "ase/vcs.h"
 #include "vim_pending.h"
 
 extern "C" {
@@ -244,6 +245,14 @@ private:
     void refreshAnimationClock();
     void rebuildConfig();
     void rebuildSyntax();
+
+    /* Gutter marks from `git diff` — see docs/adr/0112. */
+    void refreshVcsMarks();
+    void pollVcs();
+    AseVcsLineStatus vcsStatusForLine(int line) const;
+    QColor colorForVcsStatus(AseVcsLineStatus status) const;
+    static constexpr double kVcsBarWidth = 2.0;
+    static constexpr int kVcsOutputCap = 4 * 1024 * 1024;
     /* Past this the highlight is deferred to a pause in typing rather
      * than run on the keystroke — see docs/adr/0107. */
     static constexpr int kSyncHighlightBytes = 256 * 1024;
@@ -662,6 +671,11 @@ private:
 
     QTimer *m_highlightTimer = nullptr;
     QTimer *m_recoveryTimer = nullptr;
+    QTimer *m_vcsPollTimer = nullptr;
+    AseProcess *m_vcsProcess = nullptr;
+    AseVcsDiff *m_vcsDiff = nullptr;
+    QByteArray m_vcsOutput;
+    int m_vcsLineCount = -1;
     QString m_recoveryDir;
     bool m_syntaxOverSizeCap = false;
     AseConfig *m_config = nullptr;

@@ -104,6 +104,9 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     m_compilePollTimer = new QTimer(this);
     connect(m_compilePollTimer, &QTimer::timeout, this, [this]() { pollCompile(); });
 
+    /* Once at open; after that, on every save. */
+    refreshVcsMarks();
+
     /* The server starts on first activation — see onActivated(). */
 
     /* So mouseMoveEvent fires with no button held, for hover. */
@@ -162,6 +165,8 @@ EditorViewport::~EditorViewport() {
     ase_plugin_host_destroy(m_pluginHost);
     releaseLspClient();
     ase_process_destroy(m_compileProcess);
+    ase_process_destroy_detached(m_vcsProcess);
+    ase_vcs_diff_destroy(m_vcsDiff);
     ase_syntax_destroy(m_syntax);
     ase_config_destroy(m_config);
     ase_undo_destroy(m_undo);
