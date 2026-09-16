@@ -14,6 +14,7 @@
 #include <QWidget>
 
 #include "notification.h"
+#include "vim_pending.h"
 
 extern "C" {
 #include "ase/buffer.h"
@@ -747,22 +748,14 @@ private:
      * identical everywhere but the keyPressEvent gate. */
     bool m_vimModeEnabled = false;
     VimMode m_vimMode = VimMode::Insert;
-    int m_vimCount1 = 0;                  /* count typed before an operator/motion */
-    char m_vimPendingOperator = '\0';     /* 'd' / 'y' / 'c', or '\0' */
-    int m_vimCount2 = 0;                  /* count typed after the operator */
-    bool m_vimPendingG = false;           /* mid-"gg" sequence */
-    char m_vimPendingFind = '\0'; /* awaiting the char to search for */
-    bool m_vimPendingReplace = false; /* mid-`r`, awaiting the new char */
+    /* The half-typed command — counts, operator, and whatever letter a
+     * prefix is waiting on. Cleared as a unit by resetVimPendingState(). */
+    VimPending m_vimPending;
     /* 'm' awaiting a letter to set, '`' or '\'' awaiting one to jump to. */
-    char m_vimPendingMark = '\0';
     /* 'q' awaiting a register to record into, '@' awaiting one to play. */
-    char m_vimPendingMacro = '\0';
     /* 'i' or 'a' awaiting the object's name. */
-    char m_vimPendingTextObject = '\0';
     /* Named by `"x` and consumed by the next yank, delete or paste. */
-    char m_vimPendingRegister = '\0';
     /* True between `"` and the letter that names the register. */
-    bool m_vimAwaitingRegister = false;
     /* The operator helpers reset the pending state before they run, so
      * the name is carried across in this. See docs/adr/0105. */
     char m_vimRegisterInUse = '\0';

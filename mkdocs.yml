@@ -128,6 +128,7 @@ nav:
     - adr/0105-named-registers.md
     - adr/0106-words-case-indent-numbers.md
     - adr/0107-the-large-file-wall.md
+    - adr/0108-the-half-typed-command.md
 
 theme:
   name: material

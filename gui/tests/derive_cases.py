@@ -138,6 +138,18 @@ CASES = [
     ("single line yyp",   "only",                     1, 1, "yyp"),
     ("empty buffer p",    "",                         1, 1, "p"),
 
+    # --- dot-repeat after a prefix that parks a letter ---
+    # The "new command begins" check that drops a half-recorded dot only
+    # looks at some of the pending fields; these probe the rest.
+    ("dot after ma",      "aaa\nbbb\nccc\n",          1, 1, "maxj."),
+    ("dot after backtick","aaa\nbbb\nccc\n",          1, 1, "max`aj."),
+    ("dot after \"a",     "aaa\nbbb\nccc\n",          1, 1, "\"ayyxj."),
+    ("dot after \"add",   "aaa\nbbb\nccc\nddd\n",     1, 1, "\"addj."),
+    ("dot after ciw",     "one two\nthree four\n",     1, 1, "ciwX<Esc>j."),
+    ("dot after qa macro","aaa\nbbb\nccc\n",          1, 1, "qaxq j."),
+    ("dot after f",       "a.b.c\na.b.c\n",            1, 1, "fbxj0."),
+    ("dot then count",    "abcdef\nabcdef\n",          1, 1, "xj3."),
+
     # --- macros ---
     # Recording cannot be derived: vim refuses to record inside :normal,
     # so `@a` comes back empty and the file is unchanged. These are in

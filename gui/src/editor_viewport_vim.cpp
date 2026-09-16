@@ -50,19 +50,7 @@ void EditorViewport::vimNormalizeLinewiseSelection() {
     }
 }
 
-void EditorViewport::resetVimPendingState() {
-    m_vimCount1 = 0;
-    m_vimCount2 = 0;
-    m_vimPendingOperator = '\0';
-    m_vimPendingG = false;
-    m_vimPendingFind = '\0';
-    m_vimPendingReplace = false;
-    m_vimPendingMark = '\0';
-    m_vimPendingMacro = '\0';
-    m_vimPendingTextObject = '\0';
-    m_vimPendingRegister = '\0';
-    m_vimAwaitingRegister = false;
-}
+void EditorViewport::resetVimPendingState() { m_vimPending.reset(); }
 
 /* '\n' counts as Blank, which is what lets w/b/e cross lines with no
  * special-casing. */
@@ -206,7 +194,7 @@ void EditorViewport::vimApplyFindInLine(char command, char target, int count) {
         return;
     }
 
-    if (m_vimPendingOperator != '\0') {
+    if (m_vimPending.op != '\0') {
         bool forward = (command == 'f' || command == 't');
         size_t start = forward ? before : after;
         size_t end = forward ? vimNextCharBoundary(after) : before;
@@ -326,7 +314,7 @@ size_t EditorViewport::vimFirstNonBlank(int line) const {
 
 void EditorViewport::vimGotoLine(int line) {
     line = std::clamp(line, 0, static_cast<int>(m_lineStarts.size()) - 1);
-    if (m_vimPendingOperator != '\0') {
+    if (m_vimPending.op != '\0') {
         int beforeLine = lineForOffset(m_cursors[0]);
         int startLine = std::min(beforeLine, line);
         int lineCount = std::abs(line - beforeLine) + 1;
@@ -344,7 +332,7 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
     bool visual = (m_vimMode == VimMode::Visual);
     size_t before = m_cursors[0];
 
-    if (m_vimPendingOperator == '\0') {
+    if (m_vimPending.op == '\0') {
         for (int n = 0; n < count; ++n) {
             switch (m) {
             case 'h':
@@ -515,7 +503,7 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
          * while `cw` changes only the `.`. Only the first step is
          * special; the rest of a count behave like `e`.
          */
-        bool changeToWordEnd = ((m == 'w' || m == 'W') && m_vimPendingOperator == 'c' &&
+        bool changeToWordEnd = ((m == 'w' || m == 'W') && m_vimPending.op == 'c' &&
                                 before < static_cast<size_t>(m_cache.size()) &&
                                 vimClassifyAt(before) != VimCharClass::Blank);
         for (int n = 0; n < count; ++n) {
@@ -582,8 +570,8 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
 }
 
 void EditorViewport::vimApplyPendingOperatorCharwise(size_t start, size_t end) {
-    char op = m_vimPendingOperator;
-    m_vimRegisterInUse = m_vimPendingRegister;
+    char op = m_vimPending.op;
+    m_vimRegisterInUse = m_vimPending.registerName;
     resetVimPendingState();
     if (start >= end) {
         return;
@@ -630,8 +618,8 @@ void EditorViewport::vimApplyPendingOperatorCharwise(size_t start, size_t end) {
 }
 
 void EditorViewport::vimApplyPendingOperatorLinewise(int startLine, int lineCount) {
-    char op = m_vimPendingOperator;
-    m_vimRegisterInUse = m_vimPendingRegister;
+    char op = m_vimPending.op;
+    m_vimRegisterInUse = m_vimPending.registerName;
     resetVimPendingState();
     switch (op) {
     case 'd':
@@ -672,11 +660,11 @@ void EditorViewport::vimApplyPendingOperatorLinewise(int startLine, int lineCoun
  * "\nfoo" or "foo" and `p` pastes a blank line or joins. */
 /* The operator helpers clear the pending state before they run, so they
  * park the name in m_vimRegisterInUse first; everything else still has
- * m_vimPendingRegister live. Either way it is consumed once. */
+ * m_vimPending.registerName live. Either way it is consumed once. */
 char EditorViewport::vimTakeRegister() {
-    char name = (m_vimRegisterInUse != '\0') ? m_vimRegisterInUse : m_vimPendingRegister;
+    char name = (m_vimRegisterInUse != '\0') ? m_vimRegisterInUse : m_vimPending.registerName;
     m_vimRegisterInUse = '\0';
-    m_vimPendingRegister = '\0';
+    m_vimPending.registerName = '\0';
     return name;
 }
 
@@ -1193,8 +1181,7 @@ void EditorViewport::vimRecordKey(QChar qc) {
     }
     /* A key with nothing pending begins a new command, so whatever was
      * being recorded came to nothing and is dropped. */
-    if (m_vimMode != VimMode::Visual && m_vimPendingOperator == '\0' && m_vimCount1 == 0 &&
-        m_vimCount2 == 0 && !m_vimPendingG && m_vimPendingFind == '\0' && !m_vimPendingReplace) {
+    if (m_vimMode != VimMode::Visual && m_vimPending.idle()) {
         m_dotRecording.clear();
     }
     m_dotRecording.append(qc);
@@ -1417,7 +1404,7 @@ void EditorViewport::vimReplaceSelection(QChar target) {
  * — `s` and `C` on an empty line still start typing. */
 void EditorViewport::vimChangeOrInsert(size_t start, size_t end) {
     if (end > start) {
-        m_vimPendingOperator = 'c';
+        m_vimPending.op = 'c';
         vimApplyPendingOperatorCharwise(start, end);
         return;
     }
@@ -1609,7 +1596,7 @@ void EditorViewport::vimApplyTextObject(char kind, char object) {
 
     /* A change into a whole-line block keeps the closing newline so
      * there is a line to type on — the same split `C` has from `D`. */
-    if (m_vimPendingOperator == 'c' && range.end > range.start &&
+    if (m_vimPending.op == 'c' && range.end > range.start &&
         m_cache[static_cast<int>(range.end) - 1] == '\n' &&
         range.start == static_cast<size_t>(m_lineStarts[lineForOffset(range.start)])) {
         range.end--;
@@ -1929,8 +1916,8 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
     /* Mid-`r`: this key is the replacement, whatever it is. Escape never
      * reaches here — keyPressEvent takes it first and resets the pending
      * state, which is how `r<Esc>` cancels. */
-    if (m_vimPendingReplace) {
-        m_vimPendingReplace = false;
+    if (m_vimPending.replace) {
+        m_vimPending.replace = false;
         /* The key code, not the text: Return arrives as U+0000 under the
          * offscreen platform plugin and as "\r" under X11, so the text is
          * not something to branch on. Any other non-printable target
@@ -1944,7 +1931,7 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
             m_vimMode = VimMode::Normal;
             m_vimVisualLinewise = false;
         } else if (newline || qc.isPrint()) {
-            vimReplaceChar(qc, std::max(1, m_vimCount1) * std::max(1, m_vimCount2), newline);
+            vimReplaceChar(qc, m_vimPending.count(), newline);
         }
         resetVimPendingState();
         ensureCursorVisible();
@@ -1954,9 +1941,9 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
 
     /* This key is the target, whatever it is: `f3` and `fd` search for
      * '3' and 'd', not a count or an operator. */
-    if (m_vimPendingFind != '\0') {
-        char command = m_vimPendingFind;
-        m_vimPendingFind = '\0';
+    if (m_vimPending.find != '\0') {
+        char command = m_vimPending.find;
+        m_vimPending.find = '\0';
         char target = qc.toLatin1();
         if (target == '\0') {
             resetVimPendingState(); /* non-Latin1 target: nothing to search for */
@@ -1964,25 +1951,25 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
         }
         m_vimLastFindCommand = command;
         m_vimLastFindTarget = target;
-        vimApplyFindInLine(command, target, std::max(1, m_vimCount1) * std::max(1, m_vimCount2));
+        vimApplyFindInLine(command, target, m_vimPending.count());
         return true;
     }
 
     /* Mid-`"`: this key names the register. It is deliberately not
      * cleared here — the yank, delete or paste that follows consumes it. */
-    if (m_vimAwaitingRegister) {
-        m_vimAwaitingRegister = false;
+    if (m_vimPending.awaitingRegister) {
+        m_vimPending.awaitingRegister = false;
         char name = qc.toLatin1();
         if ((name >= 'a' && name <= 'z') || (name >= 'A' && name <= 'Z')) {
-            m_vimPendingRegister = name;
+            m_vimPending.registerName = name;
         }
         return true;
     }
 
     /* Mid-`i`/`a`: this key names the text object. */
-    if (m_vimPendingTextObject != '\0') {
-        char kind = m_vimPendingTextObject;
-        m_vimPendingTextObject = '\0';
+    if (m_vimPending.textObject != '\0') {
+        char kind = m_vimPending.textObject;
+        m_vimPending.textObject = '\0';
         char object = qc.toLatin1();
         if (object != '\0') {
             vimApplyTextObject(kind, object);
@@ -1994,10 +1981,10 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
     }
 
     /* Mid-`q` or `@`: this key names the register. */
-    if (m_vimPendingMacro != '\0') {
-        char pending = m_vimPendingMacro;
-        m_vimPendingMacro = '\0';
-        int count = std::max(1, m_vimCount1) * std::max(1, m_vimCount2);
+    if (m_vimPending.macro != '\0') {
+        char pending = m_vimPending.macro;
+        m_vimPending.macro = '\0';
+        int count = m_vimPending.count();
         char name = qc.toLatin1();
         if (pending == '@' && name == '@') {
             name = m_macroLastPlayed; /* `@@` repeats the last one played */
@@ -2018,14 +2005,14 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
     }
 
     /* Mid-`m`, `` ` `` or `'`: this key names the mark, whatever it is. */
-    if (m_vimPendingMark != '\0') {
-        char pending = m_vimPendingMark;
-        m_vimPendingMark = '\0';
+    if (m_vimPending.mark != '\0') {
+        char pending = m_vimPending.mark;
+        m_vimPending.mark = '\0';
         char name = qc.toLatin1();
         if (name != '\0' && (qc.isLetter() || pending != 'm')) {
             if (pending == 'm') {
                 vimSetMark(name);
-            } else if (m_vimPendingOperator != '\0') {
+            } else if (m_vimPending.op != '\0') {
                 vimApplyOperatorToMark(name, pending == '`');
             } else {
                 vimJumpToMark(name, pending == '`');
@@ -2038,11 +2025,11 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
     }
 
     /* Mid-"g": resolved on the very next key, whatever it is. */
-    if (m_vimPendingG) {
-        m_vimPendingG = false;
+    if (m_vimPending.g) {
+        m_vimPending.g = false;
         if (qc == QLatin1Char('g')) {
-            int targetLine = (m_vimCount1 > 0) ? std::min(m_vimCount1 - 1, vimLastLine()) : 0;
-            if (m_vimPendingOperator == '\0') {
+            int targetLine = (m_vimPending.count1 > 0) ? std::min(m_vimPending.count1 - 1, vimLastLine()) : 0;
+            if (m_vimPending.op == '\0') {
                 recordJump();
             }
             vimPrepareLinewiseMotion();
@@ -2054,7 +2041,7 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
             goToDefinition();
             return true;
         } else if (qc == QLatin1Char('J')) {
-            int count = std::max(1, m_vimCount1) * std::max(1, m_vimCount2);
+            int count = m_vimPending.count();
             resetVimPendingState();
             vimJoinLines(count, false);
             return true;
@@ -2073,7 +2060,7 @@ bool EditorViewport::vimAccumulateCount(QChar qc) {
     /* A bare '0' is the column-0 motion, not a digit. */
     if (qc.isDigit()) {
         int d = qc.digitValue();
-        int &count = (m_vimPendingOperator != '\0') ? m_vimCount2 : m_vimCount1;
+        int &count = (m_vimPending.op != '\0') ? m_vimPending.count2 : m_vimPending.count1;
         if (!(d == 0 && count == 0)) {
             count = count * 10 + d;
             return true;
@@ -2113,7 +2100,7 @@ bool EditorViewport::vimApplyMotionKey(char c, int count) {
     }
     if (c == 'f' || c == 'F' || c == 't' || c == 'T') {
         /* Keeps the pending count, so `3fx` is still the third x. */
-        m_vimPendingFind = c;
+        m_vimPending.find = c;
         return true;
     }
     if (c == ';' || c == ',') {
@@ -2136,12 +2123,12 @@ bool EditorViewport::vimApplyMotionKey(char c, int count) {
         return true;
     }
     if (c == 'g') {
-        m_vimPendingG = true;
+        m_vimPending.g = true;
         return true;
     }
     if (c == 'G') {
-        int targetLine = (m_vimCount1 > 0) ? std::min(m_vimCount1 - 1, vimLastLine()) : vimLastLine();
-        if (m_vimPendingOperator == '\0') {
+        int targetLine = (m_vimPending.count1 > 0) ? std::min(m_vimPending.count1 - 1, vimLastLine()) : vimLastLine();
+        if (m_vimPending.op == '\0') {
             recordJump(); /* a jump; with an operator pending it is a range, not a move */
         }
         vimPrepareLinewiseMotion();
@@ -2155,7 +2142,7 @@ bool EditorViewport::vimApplyMotionKey(char c, int count) {
     if (c == 'h' || c == 'l' || c == 'j' || c == 'k' || c == '0' || c == '^' || c == '$' || c == 'w' ||
         c == 'W' || c == 'E' || c == 'B' ||
         c == 'b' || c == 'e' || c == '{' || c == '}' || c == '%') {
-        if ((c == '{' || c == '}') && m_vimPendingOperator == '\0') {
+        if ((c == '{' || c == '}') && m_vimPending.op == '\0') {
             /* Far enough to be worth coming back from; h/j/k/l are
              * deliberately not. See docs/adr/0070. */
             recordJump();
@@ -2279,16 +2266,16 @@ void EditorViewport::vimApplyVisualKey(char c) {
     case 'r':
         /* Early: the tail below would reset the pending flag before the
          * replacement character ever arrived. */
-        m_vimPendingReplace = true;
+        m_vimPending.replace = true;
         return;
     case 'i':
     case 'a':
         /* In Visual these only ever introduce a text object — `viw`
          * selects the word rather than entering Insert. */
-        m_vimPendingTextObject = c;
+        m_vimPending.textObject = c;
         return;
     case '"':
-        m_vimAwaitingRegister = true;
+        m_vimPending.awaitingRegister = true;
         return;
     case 'J': {
         /* Every line the selection touches, however it was made. */
@@ -2315,7 +2302,7 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
     /* Normal-mode-only from here: operators, x/p/P/u, mode entry. */
 
     if (c == 'd' || c == 'y' || c == 'c' || c == '>' || c == '<') {
-        if (m_vimPendingOperator == c) {
+        if (m_vimPending.op == c) {
             /* `2dd` on the last line does nothing: there is no second
              * line to take, and vim fails the command rather than
              * quietly doing half of it. Off the last line the count
@@ -2327,8 +2314,8 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
                 return;
             }
             vimApplyPendingOperatorLinewise(lineForOffset(m_cursors[0]), count);
-        } else if (m_vimPendingOperator == '\0') {
-            m_vimPendingOperator = c;
+        } else if (m_vimPending.op == '\0') {
+            m_vimPending.op = c;
         } else {
             resetVimPendingState();
         }
@@ -2340,14 +2327,14 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
     /* Before the guard below: a mark is a motion, so `d'a` has to keep
      * the pending operator rather than have it abandoned here. */
     if (c == '`' || c == '\'') {
-        m_vimPendingMark = c;
+        m_vimPending.mark = c;
         return;
     }
 
     /* Likewise `i`/`a`: with an operator waiting they introduce a text
      * object rather than entering Insert. */
-    if (m_vimPendingOperator != '\0' && (c == 'i' || c == 'a')) {
-        m_vimPendingTextObject = c;
+    if (m_vimPending.op != '\0' && (c == 'i' || c == 'a')) {
+        m_vimPending.textObject = c;
         return;
     }
 
@@ -2355,11 +2342,11 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
      * pending and wait for the letter. Unhandled, the `a` that follows
      * entered Insert and typed the rest of the command into the file. */
     if (c == '"') {
-        m_vimAwaitingRegister = true;
+        m_vimPending.awaitingRegister = true;
         return;
     }
 
-    if (m_vimPendingOperator != '\0') {
+    if (m_vimPending.op != '\0') {
         /* Operator pending, but this is neither a repeat nor a motion. */
         resetVimPendingState();
         return;
@@ -2441,15 +2428,15 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
             vimStopRecordingMacro();
             break;
         }
-        m_vimPendingMacro = 'q';
+        m_vimPending.macro = 'q';
         return;
     case '@':
-        m_vimPendingMacro = '@';
+        m_vimPending.macro = '@';
         return; /* the count belongs to the replay, so keep it */
     case 'm':
         /* Early, like `r`: the mark's name is the next key, and the tail
          * below would clear the pending flag before it arrived. */
-        m_vimPendingMark = c;
+        m_vimPending.mark = c;
         return;
     case 'J':
         vimJoinLines(count, true);
@@ -2458,7 +2445,7 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
         vimToggleCase(count);
         break;
     case 'r':
-        m_vimPendingReplace = true;
+        m_vimPending.replace = true;
         return; /* the count is still needed when the target arrives */
     case 'R':
         vimEnterReplaceMode(count);
@@ -2476,7 +2463,7 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
     }
     case 'S':
         /* `cc`, which the linewise operator already is. */
-        m_vimPendingOperator = 'c';
+        m_vimPending.op = 'c';
         vimApplyPendingOperatorLinewise(lineForOffset(m_cursors[0]), count);
         break;
     case 'C':
@@ -2502,7 +2489,7 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
             end++;
         }
         if (end > start) {
-            m_vimPendingOperator = 'd';
+            m_vimPending.op = 'd';
             vimApplyPendingOperatorCharwise(start, end);
         }
         break;
@@ -2556,7 +2543,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
                         (event->modifiers() & Qt::ControlModifier) != 0;
         if (ctrlOnly && m_vimMode == VimMode::Normal &&
             (event->key() == Qt::Key_A || event->key() == Qt::Key_X)) {
-            int count = std::max(1, m_vimCount1) * std::max(1, m_vimCount2);
+            int count = m_vimPending.count();
             vimAddToNumber(event->key() == Qt::Key_A ? count : -count);
             resetVimPendingState();
             return true;
@@ -2568,7 +2555,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     }
 
     if (event->key() == Qt::Key_Backspace) {
-        vimExecuteMotion('h', std::max(1, m_vimCount1) * std::max(1, m_vimCount2));
+        vimExecuteMotion('h', m_vimPending.count());
         resetVimPendingState();
         ensureCursorVisible();
         update();
@@ -2600,7 +2587,7 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
     }
 
     char c = qc.toLatin1(); /* '\0' for non-Latin1 — falls through to "unrecognized" below. */
-    int count = std::max(1, m_vimCount1) * std::max(1, m_vimCount2);
+    int count = m_vimPending.count();
 
     if (vimApplyMotionKey(c, count)) {
         return true;
