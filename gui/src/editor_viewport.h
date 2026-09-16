@@ -106,6 +106,12 @@ public:
     bool runPluginCommand(const QString &name);
 
     QString filePath() const { return m_filePath; }
+
+    /* Enough to put the caret and the viewport back where the last
+     * session left them — see docs/adr/0111. */
+    size_t cursorOffset() const { return m_cursors.isEmpty() ? 0 : m_cursors[0]; }
+    int scrollLine() const { return m_scrollLine; }
+    void restorePosition(size_t cursor, int scrollLine);
     bool isDirty() const;
     void requestOpenFile(const QString &path) { emit fileOpenRequested(path); }
     /* Synchronous; see docs/adr/0066 for the caps that bound it. */

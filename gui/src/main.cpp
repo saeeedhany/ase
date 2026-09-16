@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QFileInfo>
+#include <QDir>
 #include <QFontMetrics>
 #include <QGraphicsOpacityEffect>
 #include <QIcon>
@@ -24,6 +25,7 @@
 #include "command_line.h"
 #include "completion_popup.h"
 #include "editor_viewport.h"
+#include "ase/session.h"
 #include "themed_dialog.h"
 #include "lsp_registry.h"
 #include "file_browser_panel.h"
@@ -101,6 +103,14 @@ private:
     void refreshBufferBar();
     bool confirmDiscard(const QString &message);
     void askAboutRecovery(EditorViewport *viewport, const QString &path);
+    void saveSession();
+    bool m_restoringSession = false;
+    QString m_lastSessionSignature;
+
+public:
+    bool restoreSession();
+
+private:
 
     /* Set by :q! so closeEvent does not re-ask what :q! already answered. */
     bool m_forceClose = false;
@@ -299,6 +309,14 @@ MainWindow::MainWindow() {
     connect(prev, &QShortcut::activated, this, [this]() { cycleBuffer(-1); });
     auto *close = new QShortcut(QKeySequence(QStringLiteral("Ctrl+W")), this);
     connect(close, &QShortcut::activated, this, [this]() { closeBuffer(m_stack->currentIndex()); });
+
+    /* Buffer changes write the session immediately; this catches the
+     * caret moving, which is far too hot to write on. Nothing is written
+     * unless something actually moved. A SIGTERM or a crash then loses
+     * at most a few seconds of scroll position. */
+    auto *sessionTimer = new QTimer(this);
+    connect(sessionTimer, &QTimer::timeout, this, [this]() { saveSession(); });
+    sessionTimer->start(5000);
     auto *newFile = new QShortcut(QKeySequence(QStringLiteral("Ctrl+N")), this);
     connect(newFile, &QShortcut::activated, this, [this]() { newBuffer(); });
 
@@ -394,6 +412,7 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
             });
 
     m_viewports.push_back(viewport);
+    saveSession();
     m_stack->addWidget(viewport);
     setActiveIndex(m_viewports.size() - 1);
     /* Deferred rather than asked here: addBuffer runs before the window
@@ -715,6 +734,7 @@ void MainWindow::setActiveIndex(int index) {
     /* Through the same statusChanged path every edit uses, so there is
      * no second copy of the formatting. */
     viewport->emitInitialStatus();
+    saveSession();
 }
 
 void MainWindow::closeBuffer(int index, bool force) {
@@ -783,8 +803,136 @@ bool MainWindow::confirmDiscard(const QString &message) {
                               QStringLiteral("Discard"));
 }
 
+/* <config dir>/session.ase, beside config.ase. */
+QString sessionPath() {
+    char *config = ase_config_default_path();
+    if (config == nullptr) {
+        return QString();
+    }
+    QString dir = QFileInfo(QString::fromLocal8Bit(config)).dir().path();
+    free(config);
+    return QDir(dir).filePath(QStringLiteral("session.ase"));
+}
+
+/* Only what can be reopened: an unnamed buffer has no path to record,
+ * and ase_session_add drops it. */
+void MainWindow::saveSession() {
+    /* restoreSession() adds buffers one at a time; writing after each
+     * would record a session half the size of the one being restored. */
+    if (m_restoringSession) {
+        return;
+    }
+    QString path = sessionPath();
+    if (path.isEmpty()) {
+        return;
+    }
+
+    AseSession *session = ase_session_create();
+    if (session == nullptr) {
+        return;
+    }
+    int active = 0;
+    QString signature;
+    for (EditorViewport *viewport : m_viewports) {
+        if (viewport->filePath().isEmpty()) {
+            continue;
+        }
+        if (viewport == m_stack->currentWidget()) {
+            active = static_cast<int>(ase_session_count(session));
+        }
+        ase_session_add(session, viewport->filePath().toUtf8().constData(),
+                         viewport->cursorOffset(), viewport->scrollLine());
+        signature += QStringLiteral("%1:%2:%3|")
+                         .arg(viewport->filePath())
+                         .arg(viewport->cursorOffset())
+                         .arg(viewport->scrollLine());
+    }
+    ase_session_set_active(session, static_cast<size_t>(active));
+    signature += QString::number(active);
+
+    /* The timer below asks every few seconds whether anything moved.
+     * Usually nothing has, and an unchanged session is not worth an
+     * fsync. */
+    if (signature != m_lastSessionSignature) {
+        ase_session_save(session, path.toUtf8().constData());
+        m_lastSessionSignature = signature;
+    }
+    ase_session_destroy(session);
+}
+
+/* Reopens what was there, skipping anything that has since been moved
+ * or deleted: a session should not resurrect a file that no longer
+ * exists, nor refuse to start because one is missing. Returns false when
+ * nothing was reopened, so the caller can fall back to a fresh buffer. */
+bool MainWindow::restoreSession() {
+    QString path = sessionPath();
+    if (path.isEmpty()) {
+        return false;
+    }
+    /* Opt-out: reopening yesterday's files is the right default but the
+     * wrong behaviour for someone who wants a clean window every time. */
+    char *configPath = ase_config_default_path();
+    if (configPath != nullptr) {
+        AseConfig *config = ase_config_load(configPath);
+        free(configPath);
+        if (config != nullptr) {
+            const char *value = ase_config_get_string(config, "restore_session");
+            bool enabled = value == nullptr || strcmp(value, "false") != 0;
+            ase_config_destroy(config);
+            if (!enabled) {
+                return false;
+            }
+        }
+    }
+    AseSession *session = ase_session_load(path.toUtf8().constData());
+    if (session == nullptr) {
+        return false;
+    }
+    m_restoringSession = true;
+
+    size_t wanted = ase_session_active(session);
+    int activeIndex = -1;
+    for (size_t i = 0; i < ase_session_count(session); i++) {
+        const AseSessionEntry *entry = ase_session_entry(session, i);
+        QByteArray utf8 = QByteArray(entry->path);
+        if (!QFileInfo::exists(QString::fromUtf8(utf8))) {
+            continue;
+        }
+        AseBuffer *reopened = ase_buffer_create_from_file(utf8.constData());
+        if (reopened == nullptr) {
+            continue;
+        }
+        EditorViewport *viewport = addBuffer(reopened, QString::fromUtf8(utf8));
+        /* Queued, not applied here: addBuffer runs before the window is
+         * shown, so the viewport has no real height yet and the
+         * ensureCursorVisible inside restorePosition would scroll
+         * against a bogus one. */
+        QPointer<EditorViewport> pending = viewport;
+        size_t cursor = entry->cursor;
+        int scroll = static_cast<int>(entry->scroll_line);
+        QTimer::singleShot(0, this, [pending, cursor, scroll]() {
+            if (!pending.isNull()) {
+                pending->restorePosition(cursor, scroll);
+            }
+        });
+        if (i == wanted) {
+            activeIndex = m_viewports.size() - 1;
+        }
+    }
+    ase_session_destroy(session);
+    m_restoringSession = false;
+
+    if (m_viewports.isEmpty()) {
+        return false;
+    }
+    /* The remembered buffer may have been one of the missing ones. */
+    setActiveIndex(activeIndex >= 0 ? activeIndex : 0);
+    return true;
+}
+
 void MainWindow::closeEvent(QCloseEvent *event) {
     if (m_forceClose) {
+        saveSession();
         event->accept();
         return;
     }
@@ -796,6 +944,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
         }
     }
     if (dirty.isEmpty()) {
+        saveSession();
         event->accept();
         return;
     }
@@ -815,6 +964,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
     }
 
     if (confirmDiscard(message)) {
+        saveSession();
         event->accept();
     } else {
         event->ignore();
@@ -852,12 +1002,25 @@ int main(int argc, char *argv[]) {
 
     MainWindow window;
     window.resize(900, 650);
-    /* Launching with no file is the only situation the welcome
-     * greeting belongs to, and only here is that knowable: a Ctrl+N
-     * buffer looks identical to the viewport. See docs/adr/0058. */
-    EditorViewport *first = window.addBuffer(buffer, filePath);
+
+    /* Only when launched bare: `ase foo.c` means foo.c, not "and the
+     * eleven things I had open last week". See docs/adr/0111. */
+    bool restored = false;
     if (filePath.isEmpty()) {
-        first->armWelcomeGreeting();
+        restored = window.restoreSession();
+    }
+
+    if (restored) {
+        /* The placeholder buffer nothing opened into. */
+        ase_buffer_destroy(buffer);
+    } else {
+        /* Launching with no file is the only situation the welcome
+         * greeting belongs to, and only here is that knowable: a Ctrl+N
+         * buffer looks identical to the viewport. See docs/adr/0058. */
+        EditorViewport *first = window.addBuffer(buffer, filePath);
+        if (filePath.isEmpty()) {
+            first->armWelcomeGreeting();
+        }
     }
     window.show();
 

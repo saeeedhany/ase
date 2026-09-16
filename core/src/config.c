@@ -93,6 +93,7 @@ static const AseConfigKeyDoc kKeyDocs[] = {
     {"build_command", NULL, ":compile runs this; %f is the current file.", false},
     {"lsp_command", NULL, "Language server for any language without its own.", false},
     {"syntax_max_kb", "1024", "Skip highlighting past this file size, in KB.", false},
+    {"restore_session", "true", "Reopen last session's files when started bare.", false},
     {"lang.<id>.lsp", NULL, "Language server for one language, e.g. lang.cpp.lsp.", false},
     {"filetype.<suffix>", NULL, "What a suffix means, e.g. filetype.h = cpp.", true},
 };
@@ -543,6 +544,12 @@ static const char kDefaultConfigTemplate[] =
     "# instead of freezing first, and the status bar says so. Raise it if\n"
     "# you would rather wait, or set 0 to never skip. See docs/adr/0107.\n"
     "syntax_max_kb = 1024\n"
+    "\n"
+    "# Started with no file argument, reopen whatever was open when you\n"
+    "# last quit, with the caret and scroll position where you left them.\n"
+    "# `ase file.c` always means that file, never the session. Unsaved\n"
+    "# changes are a separate mechanism and always recovered. ADR 0111.\n"
+    "restore_session = true\n"
     "\n"
     "# :compile's shell command — %f is replaced with the current file's\n"
     "# path, run with the file's directory as cwd. No default: an\n"

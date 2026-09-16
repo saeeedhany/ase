@@ -48,6 +48,7 @@ add_library(ase_core
     src/lsp_client.c
     src/undo.c
     src/recovery.c
+    src/session.c
 )
 
 target_include_directories(ase_core

@@ -630,3 +630,20 @@ bool EditorViewport::restoreFromRecovery() {
     notify(NotifyLevel::Info, QStringLiteral("recovered unsaved changes"));
     return true;
 }
+
+/* Where the last session left off. Both values are clamped: the file may
+ * have been edited by something else since, and a caret past the end
+ * would be worse than one at the start. See docs/adr/0111. */
+void EditorViewport::restorePosition(size_t cursor, int scrollLine) {
+    collapseToOneCursor();
+    size_t clamped = std::min(cursor, static_cast<size_t>(m_cache.size()));
+    m_cursors[0] = clamped;
+    m_selectionAnchors[0] = clamped;
+
+    int lastLine = std::max(0, static_cast<int>(m_lineStarts.size()) - 1);
+    m_scrollLine = std::clamp(scrollLine, 0, lastLine);
+    m_renderedScrollLine = m_scrollLine;
+
+    ensureCursorVisible();
+    update();
+}
