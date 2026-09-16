@@ -51,6 +51,7 @@ add_library(ase_core
     src/session.c
     src/vcs.c
     src/keymap.c
+    src/theme.c
 )
 
 target_include_directories(ase_core

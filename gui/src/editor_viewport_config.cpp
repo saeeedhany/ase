@@ -2,6 +2,8 @@
 
 #include "keybindings.h"
 
+#include "ase/theme.h"
+
 #include "about_panel.h"
 #include "command_line.h"
 #include "completion_popup.h"
@@ -47,6 +49,22 @@ void EditorViewport::loadConfig() {
 
 void EditorViewport::rebuildConfig() {
     m_config = ase_config_load(m_configPath.isEmpty() ? nullptr : m_configPath.toUtf8().constData());
+
+    /* Under the file's own colours, never over them. A session theme
+     * from `:theme` layers in exactly the same place as `theme =` in the
+     * config, which is what makes previewing one and saving it produce
+     * the same screen. See docs/adr/0114. */
+    QString theme = m_sessionTheme;
+    if (theme.isEmpty()) {
+        const char *configured = ase_config_get_string(m_config, "theme");
+        theme = configured != nullptr ? QString::fromUtf8(configured) : QString();
+    }
+    if (!theme.isEmpty() && !ase_config_apply_theme(m_config, theme.toUtf8().constData())) {
+        QString name = theme;
+        QTimer::singleShot(0, this, [this, name]() {
+            notify(NotifyLevel::Warning, QStringLiteral("no theme called '%1'").arg(name));
+        });
+    }
 
     m_projectConfigPath.clear();
     m_projectConfigModified = QDateTime();

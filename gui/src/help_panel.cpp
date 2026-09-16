@@ -2,6 +2,8 @@
 
 #include "keybindings.h"
 
+#include "ase/theme.h"
+
 #include "editor_viewport.h"
 
 #include "ase/config.h"
@@ -46,6 +48,11 @@ HelpSection configSection() {
     QVector<HelpRow> rows;
     rows.reserve(static_cast<int>(count) + 1);
     rows.push_back({QStringLiteral(":config"), QStringLiteral("Open your config file")});
+    for (size_t i = 0; i < ase_theme_count(); i++) {
+        const AseTheme *theme = ase_theme_at(i);
+        rows.push_back({QStringLiteral("theme = %1").arg(QString::fromUtf8(theme->name)),
+                        QString::fromUtf8(theme->summary).toHtmlEscaped()});
+    }
     for (size_t i = 0; i < count; i++) {
         rows.push_back({QString::fromUtf8(docs[i].key).toHtmlEscaped(),
                         QString::fromUtf8(docs[i].summary).toHtmlEscaped()});
@@ -187,6 +194,9 @@ QVector<HelpSection> helpSections(const AseConfig *config) {
           {":q &nbsp; :q!", "Close this buffer / discard changes and close"},
           {":compile &nbsp; :output", "Build / toggle the output panel"},
           {":config", "Open your config file"},
+          {":theme", "List the built-in palettes"},
+          {":theme &lt;name&gt;", "Switch palette for this session"},
+          {":theme save", "Keep the current palette in your config"},
           {":42", "Jump to line 42"},
           {":s/old/new/g", "Substitute on this line (g = every match)"},
           {":%s/old/new/g", "Substitute in the whole file (or :1,10s/…)"},

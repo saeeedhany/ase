@@ -433,6 +433,52 @@ static void test_entries_with_prefix(void) {
     remove(path);
 }
 
+/* The starter file must not set the colours outright. It used to, and
+ * that made every theme a no-op for every user: a theme yields to a
+ * colour set by hand, and a shipped file that sets all nine means every
+ * colour is set by hand. They are shown as comments instead. */
+static void test_starter_file_leaves_colours_to_the_theme(void) {
+    const char *path = "test_config_colours.tmp";
+    remove(path);
+    CHECK(ase_config_write_default_if_missing(path));
+
+    FILE *f = fopen(path, "r");
+    CHECK(f != NULL);
+    static const char *kColours[] = {"background",       "text",
+                                     "selection",        "find_match",
+                                     "panel_background", "syntax_type",
+                                     "syntax_string",    "diagnostic_error",
+                                     "diagnostic_warning"};
+    char line[512];
+    while (fgets(line, sizeof(line), f) != NULL) {
+        char *cursor = line;
+        while (*cursor == ' ' || *cursor == '\t') {
+            cursor++;
+        }
+        if (*cursor == '#' || *cursor == '\n' || *cursor == '\0') {
+            continue;
+        }
+        char *equals = strchr(cursor, '=');
+        if (equals == NULL) {
+            continue;
+        }
+        *equals = '\0';
+        char *end = equals - 1;
+        while (end > cursor && (*end == ' ' || *end == '\t')) {
+            *end-- = '\0';
+        }
+        for (size_t i = 0; i < sizeof(kColours) / sizeof(kColours[0]); i++) {
+            if (strcmp(cursor, kColours[i]) == 0) {
+                printf("starter file sets '%s' outright, which disables themes\n", cursor);
+                fflush(stdout);
+                CHECK(0);
+            }
+        }
+    }
+    fclose(f);
+    remove(path);
+}
+
 int main(void) {
     test_defaults();
     test_load_missing_file_keeps_defaults();
@@ -449,6 +495,7 @@ int main(void) {
     test_find_project_file_walks_up();
     test_key_docs_cover_everything();
     test_entries_with_prefix();
+    test_starter_file_leaves_colours_to_the_theme();
     test_starter_file_documents_every_key();
 
     printf("all config tests passed\n");

@@ -1,6 +1,7 @@
 #include "editor_viewport.h"
 
 #include "ase/recovery.h"
+#include "ase/theme.h"
 
 #include "file_browser_panel.h"
 #include "output_panel.h"
@@ -19,6 +20,7 @@ constexpr int kProjectSearchHitCap = 1000;
 
 #include <QDir>
 #include <QFileInfo>
+#include <QSaveFile>
 #include <QTimer>
 
 /* An empty path routes to Save-As rather than silently doing nothing. */
@@ -351,6 +353,8 @@ void EditorViewport::runCommand(const QString &command) {
         toggleOutputPanel();
     } else if (trimmed == QLatin1String("config")) {
         openConfigFile();
+    } else if (trimmed == QLatin1String("theme") || trimmed.startsWith(QLatin1String("theme "))) {
+        runTheme(trimmed.mid(5).trimmed());
     } else if (runSubstitute(trimmed)) {
         /* Reported its own outcome, including "not found". */
     } else {
@@ -647,4 +651,124 @@ void EditorViewport::restorePosition(size_t cursor, int scrollLine) {
 
     ensureCursorVisible();
     update();
+}
+
+
+/* ---- themes (ADR 0114) ---- */
+
+/* `:theme` lists, `:theme <name>` switches for this session, and
+ * `:theme save` writes the current choice into config.ase. Switching
+ * does not touch the file: trying palettes should not edit something
+ * the user also hand-edits, and the save is one more word. */
+void EditorViewport::runTheme(const QString &argument) {
+    if (argument.isEmpty()) {
+        QStringList names;
+        const char *active = ase_config_get_string(m_config, "theme");
+        QString current = m_sessionTheme.isEmpty()
+                              ? (active != nullptr ? QString::fromUtf8(active) : QString())
+                              : m_sessionTheme;
+        for (size_t i = 0; i < ase_theme_count(); i++) {
+            QString name = QString::fromUtf8(ase_theme_at(i)->name);
+            names << (name == current ? QStringLiteral("[%1]").arg(name) : name);
+        }
+        notify(NotifyLevel::Info, names.join(QStringLiteral("  ")));
+        return;
+    }
+
+    if (argument == QLatin1String("save")) {
+        QString name = m_sessionTheme;
+        if (name.isEmpty()) {
+            notify(NotifyLevel::Warning, QStringLiteral("no theme to save; pick one first"));
+            return;
+        }
+        if (!writeConfigSetting(QStringLiteral("theme"), name)) {
+            notify(NotifyLevel::Error, QStringLiteral("could not write %1").arg(m_configPath));
+            return;
+        }
+        /* The file now says what the session already showed, so the
+         * session override has nothing left to override. */
+        m_sessionTheme.clear();
+        notify(NotifyLevel::Info, QStringLiteral("saved theme = %1").arg(name));
+        return;
+    }
+
+    if (ase_theme_find(argument.toUtf8().constData()) == nullptr) {
+        notify(NotifyLevel::Warning, QStringLiteral("no theme called '%1'").arg(argument));
+        return;
+    }
+    m_sessionTheme = argument;
+    rebuildConfig();
+    applyConfig();
+    update();
+
+    /* A colour set by hand wins over the theme's, which is the point —
+     * but silently, it makes the theme look half-applied. Naming what is
+     * shadowing it turns "this theme is broken" into "oh, that is my
+     * line". */
+    static const char *const kThemeColours[] = {
+        "background",       "text",          "selection",        "find_match",
+        "panel_background", "syntax_type",   "syntax_string",    "diagnostic_error",
+        "diagnostic_warning"};
+    QStringList shadowed;
+    for (const char *colour : kThemeColours) {
+        if (ase_config_is_from_file(m_config, colour)) {
+            shadowed << QString::fromLatin1(colour);
+        }
+    }
+    if (shadowed.isEmpty()) {
+        notify(NotifyLevel::Info, QStringLiteral("%1 — :theme save to keep it").arg(argument));
+    } else {
+        notify(NotifyLevel::Warning,
+               QStringLiteral("%1 — your config still sets %2")
+                   .arg(argument, shadowed.join(QStringLiteral(", "))));
+    }
+}
+
+/* Rewrites one setting in config.ase, leaving every other line — and
+ * every comment — exactly as it was. The file is something the user
+ * hand-edits, so this replaces an existing assignment rather than
+ * appending a second one that would shadow it confusingly.
+ *
+ * QSaveFile writes to a temporary and renames, for the same reason
+ * ADR 0109 gave: a half-written config is worse than an unchanged one. */
+bool EditorViewport::writeConfigSetting(const QString &key, const QString &value) {
+    if (m_configPath.isEmpty()) {
+        return false;
+    }
+    ase_config_write_default_if_missing(m_configPath.toUtf8().constData());
+
+    QFile existing(m_configPath);
+    if (!existing.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return false;
+    }
+    QStringList lines = QString::fromUtf8(existing.readAll()).split(QLatin1Char('\n'));
+    existing.close();
+
+    bool replaced = false;
+    for (QString &line : lines) {
+        QString trimmed = line.trimmed();
+        if (trimmed.startsWith(QLatin1Char('#'))) {
+            continue; /* a commented example is not the setting */
+        }
+        int equals = trimmed.indexOf(QLatin1Char('='));
+        if (equals < 0 || trimmed.left(equals).trimmed() != key) {
+            continue;
+        }
+        line = QStringLiteral("%1 = %2").arg(key, value);
+        replaced = true;
+        break;
+    }
+    if (!replaced) {
+        if (!lines.isEmpty() && lines.last().isEmpty()) {
+            lines.removeLast();
+        }
+        lines << QStringLiteral("%1 = %2").arg(key, value) << QString();
+    }
+
+    QSaveFile out(m_configPath);
+    if (!out.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        return false;
+    }
+    out.write(lines.join(QLatin1Char('\n')).toUtf8());
+    return out.commit();
 }

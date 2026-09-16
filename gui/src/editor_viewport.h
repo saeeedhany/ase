@@ -273,6 +273,8 @@ private:
     void armRecoverySnapshot();
     void writeRecoverySnapshot();
     void openConfigFile();
+    void runTheme(const QString &argument);
+    bool writeConfigSetting(const QString &key, const QString &value);
     /* Rebuilds the font and its cached metrics; touches no config. */
     void rebuildFont(int pointSize);
     /* Ctrl+=/Ctrl+-. A hot-reload doesn't clear an active override;
@@ -689,6 +691,8 @@ private:
     QByteArray m_vcsOutput;
     int m_vcsLineCount = -1;
     QString m_recoveryDir;
+    /* Set by `:theme`; empty means whatever the config says. */
+    QString m_sessionTheme;
     bool m_syntaxOverSizeCap = false;
     AseConfig *m_config = nullptr;
     QString m_configPath;

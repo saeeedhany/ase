@@ -16,6 +16,10 @@
 typedef struct {
     char *key;
     char *value;
+    /* The user wrote this in a file, rather than it being a default or
+     * a theme's. A theme must not overwrite a colour someone chose by
+     * hand — see docs/adr/0114. */
+    bool from_file;
 } ConfigEntry;
 
 struct AseConfig {
@@ -28,7 +32,8 @@ struct AseConfig {
     const char **scan_values;
 };
 
-static void config_set(AseConfig *config, const char *key, const char *value) {
+static void config_set_from(AseConfig *config, const char *key, const char *value,
+                             bool from_file) {
     for (size_t i = 0; i < config->count; i++) {
         if (strcmp(config->entries[i].key, key) == 0) {
             char *new_value = ase_strdup(value);
@@ -37,6 +42,7 @@ static void config_set(AseConfig *config, const char *key, const char *value) {
             }
             free(config->entries[i].value);
             config->entries[i].value = new_value;
+            config->entries[i].from_file = config->entries[i].from_file || from_file;
             return;
         }
     }
@@ -60,7 +66,12 @@ static void config_set(AseConfig *config, const char *key, const char *value) {
     }
     config->entries[config->count].key = key_copy;
     config->entries[config->count].value = value_copy;
+    config->entries[config->count].from_file = from_file;
     config->count++;
+}
+
+static void config_set(AseConfig *config, const char *key, const char *value) {
+    config_set_from(config, key, value, false);
 }
 
 static char *trim(char *s) {
@@ -93,6 +104,7 @@ static const AseConfigKeyDoc kKeyDocs[] = {
     {"vim_mode", "true", "Modal editing. false for always-insert.", false},
     {"animations", "false", "true for a smooth caret fade instead of a blink.", false},
     {"line_numbers", "absolute", "off, absolute, or relative.", false},
+    {"theme", "ase-default", "Colour palette. :theme lists them.", false},
     {"max_fps", NULL, "Cap the animation rate; unset follows the display.", false},
     {"build_command", NULL, ":compile runs this; %f is the current file.", false},
     {"lsp_command", NULL, "Language server for any language without its own.", false},
@@ -159,7 +171,7 @@ static void config_parse_line(AseConfig *config, char *line, bool project, size_
         return;
     }
 
-    config_set(config, key, value);
+    config_set_from(config, key, value, true);
 }
 
 AseConfig *ase_config_load(const char *path) {
@@ -453,6 +465,36 @@ bool ase_config_entries_with_prefix(const AseConfig *config, const char *prefix,
     return true;
 }
 
+/* A theme's colour: applied under anything the user set by hand, so
+ * switching themes never overwrites a choice someone made. See
+ * docs/adr/0114. */
+/* True when this setting came from a config file rather than a default
+ * or a theme. Lets the editor say which of a theme's colours a config
+ * line is shadowing, instead of the theme looking half-broken. */
+bool ase_config_is_from_file(const AseConfig *config, const char *key) {
+    if (config == NULL || key == NULL) {
+        return false;
+    }
+    for (size_t i = 0; i < config->count; i++) {
+        if (strcmp(config->entries[i].key, key) == 0) {
+            return config->entries[i].from_file;
+        }
+    }
+    return false;
+}
+
+void ase_config_set_themed(AseConfig *config, const char *key, const char *value) {
+    if (config == NULL || key == NULL || value == NULL) {
+        return;
+    }
+    for (size_t i = 0; i < config->count; i++) {
+        if (strcmp(config->entries[i].key, key) == 0 && config->entries[i].from_file) {
+            return;
+        }
+    }
+    config_set_from(config, key, value, false);
+}
+
 const char *ase_config_get_lang_string(const AseConfig *config, const char *language,
                                         const char *key) {
     if (language == NULL || key == NULL) {
@@ -552,26 +594,30 @@ static const char kDefaultConfigTemplate[] =
     "# This file is hot-reloaded: edit, save, and the running editor\n"
     "# picks up the change within a second -- no restart needed.\n"
     "\n"
-    "# Colors are #RRGGBB or #RRGGBBAA hex.\n"
-    "background = #282828\n"
-    "text = #F5E6C8\n"
-    "selection = #45403866\n"
-    "find_match = #45403899\n"
+    "# Colors are #RRGGBB or #RRGGBBAA hex. These are commented out\n"
+    "# because the `theme` setting below supplies them: uncomment one\n"
+    "# and it wins over whatever theme you pick, which is how you keep a\n"
+    "# colour of your own while still switching palettes. The values\n"
+    "# shown are ase-default's.\n"
+    "# background = #282828\n"
+    "# text = #F5E6C8\n"
+    "# selection = #45403866\n"
+    "# find_match = #45403899\n"
     "\n"
     "# Floating chrome (find/replace and future panels) — background-\n"
     "# tinted with a small transparency; the text/badges inside always\n"
     "# render at full contrast, unaffected by this alpha.\n"
-    "panel_background = #282828E6\n"
+    "# panel_background = #282828E6\n"
     "\n"
     "# LSP diagnostic severity — the squiggly underline and gutter dot.\n"
-    "diagnostic_error = #E06C75\n"
-    "diagnostic_warning = #E5C07B\n"
+    "# diagnostic_error = #E06C75\n"
+    "# diagnostic_warning = #E5C07B\n"
     "\n"
     "# Syntax highlighting is otherwise monochrome (one font color, only\n"
     "# weight/opacity vary) -- these two are the deliberate exception,\n"
     "# used for types and string literals only. See docs/adr/0048.\n"
-    "syntax_type = #689d6a\n"
-    "syntax_string = #d79921\n"
+    "# syntax_type = #689d6a\n"
+    "# syntax_string = #d79921\n"
     "\n"
     "font_family = monospace\n"
     "font_size = 11\n"
@@ -601,6 +647,12 @@ static const char kDefaultConfigTemplate[] =
     "# instead of freezing first, and the status bar says so. Raise it if\n"
     "# you would rather wait, or set 0 to never skip. See docs/adr/0107.\n"
     "syntax_max_kb = 1024\n"
+    "\n"
+    "# Colour palette to start from. `:theme` lists what is built in and\n"
+    "# switches for the session; `:theme save` writes the choice here.\n"
+    "# Any colour you set below wins over the theme's, so picking one\n"
+    "# never undoes a colour you chose by hand. See docs/adr/0114.\n"
+    "theme = ase-default\n"
     "\n"
     "# Keys. `key.<chord> = <command>` binds a chord to a command; press\n"
     "# F1 for every command name. A chord is modifiers and a key, in any\n"

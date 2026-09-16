@@ -46,6 +46,15 @@ void ase_config_destroy(AseConfig *config);
 /* NULL if `key` was never set (by defaults or the loaded file). */
 const char *ase_config_get_string(const AseConfig *config, const char *key);
 
+/* Sets `key` unless the user set it in a config file. For themes, which
+ * supply a whole palette but must not overwrite a colour chosen by
+ * hand. See ase/theme.h. */
+void ase_config_set_themed(AseConfig *config, const char *key, const char *value);
+
+/* True when `key` was set in a config file, rather than left at its
+ * default or supplied by a theme. */
+bool ase_config_is_from_file(const AseConfig *config, const char *key);
+
 /* Every setting whose key begins with `prefix`, in the order the file
  * listed them. `count` is how many entries the arrays hold; both point
  * into the config and stay valid until it is destroyed or reloaded.

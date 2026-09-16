@@ -121,3 +121,4 @@ what changed.
 | [0111](0111-session-restore.md) | Session restore |
 | [0112](0112-git-gutter-marks.md) | Git gutter marks |
 | [0113](0113-keybindings-as-data.md) | Keybindings as data |
+| [0114](0114-built-in-themes.md) | Built-in themes |
