@@ -120,6 +120,24 @@ CASES = [
     ("c'a",               "one\ntwo\nthree\nfour\n",  2, 2, "ma2jc'aZZ<Esc>"),
     ("d'a unset mark",    "one\ntwo\nthree\n",        2, 1, "d'z"),
 
+    # --- more of the no-trailing-newline class ---
+    ("P last no eol",     "aaa\nbbb\nccc",             3, 1, "yyP"),
+    ("dd first no eol",   "aaa\nbbb\nccc",             1, 1, "dd"),
+    ("2dd no eol",        "aaa\nbbb\nccc",             2, 1, "2dd"),
+    ("Vd last no eol",    "aaa\nbbb\nccc",             3, 1, "Vd"),
+    ("Vjd no eol",        "aaa\nbbb\nccc",             2, 1, "Vjd"),
+    ("cc last no eol",    "aaa\nbbb\nccc",             3, 1, "ccZZ<Esc>"),
+    ("o last no eol 2",   "aaa\nbbb\nccc",             3, 1, "oQQ<Esc>"),
+    ("A last no eol",     "aaa\nbbb\nccc",             3, 1, "AZZ<Esc>"),
+    ("J last no eol 2",   "aaa\nbbb\nccc",             2, 1, "J"),
+    ("dG no eol",         "aaa\nbbb\nccc",             2, 1, "dG"),
+    ("dgg no eol",        "aaa\nbbb\nccc",             2, 1, "dgg"),
+    ("x last char no eol","aaa\nbbb\nccc",             3, 3, "x"),
+    ("D last no eol",     "aaa\nbbb\nccc",             3, 1, "D"),
+    ("single line no eol","only",                     1, 1, "dd"),
+    ("single line yyp",   "only",                     1, 1, "yyp"),
+    ("empty buffer p",    "",                         1, 1, "p"),
+
     # --- macros ---
     # Recording cannot be derived: vim refuses to record inside :normal,
     # so `@a` comes back empty and the file is unchanged. These are in
@@ -174,6 +192,59 @@ CASES = [
     ("Ctrl-A no number",  "no digits\n",              1, 1, "<C-a>"),
     ("Ctrl-A then x",     "x = 41 here\n",            1, 1, "<C-a>x"),
 
+    # --- the last line of a newline-terminated file ---
+    # m_lineStarts carries a phantom entry past the trailing newline, and
+    # treating it as a line has caused four separate bugs. Every command
+    # that takes a line range gets probed against it here.
+    ("dd last",           "aaa\nbbb\nccc\n",          3, 1, "dd"),
+    ("2dd last",          "aaa\nbbb\nccc\n",          3, 1, "2dd"),
+    ("dj last",           "aaa\nbbb\nccc\n",          3, 1, "dj"),
+    ("dk last",           "aaa\nbbb\nccc\n",          3, 1, "dk"),
+    ("D last",            "aaa\nbbb\nccc\n",          3, 1, "D"),
+    ("C last",            "aaa\nbbb\nccc\n",          3, 1, "CZZ<Esc>"),
+    ("cc last",           "aaa\nbbb\nccc\n",          3, 1, "ccZZ<Esc>"),
+    ("J last",            "aaa\nbbb\nccc\n",          3, 1, "J"),
+    ("J second-last",     "aaa\nbbb\nccc\n",          2, 1, "J"),
+    ("yy last then p",    "aaa\nbbb\nccc\n",          3, 1, "yyp"),
+    ("yy last then P",    "aaa\nbbb\nccc\n",          3, 1, "yyP"),
+    ("x last",            "aaa\nbbb\nccc\n",          3, 3, "x"),
+    ("o last",            "aaa\nbbb\nccc\n",          3, 1, "oZZ<Esc>"),
+    ("O last",            "aaa\nbbb\nccc\n",          3, 1, "OZZ<Esc>"),
+    (">> last",           "aaa\nbbb\nccc\n",          3, 1, ">>"),
+    ("2>> last",          "aaa\nbbb\nccc\n",          3, 1, "2>>"),
+    ("~ last",            "aaa\nbbb\nccc\n",          3, 1, "~"),
+    ("dw last",           "aaa\nbbb\nccc\n",          3, 1, "dw"),
+    ("de last",           "aaa\nbbb\nccc\n",          3, 1, "de"),
+    ("diw last",          "aaa\nbbb\nccc\n",          3, 1, "diw"),
+    ("daw last",          "aaa\nbbb\nccc\n",          3, 1, "daw"),
+    ("Vd last",           "aaa\nbbb\nccc\n",          3, 1, "Vd"),
+    ("Vy last then p",    "aaa\nbbb\nccc\n",          3, 1, "Vyp"),
+    ("v$d last",          "aaa\nbbb\nccc\n",          3, 1, "v$d"),
+    ("Vj d from 2",       "aaa\nbbb\nccc\n",          2, 1, "Vjd"),
+    ("j past last",       "aaa\nbbb\nccc\n",          3, 1, "jx"),
+    ("G then x",          "aaa\nbbb\nccc\n",          1, 1, "Gx"),
+    ("dG from 2",         "aaa\nbbb\nccc\n",          2, 1, "dG"),
+    ("5G clamps",         "aaa\nbbb\nccc\n",          1, 1, "5Gx"),
+    ("p at last",         "aaa\nbbb\nccc\n",          1, 1, "yyGp"),
+    ("dd every line",     "aaa\nbbb\nccc\n",          1, 1, "dddddd"),
+    ("A on last",         "aaa\nbbb\nccc\n",          3, 1, "AZZ<Esc>"),
+
+    # --- a file with no trailing newline: no phantom entry at all ---
+    ("dd last no eol",    "aaa\nbbb\nccc",             3, 1, "dd"),
+    ("J last no eol",     "aaa\nbbb\nccc",             2, 1, "J"),
+    ("o last no eol",     "aaa\nbbb\nccc",             3, 1, "oZZ<Esc>"),
+    ("G x no eol",        "aaa\nbbb\nccc",             1, 1, "Gx"),
+    ("yyp last no eol",   "aaa\nbbb\nccc",             3, 1, "yyp"),
+
+    # --- macros ---
+    # feedkeys records where :normal refuses to, so these are derived
+    # like everything else rather than written by hand.
+    ("macro record+play", "alpha\nbravo\ncharlie\n", 1, 1, "qaxjq@a"),
+    ("macro with count",  "aa\nbb\ncc\ndd\n",        1, 1, "qaxjq2@a"),
+    ("macro @@",          "aa\nbb\ncc\ndd\n",        1, 1, "qaxjq@a@@"),
+    ("macro appends A",   "a1\na2\na3\n",             1, 1, "qqA!<Esc>jq@q"),
+    ("yyp no trailing nl","a\nb",                      2, 1, "yyp"),
+
     # --- named registers ---
     # `"` was unhandled before: the letter after it entered Insert and the
     # rest of the command was typed into the buffer.
@@ -195,20 +266,7 @@ CASES = [
 # Cases real vim cannot be scripted into producing, with the reason and
 # the behaviour each one pins down. Verified by hand against interactive
 # vim; see docs/adr/0104.
-MANUAL_CASES = [
-    # `qaxjq` records x then j; `@a` replays both, so line 2 loses a
-    # character too. vim -es cannot record, so this cannot be derived.
-    ("macro record+play", "alpha\nbravo\ncharlie\n", 1, 1, "qaxjq@a",
-     "lpha\nravo\ncharlie\n"),
-    ("macro with count",  "aa\nbb\ncc\ndd\n", 1, 1, "qaxjq2@a",
-     "a\nb\nc\ndd\n"),
-    ("macro @@",          "aa\nbb\ncc\ndd\n", 1, 1, "qaxjq@a@@",
-     "a\nb\nc\ndd\n"),
-    # A file with no trailing newline: our buffer terminates the last
-    # line where vim's does not, which only shows with 'nofixeol'. vim's
-    # own default (fixeol) writes the same bytes we do.
-    ("yyp without trailing newline", "a\nb", 2, 1, "yyp", "a\nb\nb\n"),
-]
+MANUAL_CASES = []
 
 
 # `:` commands go through runCommand rather than key events, so they get
@@ -266,7 +324,7 @@ def main():
             # The editor's indent unit is four spaces; see docs/adr/0031.
             "set shiftwidth=4 expandtab\n"
             "call cursor(%d,%d)\n"
-            'execute "normal %s"\n'
+            'call feedkeys("%s", "xt")\n'
             "write! %s/out.txt\nq!\n" % (line, col, to_vim(keys), work)
         )
         open(os.path.join(work, "case.vim"), "w").write(script)

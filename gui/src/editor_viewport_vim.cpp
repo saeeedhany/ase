@@ -466,7 +466,16 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
     if (m == 'j' || m == 'k') {
         int beforeLine = lineForOffset(before);
         int deltaLines = (m == 'j') ? count : -count;
-        int targetLine = std::clamp(beforeLine + deltaLines, 0, static_cast<int>(m_lineStarts.size()) - 1);
+        /* vimLastLine, not m_lineStarts.size(): the entry past a trailing
+         * newline is not a line to operate on. */
+        int targetLine = std::clamp(beforeLine + deltaLines, 0, vimLastLine());
+        /* A count past the end clamps, but a motion that cannot move at
+         * all fails the whole operator — `dj` on the last line does
+         * nothing rather than deleting it. */
+        if (targetLine == beforeLine) {
+            resetVimPendingState();
+            return;
+        }
         int startLine = std::min(beforeLine, targetLine);
         int lineCount = std::abs(targetLine - beforeLine) + 1;
         vimApplyPendingOperatorLinewise(startLine, lineCount);
@@ -832,12 +841,20 @@ void EditorViewport::vimAddToNumber(int delta) {
     update();
 }
 
+/* A linewise delete has to take a newline with the line, and when the
+ * range runs to the end of the buffer there may be none inside it to
+ * take — either because the range is empty (the position past a
+ * trailing newline, which is not a line at all) or because the file
+ * does not end in a newline. Both cases take the newline *before* the
+ * range instead, which is the one that made the line. A last line that
+ * has its own newline keeps it, and pulling back there would eat the
+ * one belonging to the line above. */
 size_t EditorViewport::vimLinewiseDeleteStart(size_t start, size_t end) const {
-    /* Only for an empty range, which means the position past a trailing
-     * newline — there is no line there to take, so take the newline that
-     * made it. A real last line already has its own newline in range,
-     * and pulling back would eat the one belonging to the line above. */
-    if (start != end || start == 0) {
+    if (start == 0 || end < static_cast<size_t>(m_cache.size())) {
+        return start;
+    }
+    bool nothingToTake = (start == end) || m_cache.back() != '\n';
+    if (!nothingToTake) {
         return start;
     }
     return (m_cache[static_cast<int>(start) - 1] == '\n') ? start - 1 : start;
@@ -922,14 +939,19 @@ void EditorViewport::vimPasteAfter() {
         insertAt = (line + 1 < m_lineStarts.size()) ? static_cast<size_t>(m_lineStarts[line + 1])
                                                      : static_cast<size_t>(m_cache.size());
         if (insertAt == static_cast<size_t>(m_cache.size())) {
-            if (!bytes.endsWith('\n')) {
-                bytes.append('\n');
-            }
             /* A buffer not ending in a newline has nothing to append
              * after ("a\nb" + p gave "a\nbb"), so the pasted line brings
-             * its own leading newline. It keeps the trailing one too:
-             * vim's `yyp` on such a file ends the result with a newline. */
-            if (!m_cache.isEmpty() && m_cache.back() != '\n') {
+             * its own leading newline instead — and brings no trailing
+             * one, because vim preserves the file's missing final
+             * newline rather than adding one behind your back. */
+            if (m_cache.isEmpty() || m_cache.back() == '\n') {
+                if (!bytes.endsWith('\n')) {
+                    bytes.append('\n');
+                }
+            } else {
+                if (bytes.endsWith('\n')) {
+                    bytes.chop(1);
+                }
                 bytes.prepend('\n');
             }
         }
@@ -2028,7 +2050,7 @@ bool EditorViewport::vimResolvePendingKey(QChar qc, int key) {
     if (m_vimPendingG) {
         m_vimPendingG = false;
         if (qc == QLatin1Char('g')) {
-            int targetLine = (m_vimCount1 > 0) ? (m_vimCount1 - 1) : 0;
+            int targetLine = (m_vimCount1 > 0) ? std::min(m_vimCount1 - 1, vimLastLine()) : 0;
             if (m_vimPendingOperator == '\0') {
                 recordJump();
             }
@@ -2127,7 +2149,7 @@ bool EditorViewport::vimApplyMotionKey(char c, int count) {
         return true;
     }
     if (c == 'G') {
-        int targetLine = (m_vimCount1 > 0) ? (m_vimCount1 - 1) : vimLastLine();
+        int targetLine = (m_vimCount1 > 0) ? std::min(m_vimCount1 - 1, vimLastLine()) : vimLastLine();
         if (m_vimPendingOperator == '\0') {
             recordJump(); /* a jump; with an operator pending it is a range, not a move */
         }
@@ -2310,6 +2332,16 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
 
     if (c == 'd' || c == 'y' || c == 'c' || c == '>' || c == '<') {
         if (m_vimPendingOperator == c) {
+            /* `2dd` on the last line does nothing: there is no second
+             * line to take, and vim fails the command rather than
+             * quietly doing half of it. Off the last line the count
+             * clamps instead. */
+            if (count > 1 && lineForOffset(m_cursors[0]) >= vimLastLine()) {
+                resetVimPendingState();
+                ensureCursorVisible();
+                update();
+                return;
+            }
             vimApplyPendingOperatorLinewise(lineForOffset(m_cursors[0]), count);
         } else if (m_vimPendingOperator == '\0') {
             m_vimPendingOperator = c;

@@ -77,6 +77,11 @@ target_include_directories(ase_gui_objects PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/sr
 
 # main.cpp holds both main() and MainWindow, so it stays with the
 # executable — a test linking it would get a second entry point.
+if(ASE_ENABLE_SANITIZERS)
+    target_compile_options(ase_gui_objects PUBLIC -fsanitize=address,undefined -fno-omit-frame-pointer -g)
+    target_link_options(ase_gui_objects PUBLIC -fsanitize=address,undefined)
+endif()
+
 add_executable(ase_gui src/main.cpp)
 target_link_libraries(ase_gui PRIVATE ase_gui_objects)
 
