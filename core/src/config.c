@@ -101,6 +101,7 @@ static const AseConfigKeyDoc kKeyDocs[] = {
     {"max_fps", NULL, "Cap the animation rate; unset follows the display.", false},
     {"build_command", NULL, ":compile runs this; %f is the current file.", false},
     {"lsp_command", NULL, "Language server for any language without its own.", false},
+    {"syntax_max_kb", "1024", "Skip highlighting past this file size, in KB.", false},
     {"lang.<id>.lsp", NULL, "Language server for one language, e.g. lang.cpp.lsp.", false},
     {"filetype.<suffix>", NULL, "What a suffix means, e.g. filetype.h = cpp.", true},
 };
@@ -544,6 +545,13 @@ static const char kDefaultConfigTemplate[] =
     "# modes, motions, operators, counts. Set false for plain, always-\n"
     "# insert editing instead. See docs/adr/0046, docs/adr/0050.\n"
     "vim_mode = true\n"
+    "\n"
+    "# Syntax highlighting parses the whole file, however little of it is\n"
+    "# on screen, and that cost grows with it: 25ms at 113KB of C, 230ms\n"
+    "# at 1MB, 1.07s at 4.5MB. Past this size a file opens with no colours\n"
+    "# instead of freezing first, and the status bar says so. Raise it if\n"
+    "# you would rather wait, or set 0 to never skip. See docs/adr/0107.\n"
+    "syntax_max_kb = 1024\n"
     "\n"
     "# :compile's shell command — %f is replaced with the current file's\n"
     "# path, run with the file's directory as cwd. No default: an\n"

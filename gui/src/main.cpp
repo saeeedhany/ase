@@ -618,6 +618,13 @@ void MainWindow::showLspState(LspState state, const QString &serverName) {
         return;
     }
     QString text = lspLabelText(state, serverName);
+    /* Skipping the highlight is a decision the editor made about this
+     * file, so it says so. An unexplained lack of colour reads as a
+     * broken grammar. */
+    if (viewport->syntaxSkippedForSize()) {
+        text = text.isEmpty() ? QStringLiteral("no highlight (large file)")
+                              : QStringLiteral("%1 · no highlight (large file)").arg(text);
+    }
     QColor color = lspLabelColor(state, viewport);
     /* Called on every statusChanged so a hot-reloaded theme reaches
      * this label; the guard keeps it off the keystroke path. */

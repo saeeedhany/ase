@@ -114,3 +114,4 @@ what changed.
 | [0104](0104-the-vim-conformance-suite.md) | The vim conformance suite |
 | [0105](0105-named-registers.md) | Named registers, and a test that was lying |
 | [0106](0106-words-case-indent-numbers.md) | WORDs, case, indent and numbers |
+| [0107](0107-the-large-file-wall.md) | The large-file wall |

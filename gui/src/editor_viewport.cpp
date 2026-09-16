@@ -38,6 +38,17 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
         m_vimMode = VimMode::Normal;
     }
 
+    /* Before refreshCache(), which arms it. */
+    m_highlightTimer = new QTimer(this);
+    m_highlightTimer->setSingleShot(true);
+    connect(m_highlightTimer, &QTimer::timeout, this, [this]() {
+        int visibleStart = 0;
+        int visibleEnd = 0;
+        visibleByteRange(&visibleStart, &visibleEnd);
+        ensureCaptureWindow(visibleStart, visibleEnd, true);
+        update();
+    });
+
     rebuildSyntax();
 
     refreshCache();
@@ -95,10 +106,21 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 void EditorViewport::rebuildSyntax() {
     ase_syntax_destroy(m_syntax);
     m_syntax = nullptr;
+    m_syntaxOverSizeCap = false;
 
     const char *language =
         ase_config_language_for_path(m_config, m_filePath.toUtf8().constData());
     if (language == nullptr) {
+        return;
+    }
+
+    /* Tree-sitter has to parse the whole file to build a tree, however
+     * little of it is on screen: 25ms at 113KB of C, 230ms at 1MB, 1.07s
+     * at 4.5MB. Past the cap the file opens instantly with no colours
+     * rather than freezing first. See docs/adr/0107. */
+    long capKb = ase_config_get_int(m_config, "syntax_max_kb", 1024);
+    if (capKb > 0 && ase_buffer_length(m_buffer) > static_cast<size_t>(capKb) * 1024) {
+        m_syntaxOverSizeCap = true;
         return;
     }
     /* Only the languages a grammar was compiled in for; everything else
@@ -161,10 +183,19 @@ void EditorViewport::refreshCache() {
      * animation tick, and an empty window misplaces the caret. */
     m_captureWindowStart = 0;
     m_captureWindowEnd = 0;
-    int visibleStart = 0;
-    int visibleEnd = 0;
-    visibleByteRange(&visibleStart, &visibleEnd);
-    ensureCaptureWindow(visibleStart, visibleEnd, true);
+    /* One keystroke costs 0.8ms of re-parse at 10k lines and 20ms at
+     * 155k, because an incremental parse still walks a tree that size.
+     * Under the threshold it runs now, so colours never lag; over it the
+     * parse waits for a pause in typing and the text is drawn plain
+     * until it lands. See docs/adr/0107. */
+    if (m_cache.size() <= kSyncHighlightBytes) {
+        int visibleStart = 0;
+        int visibleEnd = 0;
+        visibleByteRange(&visibleStart, &visibleEnd);
+        ensureCaptureWindow(visibleStart, visibleEnd, true);
+    } else if (m_syntax != nullptr) {
+        m_highlightTimer->start(kHighlightDelayMs);
+    }
 
     recomputeMatches();
     sendLspDidChange();

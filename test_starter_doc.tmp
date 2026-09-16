@@ -1,0 +1,74 @@
+# Absolute Simple Editor -- config & theme.
+#
+# Plain key = value pairs. Lines starting with # are comments.
+# This file is hot-reloaded: edit, save, and the running editor
+# picks up the change within a second -- no restart needed.
+
+# Colors are #RRGGBB or #RRGGBBAA hex.
+background = #282828
+text = #F5E6C8
+selection = #45403866
+find_match = #45403899
+
+# Floating chrome (find/replace and future panels) — background-
+# tinted with a small transparency; the text/badges inside always
+# render at full contrast, unaffected by this alpha.
+panel_background = #282828E6
+
+# LSP diagnostic severity — the squiggly underline and gutter dot.
+diagnostic_error = #E06C75
+diagnostic_warning = #E5C07B
+
+# Syntax highlighting is otherwise monochrome (one font color, only
+# weight/opacity vary) -- these two are the deliberate exception,
+# used for types and string literals only. See docs/adr/0048.
+syntax_type = #689d6a
+syntax_string = #d79921
+
+font_family = monospace
+font_size = 11
+
+# Off by default (opt-in, per the aesthetic pillar and for anyone who
+# prefers reduced motion). Set true for a smooth caret fade instead of
+# a hard on/off blink.
+animations = false
+
+# off / absolute / relative (relative shows distance from the current
+# line, Vim-style, except the current line itself which stays absolute).
+line_numbers = absolute
+
+# Animation runs at the display's refresh rate -- a 144Hz screen
+# animates at 144Hz. Set this to cap it (battery), not to raise it:
+# the display's own rate is always the ceiling.
+# max_fps = 60
+
+# On by default. Modal (Vim-style) editing: Normal/Insert/Visual
+# modes, motions, operators, counts. Set false for plain, always-
+# insert editing instead. See docs/adr/0046, docs/adr/0050.
+vim_mode = true
+
+# :compile's shell command — %f is replaced with the current file's
+# path, run with the file's directory as cwd. No default: an
+# unconfigured build_command is reported as such, not guessed.
+# build_command = gcc %f -o /tmp/a.out && /tmp/a.out
+
+# Language server to spawn, per language — diagnostics only for now
+# (see docs/adr/0029). No default, same reasoning as build_command:
+# an unconfigured server just means no LSP features, not a guess at
+# what you have installed. `lsp_command` still applies to every
+# language that has no entry of its own.
+# lang.c.lsp = clangd
+# lang.cpp.lsp = clangd
+
+# What a suffix means. Most languages are built in, named with the
+# LSP spec's own id, so `lang.python.lsp = pylsp` is all a Python
+# file needs. Override per suffix for anything else — .h is the one
+# worth knowing about, since a C++ project using .h headers wants
+# it. The name is both the highlighting language and the LSP
+# languageId, so a language with no grammar still gets a server.
+
+# Per-project settings go in a .ase.conf beside your code (the
+# nearest one at or above the file wins). It may only set what files
+# mean -- filetype.* -- and never what commands to run, because a
+# repository you cloned writes it. Anything else in it is ignored,
+# and the editor says so. See docs/adr/0087.

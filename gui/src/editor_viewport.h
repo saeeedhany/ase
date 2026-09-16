@@ -186,6 +186,10 @@ public:
     /* One call site, right after construction. */
     void emitInitialStatus() { ensureCursorVisible(); }
 
+    /* True when this file is past syntax_max_kb and is deliberately
+     * being shown without colours. */
+    bool syntaxSkippedForSize() const { return m_syntaxOverSizeCap; }
+
 signals:
     void fileOpenRequested(const QString &path);
     /* 1-based line. The window owns the buffer list, this owns the
@@ -227,6 +231,10 @@ private:
     void refreshAnimationClock();
     void rebuildConfig();
     void rebuildSyntax();
+    /* Past this the highlight is deferred to a pause in typing rather
+     * than run on the keystroke — see docs/adr/0107. */
+    static constexpr int kSyncHighlightBytes = 256 * 1024;
+    static constexpr int kHighlightDelayMs = 40;
     void openConfigFile();
     /* Rebuilds the font and its cached metrics; touches no config. */
     void rebuildFont(int pointSize);
@@ -632,6 +640,8 @@ private:
      * the history was discarded, so a fresh stack reads "as loaded". */
     bool m_historyDiscardedWhileDirty = false;
 
+    QTimer *m_highlightTimer = nullptr;
+    bool m_syntaxOverSizeCap = false;
     AseConfig *m_config = nullptr;
     QString m_configPath;
     QDateTime m_configModified;
