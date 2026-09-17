@@ -19,11 +19,31 @@ struct AseConfig;
  */
 namespace keys {
 
+/* A chord, or two chords separated by '>' — `ctrl+w>j` is "Ctrl+W, then
+ * j". '>' because it cannot occur inside a chord: '.' is already the
+ * mode separator and ',' is the comma key. See docs/adr/0120. */
+constexpr char kSequenceSeparator = '>';
+
 struct Binding {
     const char *chord;   /* canonical form, as core/src/keymap.c spells it */
     const char *command;
     const char *mode;    /* "", or "normal"/"insert"/"visual" for a Vim-only binding */
 };
+
+/* True when any binding starts with `chord` and continues — i.e. the
+ * chord is a prefix rather than a command in its own right. */
+bool isPrefix(const AseConfig *config, const QString &chord);
+
+/* The command bound to `prefix` followed by `second`, or empty. */
+QString commandForSequence(const AseConfig *config, const QString &prefix, const QString &second);
+
+/* Everything `prefix` can be followed by, as "key  command" lines, for
+ * showing the user what their options are. */
+QStringList sequenceHints(const AseConfig *config, const QString &prefix);
+
+/* A chord as a person writes it: "ctrl+shift+f" -> "Ctrl+Shift+F",
+ * "equal" -> "=". For anything shown to the user. */
+QString pretty(const QString &chord);
 
 /* The built-in table. */
 const QVector<Binding> &defaults();

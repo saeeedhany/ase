@@ -67,31 +67,14 @@ HelpSection configSection() {
 static QString keysFor(const AseConfig *config, const char *command) {
     QStringList spelled;
     for (const QString &chord : keys::chordsFor(config, QString::fromLatin1(command))) {
-        QStringList parts;
-        for (const QString &part : chord.split(QLatin1Char('+'), Qt::SkipEmptyParts)) {
-            static const QHash<QString, QString> kPretty = {
-                {QStringLiteral("ctrl"), QStringLiteral("Ctrl")},
-                {QStringLiteral("alt"), QStringLiteral("Alt")},
-                {QStringLiteral("shift"), QStringLiteral("Shift")},
-                {QStringLiteral("meta"), QStringLiteral("Meta")},
-                {QStringLiteral("semicolon"), QStringLiteral(";")},
-                {QStringLiteral("equal"), QStringLiteral("=")},
-                {QStringLiteral("plus"), QStringLiteral("+")},
-                {QStringLiteral("minus"), QStringLiteral("-")},
-                {QStringLiteral("left"), QStringLiteral("Left")},
-                {QStringLiteral("right"), QStringLiteral("Right")},
-                {QStringLiteral("tab"), QStringLiteral("Tab")},
-            };
-            auto it = kPretty.constFind(part);
-            parts << (it != kPretty.constEnd() ? it.value() : part.toUpper());
-        }
-        spelled << parts.join(QLatin1Char('+'));
+        spelled << keys::pretty(chord);
     }
     if (spelled.isEmpty()) {
         return QStringLiteral("&mdash;"); /* switched off with `none` */
     }
     return spelled.join(QStringLiteral(" / ")).toHtmlEscaped();
 }
+
 
 QVector<HelpSection> helpSections(const AseConfig *config) {
     return {
@@ -192,7 +175,7 @@ QVector<HelpSection> helpSections(const AseConfig *config) {
           {":", "Command line"}}},
 
         {"Command line", nullptr,
-         {{"Ctrl+; &nbsp;(or : in Vim mode)", "Open command line"},
+         {{keysFor(config, "editor.command-line") + " &nbsp;(or : in Vim mode)", "Open command line"},
           {":w", "Save"},
           {":q &nbsp; :q!", "Close this buffer / discard changes and close"},
           {":compile &nbsp; :output", "Build / toggle the output panel"},
@@ -206,10 +189,8 @@ QVector<HelpSection> helpSections(const AseConfig *config) {
           {":&lt;name&gt;", "Run a plugin command"}}},
 
         {"Build", "build_command",
-         {{"Ctrl+B", "Compile the current file"},
-          {keysFor(config, "editor.output-panel"),
-           "Output panel: show / focus / close, in that order"},
-          {":q &nbsp;(with it open)", "Closes the panel, not the buffer"},
+         {{keysFor(config, "editor.compile"), "Compile the current file"},
+          {":q &nbsp;(with a panel open)", "Closes the panel, not the buffer"},
           {keysFor(config, "editor.output-panel.taller") + " / " +
                keysFor(config, "editor.output-panel.shorter"),
            "Resize it &mdash; or drag the line at its top edge"}}},
@@ -224,12 +205,24 @@ QVector<HelpSection> helpSections(const AseConfig *config) {
 
         configSection(),
 
+        {"Regions", "Ctrl+W, then a Vim window key",
+         {{keysFor(config, "pane.focus-down") + " / " + keysFor(config, "pane.focus-up"),
+           "Move into the output panel / back to the editor"},
+          {keysFor(config, "pane.cycle"), "Cycle between them"},
+          {keysFor(config, "pane.close"), "Close whichever has focus"},
+          {keysFor(config, "pane.only"), "Close everything but the editor"},
+          {keysFor(config, "editor.output-panel.taller") + " / " +
+               keysFor(config, "editor.output-panel.shorter"),
+           "Make the panel taller / shorter"},
+          {"", "&mdash; press Ctrl+W alone to see the list in the status bar"}}},
+
         {"Panels", nullptr,
-         {{"F1", "This panel"},
-          {"Alt+I", "About"},
+         {{keysFor(config, "editor.help"), "This panel"},
+          {keysFor(config, "editor.about"), "About"},
+          {keysFor(config, "editor.output-panel"), "Output panel: show / focus / close"},
           {"Esc", "Close the open panel, or collapse the selection"},
           {"Drag the header", "Move a panel"},
-          {"Ctrl+Q", "Quit"}}},
+          {keysFor(config, "editor.quit"), "Quit"}}},
     };
 }
 

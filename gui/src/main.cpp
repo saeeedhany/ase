@@ -96,6 +96,8 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
+    QString m_pendingPrefix;
     void resizeEvent(QResizeEvent *event) override;
 
 private:
@@ -108,6 +110,8 @@ private:
     void askAboutRecovery(EditorViewport *viewport, const QString &path);
     void saveSession();
     static constexpr int kPanelResizeStep = 60;
+    void focusRegion(int direction);
+    void closeFocusedRegion();
     void registerWindowCommands();
     void installWindowShortcuts();
     CommandRegistry m_commands;
@@ -309,6 +313,9 @@ MainWindow::MainWindow() {
     statusBar()->addPermanentWidget(m_statusLabel);
 
     registerWindowCommands();
+    /* On the application, not on this window: the key has to be caught
+     * wherever focus happens to be. */
+    qApp->installEventFilter(this);
 
     /* Buffer changes write the session immediately; this catches the
      * caret moving, which is far too hot to write on. Nothing is written
@@ -342,6 +349,27 @@ void MainWindow::registerWindowCommands() {
     m_commands.add(QStringLiteral("editor.output-panel.shorter"),
                     QStringLiteral("Give the editor more room"),
                     [this]() { m_outputPanel->growBy(-kPanelResizeStep); });
+    /* Regions: the editor and the docked panel. `Ctrl+W` and a vim
+     * window key moves between them, closes one, or resizes it — the
+     * same vocabulary vim uses for windows, because that is the one
+     * already in people's fingers. See docs/adr/0120. */
+    m_commands.add(QStringLiteral("pane.focus-down"), QStringLiteral("Focus the region below"),
+                    [this]() { focusRegion(1); });
+    m_commands.add(QStringLiteral("pane.focus-up"), QStringLiteral("Focus the region above"),
+                    [this]() { focusRegion(-1); });
+    m_commands.add(QStringLiteral("pane.cycle"), QStringLiteral("Cycle between regions"),
+                    [this]() { focusRegion(0); });
+    m_commands.add(QStringLiteral("pane.close"), QStringLiteral("Close the focused region"),
+                    [this]() { closeFocusedRegion(); });
+    m_commands.add(QStringLiteral("pane.only"), QStringLiteral("Close everything but the editor"),
+                    [this]() {
+                        if (m_outputPanel->isVisible()) {
+                            m_outputPanel->hide();
+                        }
+                        if (EditorViewport *v = activeViewport()) {
+                            v->setFocus();
+                        }
+                    });
     m_commands.add(QStringLiteral("editor.jump-back"), QStringLiteral("Back to the previous jump"),
                     [this]() { jumpBy(-1); });
     m_commands.add(QStringLiteral("editor.jump-forward"), QStringLiteral("Forward again"),
@@ -377,6 +405,45 @@ void MainWindow::installWindowShortcuts() {
         }
     }
     ase_config_destroy(config);
+}
+
+/* The panel is below the editor, so "down" means into it and "up" means
+ * out of it. With one region open both fall back to the editor rather
+ * than doing nothing, which is what someone pressing them wants. */
+void MainWindow::focusRegion(int direction) {
+    EditorViewport *viewport = activeViewport();
+    bool panelUsable = m_outputPanel != nullptr && m_outputPanel->isVisible();
+    bool inPanel = panelUsable && m_outputPanel->hasFocusInside();
+
+    bool wantPanel = false;
+    if (direction > 0) {
+        wantPanel = panelUsable;
+    } else if (direction < 0) {
+        wantPanel = false;
+    } else {
+        wantPanel = panelUsable && !inPanel; /* cycle */
+    }
+
+    if (wantPanel) {
+        m_outputPanel->focusList();
+    } else if (viewport != nullptr) {
+        viewport->setFocus();
+    }
+}
+
+/* vim's `Ctrl+W c`: closes whatever has focus. In the panel that is the
+ * panel; in the editor it is the buffer — which is where the old bare
+ * `Ctrl+W` went, so nothing was lost by making it a prefix. */
+void MainWindow::closeFocusedRegion() {
+    if (m_outputPanel != nullptr && m_outputPanel->isVisible() &&
+        m_outputPanel->hasFocusInside()) {
+        m_outputPanel->hide();
+        if (EditorViewport *viewport = activeViewport()) {
+            viewport->setFocus();
+        }
+        return;
+    }
+    closeBuffer(m_stack->currentIndex());
 }
 
 EditorViewport *MainWindow::activeViewport() const {
@@ -1001,6 +1068,68 @@ bool MainWindow::restoreSession() {
     /* The remembered buffer may have been one of the missing ones. */
     setActiveIndex(activeIndex >= 0 ? activeIndex : 0);
     return true;
+}
+
+/*
+ * The prefix, caught before anything else sees it.
+ *
+ * An application-wide filter and not a viewport handler, because the
+ * whole point is reaching the editor *from* the panel: a key that only
+ * the editor can hear cannot be the way back to it. The same filter is
+ * why the prefix works while a find bar or the file browser holds
+ * focus. See docs/adr/0120.
+ */
+bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
+    if (event->type() != QEvent::KeyPress) {
+        return QMainWindow::eventFilter(watched, event);
+    }
+    auto *key = static_cast<QKeyEvent *>(event);
+    /* A modifier on its own is not the second key of anything. */
+    if (key->key() == Qt::Key_Control || key->key() == Qt::Key_Shift ||
+        key->key() == Qt::Key_Alt || key->key() == Qt::Key_Meta) {
+        return QMainWindow::eventFilter(watched, event);
+    }
+
+    const AseConfig *config = nullptr;
+    if (EditorViewport *viewport = activeViewport()) {
+        config = viewport->config();
+    }
+    const QString chord = keys::chordFor(key);
+
+    if (!m_pendingPrefix.isEmpty()) {
+        const QString pending = m_pendingPrefix;
+        m_pendingPrefix.clear();
+        hideMessage();
+        if (key->key() == Qt::Key_Escape) {
+            return true; /* cancelled, and the Escape is spent doing it */
+        }
+        const QString command = keys::commandForSequence(config, pending, chord);
+        if (command.isEmpty() || command == QLatin1String("none")) {
+            showMessage(NotifyLevel::Warning, QStringLiteral("%1 is not bound")
+                                                   .arg(keys::pretty(pending + keys::kSequenceSeparator + chord)));
+            return true;
+        }
+        if (!m_commands.run(command)) {
+            if (EditorViewport *viewport = activeViewport()) {
+                viewport->runNamedCommand(command);
+            }
+        }
+        return true;
+    }
+
+    if (!chord.isEmpty() && keys::isPrefix(config, chord)) {
+        m_pendingPrefix = chord;
+        /* Say what it is waiting for. A prefix that swallows a keystroke
+         * and shows nothing is indistinguishable from a dropped key. */
+        QStringList options;
+        for (const QString &next : keys::sequenceHints(config, chord)) {
+            options << keys::pretty(next);
+        }
+        showMessage(NotifyLevel::Info, QStringLiteral("%1 \u2192  %2")
+                                            .arg(keys::pretty(chord), options.join(QStringLiteral("  "))));
+        return true;
+    }
+    return QMainWindow::eventFilter(watched, event);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {

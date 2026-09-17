@@ -140,6 +140,7 @@ nav:
     - adr/0117-the-seam-is-the-grip.md
     - adr/0118-closing-and-reaching-the-panel.md
     - adr/0119-a-command-belongs-to-its-buffer.md
+    - adr/0120-a-law-for-the-keyboard.md
 
 theme:
   name: material

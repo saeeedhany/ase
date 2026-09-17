@@ -40,33 +40,29 @@ const QVector<keys::Binding> &keys::defaults() {
      * is the whole of adding a shortcut; the help panel reads the same
      * table, so it cannot drift from what the keys actually do. */
     static const QVector<Binding> table = {
-        /* files and buffers */
+        /*
+         * Four layers, each with a reason — see docs/adr/0120.
+         *
+         *   bare keys   vim's, in the buffer. Nothing else may take one.
+         *   Ctrl+x      what you bring from other editors and the OS,
+         *               plus vim's own Ctrl chords.
+         *   Ctrl+W x    structure: regions, their focus, size and life.
+         *               vim's window prefix, with vim's window keys.
+         *   Alt+x       this editor's own things, which have no
+         *               cross-editor convention to inherit.
+         *   F<n>        ask the language server.
+         */
+
+        /* ---- Ctrl: brought from elsewhere ---- */
         {"ctrl+s", "editor.save", ""},
         {"ctrl+shift+s", "editor.save-as", ""},
-        {"alt+o", "editor.open", ""},
         {"ctrl+p", "editor.open-in-project", ""},
         {"ctrl+n", "buffer.new", ""},
-        {"ctrl+w", "buffer.close", ""},
         {"ctrl+tab", "buffer.next", ""},
         {"ctrl+shift+tab", "buffer.previous", ""},
         {"ctrl+q", "editor.quit", ""},
-
-        /* finding */
         {"ctrl+f", "editor.find", ""},
-        {"ctrl+shift+f", "editor.find-in-project", ""},
         {"ctrl+h", "editor.replace", ""},
-
-        /* panels */
-        {"f1", "editor.help", ""},
-        {"alt+i", "editor.about", ""},
-        {"ctrl+shift+o", "editor.output-panel", ""},
-        /* Next to the toggle, and the direction is the one the panel
-         * edge moves: Up gives the panel more room. */
-        {"ctrl+shift+up", "editor.output-panel.taller", ""},
-        {"ctrl+shift+down", "editor.output-panel.shorter", ""},
-        {"ctrl+semicolon", "editor.command-line", ""},
-
-        /* editing */
         {"ctrl+c", "editor.copy", ""},
         {"ctrl+x", "editor.cut", ""},
         {"ctrl+v", "editor.paste", ""},
@@ -74,44 +70,53 @@ const QVector<keys::Binding> &keys::defaults() {
         {"ctrl+z", "editor.undo", ""},
         {"ctrl+shift+z", "editor.redo", ""},
         {"ctrl+d", "editor.cursor.add-next-occurrence", ""},
-
-        /* navigation */
-        {"ctrl+o", "editor.jump-back", ""},
-        {"alt+left", "editor.jump-back", ""},
-        {"ctrl+i", "editor.jump-forward", ""},
-        {"alt+right", "editor.jump-forward", ""},
-        {"f12", "editor.go-to-definition", ""},
-        /* Shift+F12 for references is the convention every other editor
-         * uses; Ctrl+Shift+O for the outline matches Ctrl+P's "open
-         * something by name" shape one level down. */
-        {"shift+f12", "editor.find-references", ""},
-        {"ctrl+shift+period", "editor.document-symbols", ""},
-
-        /* view */
         {"ctrl+equal", "editor.font.larger", ""},
         {"ctrl+plus", "editor.font.larger", ""},
         {"ctrl+minus", "editor.font.smaller", ""},
         {"ctrl+0", "editor.font.reset", ""},
 
-        /* build */
-        {"ctrl+b", "editor.compile", ""},
-
-        /* Vim takes three chords over, in Normal and Visual only —
-         * Insert mode and vim_mode = false keep the editor's. See
-         * docs/adr/0059 and docs/adr/0106. */
+        /* vim's own Ctrl chords, which are also "brought from
+         * elsewhere" — from vim. Normal and Visual only, so Insert and
+         * vim_mode = false keep the editor's meanings. */
+        {"ctrl+o", "editor.jump-back", ""},
+        {"ctrl+i", "editor.jump-forward", ""},
         {"ctrl+d", "vim.half-page-down", "normal"},
         {"ctrl+u", "vim.half-page-up", "normal"},
         {"ctrl+d", "vim.half-page-down", "visual"},
         {"ctrl+u", "vim.half-page-up", "visual"},
         {"ctrl+a", "vim.number.increment", "normal"},
         {"ctrl+x", "vim.number.decrement", "normal"},
-        /* Vim's redo works from Insert too, so it is bound in each Vim
-         * mode rather than once: with vim_mode = false the mode is
-         * empty and no Ctrl+R binding matches, which is what a
-         * non-Vim user should see. */
         {"ctrl+r", "editor.redo", "normal"},
         {"ctrl+r", "editor.redo", "insert"},
         {"ctrl+r", "editor.redo", "visual"},
+
+        /* ---- Ctrl+W: structure, in vim's window vocabulary ---- */
+        {"ctrl+w>j", "pane.focus-down", ""},
+        {"ctrl+w>k", "pane.focus-up", ""},
+        {"ctrl+w>w", "pane.cycle", ""},
+        {"ctrl+w>c", "pane.close", ""},
+        {"ctrl+w>q", "pane.close", ""},
+        {"ctrl+w>o", "pane.only", ""},
+        {"ctrl+w>plus", "editor.output-panel.taller", ""},
+        {"ctrl+w>equal", "editor.output-panel.taller", ""},
+        {"ctrl+w>minus", "editor.output-panel.shorter", ""},
+        {"ctrl+w>n", "buffer.new", ""},
+
+        /* ---- Alt: this editor's own ---- */
+        {"alt+o", "editor.open", ""},
+        {"alt+i", "editor.about", ""},
+        {"alt+f", "editor.find-in-project", ""},
+        {"alt+s", "editor.document-symbols", ""},
+        {"alt+b", "editor.compile", ""},
+        {"alt+p", "editor.output-panel", ""},
+        {"alt+semicolon", "editor.command-line", ""},
+        {"alt+left", "editor.jump-back", ""},
+        {"alt+right", "editor.jump-forward", ""},
+
+        /* ---- F: ask the language server ---- */
+        {"f1", "editor.help", ""},
+        {"f12", "editor.go-to-definition", ""},
+        {"shift+f12", "editor.find-references", ""},
     };
     return table;
 }
@@ -288,4 +293,157 @@ QKeySequence keys::sequenceFor(const QString &chord) {
     }
     QKeySequence sequence(spelled.join(QLatin1Char('+')));
     return sequence;
+}
+
+/* ---- two-chord sequences (ADR 0120) ---- */
+
+namespace {
+
+/* Splits "ctrl+w>j" into its two canonical halves. Returns false for a
+ * plain chord, or when either half is not a chord at all. */
+bool splitSequence(const QString &text, QString *first, QString *second) {
+    int at = text.indexOf(QLatin1Char(keys::kSequenceSeparator));
+    if (at <= 0 || at + 1 >= text.size()) {
+        return false;
+    }
+    char one[64];
+    char two[64];
+    if (!ase_keymap_canonical(text.left(at).toUtf8().constData(), one, sizeof(one)) ||
+        !ase_keymap_canonical(text.mid(at + 1).toUtf8().constData(), two, sizeof(two))) {
+        return false;
+    }
+    *first = QString::fromLatin1(one);
+    *second = QString::fromLatin1(two);
+    return true;
+}
+
+/* Every `key.*` setting, with the "key." stripped. */
+QStringList configuredBindings(const AseConfig *config, QStringList *values) {
+    QStringList names;
+    const char *const *keys = nullptr;
+    const char *const *vals = nullptr;
+    size_t count = 0;
+    if (config == nullptr ||
+        !ase_config_entries_with_prefix(config, "key.", &keys, &vals, &count)) {
+        return names;
+    }
+    for (size_t i = 0; i < count; i++) {
+        names << QString::fromUtf8(keys[i]).mid(4);
+        *values << QString::fromUtf8(vals[i]);
+    }
+    return names;
+}
+
+} // namespace
+
+bool keys::isPrefix(const AseConfig *config, const QString &chord) {
+    QStringList values;
+    const QStringList names = configuredBindings(config, &values);
+    for (int i = 0; i < names.size(); ++i) {
+        QString first;
+        QString second;
+        if (splitSequence(names[i], &first, &second) && first == chord) {
+            /* `none` unbinds one continuation; it does not stop the
+             * chord being a prefix for the others. */
+            return true;
+        }
+    }
+    for (const Binding &binding : defaults()) {
+        QString first;
+        QString second;
+        if (splitSequence(QString::fromLatin1(binding.chord), &first, &second) && first == chord) {
+            return true;
+        }
+    }
+    return false;
+}
+
+QString keys::commandForSequence(const AseConfig *config, const QString &prefix,
+                                  const QString &second) {
+    QStringList values;
+    const QStringList names = configuredBindings(config, &values);
+    for (int i = 0; i < names.size(); ++i) {
+        QString a;
+        QString b;
+        if (splitSequence(names[i], &a, &b) && a == prefix && b == second) {
+            return values[i];
+        }
+    }
+    for (const Binding &binding : defaults()) {
+        QString a;
+        QString b;
+        if (splitSequence(QString::fromLatin1(binding.chord), &a, &b) && a == prefix &&
+            b == second) {
+            return QString::fromLatin1(binding.command);
+        }
+    }
+    return QString();
+}
+
+QStringList keys::sequenceHints(const AseConfig *config, const QString &prefix) {
+    QStringList hints;
+    QStringList seen;
+    QStringList values;
+    const QStringList names = configuredBindings(config, &values);
+    for (int i = 0; i < names.size(); ++i) {
+        QString a;
+        QString b;
+        if (splitSequence(names[i], &a, &b) && a == prefix && !seen.contains(b)) {
+            seen << b;
+            if (values[i] != QLatin1String("none")) {
+                hints << b;
+            }
+        }
+    }
+    for (const Binding &binding : defaults()) {
+        QString a;
+        QString b;
+        if (splitSequence(QString::fromLatin1(binding.chord), &a, &b) && a == prefix &&
+            !seen.contains(b)) {
+            seen << b;
+            hints << b;
+        }
+    }
+    hints.sort();
+    return hints;
+}
+
+QString keys::pretty(const QString &chord) {
+    static const QHash<QString, QString> kNames = {
+        {QStringLiteral("ctrl"), QStringLiteral("Ctrl")},
+        {QStringLiteral("alt"), QStringLiteral("Alt")},
+        {QStringLiteral("shift"), QStringLiteral("Shift")},
+        {QStringLiteral("meta"), QStringLiteral("Meta")},
+        {QStringLiteral("semicolon"), QStringLiteral(";")},
+        {QStringLiteral("equal"), QStringLiteral("=")},
+        {QStringLiteral("plus"), QStringLiteral("+")},
+        {QStringLiteral("minus"), QStringLiteral("-")},
+        {QStringLiteral("comma"), QStringLiteral(",")},
+        {QStringLiteral("period"), QStringLiteral(".")},
+        {QStringLiteral("slash"), QStringLiteral("/")},
+        {QStringLiteral("apostrophe"), QStringLiteral("'")},
+        {QStringLiteral("bracketleft"), QStringLiteral("[")},
+        {QStringLiteral("bracketright"), QStringLiteral("]")},
+        {QStringLiteral("grave"), QStringLiteral("`")},
+        {QStringLiteral("backslash"), QStringLiteral("\\")},
+    };
+
+    QStringList parts;
+    for (const QString &half : chord.split(QLatin1Char(kSequenceSeparator))) {
+        QStringList spelled;
+        for (const QString &part : half.split(QLatin1Char('+'), Qt::SkipEmptyParts)) {
+            auto it = kNames.constFind(part);
+            if (it != kNames.constEnd()) {
+                spelled << it.value();
+            } else if (part.size() == 1) {
+                spelled << part.toUpper();
+            } else {
+                spelled << part.at(0).toUpper() + part.mid(1);
+            }
+        }
+        parts << spelled.join(QLatin1Char('+'));
+    }
+    /* A space rather than the '>' the config uses: on screen these are
+     * two keystrokes in order, not a path. */
+    return parts.join(QLatin1Char(' '));
 }

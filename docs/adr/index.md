@@ -127,3 +127,4 @@ what changed.
 | [0117](0117-the-seam-is-the-grip.md) | The seam is the grip |
 | [0118](0118-closing-and-reaching-the-panel.md) | Closing and reaching the panel |
 | [0119](0119-a-command-belongs-to-its-buffer.md) | A command belongs to its buffer |
+| [0120](0120-a-law-for-the-keyboard.md) | A law for the keyboard |

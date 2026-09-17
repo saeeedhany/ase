@@ -214,6 +214,9 @@ public:
      * window actions and plugin commands are all one registry. See
      * docs/adr/0113. */
     void registerCommands(CommandRegistry *registry);
+    /* For the window's prefix dispatcher, which resolves a sequence and
+     * then has to run it against whichever buffer is in front. */
+    bool runNamedCommand(const QString &name);
 
     /* For the help panel, which has to show the bindings the user
      * actually has rather than the defaults. */

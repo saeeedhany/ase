@@ -160,6 +160,10 @@ void EditorViewport::registerCommands(CommandRegistry *registry) {
 
 /* Empty when Vim mode is off, so a Vim-only binding simply does not
  * match and a non-Vim user never sees it. */
+bool EditorViewport::runNamedCommand(const QString &name) {
+    return m_ownCommands.run(name);
+}
+
 QString EditorViewport::currentModeName() const {
     if (!vimModeActive()) {
         return QString();
