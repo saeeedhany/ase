@@ -5,6 +5,13 @@ project(absolute_simple_editor
     LANGUAGES C CXX
 )
 
+# The release stage, beside the number rather than repeated next to it.
+# It had been written out in three places — the About panel's definition
+# and both packaging scripts — so 0.4.0-beta shipped .deb and AppImage
+# artifacts still labelled alpha until this was one line. The packaging
+# scripts grep for it by this exact name.
+set(ASE_VERSION_STAGE "beta")
+
 # An unset CMAKE_BUILD_TYPE means no -O flag at all, not a mild default:
 # measured on a 276KB file, that is 6.8ms per keystroke against 2.3ms at
 # -O3. `cmake -B build` is what everyone types, so it has to be fast.

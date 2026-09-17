@@ -12,7 +12,9 @@ BUILD_DIR="$REPO_ROOT/build-deb"
 PKGROOT="$SCRIPT_DIR/pkgroot"
 
 PROJECT_VERSION="$(grep -A2 '^project(' "$REPO_ROOT/CMakeLists.txt" | sed -n 's/^[[:space:]]*VERSION \([0-9.]*\).*/\1/p' | head -1)"
-DEB_VERSION="${PROJECT_VERSION}~alpha1"
+VERSION_STAGE="$(sed -n 's/^set(ASE_VERSION_STAGE "\([a-z]*\)").*/\1/p' "$REPO_ROOT/CMakeLists.txt")"
+: "${VERSION_STAGE:?ASE_VERSION_STAGE not found in CMakeLists.txt}"
+DEB_VERSION="${PROJECT_VERSION}~${VERSION_STAGE}1"
 ARCH="$(dpkg --print-architecture 2>/dev/null || echo amd64)"
 
 echo "==> Configuring ($BUILD_DIR, Release)"

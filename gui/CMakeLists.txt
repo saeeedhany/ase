@@ -89,13 +89,12 @@ endif()
 add_executable(ase_gui src/main.cpp)
 target_link_libraries(ase_gui PRIVATE ase_gui_objects)
 
-# Single source of truth for the version shown in the About panel —
-# the top-level project() VERSION, plus a release-stage suffix that
-# isn't part of the numeric CMake version. Bump PROJECT_VERSION (and
-# retag) for a real release; flip/drop the stage suffix here as the
-# project matures past it.
+# Single source of truth for the version shown in the About panel — the
+# top-level project() VERSION, plus ASE_VERSION_STAGE, which is not part
+# of the numeric CMake version. Both live in the top-level CMakeLists.txt;
+# bump them (and retag) for a real release.
 target_compile_definitions(ase_gui_objects PUBLIC
-    ASE_VERSION_STRING="${PROJECT_VERSION}-beta"
+    ASE_VERSION_STRING="${PROJECT_VERSION}-${ASE_VERSION_STAGE}"
 )
 
 # Standard freedesktop install layout — what every packaging format in

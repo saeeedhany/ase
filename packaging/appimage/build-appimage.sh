@@ -26,7 +26,9 @@ if [ -z "$PROJECT_VERSION" ]; then
     # scanning the next couple of lines for a bare "VERSION x.y.z".
     PROJECT_VERSION="$(grep -A2 '^project(' "$REPO_ROOT/CMakeLists.txt" | sed -n 's/^[[:space:]]*VERSION \([0-9.]*\).*/\1/p' | head -1)"
 fi
-export VERSION="${PROJECT_VERSION}-alpha"
+VERSION_STAGE="$(sed -n 's/^set(ASE_VERSION_STAGE "\([a-z]*\)").*/\1/p' "$REPO_ROOT/CMakeLists.txt")"
+: "${VERSION_STAGE:?ASE_VERSION_STAGE not found in CMakeLists.txt}"
+export VERSION="${PROJECT_VERSION}-${VERSION_STAGE}"
 
 mkdir -p "$TOOLS_DIR"
 
