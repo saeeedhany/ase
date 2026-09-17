@@ -2,490 +2,586 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://saeeedhany.github.io/ase/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/EXTENSIBILITY/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/ROADMAP/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/SPEC/</loc>
-         <lastmod>2026-09-16</lastmod>
-    </url>
-    <url>
-         <loc>https://saeeedhany.github.io/ase/plugins/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0001-record-architecture-decisions/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0002-headless-core-separation/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0003-license-decision-pending/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0004-core-in-plain-c/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0005-buffer-engine-piece-table/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0006-gui-shell-v1-shortcuts/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0007-syntax-highlighting-tree-sitter/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0008-config-theme-format/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0009-plugin-abi-and-lua-host/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0010-hand-rolled-json/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0011-lsp-client/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0012-polish-phase-scope/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0013-caret-drift-fix/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0014-viewport-geometry/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0015-smooth-motion/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0016-caret-visibility-fix/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0017-viewport-review-pass/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0018-undo-redo/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0019-selection-model/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0020-clipboard/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0021-find-replace/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0022-floating-panel-design-system/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0023-editor-chrome/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0024-panel-polish-and-scroll-margin/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0025-command-system/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0026-keybinding-scheme-help-about/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0027-visual-polish-pass/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0028-click-precision-select-all-deletion-glide/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0029-lsp-diagnostics-wiring/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0030-lsp-completion-hover/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0031-draggable-panels-smooth-scroll-tracking-glide/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0032-lsp-relative-path-uri-fix/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0033-license-apache-2.0-and-first-alpha-release/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0034-linux-packaging/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0035-mkdocs-documentation-site/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0036-docs-site-theme-and-plugins-page/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0037-feedback-triage-log/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0038-feedback-triage-criteria-and-deferred-status/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0039-mouse-hit-test-drift-fix/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0040-italic-glyph-clipping-fix/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0041-diagnostic-underline-and-dot-focus/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0042-empty-buffer-welcome-overlay/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0043-faster-global-easing-and-welcome-overlay-layout/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0044-panel-isolation-drag-bar-unsaved-quit-confirm/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0045-v0.2.0-alpha-and-containerized-packaging/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0046-native-vim-mode-phase-1/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0047-vim-block-cursor/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0048-syntax-accent-colors-caret-inset-status-init/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0049-typing-pop-in-animation/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0050-runtime-font-zoom-and-vim-mode-default-on/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0051-global-animation-consistency-and-vim-polish/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0052-editor-viewport-split-into-translation-units/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0053-render-hot-path-and-one-motion-language/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0054-multiple-buffers-and-plugin-host-wiring/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0055-dirty-dot-new-file-panel-fixes/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0056-linewise-visual-tab-motion-searchable-shortcuts/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0057-always-on-tab-strip-and-welcome-rework/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0058-session-scoped-greeting-and-panel-carets/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0059-derived-dirty-state-paste-cursor-and-more-vim-motions/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0060-linewise-operations-at-the-end-of-the-buffer/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0061-the-unnamed-register/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0062-the-status-bar-message-line/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0063-language-server-state-in-the-status-bar/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0064-gui-in-ci-and-a-test-suite-that-runs-in-release/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0065-quick-open/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0066-project-wide-search/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0067-go-to-definition/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0068-freeing-ctrl-o-and-ctrl-i/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0069-find-in-line-and-list-navigation/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0070-the-jumplist/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0071-block-cursor-knockout-follows-its-block/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0072-incremental-highlighting-and-a-measured-hot-path/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0073-the-command-line-moves-to-the-status-bar/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0074-search-with-slash-and-n/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0075-repeating-the-last-change/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0076-replace-a-character/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0077-replace-mode/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0078-visual-mode-replace/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0079-the-visual-selection-includes-the-cursor/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0080-one-undo-step-per-insert-session/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0081-cw-changes-to-the-end-of-the-word/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0082-a-bare-modifier-must-not-clear-a-count/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0083-the-shorthand-operators/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0084-bracket-matching-and-word-search/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0085-a-second-grammar-for-cpp/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0086-one-language-gate-and-per-language-keys/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0087-project-config-says-what-files-mean/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0088-config-documents-itself/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0089-closing-a-buffer/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0090-scrolling-runs-at-frame-rate/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0091-the-clock-follows-the-display/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0092-a-discarded-server-is-not-waited-for/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0093-the-handshake-is-not-awaited/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0094-what-startup-actually-costs/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0095-the-performance-baseline/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0096-one-server-per-language-and-project/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0097-marks-and-macros/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0098-global-marks/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0099-vim-conformance-fixes/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0100-text-objects/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0101-join-lines/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0102-substitute/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0103-the-mainstream-languages/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0104-the-vim-conformance-suite/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0105-named-registers/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0106-words-case-indent-numbers/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0107-the-large-file-wall/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0108-the-half-typed-command/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0109-saving-without-losing-the-file/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0110-unsaved-work-survives-a-crash/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0111-session-restore/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0112-git-gutter-marks/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0113-keybindings-as-data/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/adr/0114-built-in-themes/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0115-one-path-for-a-colour-change/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0116-find-references-and-document-symbols/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0117-the-seam-is-the-grip/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0118-closing-and-reaching-the-panel/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0119-a-command-belongs-to-its-buffer/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0120-a-law-for-the-keyboard/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0121-saying-where-the-keyboard-is/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0122-the-cursor-on-the-line-it-selected/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0123-a-range-that-ends-where-a-line-begins/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0124-the-debounce-that-never-happened/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0125-a-keystroke-should-not-allocate-to-ask-a-question/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/adr/0126-the-docs-read-the-tables/</loc>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/feedback/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
     </url>
     <url>
          <loc>https://saeeedhany.github.io/ase/feedback/0001-alpha-release-external-review/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/guide/command-line/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/guide/configuration/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/guide/getting-started/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/guide/install/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/guide/keybindings/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/guide/lsp/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/guide/plugins/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/guide/themes/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/guide/vim/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/reference/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/reference/commands/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/reference/config/</loc>
+         <lastmod>2026-09-17</lastmod>
+    </url>
+    <url>
+         <loc>https://saeeedhany.github.io/ase/reference/keybindings/</loc>
+         <lastmod>2026-09-17</lastmod>
     </url>
 </urlset>
