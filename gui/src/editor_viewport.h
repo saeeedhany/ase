@@ -615,6 +615,7 @@ private:
     void pollCompile();
     /* Shared by Ctrl+Shift+O and `:output` — see docs/adr/0025. */
     void toggleOutputPanel();
+    void closeOutputPanel();
 
     /* No-op if lsp_command is unset, the file isn't .c/.h, or the
      * server fails to start. See docs/adr/0029. */

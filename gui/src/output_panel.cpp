@@ -1,4 +1,6 @@
 #include "output_panel.h"
+#include <QVariantAnimation>
+#include <QApplication>
 #include <QAbstractItemView>
 #include <QScrollBar>
 #include <algorithm>
@@ -303,18 +305,50 @@ void OutputPanel::applyHeight(int wanted, bool animated) {
     m_chosenHeight = target;
 
     if (!animated || m_viewport == nullptr || !m_viewport->animationsEnabled()) {
+        if (m_resize != nullptr) {
+            m_resize->stop();
+        }
         setFixedHeight(target);
         return;
     }
-    /* Dragging is already continuous, so only the keyboard path eases:
-     * animating a drag would make the edge lag the pointer. */
-    auto *slide = new QPropertyAnimation(this, "maximumHeight", this);
-    slide->setStartValue(height());
-    slide->setEndValue(target);
-    motion::apply(slide, motion::kChrome);
-    connect(slide, &QPropertyAnimation::finished, this, [this, target]() { setFixedHeight(target); });
-    setMinimumHeight(0);
-    slide->start(QAbstractAnimation::DeleteWhenStopped);
+
+    /* One animation, reused. The first version made a new one per
+     * keypress without stopping the last, so two presses in quick
+     * succession left the older animation still running — and its
+     * finished handler then set the panel back to *its* target, mid
+     * flight. Pressing twice looked fine; pressing repeatedly lurched.
+     *
+     * It drives setFixedHeight per frame rather than animating
+     * maximumHeight and fixing the height at the end, so there is no
+     * moment where min and max disagree about what is happening. */
+    if (m_resize == nullptr) {
+        m_resize = new QVariantAnimation(this);
+        m_resize->setEasingCurve(motion::kCurve);
+        connect(m_resize, &QVariantAnimation::valueChanged, this,
+                [this](const QVariant &value) { setFixedHeight(value.toInt()); });
+    }
+    m_resize->stop();
+    m_resize->setDuration(motion::kChrome);
+    m_resize->setStartValue(height());
+    m_resize->setEndValue(target);
+    m_resize->start();
+}
+
+/* Focus lands on the list, which is the part you navigate. */
+void OutputPanel::focusList() {
+    if (m_results->isVisible()) {
+        if (m_results->currentRow() < 0 && m_results->count() > 0) {
+            m_results->setCurrentRow(0);
+        }
+        m_results->setFocus();
+    } else {
+        m_text->setFocus();
+    }
+}
+
+bool OutputPanel::hasFocusInside() const {
+    QWidget *focused = QApplication::focusWidget();
+    return focused != nullptr && (focused == this || isAncestorOf(focused));
 }
 
 /* Moves the selection and eases the view to follow, instead of the jump

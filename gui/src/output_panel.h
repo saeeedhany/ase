@@ -13,6 +13,7 @@ class QPlainTextEdit;
 class EditorViewport;
 class PanelResizeHandle;
 class QPropertyAnimation;
+class QVariantAnimation;
 
 /*
  * :compile's output. Deliberately not a FloatingPanel: you watch a
@@ -51,6 +52,11 @@ public:
      * can be sized without reaching for the mouse — see docs/adr/0117. */
     void growBy(int delta);
 
+    /* Move the keyboard into the panel, and ask whether it is already
+     * there — the editor needs both to decide what a toggle means. */
+    void focusList();
+    bool hasFocusInside() const;
+
     void appendLine(const QString &text);
     /* No implied newline: process output arrives in arbitrary chunks. */
     void appendText(const QString &text);
@@ -79,6 +85,7 @@ private:
      * "whatever the layout decides". */
     int m_chosenHeight = -1;
     QPropertyAnimation *m_scroll = nullptr;
+    QVariantAnimation *m_resize = nullptr;
     QPlainTextEdit *m_text;
     QLabel *m_resultsHeader;
     QListWidget *m_results;

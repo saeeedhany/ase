@@ -207,7 +207,9 @@ QVector<HelpSection> helpSections(const AseConfig *config) {
 
         {"Build", "build_command",
          {{"Ctrl+B", "Compile the current file"},
-          {keysFor(config, "editor.output-panel"), "Toggle the output panel"},
+          {keysFor(config, "editor.output-panel"),
+           "Output panel: show / focus / close, in that order"},
+          {":q &nbsp;(with it open)", "Closes the panel, not the buffer"},
           {keysFor(config, "editor.output-panel.taller") + " / " +
                keysFor(config, "editor.output-panel.shorter"),
            "Resize it &mdash; or drag the line at its top edge"}}},

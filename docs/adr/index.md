@@ -125,3 +125,4 @@ what changed.
 | [0115](0115-one-path-for-a-colour-change.md) | One path for a colour change |
 | [0116](0116-find-references-and-document-symbols.md) | Find references and document symbols |
 | [0117](0117-the-seam-is-the-grip.md) | The seam is the grip |
+| [0118](0118-closing-and-reaching-the-panel.md) | Closing and reaching the panel |

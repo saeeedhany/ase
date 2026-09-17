@@ -344,7 +344,17 @@ void EditorViewport::runCommand(const QString &command) {
     if (trimmed == QLatin1String("w")) {
         save();
     } else if (trimmed == QLatin1String("q")) {
-        emit closeRequested(false);
+        /* The panel first, when there is one. `:q` means "close what I
+         * am looking at", and with results on screen that is the
+         * results — closing the buffer underneath them is the bigger,
+         * less recoverable action. `:q!` skips this deliberately: it is
+         * the escape hatch, and having to press it twice would make it
+         * a worse one. See docs/adr/0118. */
+        if (m_outputPanel != nullptr && m_outputPanel->isVisible()) {
+            closeOutputPanel();
+        } else {
+            emit closeRequested(false);
+        }
     } else if (trimmed == QLatin1String("q!")) {
         emit closeRequested(true);
     } else if (trimmed == QLatin1String("compile")) {
@@ -481,10 +491,38 @@ void EditorViewport::searchProject(const QString &needle) {
     }
 }
 
+/*
+ * Three states, one key. Escape already hands focus from the panel back
+ * to the editor, and nothing handed it the other way — so once you
+ * started editing, the panel was a thing you could see and not reach
+ * without the mouse. See docs/adr/0118.
+ */
 void EditorViewport::toggleOutputPanel() {
-    if (m_outputPanel != nullptr) {
-        m_outputPanel->setVisible(!m_outputPanel->isVisible());
+    if (m_outputPanel == nullptr) {
+        return;
     }
+    if (!m_outputPanel->isVisible()) {
+        m_outputPanel->show();
+        m_outputPanel->focusList();
+        return;
+    }
+    if (!m_outputPanel->hasFocusInside()) {
+        /* Visible but you are typing in the buffer: go to it rather
+         * than close it. Closing something you were not looking at is
+         * the more annoying of the two guesses. */
+        m_outputPanel->focusList();
+        return;
+    }
+    closeOutputPanel();
+}
+
+void EditorViewport::closeOutputPanel() {
+    if (m_outputPanel == nullptr || !m_outputPanel->isVisible()) {
+        return;
+    }
+    m_outputPanel->hide();
+    /* Somebody has to take the keyboard, or it goes nowhere. */
+    setFocus();
 }
 
 /* Reads build_command fresh from config on every call (not cached) so
