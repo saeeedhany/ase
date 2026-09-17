@@ -234,25 +234,7 @@ HelpPanel::HelpPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_view
     layout->setContentsMargins(10, 8, 10, 8);
     layout->setSpacing(6);
 
-    /* A real widget, since installEventFilter needs one to watch. The
-     * badge and title are transparent to mouse events, so a press
-     * anywhere on the bar starts a drag. */
-    auto *headerBar = new QWidget(content);
-    auto *headerRow = new QHBoxLayout(headerBar);
-    headerRow->setContentsMargins(0, 0, 0, 0);
-    headerRow->setSpacing(8);
-    m_badge = new LetterBadge(QLatin1Char('?'), headerBar);
-    m_badge->setAttribute(Qt::WA_TransparentForMouseEvents);
-    headerRow->addWidget(m_badge);
-    m_title = new QLabel(QStringLiteral("Keyboard shortcuts"), headerBar);
-    m_title->setAttribute(Qt::WA_TransparentForMouseEvents);
-    QFont titleFont = m_title->font();
-    titleFont.setBold(true);
-    m_title->setFont(titleFont);
-    headerRow->addWidget(m_title);
-    headerRow->addStretch(1);
-    layout->addWidget(headerBar);
-    setDragHandle(headerBar);
+    addTitleBar(layout, QLatin1Char('?'), QStringLiteral("Keyboard shortcuts"), &m_badge, &m_title);
 
     /* This panel is scanned repeatedly, not read once. */
     m_search = new SmoothLineEdit(content);

@@ -12,7 +12,11 @@
 #include <QParallelAnimationGroup>
 #include <QPropertyAnimation>
 
+#include "letter_badge.h"
 #include "motion.h"
+
+#include <QBoxLayout>
+#include <QFont>
 
 namespace {
 constexpr int kHostMargin = 16; /* never touch the host's edges, even on a small window */
@@ -98,6 +102,29 @@ void FloatingPanel::recenter() {
         return; /* don't fight a drag in progress — see setDragHandle's doc comment */
     }
     setGeometry(targetGeometry());
+}
+
+void FloatingPanel::addTitleBar(QVBoxLayout *layout, QChar badge, const QString &title,
+                                 LetterBadge **badgeOut, QLabel **titleOut) {
+    auto *bar = new QWidget(contentWidget());
+    auto *row = new QHBoxLayout(bar);
+    row->setContentsMargins(0, 0, 0, 0);
+    row->setSpacing(8);
+
+    *badgeOut = new LetterBadge(badge, bar);
+    (*badgeOut)->setAttribute(Qt::WA_TransparentForMouseEvents);
+    row->addWidget(*badgeOut);
+
+    *titleOut = new QLabel(title, bar);
+    (*titleOut)->setAttribute(Qt::WA_TransparentForMouseEvents);
+    QFont titleFont = (*titleOut)->font();
+    titleFont.setBold(true);
+    (*titleOut)->setFont(titleFont);
+    row->addWidget(*titleOut);
+    row->addStretch(1);
+
+    layout->addWidget(bar);
+    setDragHandle(bar);
 }
 
 void FloatingPanel::setDragHandle(QWidget *handle) {

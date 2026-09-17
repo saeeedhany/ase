@@ -148,11 +148,6 @@ void EditorViewport::notifyNoMatches() {
     notify(NotifyLevel::Warning, QStringLiteral("no matches for \"%1\"").arg(QString::fromUtf8(m_findNeedle)));
 }
 
-void EditorViewport::clearFindQuery() {
-    m_findNeedle.clear();
-    clearFindHighlights();
-}
-
 /* Drops the matches and stops drawing them, but keeps the needle, so
  * `n` still has something to repeat after the bar is gone. Vim's
  * `:nohlsearch`, which is also what Escape does in Normal mode. */

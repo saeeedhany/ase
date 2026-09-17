@@ -188,22 +188,27 @@ bool FileBrowserPanel::confirmOverwrite(const QString &path) {
                               QStringLiteral("Overwrite"));
 }
 
+/* Resets the filter to the new directory and returns the path as it
+ * should be read: under $HOME it is written with a tilde. */
+QString FileBrowserPanel::showCurrentDir() {
+    QString label = QDir(m_currentDir).dirName();
+    m_filterEdit->setPlaceholderText(label.isEmpty() ? QStringLiteral("/") : label);
+    m_filterEdit->clear();
+
+    const QString home = QDir::homePath();
+    if (m_currentDir == home || m_currentDir.startsWith(home + QLatin1Char('/'))) {
+        return QLatin1Char('~') + m_currentDir.mid(home.size());
+    }
+    return m_currentDir;
+}
+
 void FileBrowserPanel::setDirectory(const QString &dir) {
     QDir directory(dir);
     if (!directory.exists()) {
         return;
     }
     m_currentDir = directory.absolutePath();
-    QString label = QDir(m_currentDir).dirName();
-    m_filterEdit->setPlaceholderText(label.isEmpty() ? QStringLiteral("/") : label);
-    m_filterEdit->clear();
-
-    QString shown = m_currentDir;
-    QString home = QDir::homePath();
-    if (shown == home || shown.startsWith(home + QLatin1Char('/'))) {
-        shown = QLatin1Char('~') + shown.mid(home.size());
-    }
-    m_pathLabel->setText(shown);
+    m_pathLabel->setText(showCurrentDir());
 
     m_listWidget->blockSignals(true);
     m_listWidget->clear();
@@ -235,15 +240,7 @@ void FileBrowserPanel::setProjectRoot(const QString &startDir) {
     m_currentDir = project::rootFor(startDir);
     m_projectFiles = project::collect(m_currentDir, kQuickOpenFileCap, &m_projectFilesTruncated);
 
-    QString label = QDir(m_currentDir).dirName();
-    m_filterEdit->setPlaceholderText(label.isEmpty() ? QStringLiteral("/") : label);
-    m_filterEdit->clear();
-
-    QString shown = m_currentDir;
-    QString home = QDir::homePath();
-    if (shown == home || shown.startsWith(home + QLatin1Char('/'))) {
-        shown = QLatin1Char('~') + shown.mid(home.size());
-    }
+    QString shown = showCurrentDir();
     /* Admits when the walk was cut short: a listing that silently
      * stops at a cap lies about what you can open. */
     m_pathLabel->setText(m_projectFilesTruncated

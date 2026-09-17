@@ -43,6 +43,7 @@ private:
     void setDirectory(const QString &dir);
     /* QuickOpen's setDirectory(): walks the project root once. */
     void setProjectRoot(const QString &startDir);
+    QString showCurrentDir();
     /* Re-sorts by fuzzy score; applyFilter() can only hide rows. */
     void applyQuickOpenFilter(const QString &query);
     /* Case-insensitive substring; ".." always stays visible. Selects

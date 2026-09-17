@@ -6,6 +6,8 @@
 #include <QWidget>
 
 class QLabel;
+class QVBoxLayout;
+class LetterBadge;
 class QGraphicsOpacityEffect;
 class QPropertyAnimation;
 class QParallelAnimationGroup;
@@ -54,6 +56,13 @@ public:
     /* Lets `handle` drag the panel, clamped inside the host. A drag is
      * per-open, not persisted: the next open recentres. */
     void setDragHandle(QWidget *handle);
+
+    /* The badge-and-title bar every titled panel opens with, added to
+     * `layout` and installed as the drag handle. The badge and title are
+     * transparent to mouse events so a press anywhere across the bar
+     * starts a drag rather than only on the gaps. See docs/adr/0044. */
+    void addTitleBar(QVBoxLayout *layout, QChar badge, const QString &title,
+                     LetterBadge **badgeOut, QLabel **titleOut);
 
 protected:
     void paintEvent(QPaintEvent *event) override;

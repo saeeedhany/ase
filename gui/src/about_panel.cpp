@@ -39,26 +39,7 @@ AboutPanel::AboutPanel(EditorViewport *viewport) : FloatingPanel(viewport), m_vi
     layout->setContentsMargins(10, 8, 10, 8);
     layout->setSpacing(6);
 
-    /* See docs/adr/0044 — a real QWidget so the whole bar (not just the
-     * badge, docs/adr/0031's original handle) can be the drag handle;
-     * badge/title marked transparent to mouse events so a press
-     * anywhere across the bar still reaches it. */
-    auto *headerBar = new QWidget(content);
-    auto *headerRow = new QHBoxLayout(headerBar);
-    headerRow->setContentsMargins(0, 0, 0, 0);
-    headerRow->setSpacing(8);
-    m_badge = new LetterBadge(QLatin1Char('i'), headerBar);
-    m_badge->setAttribute(Qt::WA_TransparentForMouseEvents);
-    headerRow->addWidget(m_badge);
-    m_title = new QLabel(QStringLiteral("About"), headerBar);
-    m_title->setAttribute(Qt::WA_TransparentForMouseEvents);
-    QFont titleFont = m_title->font();
-    titleFont.setBold(true);
-    m_title->setFont(titleFont);
-    headerRow->addWidget(m_title);
-    headerRow->addStretch(1);
-    layout->addWidget(headerBar);
-    setDragHandle(headerBar);
+    addTitleBar(layout, QLatin1Char('i'), QStringLiteral("About"), &m_badge, &m_title);
 
     /* Two columns: the logo holds its own fixed column on the left, the
      * text runs left-aligned beside it. Previously both were stacked and
