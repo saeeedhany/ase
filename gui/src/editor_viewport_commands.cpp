@@ -699,7 +699,7 @@ void EditorViewport::runTheme(const QString &argument) {
     m_sessionTheme = argument;
     rebuildConfig();
     applyConfig();
-    update();
+    repaintForNewTheme();
 
     /* A colour set by hand wins over the theme's, which is the point —
      * but silently, it makes the theme look half-applied. Naming what is

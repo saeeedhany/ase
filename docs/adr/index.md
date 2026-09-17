@@ -122,3 +122,4 @@ what changed.
 | [0112](0112-git-gutter-marks.md) | Git gutter marks |
 | [0113](0113-keybindings-as-data.md) | Keybindings as data |
 | [0114](0114-built-in-themes.md) | Built-in themes |
+| [0115](0115-one-path-for-a-colour-change.md) | One path for a colour change |

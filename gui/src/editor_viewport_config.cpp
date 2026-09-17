@@ -292,6 +292,23 @@ void EditorViewport::checkConfigReload() {
      * keybinding-adjacent setting, or a typo that made the file parse to
      * defaults). */
     notify(NotifyLevel::Info, QStringLiteral("config reloaded"));
+    repaintForNewTheme();
+}
+
+/*
+ * Everything that has to be told the colours changed.
+ *
+ * The panels each hold their own palette, and the status bar and buffer
+ * bar are repainted by the window's statusChanged handler — which is why
+ * ensureCursorVisible() is in here rather than looking like a stray
+ * scroll: it is what emits that signal. Without it the editor recolours
+ * and its chrome does not, until the caret happens to move.
+ *
+ * One function because there are two ways the colours change — the
+ * config file being edited, and `:theme` — and the second one was
+ * written without half of this. See docs/adr/0115.
+ */
+void EditorViewport::repaintForNewTheme() {
     if (m_findBar != nullptr) {
         m_findBar->refreshTheme();
     }
@@ -316,6 +333,6 @@ void EditorViewport::checkConfigReload() {
     if (m_hoverPanel != nullptr) {
         m_hoverPanel->refreshTheme();
     }
-    ensureCursorVisible();
+    ensureCursorVisible(); /* emits statusChanged — see above */
     update();
 }

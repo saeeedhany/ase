@@ -254,6 +254,9 @@ private:
      * this buffer's own file. */
     void refreshAnimationClock();
     void rebuildConfig();
+    /* Tells the panels, the status bar and the buffer bar that the
+     * colours changed. See docs/adr/0115. */
+    void repaintForNewTheme();
     void rebuildSyntax();
 
     /* Gutter marks from `git diff` — see docs/adr/0112. */
