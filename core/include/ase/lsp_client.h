@@ -76,6 +76,19 @@ bool ase_lsp_client_request_completion(AseLspClient *client, const char *uri, As
                                         AseLspResultCallback callback, void *user_data);
 bool ase_lsp_client_request_definition(AseLspClient *client, const char *uri, AseLspPosition position,
                                         AseLspResultCallback callback, void *user_data);
+/* Every use of the symbol at `position`. `include_declaration` asks for
+ * the declaration to be among them; without it servers differ on
+ * whether to list it. The result is a Location array. */
+bool ase_lsp_client_request_references(AseLspClient *client, const char *uri, AseLspPosition position,
+                                        bool include_declaration, AseLspResultCallback callback,
+                                        void *user_data);
+
+/* Everything the file declares, as either a flat SymbolInformation
+ * array or a nested DocumentSymbol tree — the server chooses, and the
+ * caller has to read both. */
+bool ase_lsp_client_request_document_symbols(AseLspClient *client, const char *uri,
+                                              AseLspResultCallback callback, void *user_data);
+
 /* The result's shape varies by server, so it is handed back as raw
  * JSON for the caller to pick apart. */
 bool ase_lsp_client_request_hover(AseLspClient *client, const char *uri, AseLspPosition position,

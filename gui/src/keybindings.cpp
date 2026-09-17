@@ -77,6 +77,11 @@ const QVector<keys::Binding> &keys::defaults() {
         {"ctrl+i", "editor.jump-forward", ""},
         {"alt+right", "editor.jump-forward", ""},
         {"f12", "editor.go-to-definition", ""},
+        /* Shift+F12 for references is the convention every other editor
+         * uses; Ctrl+Shift+O for the outline matches Ctrl+P's "open
+         * something by name" shape one level down. */
+        {"shift+f12", "editor.find-references", ""},
+        {"ctrl+shift+period", "editor.document-symbols", ""},
 
         /* view */
         {"ctrl+equal", "editor.font.larger", ""},

@@ -33,7 +33,8 @@ Replace modes, `/` search and `:s`, pinned by 220 conformance cases
 generated from real vim.
 
 Tree-sitter highlighting for seven languages, an LSP client with
-diagnostics, completion, hover and go-to-definition, three built-in
+diagnostics, completion, hover, go-to-definition, find-references and a
+document outline, three built-in
 palettes, keybindings as data, session restore, git gutter marks, and a
 save path that cannot lose the file it is writing.
 

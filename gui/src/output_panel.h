@@ -39,6 +39,10 @@ public:
      * activated row can be turned back into an absolute path. */
     void showSearchResults(const QString &root, const QString &needle,
                             const project::SearchResult &result);
+    /* The same list under a summary the caller writes — for results
+     * that are places in the project but not search matches. */
+    void showLocations(const QString &root, const QString &summary,
+                        const QVector<project::SearchHit> &hits);
 
     void appendLine(const QString &text);
     /* No implied newline: process output arrives in arbitrary chunks. */

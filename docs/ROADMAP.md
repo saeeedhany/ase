@@ -911,12 +911,14 @@ something else.
   project from one keystroke wants its own design pass (a preview, an
   undo story spanning buffers), not a ride-along on a read-only
   feature.
-- **The rest of LSP's useful half**: ~~go-to-definition~~ (done,
-  [ADR 0067](adr/0067-go-to-definition.md)) and ~~a jumplist~~ (done,
-  [ADR 0070](adr/0070-the-jumplist.md)) are in. **find-references,
-  rename and document symbols are not**, and they are now the largest
-  functional gap for anyone navigating a real codebase: you can follow a
-  name to where it is defined and not ask who calls it.
+- **The rest of LSP's useful half**: ~~go-to-definition~~
+  ([ADR 0067](adr/0067-go-to-definition.md)), ~~a jumplist~~
+  ([ADR 0070](adr/0070-the-jumplist.md)), ~~find-references~~ and
+  ~~document symbols~~
+  ([ADR 0116](adr/0116-find-references-and-document-symbols.md)) are in.
+  **rename is not**: it returns a WorkspaceEdit touching files that are
+  not open, and applying that wants a preview and an undo story spanning
+  buffers — the same design pass replace-across-files is waiting for.
 - ~~**Git gutter marks**~~ Done — added, changed and deleted per line,
   from `git diff -U0`'s hunk headers, hidden while an unsaved edit has
   moved the lines around ([ADR 0112](adr/0112-git-gutter-marks.md)).
@@ -958,7 +960,8 @@ something else.
 
 ### Still open, in rough order of value
 
-1. **find-references, rename, document symbols** — see Tier 2 above.
+1. **LSP rename** — the last of LSP's useful half, and the one that
+   needs a cross-buffer undo story first. See Tier 2 above.
 2. **Theme files** — `theme = gruvbox` loading
    `~/.config/ase/themes/gruvbox.ase`. The built-in half is done
    ([ADR 0114](adr/0114-built-in-themes.md)); files are not.

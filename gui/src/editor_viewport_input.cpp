@@ -122,6 +122,10 @@ void EditorViewport::registerCommands(CommandRegistry *registry) {
         [this]() { addCursorAtNextOccurrence(); });
 
     add("editor.go-to-definition", "Go to definition", [this]() { goToDefinition(); });
+    add("editor.find-references", "Every use of the symbol under the cursor",
+        [this]() { findReferences(); });
+    add("editor.document-symbols", "Outline of this file",
+        [this]() { showDocumentSymbols(); });
 
     add("editor.font.larger", "Larger text", [this]() { adjustFontSize(1); });
     add("editor.font.smaller", "Smaller text", [this]() { adjustFontSize(-1); });
@@ -266,18 +270,10 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         update();
         return;
     }
-    if (event->key() == Qt::Key_F1) {
-        /* F1 is what people press without being told. */
-        if (m_helpPanel != nullptr) {
-            m_helpPanel->openHelp();
-        }
-        return;
-    }
-    if (event->key() == Qt::Key_F12) {
-        /* Works in every mode; vim's `gd` is wired separately. */
-        goToDefinition();
-        return;
-    }
+    /* F1 and F12 were hardcoded here, above the binding dispatch, so
+     * they never reached the table that claims to own every chord —
+     * rebinding either did nothing, and Shift+F12 arrived as F12. They
+     * are rows in keys::defaults() like everything else now. */
     m_desiredColumn = -1;
 
     if (vimModeActive() && m_vimMode != VimMode::Insert) {

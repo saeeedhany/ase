@@ -123,3 +123,4 @@ what changed.
 | [0113](0113-keybindings-as-data.md) | Keybindings as data |
 | [0114](0114-built-in-themes.md) | Built-in themes |
 | [0115](0115-one-path-for-a-colour-change.md) | One path for a colour change |
+| [0116](0116-find-references-and-document-symbols.md) | Find references and document symbols |

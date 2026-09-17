@@ -1,4 +1,8 @@
 #include "editor_viewport.h"
+#include <QHash>
+#include <QFile>
+#include <QDir>
+#include "output_panel.h"
 
 #include "lsp_registry.h"
 #include "project_files.h"
@@ -60,6 +64,13 @@ void lspCompletionTrampoline(void *user_data, const AseJsonValue *result, const 
 }
 void lspHoverTrampoline(void *user_data, const AseJsonValue *result, const char *error_message) {
     static_cast<EditorViewport *>(user_data)->applyLspHover(result, error_message);
+}
+void lspReferencesTrampoline(void *user_data, const AseJsonValue *result, const char *error_message) {
+    static_cast<EditorViewport *>(user_data)->applyLspReferences(result, error_message);
+}
+void lspDocumentSymbolsTrampoline(void *user_data, const AseJsonValue *result,
+                                   const char *error_message) {
+    static_cast<EditorViewport *>(user_data)->applyLspDocumentSymbols(result, error_message);
 }
 void lspDefinitionTrampoline(void *user_data, const AseJsonValue *result, const char *error_message) {
     static_cast<EditorViewport *>(user_data)->applyLspDefinition(result, error_message);
@@ -539,5 +550,271 @@ void EditorViewport::dismissHover() {
     m_hoverTimer->stop();
     if (m_hoverPanel != nullptr) {
         m_hoverPanel->dismiss();
+    }
+}
+
+/* ---- find references and document symbols (ADR 0116) ---- */
+
+namespace {
+
+/* A Location or a LocationLink: the same pair of shapes
+ * applyLspDefinition has to cope with, since a server picks either. */
+bool locationFrom(const AseJsonValue *entry, QString *path, int *line, int *column) {
+    if (entry == nullptr || ase_json_type(entry) != ASE_JSON_OBJECT) {
+        return false;
+    }
+    const char *uri = ase_json_get_string(ase_json_object_get(entry, "uri"));
+    const AseJsonValue *range = ase_json_object_get(entry, "range");
+    if (uri == nullptr) {
+        uri = ase_json_get_string(ase_json_object_get(entry, "targetUri"));
+        range = ase_json_object_get(entry, "targetSelectionRange");
+        if (range == nullptr) {
+            range = ase_json_object_get(entry, "targetRange");
+        }
+    }
+    const AseJsonValue *start = (range != nullptr) ? ase_json_object_get(range, "start") : nullptr;
+    if (uri == nullptr || start == nullptr) {
+        return false;
+    }
+    QString local = QUrl(QString::fromUtf8(uri)).toLocalFile();
+    if (local.isEmpty()) {
+        return false; /* a built-in, or something inside an archive */
+    }
+    *path = local;
+    *line = static_cast<int>(ase_json_get_number(ase_json_object_get(start, "line"), 0)) + 1;
+    /* LSP counts characters in UTF-16 code units and this treats them as
+     * bytes. Identical for ASCII, which identifiers overwhelmingly are;
+     * on a line with wider characters before the symbol the caret lands
+     * a little early, which is recoverable in a way a wrong line is
+     * not. */
+    *column = static_cast<int>(ase_json_get_number(ase_json_object_get(start, "character"), 0)) + 1;
+    return true;
+}
+
+/* The identifier run around `offset`, for naming what was asked about.
+ * Only for the summary line — the server is the one that decides what
+ * the symbol actually is. */
+QString identifierAt(const QByteArray &cache, size_t offset) {
+    int len = cache.size();
+    int at = std::min(static_cast<int>(offset), std::max(0, len - 1));
+    if (len == 0 || !isWordChar(cache[at])) {
+        return QStringLiteral("this");
+    }
+    int start = at;
+    while (start > 0 && isWordChar(cache[start - 1])) {
+        start--;
+    }
+    int end = at;
+    while (end + 1 < len && isWordChar(cache[end + 1])) {
+        end++;
+    }
+    return QString::fromUtf8(cache.mid(start, end - start + 1));
+}
+
+/* The referenced lines themselves, so the list reads as code rather
+ * than as coordinates. Grouped by file so each is read once however
+ * many hits it holds. */
+void fillLineText(QVector<project::SearchHit> &hits) {
+    QHash<QString, QVector<int>> wanted;
+    for (int i = 0; i < hits.size(); ++i) {
+        wanted[hits[i].path].push_back(i);
+    }
+    for (auto it = wanted.constBegin(); it != wanted.constEnd(); ++it) {
+        QFile file(it.key());
+        if (!file.open(QIODevice::ReadOnly)) {
+            continue; /* deleted since the server indexed it */
+        }
+        const QList<QByteArray> lines = file.readAll().split('\n');
+        for (int index : it.value()) {
+            int line = hits[index].line;
+            if (line >= 1 && line <= lines.size()) {
+                hits[index].text = QString::fromUtf8(lines.at(line - 1)).trimmed();
+            }
+        }
+    }
+}
+
+} // namespace
+
+void EditorViewport::findReferences() {
+    if (m_lspClient == nullptr) {
+        notify(NotifyLevel::Warning, QStringLiteral("no language server for this file"));
+        return;
+    }
+    if (m_cursors.isEmpty()) {
+        return;
+    }
+    /* Kept for the summary line: by the time the answer arrives the
+     * caret may have moved, and "12 references to x" would then name
+     * the wrong symbol. */
+    m_lspReferenceSymbol = identifierAt(m_cache, m_cursors[0]);
+
+    size_t cursor = m_cursors[0];
+    int line = lineForOffset(cursor);
+    AseLspPosition pos;
+    pos.line = line;
+    pos.character = columnForOffset(cursor, line);
+    ase_lsp_client_request_references(m_lspClient, m_lspUri.toUtf8().constData(), pos, true,
+                                       lspReferencesTrampoline, this);
+}
+
+void EditorViewport::applyLspReferences(const AseJsonValue *result, const char *error_message) {
+    if (error_message != nullptr) {
+        notify(NotifyLevel::Error, QString::fromUtf8(error_message));
+        return;
+    }
+    if (result == nullptr || ase_json_type(result) != ASE_JSON_ARRAY ||
+        ase_json_array_size(result) == 0) {
+        notify(NotifyLevel::Warning, QStringLiteral("no references found"));
+        return;
+    }
+
+    QString root = project::rootFor(m_filePath.isEmpty() ? QDir::currentPath()
+                                                          : QFileInfo(m_filePath).absolutePath());
+    QDir rootDir(root);
+    QVector<project::SearchHit> hits;
+    for (size_t i = 0; i < ase_json_array_size(result); i++) {
+        project::SearchHit hit;
+        QString absolute;
+        if (!locationFrom(ase_json_array_get(result, i), &absolute, &hit.line, &hit.column)) {
+            continue;
+        }
+        /* Relative to the project root, like every other row in this
+         * panel; an absolute path would push the line text off screen. */
+        hit.path = rootDir.relativeFilePath(absolute);
+        hits.push_back(hit);
+    }
+    if (hits.isEmpty()) {
+        notify(NotifyLevel::Warning, QStringLiteral("no references found"));
+        return;
+    }
+    fillLineText(hits);
+
+    if (m_outputPanel != nullptr) {
+        m_outputPanel->showLocations(
+            root,
+            QStringLiteral("%1 %2 to \"%3\"")
+                .arg(hits.size())
+                .arg(hits.size() == 1 ? QStringLiteral("reference") : QStringLiteral("references"))
+                .arg(m_lspReferenceSymbol),
+            hits);
+    }
+}
+
+/*
+ * textDocument/documentSymbol answers in two shapes and the server
+ * picks: a flat SymbolInformation array, where each entry carries a
+ * `location`, or a nested DocumentSymbol tree, where each carries a
+ * `range` and may carry `children`. clangd returns the nested one.
+ * Reading only that would work until a server that doesn't is used.
+ */
+namespace {
+
+/* LSP SymbolKind, for the few worth distinguishing at a glance. The
+ * rest are unlabelled rather than guessed at. */
+const char *symbolKindName(int kind) {
+    switch (kind) {
+    case 5: return "class";
+    case 6: return "method";
+    case 8: return "field";
+    case 9: return "ctor";
+    case 10: return "enum";
+    case 11: return "interface";
+    case 12: return "fn";
+    case 13: return "var";
+    case 14: return "const";
+    case 22: return "enum";
+    case 23: return "struct";
+    case 26: return "type";
+    default: return nullptr;
+    }
+}
+
+void collectSymbols(const AseJsonValue *array, int depth, const QString &path,
+                    QVector<project::SearchHit> &out) {
+    if (array == nullptr || ase_json_type(array) != ASE_JSON_ARRAY) {
+        return;
+    }
+    for (size_t i = 0; i < ase_json_array_size(array); i++) {
+        const AseJsonValue *entry = ase_json_array_get(array, i);
+        if (entry == nullptr || ase_json_type(entry) != ASE_JSON_OBJECT) {
+            continue;
+        }
+        const char *name = ase_json_get_string(ase_json_object_get(entry, "name"));
+        if (name == nullptr) {
+            continue;
+        }
+
+        /* DocumentSymbol keeps its range at the top level;
+         * SymbolInformation buries it under `location`. */
+        const AseJsonValue *range = ase_json_object_get(entry, "selectionRange");
+        if (range == nullptr) {
+            range = ase_json_object_get(entry, "range");
+        }
+        if (range == nullptr) {
+            const AseJsonValue *location = ase_json_object_get(entry, "location");
+            if (location != nullptr) {
+                range = ase_json_object_get(location, "range");
+            }
+        }
+        const AseJsonValue *start = (range != nullptr) ? ase_json_object_get(range, "start") : nullptr;
+        if (start == nullptr) {
+            continue;
+        }
+
+        project::SearchHit hit;
+        hit.path = path;
+        hit.line = static_cast<int>(ase_json_get_number(ase_json_object_get(start, "line"), 0)) + 1;
+        hit.column =
+            static_cast<int>(ase_json_get_number(ase_json_object_get(start, "character"), 0)) + 1;
+
+        /* Indented by nesting, so a method reads as belonging to its
+         * class rather than as another top-level name. */
+        const char *kind = symbolKindName(
+            static_cast<int>(ase_json_get_number(ase_json_object_get(entry, "kind"), 0)));
+        hit.text = QString(depth * 2, QLatin1Char(' ')) +
+                   (kind != nullptr ? QStringLiteral("%1 %2").arg(QLatin1String(kind),
+                                                                   QString::fromUtf8(name))
+                                    : QString::fromUtf8(name));
+        out.push_back(hit);
+
+        collectSymbols(ase_json_object_get(entry, "children"), depth + 1, path, out);
+    }
+}
+
+} // namespace
+
+void EditorViewport::showDocumentSymbols() {
+    if (m_lspClient == nullptr) {
+        notify(NotifyLevel::Warning, QStringLiteral("no language server for this file"));
+        return;
+    }
+    ase_lsp_client_request_document_symbols(m_lspClient, m_lspUri.toUtf8().constData(),
+                                             lspDocumentSymbolsTrampoline, this);
+}
+
+void EditorViewport::applyLspDocumentSymbols(const AseJsonValue *result,
+                                              const char *error_message) {
+    if (error_message != nullptr) {
+        notify(NotifyLevel::Error, QString::fromUtf8(error_message));
+        return;
+    }
+    QString root = project::rootFor(m_filePath.isEmpty() ? QDir::currentPath()
+                                                          : QFileInfo(m_filePath).absolutePath());
+    QVector<project::SearchHit> hits;
+    collectSymbols(result, 0, QDir(root).relativeFilePath(m_filePath), hits);
+
+    if (hits.isEmpty()) {
+        notify(NotifyLevel::Warning, QStringLiteral("no symbols in this file"));
+        return;
+    }
+    if (m_outputPanel != nullptr) {
+        m_outputPanel->showLocations(root,
+                                      QStringLiteral("%1 %2 in %3")
+                                          .arg(hits.size())
+                                          .arg(hits.size() == 1 ? QStringLiteral("symbol")
+                                                                : QStringLiteral("symbols"))
+                                          .arg(QFileInfo(m_filePath).fileName()),
+                                      hits);
     }
 }

@@ -228,7 +228,8 @@ static void dispatch_message(AseLspClient *client, const AseJsonValue *message) 
             dispatch_diagnostics(client, ase_json_object_get((AseJsonValue *)message, "params"));
         }
         /* other notification methods (window/logMessage, etc.) are out of
-         * scope for v1 — diagnostics/completion/definition only. */
+         * scope for v1 — diagnostics, completion, definition, references,
+         * document symbols and hover only. */
         return;
     }
 
@@ -640,6 +641,35 @@ bool ase_lsp_client_request_definition(AseLspClient *client, const char *uri, As
     }
     AseJsonValue *params = make_text_document_position_params(uri, position);
     return send_request(client, "textDocument/definition", params, callback, user_data, NULL);
+}
+
+/* Unlike definition, this one carries a context object: without
+ * includeDeclaration a server may or may not list the declaration
+ * itself, and "who uses this" reads better with it than without. */
+bool ase_lsp_client_request_references(AseLspClient *client, const char *uri, AseLspPosition position,
+                                        bool include_declaration, AseLspResultCallback callback,
+                                        void *user_data) {
+    if (client == NULL || !client->alive) {
+        return false;
+    }
+    AseJsonValue *params = make_text_document_position_params(uri, position);
+    AseJsonValue *context = ase_json_object();
+    ase_json_object_set(context, "includeDeclaration", ase_json_bool(include_declaration));
+    ase_json_object_set(params, "context", context);
+    return send_request(client, "textDocument/references", params, callback, user_data, NULL);
+}
+
+/* No position: this one is about the whole file. */
+bool ase_lsp_client_request_document_symbols(AseLspClient *client, const char *uri,
+                                              AseLspResultCallback callback, void *user_data) {
+    if (client == NULL || !client->alive) {
+        return false;
+    }
+    AseJsonValue *text_document = ase_json_object();
+    ase_json_object_set(text_document, "uri", ase_json_string(uri));
+    AseJsonValue *params = ase_json_object();
+    ase_json_object_set(params, "textDocument", text_document);
+    return send_request(client, "textDocument/documentSymbol", params, callback, user_data, NULL);
 }
 
 bool ase_lsp_client_request_hover(AseLspClient *client, const char *uri, AseLspPosition position,

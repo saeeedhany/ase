@@ -12,7 +12,8 @@
  * error was just fixed," so a test can prove didChange actually
  * refreshes diagnostics rather than leaving the didOpen-time snapshot
  * stale — see docs/adr/0029), textDocument/completion,
- * textDocument/definition, textDocument/hover, shutdown, exit.
+ * textDocument/definition, textDocument/references,
+ * textDocument/documentSymbol, textDocument/hover, shutdown, exit.
  * Anything else is silently ignored, matching how a real server
  * tolerates unknown methods.
  */
@@ -116,6 +117,40 @@ int main(void) {
                      "{\"jsonrpc\":\"2.0\",\"id\":%ld,\"result\":{\"uri\":\"file:///fake.txt\","
                      "\"range\":{\"start\":{\"line\":2,\"character\":4},"
                      "\"end\":{\"line\":2,\"character\":10}}}}",
+                     id);
+            send_message(response);
+        } else if (has_method(body, "textDocument/references")) {
+            long id = extract_id(body);
+            char response[768];
+            /* Two, in different files, so a caller that only reads the
+             * first is caught. */
+            snprintf(response, sizeof(response),
+                     "{\"jsonrpc\":\"2.0\",\"id\":%ld,\"result\":["
+                     "{\"uri\":\"file:///fake.txt\","
+                     "\"range\":{\"start\":{\"line\":2,\"character\":4},"
+                     "\"end\":{\"line\":2,\"character\":10}}},"
+                     "{\"uri\":\"file:///other.txt\","
+                     "\"range\":{\"start\":{\"line\":9,\"character\":0},"
+                     "\"end\":{\"line\":9,\"character\":6}}}]}",
+                     id);
+            send_message(response);
+        } else if (has_method(body, "textDocument/documentSymbol")) {
+            long id = extract_id(body);
+            char response[768];
+            /* The nested DocumentSymbol shape, with a child, since a
+             * caller that only walks the top level is the likely bug. */
+            snprintf(response, sizeof(response),
+                     "{\"jsonrpc\":\"2.0\",\"id\":%ld,\"result\":["
+                     "{\"name\":\"outer_symbol\",\"kind\":12,"
+                     "\"range\":{\"start\":{\"line\":1,\"character\":0},"
+                     "\"end\":{\"line\":5,\"character\":1}},"
+                     "\"selectionRange\":{\"start\":{\"line\":1,\"character\":5},"
+                     "\"end\":{\"line\":1,\"character\":18}},"
+                     "\"children\":[{\"name\":\"inner_symbol\",\"kind\":13,"
+                     "\"range\":{\"start\":{\"line\":3,\"character\":2},"
+                     "\"end\":{\"line\":3,\"character\":20}},"
+                     "\"selectionRange\":{\"start\":{\"line\":3,\"character\":6},"
+                     "\"end\":{\"line\":3,\"character\":18}}}]}]}",
                      id);
             send_message(response);
         } else if (has_method(body, "textDocument/hover")) {

@@ -88,10 +88,13 @@ void OutputPanel::setMode(Mode mode) {
     m_text->setVisible(!results);
 }
 
-void OutputPanel::showSearchResults(const QString &root, const QString &needle,
-                                     const project::SearchResult &result) {
+/* The list itself, under a summary the caller writes. Search, find-
+ * references and document symbols all produce "places in the project,
+ * one per line, jump on Enter" and differ only in what to call them. */
+void OutputPanel::showLocations(const QString &root, const QString &summary,
+                                 const QVector<project::SearchHit> &hits) {
     m_searchRoot = root;
-    m_hits = result.hits;
+    m_hits = hits;
 
     m_results->clear();
     for (const project::SearchHit &hit : m_hits) {
@@ -99,22 +102,6 @@ void OutputPanel::showSearchResults(const QString &root, const QString &needle,
          * linter and grep on the machine already prints, so it reads
          * without being explained. */
         m_results->addItem(QStringLiteral("%1:%2:  %3").arg(hit.path).arg(hit.line).arg(hit.text));
-    }
-
-    QString summary;
-    if (m_hits.isEmpty()) {
-        summary = QStringLiteral("no matches for \"%1\" in %2 files").arg(needle).arg(result.filesSearched);
-    } else {
-        summary = QStringLiteral("%1 %2 for \"%3\" in %4 files")
-                      .arg(m_hits.size())
-                      .arg(m_hits.size() == 1 ? QStringLiteral("match") : QStringLiteral("matches"))
-                      .arg(needle)
-                      .arg(result.filesSearched);
-        if (result.truncated) {
-            /* Never quietly show a prefix of the answer as if it were
-             * the answer. */
-            summary = QStringLiteral("first ") + summary;
-        }
     }
     m_resultsHeader->setText(summary);
 
@@ -128,6 +115,26 @@ void OutputPanel::showSearchResults(const QString &root, const QString &needle,
          * editor (see keyPressEvent). */
         m_results->setFocus();
     }
+}
+
+void OutputPanel::showSearchResults(const QString &root, const QString &needle,
+                                     const project::SearchResult &result) {
+    QString summary;
+    if (result.hits.isEmpty()) {
+        summary = QStringLiteral("no matches for \"%1\" in %2 files").arg(needle).arg(result.filesSearched);
+    } else {
+        summary = QStringLiteral("%1 %2 for \"%3\" in %4 files")
+                      .arg(result.hits.size())
+                      .arg(result.hits.size() == 1 ? QStringLiteral("match") : QStringLiteral("matches"))
+                      .arg(needle)
+                      .arg(result.filesSearched);
+        if (result.truncated) {
+            /* Never quietly show a prefix of the answer as if it were
+             * the answer. */
+            summary = QStringLiteral("first ") + summary;
+        }
+    }
+    showLocations(root, summary, result.hits);
 }
 
 void OutputPanel::activateRow(QListWidgetItem *item) {

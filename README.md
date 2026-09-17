@@ -41,8 +41,8 @@ installed and still agrees with it.
 **Languages** — Tree-sitter highlighting for C, C++, Python, JavaScript,
 CSS, HTML and Lua, parsed incrementally. An LSP client
 (process-isolated, JSON-RPC over stdio) gives diagnostics, completion,
-hover and go-to-definition, with one server per language per project
-rather than per open file.
+hover, go-to-definition, find-references and a document outline, with
+one server per language per project rather than per open file.
 
 **Your editor** — three built-in palettes (`:theme`, or `theme =` in
 the config), every keybinding rebindable as data

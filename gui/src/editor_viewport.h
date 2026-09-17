@@ -119,6 +119,11 @@ public:
     /* Synchronous; see docs/adr/0066 for the caps that bound it. */
     void searchProject(const QString &needle);
     void goToDefinition();
+    /* LSP's other half — see docs/adr/0116. */
+    void findReferences();
+    void showDocumentSymbols();
+    void applyLspReferences(const AseJsonValue *result, const char *error_message);
+    void applyLspDocumentSymbols(const AseJsonValue *result, const char *error_message);
     void goToLine(int oneBasedLine);
     /* Restores an exact column rather than the first non-blank. */
     void goToLineColumn(int oneBasedLine, int oneBasedColumn);
@@ -696,6 +701,8 @@ private:
     QString m_recoveryDir;
     /* Set by `:theme`; empty means whatever the config says. */
     QString m_sessionTheme;
+    /* What findReferences() asked about, for the summary line. */
+    QString m_lspReferenceSymbol;
     bool m_syntaxOverSizeCap = false;
     AseConfig *m_config = nullptr;
     QString m_configPath;

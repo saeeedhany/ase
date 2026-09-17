@@ -132,6 +132,28 @@ static void test_full_lifecycle(void) {
     CHECK(!completion_capture.had_error);
     CHECK(strstr(completion_capture.result_text, "fake_completion_item") != NULL);
 
+    ResultCapture references_capture;
+    memset(&references_capture, 0, sizeof(references_capture));
+    CHECK(ase_lsp_client_request_references(client, "file:///fake.txt", pos, true, on_result,
+                                             &references_capture));
+    poll_until(client, &references_capture.called, 1000000);
+    CHECK(references_capture.called);
+    CHECK(!references_capture.had_error);
+    /* Both locations, not just the first. */
+    CHECK(strstr(references_capture.result_text, "file:///fake.txt") != NULL);
+    CHECK(strstr(references_capture.result_text, "file:///other.txt") != NULL);
+
+    ResultCapture symbols_capture;
+    memset(&symbols_capture, 0, sizeof(symbols_capture));
+    CHECK(ase_lsp_client_request_document_symbols(client, "file:///fake.txt", on_result,
+                                                   &symbols_capture));
+    poll_until(client, &symbols_capture.called, 1000000);
+    CHECK(symbols_capture.called);
+    CHECK(!symbols_capture.had_error);
+    CHECK(strstr(symbols_capture.result_text, "outer_symbol") != NULL);
+    /* Nested children survive the round trip too. */
+    CHECK(strstr(symbols_capture.result_text, "inner_symbol") != NULL);
+
     ResultCapture definition_capture;
     memset(&definition_capture, 0, sizeof(definition_capture));
     CHECK(ase_lsp_client_request_definition(client, "file:///fake.txt", pos, on_result, &definition_capture));
