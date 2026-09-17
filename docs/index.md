@@ -39,7 +39,7 @@ replaceable Qt6 shell on top of it. See
 
 ## Status
 
-**`v0.3.0-alpha`**, licensed under the
+**`v0.4.0-beta`**, licensed under the
 [Apache License 2.0](https://github.com/saeeedhany/ase/blob/main/LICENSE).
 
 All seven original spec phases, the "complete normal editor" pass, and a

@@ -21,7 +21,7 @@ preview, `mkdocs gh-deploy` to publish; see
 
 ## Status
 
-**`v0.3.0-alpha`**, licensed under the
+**`v0.4.0-beta`**, licensed under the
 [Apache License 2.0](LICENSE). All seven original spec phases are done,
 plus the "complete normal editor" pass and a Vim mode that has grown well
 past its original scope.

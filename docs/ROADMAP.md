@@ -152,7 +152,7 @@ so is everything the "wiring" note below used to point at: the plugin
 host and the LSP client are both in the GUI, and the license decision
 was settled by [ADR 0033](adr/0033-license-apache-2.0-and-first-alpha-release.md).
 
-At `v0.3.0-alpha` the editor has a Vim mode pinned by 218 conformance
+At `v0.4.0-beta` the editor has a Vim mode pinned by 218 conformance
 cases generated from real vim, Tree-sitter highlighting for seven
 languages, an LSP client with diagnostics/completion/hover/go-to-
 definition sharing one server per language per project, built-in
@@ -853,6 +853,16 @@ here as each is reached.
       fix, one motion language, multiple buffers, the plugin host wired
       in, and the tab strip — is a substantially different editor from
       the one that tag points at.
+- [x] **v0.4.0-beta**: the first release not called alpha. Everything
+      since v0.3.0-alpha — find-references and document symbols, a
+      keyboard with a law rather than a free-slot policy, regions and
+      the `Ctrl+W` vocabulary, built-in palettes, keybindings as data,
+      session restore, git gutter marks, an atomic save, crash recovery
+      that now covers the unnamed buffer too, and a documentation site
+      whose reference pages are generated from the editor's own tables.
+      Beta because the daily-driver gaps are closed and the data-loss
+      story is, not because nothing is left: see the follow-ups below,
+      and note that Linux is the supported platform.
 
 ## Beyond v1 — what would make this editor unique
 
