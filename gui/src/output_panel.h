@@ -11,7 +11,8 @@ class QKeyEvent;
 class QLabel;
 class QPlainTextEdit;
 class EditorViewport;
-class TranslucentBar;
+class PanelResizeHandle;
+class QPropertyAnimation;
 
 /*
  * :compile's output. Deliberately not a FloatingPanel: you watch a
@@ -19,8 +20,10 @@ class TranslucentBar;
  * float over it. A docked layout row below EditorViewport, hidden until
  * the first :compile and toggled by `:output`.
  *
- * m_divider is a short seam marker at the top edge, so it shows and
- * hides with the panel and needs no wiring. See docs/adr/0025.
+ * m_handle is the seam at the top edge — a hairline that dims when
+ * unattended and doubles as the drag grip for the panel's height. It
+ * shows and hides with the panel and needs no wiring. See
+ * docs/adr/0025 and docs/adr/0117.
  */
 class OutputPanel : public QWidget {
     Q_OBJECT
@@ -44,6 +47,10 @@ public:
     void showLocations(const QString &root, const QString &summary,
                         const QVector<project::SearchHit> &hits);
 
+    /* Taller/shorter by one step, animated. Bound to keys so the panel
+     * can be sized without reaching for the mouse — see docs/adr/0117. */
+    void growBy(int delta);
+
     void appendLine(const QString &text);
     /* No implied newline: process output arrives in arbitrary chunks. */
     void appendText(const QString &text);
@@ -60,11 +67,18 @@ signals:
     void hitActivated(const QString &absolutePath, int line);
 
 private:
+    void resizeByDrag(int delta);
+    void selectRowSmoothly(int row);
+    void applyHeight(int height, bool animated);
     void setMode(Mode mode);
     void activateRow(QListWidgetItem *item);
 
     EditorViewport *m_viewport;
-    TranslucentBar *m_divider;
+    PanelResizeHandle *m_handle = nullptr;
+    /* The panel's own height, once the user has chosen one; -1 means
+     * "whatever the layout decides". */
+    int m_chosenHeight = -1;
+    QPropertyAnimation *m_scroll = nullptr;
     QPlainTextEdit *m_text;
     QLabel *m_resultsHeader;
     QListWidget *m_results;

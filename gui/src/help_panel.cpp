@@ -207,7 +207,10 @@ QVector<HelpSection> helpSections(const AseConfig *config) {
 
         {"Build", "build_command",
          {{"Ctrl+B", "Compile the current file"},
-          {"Ctrl+Shift+O", "Toggle the output panel"}}},
+          {keysFor(config, "editor.output-panel"), "Toggle the output panel"},
+          {keysFor(config, "editor.output-panel.taller") + " / " +
+               keysFor(config, "editor.output-panel.shorter"),
+           "Resize it &mdash; or drag the line at its top edge"}}},
 
         {"Language server", "lang.&lt;id&gt;.lsp, C and C++ files",
          {{"(automatic)", "Diagnostics, and completion while typing"},

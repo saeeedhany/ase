@@ -1,10 +1,15 @@
 #include "output_panel.h"
+#include <QAbstractItemView>
+#include <QScrollBar>
+#include <algorithm>
+#include <QPropertyAnimation>
+#include "motion.h"
 
 #include "editor_viewport.h"
 #include "scrollbar_style.h"
 #include "smooth_scroll.h"
 #include "list_navigation.h"
-#include "translucent_bar.h"
+#include "panel_resize_handle.h"
 
 #include <QFontDatabase>
 #include <QHBoxLayout>
@@ -18,8 +23,14 @@
 #include <QVBoxLayout>
 
 namespace {
-constexpr int kDividerWidth = 40;
-constexpr int kDividerHeight = 2;
+/* Enough to read a few results; below this the panel is a sliver that
+ * cannot say anything useful. */
+constexpr int kMinPanelHeight = 90;
+/* The editor must keep more of the window than the panel does — a
+ * panel that can swallow the whole window is a panel you have to fight. */
+constexpr int kMinEditorHeight = 120;
+/* One keypress of resize: a visible step without being a jump. */
+constexpr int kResizeStep = 60;
 }
 
 OutputPanel::OutputPanel(EditorViewport *viewport, QWidget *parent) : QWidget(parent), m_viewport(viewport) {
@@ -34,17 +45,15 @@ OutputPanel::OutputPanel(EditorViewport *viewport, QWidget *parent) : QWidget(pa
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
-    /* Short and centered, not a full-width rule — see the class
-     * comment and docs/adr/0027. */
-    auto *dividerRow = new QWidget(this);
-    auto *dividerLayout = new QHBoxLayout(dividerRow);
-    dividerLayout->setContentsMargins(0, 6, 0, 6);
-    dividerLayout->addStretch(1);
-    m_divider = new TranslucentBar(dividerRow);
-    m_divider->setFixedSize(kDividerWidth, kDividerHeight);
-    dividerLayout->addWidget(m_divider);
-    dividerLayout->addStretch(1);
-    layout->addWidget(dividerRow);
+    /* A hairline across the full width, and the grip that resizes the
+     * panel. It replaced a short centred bar: a seam runs the width of
+     * what it separates, and a bar in the middle read as an object
+     * sitting on the layout rather than as the join. See
+     * docs/adr/0117. */
+    m_handle = new PanelResizeHandle(this);
+    layout->addWidget(m_handle);
+    connect(m_handle, &PanelResizeHandle::dragged, this,
+            [this](int delta) { resizeByDrag(delta); });
 
     /* One line above the results saying what was searched and how much
      * of the answer this is. Hidden in Output mode. */
@@ -184,10 +193,22 @@ bool OutputPanel::eventFilter(QObject *watched, QEvent *event) {
             if (int delta = listnav::delta(keyEvent); delta != 0) {
                 int next = m_results->currentRow() + delta;
                 if (next >= 0 && next < m_results->count()) {
-                    m_results->setCurrentRow(next);
+                    selectRowSmoothly(next);
                 }
                 return true;
             }
+        }
+        /* The arrows work by themselves, but QListWidget snaps the view
+         * when the selection leaves it. Handled here so a key and a
+         * wheel scroll the same way — installSmoothScroll only sees
+         * wheel events. */
+        if (keyEvent->modifiers() == Qt::NoModifier &&
+            (keyEvent->key() == Qt::Key_Down || keyEvent->key() == Qt::Key_Up)) {
+            int next = m_results->currentRow() + (keyEvent->key() == Qt::Key_Down ? 1 : -1);
+            if (next >= 0 && next < m_results->count()) {
+                selectRowSmoothly(next);
+            }
+            return true;
         }
     }
     return QWidget::eventFilter(watched, event);
@@ -243,7 +264,7 @@ void OutputPanel::refreshTheme() {
     headerPal.setColor(QPalette::WindowText, headerColor);
     m_resultsHeader->setPalette(headerPal);
 
-    m_divider->setColor(m_viewport->textColor());
+    m_handle->setColor(m_viewport->textColor());
 
     QColor handle = m_viewport->textColor();
     handle.setAlpha(90);
@@ -251,4 +272,79 @@ void OutputPanel::refreshTheme() {
     handleHover.setAlpha(170);
     m_text->setStyleSheet(thinScrollBarStyleSheet(handle, handleHover));
     m_results->setStyleSheet(thinScrollBarStyleSheet(handle, handleHover));
+}
+
+/* ---- height (ADR 0117) ---- */
+
+/* Dragging down shrinks a panel that lives below the seam. */
+void OutputPanel::resizeByDrag(int delta) {
+    applyHeight((m_chosenHeight > 0 ? m_chosenHeight : height()) - delta, false);
+}
+
+void OutputPanel::growBy(int delta) {
+    if (!isVisible()) {
+        return;
+    }
+    applyHeight((m_chosenHeight > 0 ? m_chosenHeight : height()) + delta, true);
+}
+
+void OutputPanel::applyHeight(int wanted, bool animated) {
+    /* The editor above keeps its floor whatever the panel asks for.
+     * Without this the panel can be dragged over the whole window and
+     * there is nothing left to grab it back by. */
+    int ceiling = kMinPanelHeight;
+    if (parentWidget() != nullptr) {
+        ceiling = std::max(kMinPanelHeight, parentWidget()->height() - kMinEditorHeight);
+    }
+    int target = std::clamp(wanted, kMinPanelHeight, ceiling);
+    if (target == m_chosenHeight) {
+        return;
+    }
+    m_chosenHeight = target;
+
+    if (!animated || m_viewport == nullptr || !m_viewport->animationsEnabled()) {
+        setFixedHeight(target);
+        return;
+    }
+    /* Dragging is already continuous, so only the keyboard path eases:
+     * animating a drag would make the edge lag the pointer. */
+    auto *slide = new QPropertyAnimation(this, "maximumHeight", this);
+    slide->setStartValue(height());
+    slide->setEndValue(target);
+    motion::apply(slide, motion::kChrome);
+    connect(slide, &QPropertyAnimation::finished, this, [this, target]() { setFixedHeight(target); });
+    setMinimumHeight(0);
+    slide->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
+/* Moves the selection and eases the view to follow, instead of the jump
+ * QListWidget does when the current row leaves the viewport. The wheel
+ * already glides (installSmoothScroll); this is the keyboard saying the
+ * same thing. See docs/adr/0117. */
+void OutputPanel::selectRowSmoothly(int row) {
+    QScrollBar *bar = m_results->verticalScrollBar();
+    int before = bar->value();
+
+    /* Let the list work out where it wants to be, then put the scroll
+     * back and ease to it — cheaper and more robust than computing the
+     * target row's position by hand. */
+    m_results->setCurrentRow(row);
+    m_results->scrollTo(m_results->model()->index(row, 0), QAbstractItemView::EnsureVisible);
+    int target = bar->value();
+    if (target == before) {
+        return;
+    }
+    if (m_viewport == nullptr || !m_viewport->animationsEnabled()) {
+        return;
+    }
+
+    bar->setValue(before);
+    if (m_scroll == nullptr) {
+        m_scroll = new QPropertyAnimation(bar, "value", this);
+    }
+    m_scroll->stop();
+    m_scroll->setStartValue(before);
+    m_scroll->setEndValue(target);
+    motion::apply(m_scroll, motion::kScroll);
+    m_scroll->start();
 }

@@ -60,6 +60,10 @@ const QVector<keys::Binding> &keys::defaults() {
         {"f1", "editor.help", ""},
         {"alt+i", "editor.about", ""},
         {"ctrl+shift+o", "editor.output-panel", ""},
+        /* Next to the toggle, and the direction is the one the panel
+         * edge moves: Up gives the panel more room. */
+        {"ctrl+shift+up", "editor.output-panel.taller", ""},
+        {"ctrl+shift+down", "editor.output-panel.shorter", ""},
         {"ctrl+semicolon", "editor.command-line", ""},
 
         /* editing */

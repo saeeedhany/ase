@@ -107,6 +107,7 @@ private:
     bool confirmDiscard(const QString &message);
     void askAboutRecovery(EditorViewport *viewport, const QString &path);
     void saveSession();
+    static constexpr int kPanelResizeStep = 60;
     void registerWindowCommands();
     void installWindowShortcuts();
     CommandRegistry m_commands;
@@ -332,6 +333,15 @@ void MainWindow::registerWindowCommands() {
                     [this]() { cycleBuffer(1); });
     m_commands.add(QStringLiteral("buffer.previous"), QStringLiteral("Previous buffer"),
                     [this]() { cycleBuffer(-1); });
+    /* Window-level, and deliberately so: resizing the panel is most
+     * wanted while reading it, and the panel has focus then — a
+     * viewport binding would never see the key. See docs/adr/0117. */
+    m_commands.add(QStringLiteral("editor.output-panel.taller"),
+                    QStringLiteral("Give the output panel more room"),
+                    [this]() { m_outputPanel->growBy(kPanelResizeStep); });
+    m_commands.add(QStringLiteral("editor.output-panel.shorter"),
+                    QStringLiteral("Give the editor more room"),
+                    [this]() { m_outputPanel->growBy(-kPanelResizeStep); });
     m_commands.add(QStringLiteral("editor.jump-back"), QStringLiteral("Back to the previous jump"),
                     [this]() { jumpBy(-1); });
     m_commands.add(QStringLiteral("editor.jump-forward"), QStringLiteral("Forward again"),
@@ -343,9 +353,10 @@ void MainWindow::registerWindowCommands() {
  * focus. They are built from the binding table rather than written out,
  * so rebinding one in config.ase moves it here too. */
 void MainWindow::installWindowShortcuts() {
-    static const char *const kWindowCommands[] = {"buffer.new",      "buffer.close",
-                                                   "buffer.next",     "buffer.previous",
-                                                   "editor.jump-back", "editor.jump-forward"};
+    static const char *const kWindowCommands[] = {
+        "buffer.new",         "buffer.close",   "buffer.next",
+        "buffer.previous",    "editor.jump-back", "editor.jump-forward",
+        "editor.output-panel.taller", "editor.output-panel.shorter"};
     AseConfig *config = nullptr;
     char *configPath = ase_config_default_path();
     if (configPath != nullptr) {
@@ -732,9 +743,29 @@ void MainWindow::showLspState(LspState state, const QString &serverName) {
     m_lspLabel->setText(text);
 }
 
+/* The same file named two ways is one file. A buffer opened as
+ * `ase core/src/buffer.c` keeps that relative path, while anything
+ * built from the project root — a search hit, a definition, a reference
+ * — is absolute, and comparing the strings said they were different
+ * files. The result was a second tab for a file already on screen, and
+ * every later jump landing in the duplicate rather than where you were
+ * reading. Symlinks collapse here too, for the same reason.
+ *
+ * canonicalFilePath() is empty for a file that does not exist, which is
+ * a real case: a definition in a generated header that was cleaned. */
+static QString sameFileKey(const QString &path) {
+    if (path.isEmpty()) {
+        return QString();
+    }
+    QFileInfo info(path);
+    QString canonical = info.canonicalFilePath();
+    return canonical.isEmpty() ? info.absoluteFilePath() : canonical;
+}
+
 void MainWindow::openBuffer(const QString &path) {
+    const QString wanted = sameFileKey(path);
     for (int i = 0; i < m_viewports.size(); ++i) {
-        if (m_viewports[i]->filePath() == path) {
+        if (!wanted.isEmpty() && sameFileKey(m_viewports[i]->filePath()) == wanted) {
             setActiveIndex(i);
             return;
         }

@@ -137,6 +137,7 @@ nav:
     - adr/0114-built-in-themes.md
     - adr/0115-one-path-for-a-colour-change.md
     - adr/0116-find-references-and-document-symbols.md
+    - adr/0117-the-seam-is-the-grip.md
 
 theme:
   name: material

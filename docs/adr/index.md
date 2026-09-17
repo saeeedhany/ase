@@ -124,3 +124,4 @@ what changed.
 | [0114](0114-built-in-themes.md) | Built-in themes |
 | [0115](0115-one-path-for-a-colour-change.md) | One path for a colour change |
 | [0116](0116-find-references-and-document-symbols.md) | Find references and document symbols |
+| [0117](0117-the-seam-is-the-grip.md) | The seam is the grip |

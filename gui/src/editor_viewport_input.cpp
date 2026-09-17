@@ -1,4 +1,5 @@
 #include "editor_viewport.h"
+#include "output_panel.h"
 #include "command_registry.h"
 #include "keybindings.h"
 
