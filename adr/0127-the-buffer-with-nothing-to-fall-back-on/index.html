@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0047-vim-block-cursor/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0127-the-buffer-with-nothing-to-fall-back-on/">
       
       
-        <link rel="prev" href="../0046-native-vim-mode-phase-1/">
+        <link rel="prev" href="../0126-the-docs-read-the-tables/">
       
       
-        <link rel="next" href="../0048-syntax-accent-colors-caret-inset-status-init/">
+        <link rel="next" href="../0128-one-name-one-command/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR 0047: A real block cursor for Vim Normal mode - Absolute Simple Editor</title>
+        <title>ADR 0127: The buffer with nothing to fall back on - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0047-a-real-block-cursor-for-vim-normal-mode" class="md-skip">
+        <a href="#adr-0127-the-buffer-with-nothing-to-fall-back-on" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0047: A real block cursor for Vim Normal mode
+              ADR 0127: The buffer with nothing to fall back on
             
           </span>
         </div>
@@ -2773,37 +2773,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0047: A real block cursor for Vim Normal mode
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0047-vim-block-cursor/" class="md-nav__link">
         
   
   
@@ -2819,131 +2792,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#block-only-in-normal-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Block only in Normal mode
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#glyph-width-measured-the-same-run-aware-way-as-everything-else" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Glyph width, measured the same run-aware way as everything else
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#the-character-stays-legible-knock-it-out-on-top-terminal-cursor-style" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The character stays legible: knock it out on top, terminal-cursor style
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#never-fully-opaque" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Never fully opaque
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#animation-inherited-not-re-implemented" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Animation: inherited, not re-implemented
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -5165,10 +5013,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0127-the-buffer-with-nothing-to-fall-back-on/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0127: The buffer with nothing to fall back on
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -5184,6 +5059,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#an-identity-that-is-not-a-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An identity that is not a path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#offered-at-startup-because-nothing-will-reopen-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Offered at startup, because nothing will reopen it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-clean-exit-is-not-a-crash" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A clean exit is not a crash
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pruning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pruning
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -5285,10 +5274,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#block-only-in-normal-mode" class="md-nav__link">
+  <a href="#an-identity-that-is-not-a-path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Block only in Normal mode
+        An identity that is not a path
       
     </span>
   </a>
@@ -5296,10 +5285,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#glyph-width-measured-the-same-run-aware-way-as-everything-else" class="md-nav__link">
+  <a href="#offered-at-startup-because-nothing-will-reopen-it" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Glyph width, measured the same run-aware way as everything else
+        Offered at startup, because nothing will reopen it
       
     </span>
   </a>
@@ -5307,10 +5296,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#the-character-stays-legible-knock-it-out-on-top-terminal-cursor-style" class="md-nav__link">
+  <a href="#a-clean-exit-is-not-a-crash" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The character stays legible: knock it out on top, terminal-cursor style
+        A clean exit is not a crash
       
     </span>
   </a>
@@ -5318,21 +5307,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#never-fully-opaque" class="md-nav__link">
+  <a href="#pruning" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Never fully opaque
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#animation-inherited-not-re-implemented" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Animation: inherited, not re-implemented
+        Pruning
       
     </span>
   </a>
@@ -5372,7 +5350,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0047-vim-block-cursor.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0127-the-buffer-with-nothing-to-fall-back-on.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -5380,91 +5358,75 @@
   
 
 
-<h1 id="adr-0047-a-real-block-cursor-for-vim-normal-mode">ADR 0047: A real block cursor for Vim Normal mode<a class="headerlink" href="#adr-0047-a-real-block-cursor-for-vim-normal-mode" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0127-the-buffer-with-nothing-to-fall-back-on">ADR 0127: The buffer with nothing to fall back on<a class="headerlink" href="#adr-0127-the-buffer-with-nothing-to-fall-back-on" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Vim mode (Phase 1, <code>docs/adr/0046</code>) landed with the editor's existing
-2px insertion-bar caret unchanged in every mode, including Normal. In
-real Vim (and every terminal Vim runs in), Normal mode is unmistakable
-at a glance because the cursor becomes a solid block covering the
-character it's "on" — the editor's own bar caret gave no such cue,
-so Normal mode looked visually identical to plain text editing. User
-feedback after using Phase 1: give Normal mode a real block cursor,
-make sure the character under it stays legible, keep the block's
-blink from ever hitting full opacity, and make sure the existing
-position-glide/blink-reset animation still drives it through every
-motion and edit, not just a static highlight.</p>
+<p>ADR 0110 gave unsaved work a snapshot that survives a crash. It filed
+each snapshot under the buffer's file path, and both
+<code>armRecoverySnapshot()</code> and <code>writeRecoverySnapshot()</code> opened with</p>
+<div class="highlight"><pre><span></span><code><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">m_recoveryDir</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">()</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">m_filePath</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>So a buffer with no path was never snapshotted at all. <code>Ctrl+N</code>, type for
+an hour, crash, and everything is gone — the one case where there is no
+file on disk to fall back to, and the only one the feature did not
+cover.</p>
+<p>The second gap was the other end: nothing ever removed a snapshot for a
+file crashed on and never reopened, so <code>&lt;config&gt;/recovery/</code> grew for
+good.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<h3 id="block-only-in-normal-mode">Block only in Normal mode<a class="headerlink" href="#block-only-in-normal-mode" title="Permanent link">&para;</a></h3>
-<p>Insert keeps the bar — it still means "an insertion point," same as
-with Vim mode off. Visual keeps it too: Visual already highlights the
-selection range itself (translucent overlay, existing
-<code>highlightRange</code>), and the bar there just marks that selection's
-moving end without a second, competing fill on top of it. Only
-<code>vimModeActive() &amp;&amp; m_vimMode == VimMode::Normal</code> switches the caret
-render path.</p>
-<h3 id="glyph-width-measured-the-same-run-aware-way-as-everything-else">Glyph width, measured the same run-aware way as everything else<a class="headerlink" href="#glyph-width-measured-the-same-run-aware-way-as-everything-else" title="Permanent link">&para;</a></h3>
-<p>The block's width is the actual rendered width of the character under
-the cursor — not a fixed <code>m_charWidth</code> guess, which is exactly the
-"assumed fixed-pitch" bug ADR 0013 already fixed once for the bar
-caret and mouse hit-testing. <code>vimBlockGlyphAt()</code> (<code>editor_viewport.cpp</code>)
-reuses <code>vimNextCharBoundary</code> (codepoint-aware, so a multi-byte UTF-8
-character is measured whole) to find the glyph's end, then measures it
-with the same <code>capturesForLine</code>/<code>xForColumn</code> machinery <code>drawLine</code>
-itself uses — so a bold/italic capture under the cursor gets the
-correct width and font, not the plain font's.</p>
-<p>At end of line or end of buffer there's no real character to cover —
-this editor's own cursor convention already sits <em>at</em> the line's <code>'\n'</code>
-byte there (the named fidelity gap from ADR 0046), not "on" a
-character. <code>vimBlockGlyphAt</code> returns an empty glyph and falls back to
-<code>m_charWidth</code> for the block's width in that case, so the cursor still
-renders as a normal-sized block instead of collapsing to zero width.</p>
-<h3 id="the-character-stays-legible-knock-it-out-on-top-terminal-cursor-style">The character stays legible: knock it out on top, terminal-cursor style<a class="headerlink" href="#the-character-stays-legible-knock-it-out-on-top-terminal-cursor-style" title="Permanent link">&para;</a></h3>
-<p>A block filled in the text's own color would simply hide whatever
-character it lands on. Real Vim's terminal-cell block cursor solves
-this by inverting the cell — the glyph renders in the background color
-on top of the solid block. This editor does the same: after filling
-the block rect, <code>vimBlockGlyphAt</code>'s returned glyph (if non-empty, i.e.
-skipped for the end-of-line/buffer case, where there's nothing to
-draw) is redrawn on top in <code>m_backgroundColor</code>, using that character's
-own font (<code>fontForCapture</code>) so italic/bold glyphs still look correct
-knocked out.</p>
-<h3 id="never-fully-opaque">Never fully opaque<a class="headerlink" href="#never-fully-opaque" title="Permanent link">&para;</a></h3>
-<p><code>kVimBlockCursorMaxAlpha = 200</code> (of 255, ≈78%) caps the block's fill
-alpha — the existing breathing-blink formula (<code>caretAlpha</code>, unchanged,
-still driven by <code>m_idleTicks</code> and reset to solid on every
-cursor-moving action via <code>resetCaretBlink()</code>) is scaled into
-<code>[0, 200]</code> instead of <code>[0, 255]</code> before filling the block:
-<code>blockAlpha = (caretAlpha * kVimBlockCursorMaxAlpha) / 255</code>. A solid,
-fully-opaque block would flash harder than every other translucent
-overlay this app already uses (selection highlight, panel
-backgrounds) and would fight for attention with the knocked-out glyph
-on top of it. The bar caret in Insert/Visual is untouched — still the
-original uncapped <code>[0, 255]</code> range.</p>
-<h3 id="animation-inherited-not-re-implemented">Animation: inherited, not re-implemented<a class="headerlink" href="#animation-inherited-not-re-implemented" title="Permanent link">&para;</a></h3>
-<p>The block's position comes from the same <code>m_renderedCaretPos[i]</code>
-eased values the bar caret already used (<code>caretTargetFor</code> +
-<code>updateAnimation</code>'s per-frame glide toward it, <code>docs/adr/0015</code>) — no
-new animation path. Its blink timing comes from the same <code>caretAlpha</code>
-computation, itself driven by <code>m_idleTicks</code>, which every existing
-cursor-moving/editing call site already resets via <code>resetCaretBlink()</code>
-— including every Vim motion and mutation, since they all funnel
-through <code>keyPressEvent</code>, which calls it unconditionally near the top
-before any mode-specific dispatch. Nothing Vim-specific needed adding
-here: giving Normal mode a block cursor was purely a paintEvent
-rendering change, not a new animation system.</p>
+<h3 id="an-identity-that-is-not-a-path">An identity that is not a path<a class="headerlink" href="#an-identity-that-is-not-a-path" title="Permanent link">&para;</a></h3>
+<p>A snapshot is filed under a <em>key</em>. For a saved file that is still its
+path. For a buffer without one it is <code>untitled:&lt;pid&gt;:&lt;serial&gt;</code>.</p>
+<p>The pid keeps two running editors apart; the serial keeps two untitled
+buffers in one editor apart. No absolute path begins <code>untitled:</code>, so
+nothing can collide with a real file.</p>
+<p><code>saveAs()</code> drops the snapshot <em>before</em> moving to the new key, or the
+untitled one would be left behind and offered back later as work that
+was lost.</p>
+<h3 id="offered-at-startup-because-nothing-will-reopen-it">Offered at startup, because nothing will reopen it<a class="headerlink" href="#offered-at-startup-because-nothing-will-reopen-it" title="Permanent link">&para;</a></h3>
+<p>A named file's snapshot is found when you open that file. An untitled
+one has no such moment, so the window walks the directory at startup and
+asks.</p>
+<p><code>ase_recovery_list()</code> is that walk. It reads each file's recorded key, so
+anything in the directory that is not a whole, well-formed snapshot —
+truncated, or not one at all — is skipped rather than becoming a phantom
+entry in a prompt.</p>
+<p>A key whose pid still belongs to a running process is left alone. The
+alternative is that opening a second window offers back a buffer that is
+on screen in the first one.</p>
+<h3 id="a-clean-exit-is-not-a-crash">A clean exit is not a crash<a class="headerlink" href="#a-clean-exit-is-not-a-crash" title="Permanent link">&para;</a></h3>
+<p>Closing a buffer you were asked about, or quitting past the
+unsaved-changes prompt, now drops the snapshot. Work you were asked about
+and chose to drop is not work the editor lost, and leaving it would offer
+it back at the next start having just been told to discard it.</p>
+<h3 id="pruning">Pruning<a class="headerlink" href="#pruning" title="Permanent link">&para;</a></h3>
+<p><code>ase_recovery_prune()</code> removes snapshots untouched for 30 days, run at
+startup. A snapshot from the future is not an old one, so a clock that
+moved backwards deletes nothing.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Normal mode is now visually unmistakable at a glance, matching every
-Vim user's terminal-trained expectations, while Insert and Visual stay
-exactly as they were. Verified live: the block correctly resizes
-across different character widths and a styled (italic) capture,
-knocks out and stays legible over a live character, falls back to a
-normal-width block at end of line, visibly breathes (blink samples
-across several frames showed clearly varying — never static —
-intensity) while never reaching the bar caret's full peak brightness,
-and glides/updates correctly through motions (<code>l</code>), edits (<code>x</code> +
-<code>u</code> undo), and mode transitions. <code>ctest --test-dir build</code> still 9/9.</p>
+<p>Recovering an untitled buffer opens it as unsaved — it has content and
+nothing on disk, so the dot is the truth. The undo stack cannot say so,
+because the text goes in before there is one, so it is marked through
+the same flag <code>Ctrl+W</code>-mid-insert already used.</p>
+<p>A bare launch leaves one empty untitled buffer; recovering into a new tab
+beside it left that as clutter, so it is closed, but only while it is
+genuinely untouched.</p>
+<p>Verified against a real <code>SIGKILL</code> rather than a simulated one: type into
+an untitled buffer, <code>kill -9</code>, restart, and the prompt appears and the
+text comes back. The same run confirms a clean <code>:q!</code> leaves nothing, that
+Discard removes it, and that a second instance is not offered the first
+one's live buffer.</p>
+<p>Three tests in <code>gui/tests/test_recovery_flow.cpp</code> cover the viewport
+half; they fail on the old code with <code>hasRecoverySnapshot()</code> returning
+false. Four in <code>core/tests/test_recovery.c</code> cover listing and pruning.</p>
+<p>Writing them turned up that the suite's cleanup only <code>rmdir</code>'d, which
+fails silently on a non-empty directory — so a failed run left debris
+that broke a <em>different</em> test next time, which is exactly what happened
+once here. Cleanup now removes the files, and the test that needed "the
+only snapshot in the directory" asks for its own by key instead.</p>
 
 
 

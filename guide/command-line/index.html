@@ -684,10 +684,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-does-not-take" class="md-nav__link">
+  <a href="#any-command-by-name" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What : does not take
+        Any command by name
       
     </span>
   </a>
@@ -1227,6 +1227,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -5063,6 +5067,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0127-the-buffer-with-nothing-to-fall-back-on/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0127: The buffer with nothing to fall back on
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0128-one-name-one-command/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0128: One name, one command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5097,10 +5157,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-does-not-take" class="md-nav__link">
+  <a href="#any-command-by-name" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What : does not take
+        Any command by name
       
     </span>
   </a>
@@ -5197,11 +5257,12 @@ panel, so you never have to go back to the buffer first just to type
 </table>
 <p>An unrecognised name reports <code>unknown command: &lt;name&gt;</code> rather than doing
 nothing quietly — silence made a typo look like a command that ran.</p>
-<h2 id="what-does-not-take">What <code>:</code> does not take<a class="headerlink" href="#what-does-not-take" title="Permanent link">&para;</a></h2>
-<p>The command <em>names</em> — <code>editor.save</code>, <code>pane.close</code>, the ones in
-<a href="../../reference/commands/">Every command</a> — are for the right-hand side
-of a key binding. <code>:editor.save</code> reports an unknown command.</p>
-<p><code>:</code> takes the ex-commands above and plugin command names.</p>
+<h2 id="any-command-by-name">Any command by name<a class="headerlink" href="#any-command-by-name" title="Permanent link">&para;</a></h2>
+<p>Anything in <a href="../../reference/commands/">Every command</a> can also be typed
+here — <code>:editor.find</code>, <code>:pane.close</code>, <code>:buffer.next</code> — resolved exactly
+as a key binding resolves it, so a name means the same thing however you
+reach it.</p>
+<p>Plugin command names work the same way.</p>
 
 
 

@@ -566,6 +566,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#which-platforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which platforms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#headless" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1260,6 +1271,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -5096,6 +5111,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0127-the-buffer-with-nothing-to-fall-back-on/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0127: The buffer with nothing to fall back on
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0128-one-name-one-command/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0128: One name, one command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5145,6 +5216,17 @@
     <span class="md-ellipsis">
       
         From source
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#which-platforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which platforms
       
     </span>
   </a>
@@ -5221,6 +5303,15 @@ ctest<span class="w"> </span>--test-dir<span class="w"> </span>build
 <p>The binary is <code>build/gui/ase_gui</code>. <code>cmake --install build</code> puts it on your
 path along with a <code>.desktop</code> entry and an icon.</p>
 <p>On Debian and Ubuntu the Qt dependency is <code>qt6-base-dev</code>.</p>
+<h2 id="which-platforms">Which platforms<a class="headerlink" href="#which-platforms" title="Permanent link">&para;</a></h2>
+<p><strong>Linux.</strong> That is where the GUI is built, tested and packaged, and it is
+what a release is a release for.</p>
+<p>The core library is built and tested on macOS and Windows in CI too, and
+the GUI has no deliberate Linux dependency — but it has never been built
+on either, so treat them as unverified rather than supported. On Windows
+there is a known gap beyond that: <code>ase_process_spawn()</code> is not
+implemented, so the language server and <code>:compile</code> are present and do
+nothing.</p>
 <h2 id="headless">Headless<a class="headerlink" href="#headless" title="Permanent link">&para;</a></h2>
 <p>The editing engine is a C library with no Qt dependency at all, and can
 be built on its own:</p>

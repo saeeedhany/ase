@@ -10,13 +10,11 @@
       
       
       
-        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0047-vim-block-cursor/">
+        <link rel="canonical" href="https://saeeedhany.github.io/ase/adr/0128-one-name-one-command/">
       
       
-        <link rel="prev" href="../0046-native-vim-mode-phase-1/">
+        <link rel="prev" href="../0127-the-buffer-with-nothing-to-fall-back-on/">
       
-      
-        <link rel="next" href="../0048-syntax-accent-colors-caret-inset-status-init/">
       
       
         
@@ -27,7 +25,7 @@
     
     
       
-        <title>ADR 0047: A real block cursor for Vim Normal mode - Absolute Simple Editor</title>
+        <title>ADR 0128: One name, one command - Absolute Simple Editor</title>
       
     
     
@@ -80,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0047-a-real-block-cursor-for-vim-normal-mode" class="md-skip">
+        <a href="#adr-0128-one-name-one-command" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0047: A real block cursor for Vim Normal mode
+              ADR 0128: One name, one command
             
           </span>
         </div>
@@ -2773,37 +2771,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0047: A real block cursor for Vim Normal mode
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0047-vim-block-cursor/" class="md-nav__link">
         
   
   
@@ -2819,131 +2790,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#block-only-in-normal-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Block only in Normal mode
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#glyph-width-measured-the-same-run-aware-way-as-everything-else" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Glyph width, measured the same run-aware way as everything else
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#the-character-stays-legible-knock-it-out-on-top-terminal-cursor-style" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The character stays legible: knock it out on top, terminal-cursor style
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#never-fully-opaque" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Never fully opaque
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#animation-inherited-not-re-implemented" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Animation: inherited, not re-implemented
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -5193,10 +5039,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0128-one-name-one-command/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0128: One name, one command
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -5212,6 +5085,98 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-resolution-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One resolution order
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-plugins-edit-is-recorded-not-mourned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The plugin's edit is recorded, not mourned
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -5285,10 +5250,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#block-only-in-normal-mode" class="md-nav__link">
+  <a href="#one-resolution-order" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Block only in Normal mode
+        One resolution order
       
     </span>
   </a>
@@ -5296,43 +5261,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#glyph-width-measured-the-same-run-aware-way-as-everything-else" class="md-nav__link">
+  <a href="#the-plugins-edit-is-recorded-not-mourned" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Glyph width, measured the same run-aware way as everything else
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#the-character-stays-legible-knock-it-out-on-top-terminal-cursor-style" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The character stays legible: knock it out on top, terminal-cursor style
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#never-fully-opaque" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Never fully opaque
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#animation-inherited-not-re-implemented" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Animation: inherited, not re-implemented
+        The plugin's edit is recorded, not mourned
       
     </span>
   </a>
@@ -5372,7 +5304,7 @@
 
 
   
-    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0047-vim-block-cursor.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/saeeedhany/ase/edit/main/docs/adr/0128-one-name-one-command.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -5380,91 +5312,58 @@
   
 
 
-<h1 id="adr-0047-a-real-block-cursor-for-vim-normal-mode">ADR 0047: A real block cursor for Vim Normal mode<a class="headerlink" href="#adr-0047-a-real-block-cursor-for-vim-normal-mode" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0128-one-name-one-command">ADR 0128: One name, one command<a class="headerlink" href="#adr-0128-one-name-one-command" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Vim mode (Phase 1, <code>docs/adr/0046</code>) landed with the editor's existing
-2px insertion-bar caret unchanged in every mode, including Normal. In
-real Vim (and every terminal Vim runs in), Normal mode is unmistakable
-at a glance because the cursor becomes a solid block covering the
-character it's "on" — the editor's own bar caret gave no such cue,
-so Normal mode looked visually identical to plain text editing. User
-feedback after using Phase 1: give Normal mode a real block cursor,
-make sure the character under it stays legible, keep the block's
-blink from ever hitting full opacity, and make sure the existing
-position-glide/blink-reset animation still drives it through every
-motion and edit, not just a static highlight.</p>
+<p>Two things turned up while writing the user documentation (ADR 0126),
+both of which had to be documented as behaviour rather than fixed at the
+time.</p>
+<p><strong><code>:editor.save</code> reported an unknown command.</strong> A key binding resolved a
+name through the viewport's registry, then the window's, then the plugin
+host. The <code>:</code> line resolved it through the plugin host <em>only</em>. So
+<code>key.ctrl+s = editor.save</code> worked and typing <code>:editor.save</code> did not —
+the same name meaning two different things depending on how you said it.</p>
+<p><strong>A plugin command destroyed the undo history.</strong> A plugin is handed the
+<code>AseBuffer</code> and edits it directly, so nothing it does passes through the
+undo stack. The first version answered that honestly but bluntly:</p>
+<div class="highlight"><pre><span></span><code><span class="n">ase_undo_destroy</span><span class="p">(</span><span class="n">m_undo</span><span class="p">);</span>
+<span class="n">m_undo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ase_undo_create</span><span class="p">();</span>
+</code></pre></div>
+<p>Running a formatter therefore cost every step back to the start of the
+session, with no warning and no way to get it back.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<h3 id="block-only-in-normal-mode">Block only in Normal mode<a class="headerlink" href="#block-only-in-normal-mode" title="Permanent link">&para;</a></h3>
-<p>Insert keeps the bar — it still means "an insertion point," same as
-with Vim mode off. Visual keeps it too: Visual already highlights the
-selection range itself (translucent overlay, existing
-<code>highlightRange</code>), and the bar there just marks that selection's
-moving end without a second, competing fill on top of it. Only
-<code>vimModeActive() &amp;&amp; m_vimMode == VimMode::Normal</code> switches the caret
-render path.</p>
-<h3 id="glyph-width-measured-the-same-run-aware-way-as-everything-else">Glyph width, measured the same run-aware way as everything else<a class="headerlink" href="#glyph-width-measured-the-same-run-aware-way-as-everything-else" title="Permanent link">&para;</a></h3>
-<p>The block's width is the actual rendered width of the character under
-the cursor — not a fixed <code>m_charWidth</code> guess, which is exactly the
-"assumed fixed-pitch" bug ADR 0013 already fixed once for the bar
-caret and mouse hit-testing. <code>vimBlockGlyphAt()</code> (<code>editor_viewport.cpp</code>)
-reuses <code>vimNextCharBoundary</code> (codepoint-aware, so a multi-byte UTF-8
-character is measured whole) to find the glyph's end, then measures it
-with the same <code>capturesForLine</code>/<code>xForColumn</code> machinery <code>drawLine</code>
-itself uses — so a bold/italic capture under the cursor gets the
-correct width and font, not the plain font's.</p>
-<p>At end of line or end of buffer there's no real character to cover —
-this editor's own cursor convention already sits <em>at</em> the line's <code>'\n'</code>
-byte there (the named fidelity gap from ADR 0046), not "on" a
-character. <code>vimBlockGlyphAt</code> returns an empty glyph and falls back to
-<code>m_charWidth</code> for the block's width in that case, so the cursor still
-renders as a normal-sized block instead of collapsing to zero width.</p>
-<h3 id="the-character-stays-legible-knock-it-out-on-top-terminal-cursor-style">The character stays legible: knock it out on top, terminal-cursor style<a class="headerlink" href="#the-character-stays-legible-knock-it-out-on-top-terminal-cursor-style" title="Permanent link">&para;</a></h3>
-<p>A block filled in the text's own color would simply hide whatever
-character it lands on. Real Vim's terminal-cell block cursor solves
-this by inverting the cell — the glyph renders in the background color
-on top of the solid block. This editor does the same: after filling
-the block rect, <code>vimBlockGlyphAt</code>'s returned glyph (if non-empty, i.e.
-skipped for the end-of-line/buffer case, where there's nothing to
-draw) is redrawn on top in <code>m_backgroundColor</code>, using that character's
-own font (<code>fontForCapture</code>) so italic/bold glyphs still look correct
-knocked out.</p>
-<h3 id="never-fully-opaque">Never fully opaque<a class="headerlink" href="#never-fully-opaque" title="Permanent link">&para;</a></h3>
-<p><code>kVimBlockCursorMaxAlpha = 200</code> (of 255, ≈78%) caps the block's fill
-alpha — the existing breathing-blink formula (<code>caretAlpha</code>, unchanged,
-still driven by <code>m_idleTicks</code> and reset to solid on every
-cursor-moving action via <code>resetCaretBlink()</code>) is scaled into
-<code>[0, 200]</code> instead of <code>[0, 255]</code> before filling the block:
-<code>blockAlpha = (caretAlpha * kVimBlockCursorMaxAlpha) / 255</code>. A solid,
-fully-opaque block would flash harder than every other translucent
-overlay this app already uses (selection highlight, panel
-backgrounds) and would fight for attention with the knocked-out glyph
-on top of it. The bar caret in Insert/Visual is untouched — still the
-original uncapped <code>[0, 255]</code> range.</p>
-<h3 id="animation-inherited-not-re-implemented">Animation: inherited, not re-implemented<a class="headerlink" href="#animation-inherited-not-re-implemented" title="Permanent link">&para;</a></h3>
-<p>The block's position comes from the same <code>m_renderedCaretPos[i]</code>
-eased values the bar caret already used (<code>caretTargetFor</code> +
-<code>updateAnimation</code>'s per-frame glide toward it, <code>docs/adr/0015</code>) — no
-new animation path. Its blink timing comes from the same <code>caretAlpha</code>
-computation, itself driven by <code>m_idleTicks</code>, which every existing
-cursor-moving/editing call site already resets via <code>resetCaretBlink()</code>
-— including every Vim motion and mutation, since they all funnel
-through <code>keyPressEvent</code>, which calls it unconditionally near the top
-before any mode-specific dispatch. Nothing Vim-specific needed adding
-here: giving Normal mode a block cursor was purely a paintEvent
-rendering change, not a new animation system.</p>
+<h3 id="one-resolution-order">One resolution order<a class="headerlink" href="#one-resolution-order" title="Permanent link">&para;</a></h3>
+<p><code>runCommandByName()</code> is the single answer to "what does this name mean":
+this buffer's commands, then the window's, then any plugin's. Both the
+key-binding path and the <code>:</code> line call it, so they cannot drift again.</p>
+<p><code>:</code> still takes its ex-commands first — <code>w</code>, <code>q</code>, <code>s/from/to/</code>, a bare
+line number — because those are not commands in the registry and never
+were. A name that is not one of those now reaches the registry instead
+of skipping straight past it.</p>
+<h3 id="the-plugins-edit-is-recorded-not-mourned">The plugin's edit is recorded, not mourned<a class="headerlink" href="#the-plugins-edit-is-recorded-not-mourned" title="Permanent link">&para;</a></h3>
+<p>The text before the command is already in <code>m_cache</code>. The text after is
+read back from the buffer. When they differ, the change is put back and
+redone through the undo stack as one step.</p>
+<p><code>u</code> then takes back the whole command at once, which is what a single
+command should cost, and everything before it survives. When they do not
+differ, no step is recorded — a command that changed nothing must not
+leave something for <code>u</code> to spend itself on.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<p>Normal mode is now visually unmistakable at a glance, matching every
-Vim user's terminal-trained expectations, while Insert and Visual stay
-exactly as they were. Verified live: the block correctly resizes
-across different character widths and a styled (italic) capture,
-knocks out and stays legible over a live character, falls back to a
-normal-width block at end of line, visibly breathes (blink samples
-across several frames showed clearly varying — never static —
-intensity) while never reaching the bar caret's full peak brightness,
-and glides/updates correctly through motions (<code>l</code>), edits (<code>x</code> +
-<code>u</code> undo), and mode transitions. <code>ctest --test-dir build</code> still 9/9.</p>
+<p><code>gui/tests/test_plugin_flow.cpp</code> is new: it writes a real Lua plugin into
+the test config directory, loads it through the real plugin host, and
+drives it through a real viewport. Three of its cases fail on the old
+code.</p>
+<p>That test is also the first automated coverage the plugin path has had
+from the GUI side at all — ADR 0113's claim that a plugin command is
+bindable like any other was true, but only demonstrated by hand.</p>
+<p>The round-trip costs one copy of the buffer per plugin command. That is
+the same cost the crash snapshot already pays per pause in typing, and a
+plugin command is a deliberate, occasional act rather than something on
+the keystroke path.</p>
+<p>Nothing here changes what a plugin can <em>do</em>. The ABI is still one
+function shape over a buffer; widening it is still
+<a href="../../EXTENSIBILITY/">EXTENSIBILITY.md</a>'s recommendation 2.</p>
 
 
 

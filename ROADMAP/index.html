@@ -1622,6 +1622,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -5204,6 +5208,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0127-the-buffer-with-nothing-to-fall-back-on/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0127: The buffer with nothing to fall back on
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0128-one-name-one-command/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0128: One name, one command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5563,7 +5623,7 @@ Each phase should land with tests/benchmarks before the next begins.</p>
 so is everything the "wiring" note below used to point at: the plugin
 host and the LSP client are both in the GUI, and the license decision
 was settled by <a href="../adr/0033-license-apache-2.0-and-first-alpha-release/">ADR 0033</a>.</p>
-<p>At <code>v0.3.0-alpha</code> the editor has a Vim mode pinned by 220 conformance
+<p>At <code>v0.4.0-beta</code> the editor has a Vim mode pinned by 218 conformance
 cases generated from real vim, Tree-sitter highlighting for seven
 languages, an LSP client with diagnostics/completion/hover/go-to-
 definition sharing one server per language per project, built-in
@@ -6260,6 +6320,16 @@ here as each is reached.</p>
       fix, one motion language, multiple buffers, the plugin host wired
       in, and the tab strip — is a substantially different editor from
       the one that tag points at.</li>
+<li>[x] <strong>v0.4.0-beta</strong>: the first release not called alpha. Everything
+      since v0.3.0-alpha — find-references and document symbols, a
+      keyboard with a law rather than a free-slot policy, regions and
+      the <code>Ctrl+W</code> vocabulary, built-in palettes, keybindings as data,
+      session restore, git gutter marks, an atomic save, crash recovery
+      that now covers the unnamed buffer too, and a documentation site
+      whose reference pages are generated from the editor's own tables.
+      Beta because the daily-driver gaps are closed and the data-loss
+      story is, not because nothing is left: see the follow-ups below,
+      and note that Linux is the supported platform.</li>
 </ul>
 <h2 id="beyond-v1-what-would-make-this-editor-unique">Beyond v1 — what would make this editor unique<a class="headerlink" href="#beyond-v1-what-would-make-this-editor-unique" title="Permanent link">&para;</a></h2>
 <p>Deliberately grouped by <em>why</em> rather than by area. The ordering inside
@@ -6373,11 +6443,12 @@ something else.</p>
 <li><strong>Vim sequences as data</strong> — <code>dd</code> and <code>gg</code> go through a stateful
    Normal-mode dispatcher, not the chord table, so they cannot be
    rebound (<a href="../adr/0113-keybindings-as-data/">ADR 0113</a>).</li>
-<li><strong>An unnamed buffer gets no crash snapshot</strong>, because the snapshot is
-   keyed on the file path. That is where unsaved work is most exposed
-   (<a href="../adr/0110-unsaved-work-survives-a-crash/">ADR 0110</a>).</li>
-<li><strong>Snapshots are never pruned</strong> — one for a file crashed on and never
-   reopened stays indefinitely.</li>
+<li>~~<strong>An unnamed buffer gets no crash snapshot.</strong>~~ Done — a snapshot is
+   filed under a key rather than a path, and untitled buffers are
+   offered back at startup because nothing else will ever reopen them
+   (<a href="../adr/0127-the-buffer-with-nothing-to-fall-back-on/">ADR 0127</a>).</li>
+<li>~~<strong>Snapshots are never pruned.</strong>~~ Done — anything untouched for 30
+   days goes at startup (ADR 0127).</li>
 <li><strong>A concurrent parse</strong>, which would give both an instant open <em>and</em>
    colours on a large file; the size cap is the cheap answer until then
    (<a href="../adr/0107-the-large-file-wall/">ADR 0107</a>).</li>
@@ -6401,39 +6472,31 @@ here) was resolved by
 (Apache License 2.0), alongside the project's first alpha release,
 <code>v0.1.0-alpha</code>.</p>
 <h2 id="follow-ups-noted-but-not-yet-scheduled">Follow-ups noted but not yet scheduled<a class="headerlink" href="#follow-ups-noted-but-not-yet-scheduled" title="Permanent link">&para;</a></h2>
+<p>Audited 2026-09-17: six entries here described things that had been done
+— keybinding customization, the plugin directory loading, the GUI
+triggering a plugin command, the LSP being wired in, <code>didChange</code>, and
+panel infrastructure. They are removed. What is below was checked
+against the code on that date.</p>
 <ul>
-<li>Syntax highlight capture styles (bold keyword, italic type, comment
-  opacity — ADR 0007) are hardcoded in <code>EditorViewport</code>, not yet exposed
-  as config keys.</li>
-<li>Keybinding customization isn't implemented — Phase 4 covered
-  theme/editor config only, per its own scope in <code>docs/SPEC.md</code> section 7.</li>
-<li>No keybinding/command-palette wiring from the GUI to
-  <code>ase_plugin_host_run_command</code> — plugins can register commands but
-  nothing in the running editor triggers one interactively yet
-  (ADR 0009, decision 4).</li>
-<li>Plugin directory isn't loaded automatically by the GUI at startup
-  (unlike config, which is). Natural to add once there's a way to
-  invoke a loaded command.</li>
-<li>LSP client isn't wired into the GUI: no diagnostics rendering
-  (squiggly underlines/gutter marks), no completion popup, no
-  go-to-definition navigation. <code>AseLspClient</code> works standalone
-  (ADR 0011) but nothing in <code>EditorViewport</code> calls into it yet.</li>
-<li>LSP client is POSIX-only — Windows support needs overlapped I/O or a
-  reader thread (ADR 0011, decision 6), real work, not a quick add-on.</li>
-<li>No <code>textDocument/didChange</code> — the LSP client can tell a server a
-  document was opened but not that it changed afterward.</li>
-<li>No panel layout infrastructure — there's exactly one panel; build
-  this when a second one (e.g. LSP diagnostics) actually exists
-  (ADR 0012, decision 3).</li>
-<li>No screen-reader text exposure (<code>QAccessibleInterface</code>) for the
+<li><strong>No screen-reader text exposure</strong> (<code>QAccessibleInterface</code>) for the
   custom-painted viewport — a real, open accessibility gap, not
-  attempted because it's unverifiable without a live AT-SPI client in
+  attempted because it is unverifiable without a live AT-SPI client in
   this environment (ADR 0012, decision 4). Needs dedicated follow-up
   with proper assistive-technology test tooling.</li>
+<li><strong>The LSP client and <code>:compile</code> are POSIX-only.</strong>
+  <code>ase_process_spawn()</code> returns NULL on Windows (<code>core/src/process.c</code>),
+  so both features are present and do nothing there. Async child-process
+  I/O on Windows needs overlapped I/O or a reader thread (ADR 0011,
+  decision 6) — real work, not a quick add-on.</li>
+<li>Syntax highlight capture styles (bold keyword, italic type, comment
+  opacity — ADR 0007) are hardcoded in <code>EditorViewport</code>, not exposed as
+  config keys.</li>
 <li>Vertical multi-cursor movement doesn't track a sticky column per
   cursor (only single-cursor mode does) — a minor, rare-in-practice
   paper cut (ADR 0012, decision 1).</li>
 <li><code>Ctrl+D</code> "select next occurrence" doesn't wrap around the buffer.</li>
+<li>The buffer bar doesn't elide long names
+  (<a href="../adr/0057-always-on-tab-strip-and-welcome-rework/">ADR 0057</a>).</li>
 </ul>
 
 

@@ -1514,6 +1514,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -5096,6 +5100,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0127-the-buffer-with-nothing-to-fall-back-on/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0127: The buffer with nothing to fall back on
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0128-one-name-one-command/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0128: One name, one command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5205,9 +5265,9 @@
 <p>Every action the editor can be asked to perform, under a name. These are
 the names the right-hand side of a <code>key.</code> setting takes — see
 <a href="../../guide/keybindings/">Keybindings</a>.</p>
-<p>They are <strong>not</strong> what the <code>:</code> command line takes. <code>:</code> takes the ex-commands
-listed in <a href="../../guide/command-line/">The command line</a> and the name of any
-command a plugin registered; <code>:editor.save</code> reports an unknown command.</p>
+<p>Each can also be typed on the <code>:</code> line — <code>:editor.find</code> — alongside the
+ex-commands listed in <a href="../../guide/command-line/">The command line</a>. Both
+paths resolve a name the same way. See docs/adr/0128.</p>
 <h2 id="editor">Editor<a class="headerlink" href="#editor" title="Permanent link">&para;</a></h2>
 <p>Act on the buffer you are in.</p>
 <table>

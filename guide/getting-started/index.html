@@ -594,6 +594,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#your-work-survives-a-crash" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Your work survives a crash
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#where-your-settings-live" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1271,6 +1282,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -5107,6 +5122,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0127-the-buffer-with-nothing-to-fall-back-on/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0127: The buffer with nothing to fall back on
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0128-one-name-one-command/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0128: One name, one command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5156,6 +5227,17 @@
     <span class="md-ellipsis">
       
         The six keys worth knowing first
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#your-work-survives-a-crash" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Your work survives a crash
       
     </span>
   </a>
@@ -5273,6 +5355,14 @@ saves, <code>Ctrl+Z</code> undoes.</p>
 </table>
 <p><code>F1</code> is the one to remember. It reads the same binding table the editor
 dispatches from, so it cannot tell you about a key that does not work.</p>
+<h2 id="your-work-survives-a-crash">Your work survives a crash<a class="headerlink" href="#your-work-survives-a-crash" title="Permanent link">&para;</a></h2>
+<p>Unsaved changes are snapshotted a moment after you stop typing, somewhere
+that is not beside your files. If the editor dies — or the machine does —
+the next start offers the work back.</p>
+<p>That includes a buffer you never named. <code>Ctrl+N</code>, type, crash, and it is
+still offered when you come back.</p>
+<p>Quitting normally is not a crash: work you were asked about and chose to
+drop is dropped.</p>
 <h2 id="where-your-settings-live">Where your settings live<a class="headerlink" href="#where-your-settings-live" title="Permanent link">&para;</a></h2>
 <p><code>~/.config/ase/config.ase</code>, written for you on first run. <code>:config</code> opens
 it in the editor, and saving it applies immediately — there is no reload
