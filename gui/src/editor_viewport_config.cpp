@@ -113,6 +113,9 @@ void EditorViewport::reportKeybindingProblems() {
             fromPlugins << QString::fromUtf8(name);
         }
     }
+    /* The window's table is the one passed in; this viewport's own
+     * names and the plugin host's are the "also known" list. */
+    fromPlugins += m_ownCommands.names();
     const QStringList problems = keys::problems(m_config, *m_commands, fromPlugins);
     if (problems.isEmpty()) {
         return;

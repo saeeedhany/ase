@@ -54,11 +54,23 @@ void EditorViewport::registerCommands(CommandRegistry *registry) {
     if (registry == nullptr) {
         return;
     }
-    auto add = [registry](const char *name, const char *description, std::function<void()> run) {
-        if (!registry->contains(QString::fromLatin1(name))) {
-            registry->add(QString::fromLatin1(name), QString::fromLatin1(description),
+    /*
+     * Into this viewport's own table, not the shared one.
+     *
+     * The shared registry holds what the window owns — the buffer list,
+     * the jumplist, the panel's size. Everything below acts on *a*
+     * buffer, and a lambda capturing `this` is only right for the
+     * buffer it was made from.
+     *
+     * The first version put these in the shared table and skipped names
+     * already there, so the first buffer opened owned every editor
+     * command for the rest of the session: with two files open, Ctrl+S
+     * saved the first one whatever was on screen, and reported nothing
+     * because that buffer was clean. See docs/adr/0119.
+     */
+    auto add = [this](const char *name, const char *description, std::function<void()> run) {
+        m_ownCommands.add(QString::fromLatin1(name), QString::fromLatin1(description),
                            std::move(run));
-        }
     };
 
     add("editor.save", "Save the file", [this]() { save(); });
@@ -190,7 +202,10 @@ bool EditorViewport::handleBoundChord(QKeyEvent *event) {
     if (command == QLatin1String("none")) {
         return true;
     }
-    if (m_commands->run(command)) {
+    /* This buffer's own commands first, then the window's. A name in
+     * both would mean the viewport shadowing the window, which no
+     * command does — they are named `editor.*` and `buffer.*`. */
+    if (m_ownCommands.run(command) || m_commands->run(command)) {
         return true;
     }
     /* Plugins register with the host rather than the registry, so a

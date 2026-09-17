@@ -126,3 +126,4 @@ what changed.
 | [0116](0116-find-references-and-document-symbols.md) | Find references and document symbols |
 | [0117](0117-the-seam-is-the-grip.md) | The seam is the grip |
 | [0118](0118-closing-and-reaching-the-panel.md) | Closing and reaching the panel |
+| [0119](0119-a-command-belongs-to-its-buffer.md) | A command belongs to its buffer |

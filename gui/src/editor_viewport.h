@@ -692,7 +692,11 @@ private:
     bool m_historyDiscardedWhileDirty = false;
 
     QTimer *m_highlightTimer = nullptr;
+    /* The window's: buffer list, jumplist, panel size. */
     CommandRegistry *m_commands = nullptr;
+    /* This buffer's own, so a command always acts on the buffer whose
+     * keystroke it was. See docs/adr/0119. */
+    CommandRegistry m_ownCommands;
     QTimer *m_recoveryTimer = nullptr;
     QTimer *m_vcsPollTimer = nullptr;
     AseProcess *m_vcsProcess = nullptr;
