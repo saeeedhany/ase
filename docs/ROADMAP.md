@@ -152,7 +152,7 @@ so is everything the "wiring" note below used to point at: the plugin
 host and the LSP client are both in the GUI, and the license decision
 was settled by [ADR 0033](adr/0033-license-apache-2.0-and-first-alpha-release.md).
 
-At `v0.3.0-alpha` the editor has a Vim mode pinned by 220 conformance
+At `v0.3.0-alpha` the editor has a Vim mode pinned by 218 conformance
 cases generated from real vim, Tree-sitter highlighting for seven
 languages, an LSP client with diagnostics/completion/hover/go-to-
 definition sharing one server per language per project, built-in
@@ -1000,35 +1000,28 @@ here) was resolved by
 
 ## Follow-ups noted but not yet scheduled
 
-- Syntax highlight capture styles (bold keyword, italic type, comment
-  opacity — ADR 0007) are hardcoded in `EditorViewport`, not yet exposed
-  as config keys.
-- Keybinding customization isn't implemented — Phase 4 covered
-  theme/editor config only, per its own scope in `docs/SPEC.md` section 7.
-- No keybinding/command-palette wiring from the GUI to
-  `ase_plugin_host_run_command` — plugins can register commands but
-  nothing in the running editor triggers one interactively yet
-  (ADR 0009, decision 4).
-- Plugin directory isn't loaded automatically by the GUI at startup
-  (unlike config, which is). Natural to add once there's a way to
-  invoke a loaded command.
-- LSP client isn't wired into the GUI: no diagnostics rendering
-  (squiggly underlines/gutter marks), no completion popup, no
-  go-to-definition navigation. `AseLspClient` works standalone
-  (ADR 0011) but nothing in `EditorViewport` calls into it yet.
-- LSP client is POSIX-only — Windows support needs overlapped I/O or a
-  reader thread (ADR 0011, decision 6), real work, not a quick add-on.
-- No `textDocument/didChange` — the LSP client can tell a server a
-  document was opened but not that it changed afterward.
-- No panel layout infrastructure — there's exactly one panel; build
-  this when a second one (e.g. LSP diagnostics) actually exists
-  (ADR 0012, decision 3).
-- No screen-reader text exposure (`QAccessibleInterface`) for the
+Audited 2026-09-17: six entries here described things that had been done
+— keybinding customization, the plugin directory loading, the GUI
+triggering a plugin command, the LSP being wired in, `didChange`, and
+panel infrastructure. They are removed. What is below was checked
+against the code on that date.
+
+- **No screen-reader text exposure** (`QAccessibleInterface`) for the
   custom-painted viewport — a real, open accessibility gap, not
-  attempted because it's unverifiable without a live AT-SPI client in
+  attempted because it is unverifiable without a live AT-SPI client in
   this environment (ADR 0012, decision 4). Needs dedicated follow-up
   with proper assistive-technology test tooling.
+- **The LSP client and `:compile` are POSIX-only.**
+  `ase_process_spawn()` returns NULL on Windows (`core/src/process.c`),
+  so both features are present and do nothing there. Async child-process
+  I/O on Windows needs overlapped I/O or a reader thread (ADR 0011,
+  decision 6) — real work, not a quick add-on.
+- Syntax highlight capture styles (bold keyword, italic type, comment
+  opacity — ADR 0007) are hardcoded in `EditorViewport`, not exposed as
+  config keys.
 - Vertical multi-cursor movement doesn't track a sticky column per
   cursor (only single-cursor mode does) — a minor, rare-in-practice
   paper cut (ADR 0012, decision 1).
 - `Ctrl+D` "select next occurrence" doesn't wrap around the buffer.
+- The buffer bar doesn't elide long names
+  ([ADR 0057](adr/0057-always-on-tab-strip-and-welcome-rework.md)).

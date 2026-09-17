@@ -7,9 +7,9 @@ Every action the editor can be asked to perform, under a name. These are
 the names the right-hand side of a `key.` setting takes — see
 [Keybindings](../guide/keybindings.md).
 
-They are **not** what the `:` command line takes. `:` takes the ex-commands
-listed in [The command line](../guide/command-line.md) and the name of any
-command a plugin registered; `:editor.save` reports an unknown command.
+Each can also be typed on the `:` line — `:editor.find` — alongside the
+ex-commands listed in [The command line](../guide/command-line.md). Both
+paths resolve a name the same way. See docs/adr/0128.
 
 ## Editor
 

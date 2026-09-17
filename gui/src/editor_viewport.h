@@ -234,6 +234,9 @@ public:
     /* For the window's prefix dispatcher, which resolves a sequence and
      * then has to run it against whichever buffer is in front. */
     bool runNamedCommand(const QString &name);
+    /* This buffer's commands, then the window's, then any plugin's.
+     * One order, shared by key bindings and the `:` line. */
+    bool runCommandByName(const QString &name);
 
     /* For the help panel, which has to show the bindings the user
      * actually has rather than the defaults. */

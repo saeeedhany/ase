@@ -33,6 +33,18 @@ path along with a `.desktop` entry and an icon.
 
 On Debian and Ubuntu the Qt dependency is `qt6-base-dev`.
 
+## Which platforms
+
+**Linux.** That is where the GUI is built, tested and packaged, and it is
+what a release is a release for.
+
+The core library is built and tested on macOS and Windows in CI too, and
+the GUI has no deliberate Linux dependency — but it has never been built
+on either, so treat them as unverified rather than supported. On Windows
+there is a known gap beyond that: `ase_process_spawn()` is not
+implemented, so the language server and `:compile` are present and do
+nothing.
+
 ## Headless
 
 The editing engine is a C library with no Qt dependency at all, and can

@@ -24,10 +24,11 @@ panel, so you never have to go back to the buffer first just to type
 An unrecognised name reports `unknown command: <name>` rather than doing
 nothing quietly — silence made a typo look like a command that ran.
 
-## What `:` does not take
+## Any command by name
 
-The command *names* — `editor.save`, `pane.close`, the ones in
-[Every command](../reference/commands.md) — are for the right-hand side
-of a key binding. `:editor.save` reports an unknown command.
+Anything in [Every command](../reference/commands.md) can also be typed
+here — `:editor.find`, `:pane.close`, `:buffer.next` — resolved exactly
+as a key binding resolves it, so a name means the same thing however you
+reach it.
 
-`:` takes the ex-commands above and plugin command names.
+Plugin command names work the same way.

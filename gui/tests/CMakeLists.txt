@@ -40,3 +40,10 @@ add_test(NAME ase_keybinding_tests COMMAND ase_keybinding_tests)
 set_tests_properties(ase_keybinding_tests PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/config"
 )
+
+add_executable(ase_plugin_flow_tests test_plugin_flow.cpp)
+target_link_libraries(ase_plugin_flow_tests PRIVATE ase_gui_objects Qt6::Test ase_warnings)
+add_test(NAME ase_plugin_flow_tests COMMAND ase_plugin_flow_tests)
+set_tests_properties(ase_plugin_flow_tests PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/config"
+)

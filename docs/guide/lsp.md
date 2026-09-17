@@ -4,6 +4,13 @@ ase speaks LSP over stdio. Point it at a server and you get diagnostics,
 completion, hover, go-to-definition, find-references and a document
 outline.
 
+!!! warning "Linux and macOS only"
+
+    The client spawns the server as a child process over stdio, and that
+    path is not implemented on Windows — `ase_process_spawn()` returns
+    nothing there, so the server never starts and `:compile` does nothing
+    either. See [ADR 0011](../adr/0011-lsp-client.md), decision 6.
+
 ## Setting one up
 
 ```ini

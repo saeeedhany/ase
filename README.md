@@ -34,7 +34,7 @@ and a command line in the status bar.
 `w`/`b`/`e` and their WORD forms, operators with counts, text objects,
 marks (local and global), macros, named registers, `.` repeat, Visual
 and Replace modes, `/` search with `n`/`N`, `:s` in vim's own regex
-dialect, and a jumplist. Its behaviour is pinned by **220 conformance
+dialect, and a jumplist. Its behaviour is pinned by **218 conformance
 cases generated from real vim**, so the suite runs without vim
 installed and still agrees with it.
 
@@ -59,11 +59,23 @@ over it, so a failed write leaves the original intact; unsaved changes
 are snapshotted where a crash cannot reach them and offered back on the
 next launch.
 
-Everything above is covered by 17 test suites: the core builds and runs
+Everything above is covered by 18 test suites: the core builds and runs
 on Linux, macOS and Windows in CI, the GUI suites run on Linux against
 the Qt 6.2 floor, and both are built again under ASan and UBSan. See
 [`docs/ROADMAP.md`](docs/ROADMAP.md) for what is still open and
 [`docs/adr/`](docs/adr/) for why any of it is the way it is.
+
+## Supported platforms
+
+**Linux.** That is where the GUI is built, tested and packaged, and it is
+what a release is a release for.
+
+The core library is built and tested on macOS and Windows in CI too, and
+the GUI has no deliberate Linux dependency — but it has never been built
+on either, so treat them as unverified rather than supported. On Windows
+there is a known gap beyond that: `ase_process_spawn()` is not
+implemented, so the language server and `:compile` are present and do
+nothing.
 
 ## Architecture
 

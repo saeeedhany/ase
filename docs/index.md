@@ -54,6 +54,10 @@ document outline, three built-in palettes, keybindings as data, session
 restore, git gutter marks, and a save path that cannot lose the file it
 is writing.
 
+Linux is the supported platform — see
+[Which platforms](guide/install.md#which-platforms). On Windows the
+language server and `:compile` are present and do nothing.
+
 See the [roadmap](ROADMAP.md) for what is still open, and
 [Contributing](https://github.com/saeeedhany/ase/blob/main/CONTRIBUTING.md)
 for the ground rules.

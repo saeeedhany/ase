@@ -383,7 +383,10 @@ void EditorViewport::runCommand(const QString &command) {
             recordJump();
             goToLine(lineNumber);
         } else if (!trimmed.isEmpty()) {
-            if (!runPluginCommand(trimmed)) {
+            /* Every command a key can be bound to, by the same
+             * resolution order, so `:editor.save` and
+             * `key.ctrl+s = editor.save` mean the same thing. */
+            if (!runCommandByName(trimmed)) {
                 notify(NotifyLevel::Warning, QStringLiteral("unknown command: %1").arg(trimmed));
             }
         }
@@ -415,20 +418,54 @@ void EditorViewport::openConfigFile() {
  * potentially stale, and undoing against stale offsets corrupts the
  * buffer. So the history is dropped after a successful command: losing
  * it is a visible cost, silent corruption is not. See docs/adr/0054. */
+/*
+ * A plugin is handed the AseBuffer and edits it directly, so nothing it
+ * does passes through the undo stack. The first version answered that
+ * by throwing the history away — which meant running a formatter cost
+ * you every step back to the start of the session, with no warning.
+ *
+ * The edit is recorded instead, as one step: the text before against
+ * the text after. `u` then undoes the whole command at once, which is
+ * what a single command should cost, and the rest of the history
+ * survives. See docs/adr/0128.
+ */
 bool EditorViewport::runPluginCommand(const QString &name) {
     if (m_pluginHost == nullptr) {
         return false;
     }
+
+    const QByteArray before = m_cache;
     if (!ase_plugin_host_run_command(m_pluginHost, name.toUtf8().constData(), m_buffer)) {
         return false; /* no such command — the caller reports it */
     }
 
-    /* Discarding history resets the state id to "as loaded" for a
-     * buffer that isn't — the one case the id cannot express. */
-    ase_undo_destroy(m_undo);
-    m_undo = ase_undo_create();
-    m_savedStateId = 0;
-    m_historyDiscardedWhileDirty = true;
+    size_t afterLen = ase_buffer_length(m_buffer);
+    QByteArray after(static_cast<int>(afterLen), Qt::Uninitialized);
+    if (afterLen > 0) {
+        ase_buffer_get_text(m_buffer, 0, afterLen, after.data());
+    }
+
+    if (after != before) {
+        /* Put back and redone through the undo stack, so what it holds
+         * describes the buffer it is attached to. */
+        ase_buffer_delete(m_buffer, 0, afterLen);
+        if (!before.isEmpty()) {
+            ase_buffer_insert(m_buffer, 0, before.constData(), static_cast<size_t>(before.size()));
+        }
+
+        beginUndoSession();
+        beginUndoStep();
+        if (!before.isEmpty() && ase_buffer_delete(m_buffer, 0, static_cast<size_t>(before.size()))) {
+            ase_undo_record_delete(m_undo, 0, before.constData(),
+                                    static_cast<size_t>(before.size()));
+        }
+        if (!after.isEmpty() &&
+            ase_buffer_insert(m_buffer, 0, after.constData(), static_cast<size_t>(after.size()))) {
+            ase_undo_record_insert(m_undo, 0, after.constData(), static_cast<size_t>(after.size()));
+        }
+        endUndoStep();
+        endUndoSession();
+    }
 
     collapseToOneCursor();
     refreshCache();

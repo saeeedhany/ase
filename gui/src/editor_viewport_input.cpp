@@ -159,6 +159,29 @@ bool EditorViewport::runNamedCommand(const QString &name) {
     return m_ownCommands.run(name);
 }
 
+/*
+ * One resolution order, for every way of naming a command: this
+ * buffer's own, then the window's, then whatever a plugin registered.
+ *
+ * Shared by key bindings and by the `:` line, because they had drifted.
+ * A binding could name `editor.save` and a key would run it, while
+ * typing `:editor.save` reported an unknown command — the same name
+ * meaning two different things depending on how you said it. See
+ * docs/adr/0128.
+ *
+ * A name in two places would mean the viewport shadowing the window,
+ * which no built-in does: they are `editor.*` and `buffer.*`/`pane.*`.
+ */
+bool EditorViewport::runCommandByName(const QString &name) {
+    if (m_ownCommands.run(name)) {
+        return true;
+    }
+    if (m_commands != nullptr && m_commands->run(name)) {
+        return true;
+    }
+    return runPluginCommand(name);
+}
+
 QString EditorViewport::currentModeName() const {
     if (!vimModeActive()) {
         return QString();
@@ -201,17 +224,11 @@ bool EditorViewport::handleBoundChord(QKeyEvent *event) {
     if (command == QLatin1String("none")) {
         return true;
     }
-    /* This buffer's own commands first, then the window's. A name in
-     * both would mean the viewport shadowing the window, which no
-     * command does — they are named `editor.*` and `buffer.*`. */
-    if (m_ownCommands.run(command) || m_commands->run(command)) {
-        return true;
-    }
-    /* Plugins register with the host rather than the registry, so a
-     * binding naming one lands here. Falling through to it is what makes
+    /* Plugins register with the host rather than the registry, and
+     * runCommandByName() reaches both. That is what makes
      * `key.f5 = myplugin.reformat` work with no new API — the claim
-     * ADR 0113 makes, which was not true until this line existed. */
-    if (runPluginCommand(command)) {
+     * ADR 0113 makes. */
+    if (runCommandByName(command)) {
         return true;
     }
     /* A binding naming nothing at all. Silence would be

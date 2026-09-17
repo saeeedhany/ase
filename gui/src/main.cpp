@@ -1444,9 +1444,9 @@ bool MainWindow::dumpDocs(const QString &outDir) {
         "Every action the editor can be asked to perform, under a name. These are\n"
         "the names the right-hand side of a `key.` setting takes — see\n"
         "[Keybindings](../guide/keybindings.md).\n\n"
-        "They are **not** what the `:` command line takes. `:` takes the ex-commands\n"
-        "listed in [The command line](../guide/command-line.md) and the name of any\n"
-        "command a plugin registered; `:editor.save` reports an unknown command.\n\n");
+        "Each can also be typed on the `:` line — `:editor.find` — alongside the\n"
+        "ex-commands listed in [The command line](../guide/command-line.md). Both\n"
+        "paths resolve a name the same way. See docs/adr/0128.\n\n");
 
     struct Group {
         const char *prefix;
