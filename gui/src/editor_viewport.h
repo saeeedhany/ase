@@ -142,6 +142,10 @@ public:
     /* Only MainWindow can know this: a pathless Ctrl+N buffer opened
      * mid-session must not be greeted. See docs/adr/0058. */
     void armWelcomeGreeting() { m_welcomeEligible = true; }
+
+    /* The commands this buffer owns, as opposed to the window's. Read
+     * by binding validation and by --dump-docs. */
+    const CommandRegistry &ownCommands() const { return m_ownCommands; }
     void saveAs(const QString &path);
 
     /* Panel chrome has no AseConfig of its own and reaches theme

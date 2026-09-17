@@ -91,6 +91,24 @@ jobs:
           fi
           echo "ase_gui stayed up"
 
+      # docs/reference/ is written by the binary from the live command,
+      # keybinding and config tables. Committing it means the docs site
+      # builds without Qt; regenerating it here and requiring no diff is
+      # what stops the committed copy drifting from the tables. See
+      # docs/adr/0126.
+      - name: Reference docs match the source
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          ./build/gui/ase_gui --dump-docs docs/reference
+          if ! git diff --exit-code --stat -- docs/reference; then
+            echo
+            echo "docs/reference/ is out of date. Regenerate it with:"
+            echo "    ./build/gui/ase_gui --dump-docs docs/reference"
+            exit 1
+          fi
+          echo "reference docs are current"
+
   # The GUI is 10,600 of the project's 14,200 lines and had no sanitizer
   # coverage at all until ADR 0107 wired it up — where it immediately
   # caught a null dereference in the change being made. Wiring it and

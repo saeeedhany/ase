@@ -74,7 +74,7 @@ layer sandboxes against. See `core/tests/fixtures/` for complete working
 examples of both, and `core/tests/test_plugin_host.c` for how they're
 loaded and invoked.
 
-There's no keybinding or command-palette wiring yet to trigger a
-registered command from the running GUI — commands are invoked
-programmatically (`ase_plugin_host_run_command`) for now. Tracked as a
-follow-up in `docs/ROADMAP.md`.
+A registered command runs from the command line as `:<name>`, and can be
+bound to a key like any built-in one (`key.alt+u = uppercase_all`). The
+user-facing version of this guide is
+[Writing a plugin](https://saeeedhany.github.io/ase/guide/plugins/).
