@@ -89,7 +89,6 @@ public:
     void setCommandLine(CommandLine *panel) { m_commandLine = panel; }
     void setOutputPanel(OutputPanel *panel) { m_outputPanel = panel; }
     void setHelpPanel(HelpPanel *panel) { m_helpPanel = panel; }
-    void setAboutPanel(AboutPanel *panel) { m_aboutPanel = panel; }
     /* One per window, like the output panel — see docs/adr/0096. */
     void setLspRegistry(LspRegistry *registry) { m_lspRegistry = registry; }
     /* Dropped when another buffer claims the same uppercase letter. */
@@ -172,7 +171,6 @@ public:
     /* Called by FindBar; see docs/adr/0021. */
     QString primarySelectionText() const;
     void setFindQuery(const QString &needle);
-    void clearFindQuery();
     void findNext();
     void findPrevious();
     /* `/` and `?`. Records a jump, then moves to the first match past
@@ -748,6 +746,9 @@ private:
     /* The range m_captureAt is valid for. See docs/adr/0072. */
     int m_captureWindowStart = 0;
     int m_captureWindowEnd = 0;
+    /* Set while a large file is waiting for the debounced parse. See
+     * docs/adr/0124. */
+    bool m_highlightDeferred = false;
 
     QByteArray m_cache;
     QVector<int> m_lineStarts;

@@ -7,6 +7,8 @@
 
 #include <QKeyEvent>
 
+#include <cstring>
+
 namespace {
 
 /* Qt's key codes to the names core/src/keymap.c knows. Letters and
@@ -313,41 +315,67 @@ bool splitSequence(const QString &text, QString *first, QString *second) {
     return true;
 }
 
-/* Every `key.*` setting, with the "key." stripped. */
-QStringList configuredBindings(const AseConfig *config, QStringList *values) {
-    QStringList names;
-    const char *const *keys = nullptr;
-    const char *const *vals = nullptr;
+struct Sequence {
+    QString first;
+    QString second;
+    QString command;
+};
+
+/* The built-in table's two-chord rows, split once. These three
+ * functions run on the keystroke path, and the defaults never change,
+ * so canonicalising them per key press was pure waste. */
+const QVector<Sequence> &defaultSequences() {
+    static const QVector<Sequence> table = [] {
+        QVector<Sequence> built;
+        for (const keys::Binding &binding : keys::defaults()) {
+            Sequence row;
+            if (splitSequence(QString::fromLatin1(binding.chord), &row.first, &row.second)) {
+                row.command = QString::fromLatin1(binding.command);
+                built << row;
+            }
+        }
+        return built;
+    }();
+    return table;
+}
+
+/* The user's two-chord bindings. The `strchr` gate is the point: an
+ * ordinary `key.ctrl+s = ...` costs one byte scan, so a config without
+ * sequences allocates nothing at all here. */
+QVector<Sequence> configuredSequences(const AseConfig *config) {
+    QVector<Sequence> found;
+    const char *const *names = nullptr;
+    const char *const *values = nullptr;
     size_t count = 0;
     if (config == nullptr ||
-        !ase_config_entries_with_prefix(config, "key.", &keys, &vals, &count)) {
-        return names;
+        !ase_config_entries_with_prefix(config, "key.", &names, &values, &count)) {
+        return found;
     }
     for (size_t i = 0; i < count; i++) {
-        names << QString::fromUtf8(keys[i]).mid(4);
-        *values << QString::fromUtf8(vals[i]);
+        if (strchr(names[i], keys::kSequenceSeparator) == nullptr) {
+            continue;
+        }
+        Sequence row;
+        if (splitSequence(QString::fromUtf8(names[i]).mid(4), &row.first, &row.second)) {
+            row.command = QString::fromUtf8(values[i]);
+            found << row;
+        }
     }
-    return names;
+    return found;
 }
 
 } // namespace
 
 bool keys::isPrefix(const AseConfig *config, const QString &chord) {
-    QStringList values;
-    const QStringList names = configuredBindings(config, &values);
-    for (int i = 0; i < names.size(); ++i) {
-        QString first;
-        QString second;
-        if (splitSequence(names[i], &first, &second) && first == chord) {
-            /* `none` unbinds one continuation; it does not stop the
-             * chord being a prefix for the others. */
+    /* `none` unbinds one continuation; it does not stop the chord being
+     * a prefix for the others. */
+    for (const Sequence &row : configuredSequences(config)) {
+        if (row.first == chord) {
             return true;
         }
     }
-    for (const Binding &binding : defaults()) {
-        QString first;
-        QString second;
-        if (splitSequence(QString::fromLatin1(binding.chord), &first, &second) && first == chord) {
+    for (const Sequence &row : defaultSequences()) {
+        if (row.first == chord) {
             return true;
         }
     }
@@ -356,21 +384,14 @@ bool keys::isPrefix(const AseConfig *config, const QString &chord) {
 
 QString keys::commandForSequence(const AseConfig *config, const QString &prefix,
                                   const QString &second) {
-    QStringList values;
-    const QStringList names = configuredBindings(config, &values);
-    for (int i = 0; i < names.size(); ++i) {
-        QString a;
-        QString b;
-        if (splitSequence(names[i], &a, &b) && a == prefix && b == second) {
-            return values[i];
+    for (const Sequence &row : configuredSequences(config)) {
+        if (row.first == prefix && row.second == second) {
+            return row.command;
         }
     }
-    for (const Binding &binding : defaults()) {
-        QString a;
-        QString b;
-        if (splitSequence(QString::fromLatin1(binding.chord), &a, &b) && a == prefix &&
-            b == second) {
-            return QString::fromLatin1(binding.command);
+    for (const Sequence &row : defaultSequences()) {
+        if (row.first == prefix && row.second == second) {
+            return row.command;
         }
     }
     return QString();
@@ -379,25 +400,18 @@ QString keys::commandForSequence(const AseConfig *config, const QString &prefix,
 QStringList keys::sequenceHints(const AseConfig *config, const QString &prefix) {
     QStringList hints;
     QStringList seen;
-    QStringList values;
-    const QStringList names = configuredBindings(config, &values);
-    for (int i = 0; i < names.size(); ++i) {
-        QString a;
-        QString b;
-        if (splitSequence(names[i], &a, &b) && a == prefix && !seen.contains(b)) {
-            seen << b;
-            if (values[i] != QLatin1String("none")) {
-                hints << b;
+    for (const Sequence &row : configuredSequences(config)) {
+        if (row.first == prefix && !seen.contains(row.second)) {
+            seen << row.second;
+            if (row.command != QLatin1String("none")) {
+                hints << row.second;
             }
         }
     }
-    for (const Binding &binding : defaults()) {
-        QString a;
-        QString b;
-        if (splitSequence(QString::fromLatin1(binding.chord), &a, &b) && a == prefix &&
-            !seen.contains(b)) {
-            seen << b;
-            hints << b;
+    for (const Sequence &row : defaultSequences()) {
+        if (row.first == prefix && !seen.contains(row.second)) {
+            seen << row.second;
+            hints << row.second;
         }
     }
     hints.sort();

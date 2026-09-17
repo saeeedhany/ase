@@ -5,11 +5,17 @@
  * table, and switching a default off. See docs/adr/0113.
  */
 #include "command_registry.h"
+#include <QFile>
+#include <QApplication>
+#include <QKeyEvent>
+#include "ase/buffer.h"
+#include "editor_viewport.h"
 #include "keybindings.h"
 
 #include "ase/config.h"
 
 #include <QDir>
+#include <QElapsedTimer>
 #include <QTest>
 
 namespace {
@@ -139,10 +145,115 @@ private slots:
         ase_config_destroy(config);
     }
 
-    /* Every command the built-in table names must exist, or a default
-     * binding is a dead key. The registry is built by the viewport, so
-     * this checks the table against itself: no row may name a command
-     * that no other row's spelling suggests was meant. */
+    /* Both run for every key press, so their cost is the floor under
+     * typing. isPrefix() once rebuilt two QStringLists and canonicalised
+     * every `key.*` setting per keystroke: 4584ns, against 212 now. */
+    void lookupStaysOffTheAllocator() {
+        AseConfig *config = configFrom("key.ctrl+s = editor.save\n"
+                                        "key.alt+q = editor.quit\n");
+        QElapsedTimer timer;
+        const int kRuns = 20000;
+
+        /* What the application filter does for every key press. */
+        timer.start();
+        for (int i = 0; i < kRuns; ++i) {
+            (void)keys::isPrefix(config, QStringLiteral("ctrl+j"));
+        }
+        qint64 prefixNs = timer.nsecsElapsed() / kRuns;
+
+        timer.start();
+        for (int i = 0; i < kRuns; ++i) {
+            (void)keys::commandFor(config, QStringLiteral("ctrl+j"), QStringLiteral("normal"));
+        }
+        qint64 commandNs = timer.nsecsElapsed() / kRuns;
+
+        qInfo("isPrefix   %lld ns/key", static_cast<long long>(prefixNs));
+        qInfo("commandFor %lld ns/key", static_cast<long long>(commandNs));
+        qInfo("total      %lld ns/key", static_cast<long long>(prefixNs + commandNs));
+        ase_config_destroy(config);
+
+        /* A ratio, not a number of nanoseconds: both halves take the
+         * same penalty from a sanitizer or a loaded machine, so this
+         * holds where an absolute bound does not. commandFor() does two
+         * config lookups and builds two QStrings; isPrefix() should cost
+         * less than that. Allocating per `key.*` entry made it 8.5x
+         * more. */
+        QVERIFY2(prefixNs < commandNs * 2,
+                  qPrintable(QStringLiteral("isPrefix %1ns against commandFor %2ns")
+                                 .arg(prefixNs)
+                                 .arg(commandNs)));
+    }
+
+    /* A key event into a real viewport with a real file, which is what a
+     * keystroke actually costs.
+     *
+     * Past kSyncHighlightBytes the parse is meant to wait for a pause in
+     * typing. It did not: refreshCache() zeroed the capture window every
+     * keystroke, so ensureCursorVisible() — which needs captures to
+     * measure the caret — re-parsed the whole file anyway. The debounce
+     * bought nothing, and a 290KB file cost 4008us a key against 56 for
+     * the same size without a grammar. See docs/adr/0124. */
+    void typingCostByFileSize() {
+        /* .c gets a grammar, .txt does not — the difference between the
+         * two runs is what the syntax layer costs. */
+        QVector<qint64> withGrammar;
+        QVector<qint64> without;
+        for (int lines : {500, 2000, 5000, 10000, 20000}) {
+        for (const char *suffix : {".c", ".txt"}) {
+        QString path = QDir(QDir::tempPath()).filePath(QStringLiteral("ase_bench") +
+                                                        QLatin1String(suffix));
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QByteArray body;
+        for (int i = 0; i < lines; ++i) {
+            body += QByteArray("static int value_") + QByteArray::number(i) + " = " +
+                    QByteArray::number(i) + ";\n";
+        }
+        file.write(body);
+        file.close();
+
+        AseBuffer *buffer = ase_buffer_create();
+        ase_buffer_insert(buffer, 0, body.constData(), static_cast<size_t>(body.size()));
+        EditorViewport viewport(buffer, path);
+        viewport.resize(900, 650);
+
+        QElapsedTimer timer;
+        const int kRuns = 60;
+        /* Insert mode, so each key is a real edit: refreshCache, the
+         * line scan, the syntax window, the lot. */
+        QKeyEvent enterInsert(QEvent::KeyPress, Qt::Key_I, Qt::NoModifier, QStringLiteral("i"));
+        QApplication::sendEvent(&viewport, &enterInsert);
+
+        timer.start();
+        for (int i = 0; i < kRuns; ++i) {
+            QKeyEvent press(QEvent::KeyPress, Qt::Key_X, Qt::NoModifier, QStringLiteral("x"));
+            QApplication::sendEvent(&viewport, &press);
+        }
+        qint64 perKey = timer.nsecsElapsed() / kRuns / 1000;
+        qInfo("%6d lines (%4lld KB) %-5s: %5lld us per keystroke", lines,
+              static_cast<long long>(body.size() / 1024), suffix,
+              static_cast<long long>(perKey));
+        if (body.size() > 256 * 1024) {
+            (QLatin1String(suffix) == QLatin1String(".c") ? withGrammar : without) << perKey;
+        }
+
+        QFile::remove(path);
+        }
+        }
+
+        /* Above the threshold a grammar should cost almost nothing,
+         * because no parse runs until typing stops. Generous against a
+         * loaded machine; the defeated debounce was 71x. */
+        QCOMPARE(withGrammar.size(), without.size());
+        for (int i = 0; i < withGrammar.size(); ++i) {
+            QVERIFY2(withGrammar[i] < without[i] * 5 + 200,
+                      qPrintable(QStringLiteral("deferred highlight is not deferred: "
+                                                "%1us with a grammar, %2us without")
+                                     .arg(withGrammar[i])
+                                     .arg(without[i])));
+        }
+    }
+
     void defaultTableHasNoEmptyFields() {
         for (const keys::Binding &binding : keys::defaults()) {
             QVERIFY(binding.chord != nullptr && *binding.chord != '\0');

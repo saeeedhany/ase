@@ -42,6 +42,7 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     m_highlightTimer = new QTimer(this);
     m_highlightTimer->setSingleShot(true);
     connect(m_highlightTimer, &QTimer::timeout, this, [this]() {
+        m_highlightDeferred = false;
         int visibleStart = 0;
         int visibleEnd = 0;
         visibleByteRange(&visibleStart, &visibleEnd);
@@ -209,13 +210,14 @@ void EditorViewport::refreshCache() {
      * Under the threshold it runs now, so colours never lag; over it the
      * parse waits for a pause in typing and the text is drawn plain
      * until it lands. See docs/adr/0107. */
-    if (m_cache.size() <= kSyncHighlightBytes) {
+    m_highlightDeferred = m_cache.size() > kSyncHighlightBytes && m_syntax != nullptr;
+    if (m_highlightDeferred) {
+        m_highlightTimer->start(kHighlightDelayMs);
+    } else if (m_cache.size() <= kSyncHighlightBytes) {
         int visibleStart = 0;
         int visibleEnd = 0;
         visibleByteRange(&visibleStart, &visibleEnd);
         ensureCaptureWindow(visibleStart, visibleEnd, true);
-    } else if (m_syntax != nullptr) {
-        m_highlightTimer->start(kHighlightDelayMs);
     }
 
     recomputeMatches();
@@ -249,6 +251,14 @@ void EditorViewport::ensureCaptureWindow(int startByte, int endByte, bool force)
         return;
     }
     if (!force && startByte >= m_captureWindowStart && endByte <= m_captureWindowEnd) {
+        return;
+    }
+    /* Zeroing the window above put every unforced caller back here, so
+     * the caret measurement alone re-parsed the whole file on each
+     * keystroke and the debounce bought nothing. While a parse is
+     * pending the window stays empty: text draws plain, and the caret is
+     * measured plain to match. See docs/adr/0124. */
+    if (!force && m_highlightDeferred) {
         return;
     }
 
