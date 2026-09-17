@@ -279,20 +279,16 @@ QStringList keys::chordsFor(const AseConfig *config, const QString &command) {
 }
 
 QKeySequence keys::sequenceFor(const QString &chord) {
-    /* Qt parses "Ctrl+Shift+F"; the canonical form differs only in case
-     * and in naming punctuation keys by word, which Qt also accepts. */
-    QStringList parts = chord.split(QLatin1Char('+'), Qt::SkipEmptyParts);
-    if (chord.endsWith(QLatin1String("+plus"))) {
-        parts = chord.left(chord.size() - 5).split(QLatin1Char('+'), Qt::SkipEmptyParts);
-        parts << QStringLiteral("+");
+    /* Qt parses "Alt+;" and not "Alt+Semicolon" — it wants the symbol,
+     * which is exactly what pretty() produces. Spelling the word here
+     * made QKeySequence return an empty sequence, and an empty sequence
+     * installs a QShortcut that can never fire: Alt+; simply did
+     * nothing, with no error anywhere. See docs/adr/0122. */
+    if (chord.contains(QLatin1Char(kSequenceSeparator))) {
+        /* Two-chord sequences are the prefix dispatcher's, not Qt's. */
+        return QKeySequence();
     }
-    QStringList spelled;
-    for (const QString &part : parts) {
-        spelled << (part.size() == 1 ? part.toUpper()
-                                     : part.at(0).toUpper() + part.mid(1));
-    }
-    QKeySequence sequence(spelled.join(QLatin1Char('+')));
-    return sequence;
+    return QKeySequence(pretty(chord));
 }
 
 /* ---- two-chord sequences (ADR 0120) ---- */

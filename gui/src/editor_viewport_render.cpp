@@ -70,10 +70,16 @@ void EditorViewport::paintEvent(QPaintEvent *) {
 
     /* Behind the glyphs, so text stays crisp over the overlay. */
     for (int i = 0; i < m_cursors.size(); ++i) {
-        if (!hasSelectionAt(i)) {
+        /* Not hasSelectionAt(), which asks whether the anchor and the
+         * cursor differ. A linewise selection of one line has both at
+         * the start of that line and still covers it, so the question
+         * to ask is the one the operators ask: is there a range? */
+        size_t start = selectionMinAt(i);
+        size_t end = vimVisualEnd(i);
+        if (end <= start) {
             continue;
         }
-        highlightRange(painter, selectionMinAt(i), vimVisualEnd(i), firstLine, lastLine, m_selectionColor);
+        highlightRange(painter, start, end, firstLine, lastLine, m_selectionColor);
     }
 
     /* Current match drawn last, so it lands on top of any regular

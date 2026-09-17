@@ -41,13 +41,18 @@ void EditorViewport::vimNormalizeLinewiseSelection() {
                                       : static_cast<size_t>(m_cache.size());
     };
 
-    if (cursorLine >= anchorLine) {
-        m_selectionAnchors[0] = lineStart(anchorLine);
-        m_cursors[0] = lineEnd(cursorLine);
-    } else {
-        m_selectionAnchors[0] = lineEnd(anchorLine);
-        m_cursors[0] = lineStart(cursorLine);
-    }
+    /* Both ends sit at the start of their own line.
+     *
+     * The cursor used to be parked at the start of the line *after* the
+     * last selected one, because that is where the selection's range
+     * ends. The range was right and the caret was one line below what
+     * was highlighted — pressing V looked like it selected a line and
+     * jumped off it, and the status bar agreed. vimVisualEnd() works
+     * the span out from the line numbers instead, so the cursor no
+     * longer has to carry it. See docs/adr/0122. */
+    (void)lineEnd;
+    m_selectionAnchors[0] = lineStart(anchorLine);
+    m_cursors[0] = lineStart(cursorLine);
 }
 
 void EditorViewport::resetVimPendingState() {
@@ -1362,8 +1367,19 @@ void EditorViewport::vimReplaceChar(QChar target, int count, bool newline) {
  * docs/adr/0078.
  */
 size_t EditorViewport::vimVisualEnd(int i) const {
+    /* Linewise: through the end of the last selected line, including
+     * its newline, worked out from the line numbers rather than from
+     * where the cursor happens to be. The cursor sits *on* the last
+     * line, not past it — see vimNormalizeLinewiseSelection(). */
+    if (m_vimMode == VimMode::Visual && m_vimVisualLinewise) {
+        int lineCount = static_cast<int>(m_lineStarts.size());
+        int last = std::clamp(std::max(m_vimVisualAnchorLine, m_vimVisualCursorLine), 0,
+                               std::max(0, lineCount - 1));
+        return (last + 1 < lineCount) ? static_cast<size_t>(m_lineStarts[last + 1])
+                                       : static_cast<size_t>(m_cache.size());
+    }
     size_t end = selectionMaxAt(i);
-    if (m_vimMode != VimMode::Visual || m_vimVisualLinewise) {
+    if (m_vimMode != VimMode::Visual) {
         return end;
     }
     /* One character further, but never over the line break: a charwise

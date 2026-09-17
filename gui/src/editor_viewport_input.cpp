@@ -119,11 +119,6 @@ void EditorViewport::registerCommands(CommandRegistry *registry) {
         m_aboutPanel->openAbout();
     });
     add("editor.output-panel", "Toggle the build output", [this]() { toggleOutputPanel(); });
-    add("editor.command-line", "Open the command line", [this]() {
-        if (m_commandLine != nullptr) {
-            m_commandLine->openPrompt(QLatin1Char(':'));
-        }
-    });
 
     add("editor.copy", "Copy", [this]() { copySelection(); });
     add("editor.cut", "Cut", [this]() { cutSelection(); });

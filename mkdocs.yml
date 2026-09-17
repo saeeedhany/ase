@@ -142,6 +142,7 @@ nav:
     - adr/0119-a-command-belongs-to-its-buffer.md
     - adr/0120-a-law-for-the-keyboard.md
     - adr/0121-saying-where-the-keyboard-is.md
+    - adr/0122-the-cursor-on-the-line-it-selected.md
 
 theme:
   name: material

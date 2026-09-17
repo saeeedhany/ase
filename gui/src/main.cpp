@@ -368,6 +368,16 @@ void MainWindow::registerWindowCommands() {
      * window key moves between them, closes one, or resizes it — the
      * same vocabulary vim uses for windows, because that is the one
      * already in people's fingers. See docs/adr/0120. */
+    /* The window's, not a viewport's, so it opens from wherever the
+     * keyboard happens to be. `:q` to close a panel you are reading is
+     * the obvious thing to type, and it was unreachable without first
+     * going back to the buffer. See docs/adr/0122. */
+    m_commands.add(QStringLiteral("editor.command-line"), QStringLiteral("Open the command line"),
+                    [this]() {
+                        if (m_commandLine != nullptr) {
+                            m_commandLine->openPrompt(QLatin1Char(':'));
+                        }
+                    });
     m_commands.add(QStringLiteral("pane.focus-down"), QStringLiteral("Focus the region below"),
                     [this]() { focusRegion(1); });
     m_commands.add(QStringLiteral("pane.focus-up"), QStringLiteral("Focus the region above"),
@@ -399,7 +409,8 @@ void MainWindow::installWindowShortcuts() {
     static const char *const kWindowCommands[] = {
         "buffer.new",         "buffer.close",   "buffer.next",
         "buffer.previous",    "editor.jump-back", "editor.jump-forward",
-        "editor.output-panel.taller", "editor.output-panel.shorter"};
+        "editor.output-panel.taller", "editor.output-panel.shorter",
+        "editor.command-line"};
     AseConfig *config = nullptr;
     char *configPath = ase_config_default_path();
     if (configPath != nullptr) {
