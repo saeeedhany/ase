@@ -27,6 +27,11 @@ public:
     /* The line's colour at full strength; it is drawn at a fraction of
      * this until hovered. */
     void setColor(const QColor &color);
+    /* The panel below this seam holds the keyboard. The seam brightens,
+     * because the divider is the one piece of chrome both regions
+     * share — so it is where "which side is live" can be said without
+     * adding anything. See docs/adr/0121. */
+    void setRegionActive(bool active);
 
 signals:
     /* Pointer moved `delta` pixels while held. Positive is downward,
@@ -43,6 +48,7 @@ protected:
 
 private:
     void animateTo(double strength);
+    double restStrength() const;
 
     QColor m_color;
     /* 0..1, animated. Not a Qt property on purpose: QPropertyAnimation
@@ -50,6 +56,7 @@ private:
      * stays a plain double the paint reads. */
     double m_strength = 0.0;
     bool m_dragging = false;
+    bool m_regionActive = false;
     int m_lastY = 0;
     QVariantAnimation *m_fade = nullptr;
 };

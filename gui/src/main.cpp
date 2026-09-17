@@ -137,6 +137,7 @@ private:
     /* Permanent, unlike the message beside it: it answers a question
      * asked at arbitrary moments, not when something happens. */
     QLabel *m_lspLabel = nullptr;
+    QLabel *m_pendingLabel = nullptr;
     QLabel *m_messageLabel = nullptr;
     QGraphicsOpacityEffect *m_messageOpacity = nullptr;
     QPropertyAnimation *m_messageFade = nullptr;
@@ -257,8 +258,14 @@ MainWindow::MainWindow() {
         EditorViewport *viewport = activeViewport();
         if (viewport != nullptr) {
             viewport->goToLine(line);
-            viewport->setFocus();
         }
+        /* Focus stays in the list. Walking a list of references is a
+         * sequence, not one jump — taking the keyboard away after each
+         * one meant reaching back for it every time. Ctrl+W k goes to
+         * the editor when you have arrived somewhere worth staying.
+         * openBuffer() may have focused a viewport on the way, so this
+         * takes it back rather than merely not giving it away. */
+        m_outputPanel->focusList();
     });
     setCentralWidget(central);
 
@@ -305,6 +312,14 @@ MainWindow::MainWindow() {
     });
     /* addPermanentWidget appends right-to-left, so this lands left of
      * the position readout. */
+    /* Vim's showcmd, immediately left of the position readout — where
+     * vim itself puts it, and where the eye already goes for "what is
+     * the editor doing". */
+    m_pendingLabel = new QLabel();
+    m_pendingLabel->setTextFormat(Qt::PlainText);
+    m_pendingLabel->setContentsMargins(0, 0, 12, 0);
+    statusBar()->addPermanentWidget(m_pendingLabel);
+
     m_lspLabel = new QLabel();
     m_lspLabel->setTextFormat(Qt::PlainText);
     m_lspLabel->setContentsMargins(0, 0, 12, 0);
@@ -483,9 +498,22 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
                                             .arg(dirty ? QStringLiteral(" *") : QString()));
                 setWindowTitle(windowTitleFor(viewport->filePath(), dirty));
                 applyStatusBarTheme(*this, m_modeLabel, m_statusLabel, viewport);
+                m_pendingLabel->setPalette(m_statusLabel->palette());
                 showLspState(viewport->lspState(), viewport->lspServerName());
                 refreshBufferBar(); /* the name may have changed via Save-As */
             });
+    connect(viewport, &EditorViewport::pendingInputChanged, this, [this, viewport](const QString &keys) {
+        /* Only the buffer in front; a background one cannot be being
+         * typed into. */
+        if (viewport == m_stack->currentWidget()) {
+            m_pendingLabel->setText(keys);
+        }
+    });
+    connect(viewport, &EditorViewport::focusChanged, this, [this](bool focused) {
+        if (m_outputPanel != nullptr) {
+            m_outputPanel->setRegionActive(!focused && m_outputPanel->hasFocusInside());
+        }
+    });
     connect(viewport, &EditorViewport::jumpRecorded, this, [this]() { recordJump(); });
     connect(viewport, &EditorViewport::globalMarkSetRequested, this,
             [this, viewport](char name) { setGlobalMark(viewport, name); });
@@ -864,6 +892,8 @@ void MainWindow::setActiveIndex(int index) {
     /* A message from the buffer you just left would read as being
      * about this one. */
     hideMessage();
+    /* A half-typed command belongs to the buffer it was typed in. */
+    m_pendingLabel->clear();
     EditorViewport *viewport = m_viewports[index];
     /* Each buffer has its own server, so this follows the visible file. */
     showLspState(viewport->lspState(), viewport->lspServerName());

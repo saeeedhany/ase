@@ -50,7 +50,15 @@ void EditorViewport::vimNormalizeLinewiseSelection() {
     }
 }
 
-void EditorViewport::resetVimPendingState() { m_vimPending.reset(); }
+void EditorViewport::resetVimPendingState() {
+    m_vimPending.reset();
+    /* The command resolved (or was abandoned), so there is nothing
+     * half-typed left to show. */
+    if (!m_vimPendingKeys.isEmpty()) {
+        m_vimPendingKeys.clear();
+        emit pendingInputChanged(m_vimPendingKeys);
+    }
+}
 
 /* '\n' counts as Blank, which is what lets w/b/e cross lines with no
  * special-casing. */
@@ -1176,6 +1184,18 @@ void EditorViewport::vimJumpToMark(char name, bool exact) {
 }
 
 void EditorViewport::vimRecordKey(QChar qc) {
+    /* Vim's `showcmd`, in the status bar: what has been typed so far
+     * for a command that has not resolved. `2d` sits there until the
+     * motion arrives. Without it a half-typed operator is invisible and
+     * the next keystroke appears to do something arbitrary. See
+     * docs/adr/0121. */
+    if (!m_dotReplaying) {
+        if (m_vimPending.idle() && m_vimPendingKeys.isEmpty()) {
+            m_vimPendingKeys.clear();
+        }
+        m_vimPendingKeys.append(qc);
+        emit pendingInputChanged(m_vimPendingKeys);
+    }
     if (m_dotReplaying) {
         return;
     }

@@ -223,6 +223,12 @@ public:
     const AseConfig *config() const { return m_config; }
 
 signals:
+    /* Vim's showcmd — the half-typed command, for the status bar. */
+    void pendingInputChanged(const QString &keys);
+
+    /* So the window can tell the seam which side is live. */
+    void focusChanged(bool focused);
+
     void fileOpenRequested(const QString &path);
     /* 1-based line. The window owns the buffer list, this owns the
      * cursor, and a definition in another file needs both. */
@@ -253,6 +259,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;
     void focusOutEvent(QFocusEvent *event) override;
+    void focusInEvent(QFocusEvent *event) override;
 
 private:
     void loadConfig();
@@ -278,6 +285,9 @@ private:
      * than run on the keystroke — see docs/adr/0107. */
     static constexpr int kSyncHighlightBytes = 256 * 1024;
     static constexpr int kHighlightDelayMs = 40;
+    /* Present but plainly not taking input. Bright enough to find, dim
+     * enough that it is not where your eye goes. */
+    static constexpr int kUnfocusedCaretAlpha = 70;
     /* Long enough that a burst of typing writes one snapshot, short
      * enough that little is at risk. */
     static constexpr int kRecoveryDelayMs = 900;
@@ -711,6 +721,8 @@ private:
     QString m_sessionTheme;
     /* What findReferences() asked about, for the summary line. */
     QString m_lspReferenceSymbol;
+    /* Vim's showcmd: keys typed toward a command not yet resolved. */
+    QString m_vimPendingKeys;
     bool m_syntaxOverSizeCap = false;
     AseConfig *m_config = nullptr;
     QString m_configPath;

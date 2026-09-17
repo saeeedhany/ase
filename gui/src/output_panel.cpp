@@ -346,6 +346,10 @@ void OutputPanel::focusList() {
     }
 }
 
+void OutputPanel::setRegionActive(bool active) {
+    m_handle->setRegionActive(active);
+}
+
 bool OutputPanel::hasFocusInside() const {
     QWidget *focused = QApplication::focusWidget();
     return focused != nullptr && (focused == this || isAncestorOf(focused));

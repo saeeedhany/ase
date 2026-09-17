@@ -163,7 +163,13 @@ void EditorViewport::paintEvent(QPaintEvent *) {
      * neither fades while the caret is being moved. cos, not sin, so
      * phase 0 is full brightness and the fade starts from solid. */
     int caretAlpha = 255;
-    if (m_animationsEnabled) {
+    if (!hasFocus()) {
+        /* The keyboard is somewhere else — a panel, a find bar. A caret
+         * that goes on pulsing there claims keystrokes it will not
+         * receive, so it stops and dims to a marker of where you were.
+         * See docs/adr/0121. */
+        caretAlpha = kUnfocusedCaretAlpha;
+    } else if (m_animationsEnabled) {
         int cycle = caretAnimationTicks();
         double phase = (m_idleTicks % cycle) / static_cast<double>(cycle);
         caretAlpha = std::clamp(static_cast<int>(128 + 127 * std::cos(phase * kTwoPi)), 0, 255);

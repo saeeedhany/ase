@@ -13,6 +13,9 @@ constexpr int kGrabHeight = 7;
 /* Present but not competing: visible enough to say the panel can be
  * resized, dim enough to ignore while reading. */
 constexpr double kRestStrength = 0.22;
+/* Brighter than resting, dimmer than hovered: enough to read as "the
+ * keyboard is down there" without becoming the thing you look at. */
+constexpr double kActiveStrength = 0.6;
 } // namespace
 
 PanelResizeHandle::PanelResizeHandle(QWidget *parent) : QWidget(parent) {
@@ -20,7 +23,7 @@ PanelResizeHandle::PanelResizeHandle(QWidget *parent) : QWidget(parent) {
     setCursor(Qt::SizeVerCursor);
     /* So the pointer arriving is enough; no button required. */
     setMouseTracking(true);
-    m_strength = kRestStrength;
+    m_strength = restStrength();
 
     m_fade = new QVariantAnimation(this);
     m_fade->setDuration(motion::kFade);
@@ -34,6 +37,20 @@ PanelResizeHandle::PanelResizeHandle(QWidget *parent) : QWidget(parent) {
 void PanelResizeHandle::setColor(const QColor &color) {
     m_color = color;
     update();
+}
+
+void PanelResizeHandle::setRegionActive(bool active) {
+    if (m_regionActive == active) {
+        return;
+    }
+    m_regionActive = active;
+    if (!m_dragging && !underMouse()) {
+        animateTo(restStrength());
+    }
+}
+
+double PanelResizeHandle::restStrength() const {
+    return m_regionActive ? kActiveStrength : kRestStrength;
 }
 
 void PanelResizeHandle::animateTo(double strength) {
@@ -64,7 +81,7 @@ void PanelResizeHandle::enterEvent(QEnterEvent *event) {
 
 void PanelResizeHandle::leaveEvent(QEvent *event) {
     if (!m_dragging) {
-        animateTo(kRestStrength);
+        animateTo(restStrength());
     }
     QWidget::leaveEvent(event);
 }
@@ -100,7 +117,7 @@ void PanelResizeHandle::mouseReleaseEvent(QMouseEvent *event) {
         m_dragging = false;
         /* underMouse() and not rect().contains(): the pointer may have
          * left during the drag, which is normal when dragging fast. */
-        animateTo(underMouse() ? 1.0 : kRestStrength);
+        animateTo(underMouse() ? 1.0 : restStrength());
     }
     QWidget::mouseReleaseEvent(event);
 }

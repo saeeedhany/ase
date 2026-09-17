@@ -56,6 +56,8 @@ public:
      * there — the editor needs both to decide what a toggle means. */
     void focusList();
     bool hasFocusInside() const;
+    /* Tell the seam which region the keyboard is in. */
+    void setRegionActive(bool active);
 
     void appendLine(const QString &text);
     /* No implied newline: process output arrives in arbitrary chunks. */

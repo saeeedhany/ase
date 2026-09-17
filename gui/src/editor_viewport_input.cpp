@@ -528,5 +528,19 @@ void EditorViewport::leaveEvent(QEvent *event) {
 void EditorViewport::focusOutEvent(QFocusEvent *event) {
     dismissCompletion();
     dismissHover();
+    /* The caret's look depends on having focus, and nothing else would
+     * ask for a repaint until something moved. */
+    update();
+    emit focusChanged(false);
     QWidget::focusOutEvent(event);
+}
+
+void EditorViewport::focusInEvent(QFocusEvent *event) {
+    /* From full brightness, not wherever the fade happened to be when
+     * focus left. */
+    m_idleTicks = 0;
+    m_caretVisible = true;
+    update();
+    emit focusChanged(true);
+    QWidget::focusInEvent(event);
 }
