@@ -30,6 +30,7 @@
 #include "ase/keymap.h"
 #include "keybindings.h"
 #include "command_registry.h"
+#include "ase/recovery.h"
 #include "ase/session.h"
 #include "ase/theme.h"
 #include "themed_dialog.h"
@@ -45,6 +46,14 @@
 extern "C" {
 #include "ase/buffer.h"
 }
+
+#if defined(Q_OS_WIN)
+#include <windows.h>
+#else
+#include <cerrno>
+#include <csignal>
+#include <sys/types.h>
+#endif
 
 namespace {
 
@@ -115,6 +124,7 @@ private:
     static constexpr int kPanelResizeStep = 60;
     void focusRegion(int direction);
     void closeFocusedRegion();
+    void discardEveryRecovery();
     void registerWindowCommands();
     void installWindowShortcuts();
     CommandRegistry m_commands;
@@ -123,6 +133,9 @@ private:
 
 public:
     bool restoreSession();
+    /* Offers back untitled buffers a crash took, and drops snapshots
+     * old enough that nobody is coming for them. See docs/adr/0127. */
+    void recoverUntitledBuffers();
     /* Writes the Reference pages from the live tables. See
      * docs/adr/0126. */
     bool dumpDocs(const QString &outDir);
@@ -817,6 +830,128 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
  * which version they want. Recovering is the default because it is the
  * reversible answer — the restore is an undoable edit, and discarding is
  * not. See docs/adr/0110. */
+namespace {
+
+/* An untitled snapshot names the process that wrote it. One still
+ * running owns its buffer, so offering that text back would show a
+ * second copy of something already on screen in another window. */
+bool processIsRunning(qint64 pid) {
+#if defined(Q_OS_WIN)
+    HANDLE handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)pid);
+    if (handle == nullptr) {
+        return false;
+    }
+    DWORD code = 0;
+    bool alive = GetExitCodeProcess(handle, &code) && code == STILL_ACTIVE;
+    CloseHandle(handle);
+    return alive;
+#else
+    return kill(static_cast<pid_t>(pid), 0) == 0 || errno == EPERM;
+#endif
+}
+
+/* "untitled:<pid>:<serial>" — see EditorViewport::recoveryKey(). */
+bool isAbandonedUntitledKey(const QString &key) {
+    if (!key.startsWith(QLatin1String("untitled:"))) {
+        return false;
+    }
+    const QStringList parts = key.split(QLatin1Char(':'));
+    if (parts.size() != 3) {
+        return false;
+    }
+    bool ok = false;
+    qint64 pid = parts[1].toLongLong(&ok);
+    if (!ok) {
+        return false;
+    }
+    return pid == QCoreApplication::applicationPid() || !processIsRunning(pid);
+}
+
+/* Long enough that a machine left off over a holiday still has its
+ * work; short enough that the directory does not grow for ever. */
+constexpr long kSnapshotMaxAgeSeconds = 30L * 24 * 60 * 60;
+
+} // namespace
+
+void MainWindow::recoverUntitledBuffers() {
+    EditorViewport *any = activeViewport();
+    if (any == nullptr || any->recoveryDir().isEmpty()) {
+        return;
+    }
+    const QByteArray dir = any->recoveryDir().toUtf8();
+
+    ase_recovery_prune(dir.constData(), kSnapshotMaxAgeSeconds);
+
+    AseRecoveryList list;
+    if (!ase_recovery_list(dir.constData(), &list)) {
+        return;
+    }
+    QStringList orphans;
+    for (size_t i = 0; i < list.count; i++) {
+        QString key = QString::fromUtf8(list.keys[i]);
+        if (isAbandonedUntitledKey(key)) {
+            orphans << key;
+        }
+    }
+    ase_recovery_list_free(&list);
+
+    if (orphans.isEmpty()) {
+        return;
+    }
+    orphans.sort();
+
+    const bool one = orphans.size() == 1;
+    bool discard = confirmDestructive(
+        this, any, QStringLiteral("Unsaved work recovered"),
+        one ? QStringLiteral("An unsaved buffer with no filename survived a session that ended "
+                              "unexpectedly.")
+            : QStringLiteral("%1 unsaved buffers with no filename survived a session that ended "
+                              "unexpectedly.")
+                  .arg(orphans.size()),
+        one ? QStringLiteral("Discard it") : QStringLiteral("Discard them"),
+        QStringLiteral("Recover"));
+
+    /* A bare launch leaves one empty untitled buffer. Recovering into a
+     * new tab beside it leaves the empty one as clutter nobody asked
+     * for, so it goes — but only while it is genuinely untouched. */
+    EditorViewport *pristine = nullptr;
+    if (!discard && m_viewports.size() == 1 && m_viewports.first()->isUntitled() &&
+        !m_viewports.first()->isDirty()) {
+        pristine = m_viewports.first();
+    }
+
+    for (const QString &key : orphans) {
+        if (discard) {
+            ase_recovery_remove(dir.constData(), key.toUtf8().constData());
+            continue;
+        }
+        size_t len = 0;
+        char *content = ase_recovery_read(dir.constData(), key.toUtf8().constData(), &len);
+        if (content == nullptr) {
+            continue;
+        }
+        AseBuffer *buffer = ase_buffer_create();
+        if (buffer != nullptr) {
+            ase_buffer_insert(buffer, 0, content, len);
+            EditorViewport *viewport = addBuffer(buffer, QString());
+            if (viewport != nullptr) {
+                /* Keeps writing to the snapshot it came from, rather
+                 * than opening a second one beside it. */
+                viewport->adoptRecoveryKey(key);
+                viewport->markUnsaved();
+            }
+        }
+        free(content);
+    }
+
+    if (pristine != nullptr && m_viewports.size() > 1) {
+        closeBuffer(m_viewports.indexOf(pristine), true);
+    }
+    /* markUnsaved() lands after addBuffer() built the row, so the dot
+     * needs asking for again. */
+    refreshBufferBar();
+}
+
 void MainWindow::askAboutRecovery(EditorViewport *viewport, const QString &path) {
     bool discard = confirmDestructive(
         this, viewport, QStringLiteral("Unsaved changes recovered"),
@@ -935,6 +1070,10 @@ void MainWindow::closeBuffer(int index, bool force) {
                              .arg(bufferLabelFor(viewport->filePath())))) {
         return;
     }
+    /* Work you were asked about and chose to drop is not work a crash
+     * took. Leaving the snapshot would offer it back at the next start,
+     * having just been told to discard it. */
+    viewport->discardRecovery();
 
     /* The last buffer closing is the window closing. Asked after the
      * dirty check, so :q! skips the prompt here too rather than meeting
@@ -1182,6 +1321,7 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
 void MainWindow::closeEvent(QCloseEvent *event) {
     if (m_forceClose) {
         saveSession();
+        discardEveryRecovery();
         event->accept();
         return;
     }
@@ -1194,6 +1334,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
     }
     if (dirty.isEmpty()) {
         saveSession();
+        discardEveryRecovery();
         event->accept();
         return;
     }
@@ -1214,9 +1355,18 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 
     if (confirmDiscard(message)) {
         saveSession();
+        discardEveryRecovery();
         event->accept();
     } else {
         event->ignore();
+    }
+}
+
+/* A clean exit is not a crash. Anything still on disk after this one is
+ * something the editor did not get to finish. */
+void MainWindow::discardEveryRecovery() {
+    for (EditorViewport *viewport : m_viewports) {
+        viewport->discardRecovery();
     }
 }
 } // namespace
@@ -1519,6 +1669,10 @@ int main(int argc, char *argv[]) {
         }
     }
     window.show();
+
+    /* After show(), so the prompt has a window to sit over, and after
+     * the session so a recovered buffer joins what is already open. */
+    window.recoverUntitledBuffers();
 
     return app.exec();
 }

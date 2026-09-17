@@ -16,6 +16,7 @@ constexpr int kProjectFileCap = 20000;
 constexpr int kProjectSearchHitCap = 1000;
 } // namespace
 
+#include <QCoreApplication>
 #include <QRegularExpression>
 
 #include <QDir>
@@ -61,7 +62,12 @@ bool EditorViewport::isDirty() const {
 
 /* Defers to save(), so dirty-clearing happens in one place. */
 void EditorViewport::saveAs(const QString &path) {
+    /* The snapshot is filed under the key, and the key is about to
+     * change. Dropped before the move so the untitled one is not left
+     * behind to be offered back at the next start. */
+    discardRecovery();
     m_filePath = path;
+    m_untitledKey.clear();
     save();
 }
 
@@ -597,11 +603,33 @@ void EditorViewport::pollCompile() {
 
 /* ---- unsaved work, kept somewhere a crash cannot reach (ADR 0110) ---- */
 
+/*
+ * An unnamed buffer has no path to file a snapshot under, which is how
+ * it went unsnapshotted entirely — and it is the case where unsaved
+ * work is most exposed, since there is no file on disk to fall back to.
+ *
+ * The pid keeps two running editors apart, and the serial keeps two
+ * untitled buffers in one editor apart. Neither is a path, so no real
+ * file can collide with one. See docs/adr/0127.
+ */
+QString EditorViewport::recoveryKey() const {
+    if (!m_filePath.isEmpty()) {
+        return m_filePath;
+    }
+    if (m_untitledKey.isEmpty()) {
+        static int serial = 0;
+        m_untitledKey = QStringLiteral("untitled:%1:%2")
+                            .arg(QCoreApplication::applicationPid())
+                            .arg(++serial);
+    }
+    return m_untitledKey;
+}
+
 /* Every edit restarts the timer, so a burst of typing writes one
  * snapshot at the end of it rather than one per keystroke. A buffer
  * that matches its file has nothing worth keeping. */
 void EditorViewport::armRecoverySnapshot() {
-    if (m_recoveryTimer == nullptr || m_recoveryDir.isEmpty() || m_filePath.isEmpty()) {
+    if (m_recoveryTimer == nullptr || m_recoveryDir.isEmpty()) {
         return;
     }
     if (!isDirty()) {
@@ -612,40 +640,41 @@ void EditorViewport::armRecoverySnapshot() {
 }
 
 void EditorViewport::writeRecoverySnapshot() {
-    if (m_recoveryDir.isEmpty() || m_filePath.isEmpty() || !isDirty()) {
+    if (m_recoveryDir.isEmpty() || !isDirty()) {
         return;
     }
-    ase_recovery_write(m_recoveryDir.toUtf8().constData(), m_filePath.toUtf8().constData(),
+    ase_recovery_write(m_recoveryDir.toUtf8().constData(), recoveryKey().toUtf8().constData(),
                         m_cache.constData(), static_cast<size_t>(m_cache.size()));
 }
 
 bool EditorViewport::hasRecoverySnapshot() const {
-    if (m_recoveryDir.isEmpty() || m_filePath.isEmpty()) {
+    if (m_recoveryDir.isEmpty()) {
         return false;
     }
-    return ase_recovery_exists(m_recoveryDir.toUtf8().constData(), m_filePath.toUtf8().constData());
+    return ase_recovery_exists(m_recoveryDir.toUtf8().constData(),
+                                recoveryKey().toUtf8().constData());
 }
 
 void EditorViewport::discardRecovery() {
     if (m_recoveryTimer != nullptr) {
         m_recoveryTimer->stop();
     }
-    if (m_recoveryDir.isEmpty() || m_filePath.isEmpty()) {
+    if (m_recoveryDir.isEmpty()) {
         return;
     }
-    ase_recovery_remove(m_recoveryDir.toUtf8().constData(), m_filePath.toUtf8().constData());
+    ase_recovery_remove(m_recoveryDir.toUtf8().constData(), recoveryKey().toUtf8().constData());
 }
 
 /* Restored as an ordinary edit, so the buffer is dirty afterwards and
  * `u` walks back to what is actually on disk. Recovering is then a
  * decision the user can reverse, not one they are stuck with. */
 bool EditorViewport::restoreFromRecovery() {
-    if (m_recoveryDir.isEmpty() || m_filePath.isEmpty()) {
+    if (m_recoveryDir.isEmpty()) {
         return false;
     }
     size_t len = 0;
     char *content = ase_recovery_read(m_recoveryDir.toUtf8().constData(),
-                                       m_filePath.toUtf8().constData(), &len);
+                                       recoveryKey().toUtf8().constData(), &len);
     if (content == nullptr) {
         return false;
     }

@@ -6,9 +6,30 @@
 #include "ase/recovery.h"
 
 #include <dirent.h>
+#include <sys/stat.h>
 #include <unistd.h>
+#include <utime.h>
 
 static const char *kDir = "test_recovery_dir";
+
+/* Moves a snapshot's mtime back, so pruning by age is testable without
+ * a test that takes a day. */
+static void backdate_snapshot(const char *key, long seconds) {
+    AseRecoveryList list;
+    CHECK(ase_recovery_list(kDir, &list));
+    for (size_t i = 0; i < list.count; i++) {
+        if (strcmp(list.keys[i], key) != 0) {
+            continue;
+        }
+        struct stat st;
+        CHECK(stat(list.paths[i], &st) == 0);
+        struct utimbuf times;
+        times.actime = st.st_atime - seconds;
+        times.modtime = st.st_mtime - seconds;
+        CHECK(utime(list.paths[i], &times) == 0);
+    }
+    ase_recovery_list_free(&list);
+}
 
 static void expect_roundtrip(const char *label, const char *path, const char *content, size_t len) {
     CHECK(ase_recovery_write(kDir, path, content, len));
@@ -102,18 +123,17 @@ static void test_rewrite_replaces(void) {
 static void test_snapshot_naming_a_different_file_is_ignored(void) {
     CHECK(ase_recovery_write(kDir, "/home/u/real.c", "contents\n", 9));
 
-    /* Only one snapshot is in the directory, so it is the one to edit. */
+    /* Asked for by key rather than assumed to be the only file there:
+     * debris from a failed run used to make this edit the wrong one. */
     char victim[1024] = {0};
-    DIR *dir = opendir(kDir);
-    CHECK(dir != NULL);
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL) {
-        if (strstr(entry->d_name, ".recover") != NULL) {
-            snprintf(victim, sizeof(victim), "%s/%s", kDir, entry->d_name);
-            break;
+    AseRecoveryList list;
+    CHECK(ase_recovery_list(kDir, &list));
+    for (size_t i = 0; i < list.count; i++) {
+        if (strcmp(list.keys[i], "/home/u/real.c") == 0) {
+            snprintf(victim, sizeof(victim), "%s", list.paths[i]);
         }
     }
-    closedir(dir);
+    ase_recovery_list_free(&list);
     CHECK(victim[0] != '\0');
 
     /* Same length so only the bytes change, not the layout. */
@@ -142,13 +162,112 @@ static void test_creates_its_directory(void) {
     CHECK(ase_recovery_remove(nested, "/home/u/n.c"));
 }
 
+/* An unnamed buffer has no path to key on, which is how it went
+ * unsnapshotted entirely. The key is opaque to this layer — it only has
+ * to be something no real path collides with. */
+static void test_listing_names_every_snapshot(void) {
+    CHECK(ase_recovery_write(kDir, "/home/u/one.c", "one\n", 4));
+    CHECK(ase_recovery_write(kDir, "/home/u/two.c", "two\n", 4));
+    CHECK(ase_recovery_write(kDir, "untitled:900:1", "draft\n", 6));
+
+    AseRecoveryList list;
+    CHECK(ase_recovery_list(kDir, &list));
+    CHECK(list.count == 3);
+
+    bool saw_one = false, saw_two = false, saw_draft = false;
+    for (size_t i = 0; i < list.count; i++) {
+        if (strcmp(list.keys[i], "/home/u/one.c") == 0) saw_one = true;
+        if (strcmp(list.keys[i], "/home/u/two.c") == 0) saw_two = true;
+        if (strcmp(list.keys[i], "untitled:900:1") == 0) saw_draft = true;
+    }
+    CHECK(saw_one && saw_two && saw_draft);
+    ase_recovery_list_free(&list);
+
+    CHECK(ase_recovery_remove(kDir, "/home/u/one.c"));
+    CHECK(ase_recovery_remove(kDir, "/home/u/two.c"));
+    CHECK(ase_recovery_remove(kDir, "untitled:900:1"));
+}
+
+static void test_listing_an_empty_directory(void) {
+    AseRecoveryList list;
+    CHECK(ase_recovery_list(kDir, &list));
+    CHECK(list.count == 0);
+    ase_recovery_list_free(&list);
+}
+
+/* A file that is not a snapshot, or a truncated one, must not become a
+ * phantom entry: the startup prompt offers what this returns. */
+static void test_listing_skips_what_is_not_a_snapshot(void) {
+    CHECK(ase_recovery_write(kDir, "/home/u/genuine.c", "real\n", 5));
+
+    FILE *f = fopen("test_recovery_dir/junk.recover", "wb");
+    CHECK(f != NULL);
+    fwrite("not a snapshot", 1, 14, f);
+    fclose(f);
+
+    f = fopen("test_recovery_dir/truncated.recover", "wb");
+    CHECK(f != NULL);
+    fwrite("ASE-RECOVER-1\n99\n", 1, 17, f);
+    fclose(f);
+
+    AseRecoveryList list;
+    CHECK(ase_recovery_list(kDir, &list));
+    CHECK(list.count == 1);
+    CHECK(strcmp(list.keys[0], "/home/u/genuine.c") == 0);
+    ase_recovery_list_free(&list);
+
+    remove("test_recovery_dir/junk.recover");
+    remove("test_recovery_dir/truncated.recover");
+    CHECK(ase_recovery_remove(kDir, "/home/u/genuine.c"));
+}
+
+/* Snapshots are never pruned today, so one for a file crashed on and
+ * never reopened stays for good. */
+static void test_pruning_takes_only_the_old(void) {
+    CHECK(ase_recovery_write(kDir, "/home/u/fresh.c", "fresh\n", 6));
+    CHECK(ase_recovery_write(kDir, "/home/u/stale.c", "stale\n", 6));
+
+    /* Backdate one by two days. */
+    AseRecoveryList list;
+    CHECK(ase_recovery_list(kDir, &list));
+    ase_recovery_list_free(&list);
+    backdate_snapshot("/home/u/stale.c", 2 * 24 * 60 * 60);
+
+    CHECK(ase_recovery_prune(kDir, 24 * 60 * 60) == 1);
+    CHECK(ase_recovery_exists(kDir, "/home/u/fresh.c"));
+    CHECK(!ase_recovery_exists(kDir, "/home/u/stale.c"));
+
+    CHECK(ase_recovery_remove(kDir, "/home/u/fresh.c"));
+}
+
 /* Leaving the directory behind makes a second run start from a state
  * the first one did not: a bug in "create the directory" would go
  * unnoticed because it was already there. */
 static void remove_test_dirs(void) {
-    rmdir("test_recovery_dir/deeper/still");
-    rmdir("test_recovery_dir/deeper");
-    rmdir("test_recovery_dir");
+    /* The files first: rmdir on a non-empty directory fails silently,
+     * so debris from a failed run used to survive into the next one and
+     * break a different test than the one that left it. */
+    const char *dirs[] = {"test_recovery_dir/deeper/still", "test_recovery_dir/deeper",
+                          "test_recovery_dir"};
+    for (size_t d = 0; d < sizeof(dirs) / sizeof(dirs[0]); d++) {
+        DIR *dp = opendir(dirs[d]);
+        if (dp == NULL) {
+            continue;
+        }
+        struct dirent *entry;
+        while ((entry = readdir(dp)) != NULL) {
+            if (entry->d_name[0] == '.') {
+                continue;
+            }
+            char full[1024];
+            snprintf(full, sizeof(full), "%s/%s", dirs[d], entry->d_name);
+            remove(full);
+        }
+        closedir(dp);
+    }
+    for (size_t d = 0; d < sizeof(dirs) / sizeof(dirs[0]); d++) {
+        rmdir(dirs[d]);
+    }
 }
 
 int main(void) {
@@ -163,6 +282,10 @@ int main(void) {
     test_rewrite_replaces();
     test_snapshot_naming_a_different_file_is_ignored();
     test_creates_its_directory();
+    test_listing_an_empty_directory();
+    test_listing_names_every_snapshot();
+    test_listing_skips_what_is_not_a_snapshot();
+    test_pruning_takes_only_the_old();
 
     remove_test_dirs();
 

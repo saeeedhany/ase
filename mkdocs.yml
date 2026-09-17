@@ -162,6 +162,7 @@ nav:
     - adr/0124-the-debounce-that-never-happened.md
     - adr/0125-a-keystroke-should-not-allocate-to-ask-a-question.md
     - adr/0126-the-docs-read-the-tables.md
+    - adr/0127-the-buffer-with-nothing-to-fall-back-on.md
 
 theme:
   name: material

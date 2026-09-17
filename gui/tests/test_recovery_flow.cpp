@@ -19,6 +19,8 @@
 #include <QKeyEvent>
 #include <QTest>
 
+#include <cstdlib>
+
 namespace {
 
 QString configDir() {
@@ -169,6 +171,69 @@ private slots:
         }
         QVERIFY(!ase_recovery_exists(recoveryDir().toUtf8().constData(),
                                       m_file.toUtf8().constData()));
+    }
+
+    /* The gap this suite did not cover: a buffer with no filename got
+     * no snapshot at all, and it is the one with nothing on disk to
+     * fall back to. See docs/adr/0127. */
+    void untitledBufferIsSnapshotted() {
+        EditorViewport viewport(ase_buffer_create(), QString());
+        QVERIFY(viewport.isUntitled());
+        type(viewport, QStringLiteral("ithoughts with no file"));
+        QTest::qWait(kPastTheTimer);
+        QVERIFY(viewport.hasRecoverySnapshot());
+
+        const QString key = viewport.recoveryKey();
+        QVERIFY(key.startsWith(QStringLiteral("untitled:")));
+
+        size_t len = 0;
+        char *content = ase_recovery_read(recoveryDir().toUtf8().constData(),
+                                           key.toUtf8().constData(), &len);
+        QVERIFY(content != nullptr);
+        QCOMPARE(QByteArray(content, static_cast<int>(len)), QByteArray("thoughts with no file"));
+        free(content);
+        /* The destructor drops it, as it does for a named buffer. */
+    }
+
+    /* Two untitled buffers in one window must not share a snapshot, or
+     * the second silently overwrites the first. */
+    void twoUntitledBuffersGetTheirOwn() {
+        EditorViewport first(ase_buffer_create(), QString());
+        EditorViewport second(ase_buffer_create(), QString());
+        type(first, QStringLiteral("ifirst"));
+        type(second, QStringLiteral("isecond"));
+        QTest::qWait(kPastTheTimer);
+
+        QVERIFY(first.recoveryKey() != second.recoveryKey());
+
+        size_t len = 0;
+        char *content = ase_recovery_read(recoveryDir().toUtf8().constData(),
+                                           first.recoveryKey().toUtf8().constData(), &len);
+        QVERIFY(content != nullptr);
+        QCOMPARE(QByteArray(content, static_cast<int>(len)), QByteArray("first"));
+        free(content);
+    }
+
+    /* Saving moves the buffer to a new key. The old snapshot has to go,
+     * or it is offered back at the next start as work that was lost. */
+    void savingAnUntitledBufferDropsItsUntitledSnapshot() {
+        QString target = QDir(QDir::tempPath()).filePath(QStringLiteral("ase_recovery_named.txt"));
+        QFile::remove(target);
+
+        EditorViewport viewport(ase_buffer_create(), QString());
+        type(viewport, QStringLiteral("iwork"));
+        QTest::qWait(kPastTheTimer);
+        QString untitled = viewport.recoveryKey();
+        QVERIFY(ase_recovery_exists(recoveryDir().toUtf8().constData(),
+                                     untitled.toUtf8().constData()));
+
+        viewport.saveAs(target);
+        QVERIFY(!ase_recovery_exists(recoveryDir().toUtf8().constData(),
+                                      untitled.toUtf8().constData()));
+        QCOMPARE(viewport.recoveryKey(), target);
+        QVERIFY(!viewport.hasRecoverySnapshot()); /* saved, so nothing unsaved */
+
+        QFile::remove(target);
     }
 
     void cleanupTestCase() { QFile::remove(m_file); }

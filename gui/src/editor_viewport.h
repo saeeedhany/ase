@@ -146,6 +146,21 @@ public:
     /* The commands this buffer owns, as opposed to the window's. Read
      * by binding validation and by --dump-docs. */
     const CommandRegistry &ownCommands() const { return m_ownCommands; }
+
+    /* What a crash snapshot is filed under: the path once there is one,
+     * and a per-process name before that. See docs/adr/0127. */
+    QString recoveryKey() const;
+    /* Where snapshots live, so the window can walk them at startup. */
+    QString recoveryDir() const { return m_recoveryDir; }
+    /* True while this buffer has never been saved anywhere. */
+    bool isUntitled() const { return m_filePath.isEmpty(); }
+    /* Adopts a snapshot listed at startup, so a recovered untitled
+     * buffer keeps writing to the same one. */
+    void adoptRecoveryKey(const QString &key) { m_untitledKey = key; }
+    /* Content restored from a snapshot is unsaved by definition, and
+     * the undo stack cannot say so: the text went in before there was
+     * one. */
+    void markUnsaved() { m_historyDiscardedWhileDirty = true; }
     void saveAs(const QString &path);
 
     /* Panel chrome has no AseConfig of its own and reaches theme
@@ -755,6 +770,9 @@ private:
     bool m_highlightDeferred = false;
 
     QByteArray m_cache;
+    /* Stable for this buffer's life; only ever used when m_filePath is
+     * empty. */
+    mutable QString m_untitledKey;
     QVector<int> m_lineStarts;
 
     QVector<size_t> m_cursors {0}; /* always non-empty, sorted ascending, de-duplicated */

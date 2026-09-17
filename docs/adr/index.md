@@ -134,3 +134,4 @@ what changed.
 | [0124](0124-the-debounce-that-never-happened.md) | The debounce that never happened |
 | [0125](0125-a-keystroke-should-not-allocate-to-ask-a-question.md) | A keystroke should not allocate to ask a question |
 | [0126](0126-the-docs-read-the-tables.md) | The docs read the tables |
+| [0127](0127-the-buffer-with-nothing-to-fall-back-on.md) | The buffer with nothing to fall back on |

@@ -37,6 +37,18 @@ saves, `Ctrl+Z` undoes.
 `F1` is the one to remember. It reads the same binding table the editor
 dispatches from, so it cannot tell you about a key that does not work.
 
+## Your work survives a crash
+
+Unsaved changes are snapshotted a moment after you stop typing, somewhere
+that is not beside your files. If the editor dies — or the machine does —
+the next start offers the work back.
+
+That includes a buffer you never named. `Ctrl+N`, type, crash, and it is
+still offered when you come back.
+
+Quitting normally is not a crash: work you were asked about and chose to
+drop is dropped.
+
 ## Where your settings live
 
 `~/.config/ase/config.ase`, written for you on first run. `:config` opens

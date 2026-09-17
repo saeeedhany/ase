@@ -968,11 +968,12 @@ something else.
 3. **Vim sequences as data** — `dd` and `gg` go through a stateful
    Normal-mode dispatcher, not the chord table, so they cannot be
    rebound ([ADR 0113](adr/0113-keybindings-as-data.md)).
-4. **An unnamed buffer gets no crash snapshot**, because the snapshot is
-   keyed on the file path. That is where unsaved work is most exposed
-   ([ADR 0110](adr/0110-unsaved-work-survives-a-crash.md)).
-5. **Snapshots are never pruned** — one for a file crashed on and never
-   reopened stays indefinitely.
+4. ~~**An unnamed buffer gets no crash snapshot.**~~ Done — a snapshot is
+   filed under a key rather than a path, and untitled buffers are
+   offered back at startup because nothing else will ever reopen them
+   ([ADR 0127](adr/0127-the-buffer-with-nothing-to-fall-back-on.md)).
+5. ~~**Snapshots are never pruned.**~~ Done — anything untouched for 30
+   days goes at startup (ADR 0127).
 6. **A concurrent parse**, which would give both an instant open *and*
    colours on a large file; the size cap is the cheap answer until then
    ([ADR 0107](adr/0107-the-large-file-wall.md)).
