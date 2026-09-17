@@ -130,3 +130,4 @@ what changed.
 | [0120](0120-a-law-for-the-keyboard.md) | A law for the keyboard |
 | [0121](0121-saying-where-the-keyboard-is.md) | Saying where the keyboard is |
 | [0122](0122-the-cursor-on-the-line-it-selected.md) | The cursor on the line it selected |
+| [0123](0123-a-range-that-ends-where-a-line-begins.md) | A range that ends where a line begins |

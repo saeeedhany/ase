@@ -513,6 +513,14 @@ void EditorViewport::highlightRange(QPainter &painter, size_t start, size_t end,
         int lineEnd = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
         int rangeStartCol = (line == startLine) ? static_cast<int>(start) - lineStart : 0;
         int rangeEndCol = (line == endLine) ? static_cast<int>(end) - lineStart : lineEnd - lineStart;
+        /* The end is exclusive, so a range finishing exactly at a
+         * line's start covers none of that line. Painting it anyway hit
+         * the max(1, ...) below and drew a one-pixel sliver down the
+         * left edge of the row — which is what a linewise selection
+         * ends at, every time. See docs/adr/0123. */
+        if (rangeEndCol <= rangeStartCol) {
+            continue;
+        }
         int x0 = xForColumn(lineStart, lineEnd, rangeStartCol);
         int x1 = xForColumn(lineStart, lineEnd, rangeEndCol);
         int y = (line - firstLine) * m_lineHeight;
