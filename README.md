@@ -138,9 +138,12 @@ cmake --build build
 ```
 
 Prebuilt packages (AppImage, Arch `PKGBUILD`, `.deb`) are documented in
-[`packaging/README.md`](packaging/README.md); the alpha's own build of
-each is attached to the
-[latest release](https://github.com/saeeedhany/ase/releases/latest).
+[`packaging/README.md`](packaging/README.md), and each release's own
+build of them is attached to the
+[latest release](https://github.com/saeeedhany/ase/releases/latest). A
+`v*` tag builds both in their target containers, runs each on a clean
+one, and leaves a draft release to review — see
+[ADR 0129](docs/adr/0129-a-release-that-builds-itself.md).
 
 ## Layout
 

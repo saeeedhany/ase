@@ -136,3 +136,4 @@ what changed.
 | [0126](0126-the-docs-read-the-tables.md) | The docs read the tables |
 | [0127](0127-the-buffer-with-nothing-to-fall-back-on.md) | The buffer with nothing to fall back on |
 | [0128](0128-one-name-one-command.md) | One name, one command |
+| [0129](0129-a-release-that-builds-itself.md) | A release that builds itself |

@@ -10,6 +10,12 @@ app's `ase` wordmark logo, padded to a square transparent canvas —
 `gui/resources/ase.png` is the un-padded original used inside the app
 itself/the Qt resource bundle, not this file).
 
+Pushing a `v*` tag runs `.github/workflows/release.yml`, which does all
+of this — both builds in the containers below, a smoke test of each on a
+clean container, checksums, and a **draft** release to review and
+publish. The commands here are for building one by hand, which is still
+what you want while changing any of it.
+
 ## AppImage
 
 ```sh
