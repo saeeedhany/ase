@@ -1,0 +1,238 @@
+name: Release
+
+# Everything v0.4.0-beta was assembled by hand: two container builds, a
+# smoke test of each artifact in a third and fourth, checksums, then the
+# upload. Forty minutes, and two failure modes found by accident — see
+# docs/adr/0129. This is that sequence, written down.
+#
+# It stops at a draft. CI can prove the artifacts build, run, and match
+# their checksums; it cannot decide that a tag is a release anyone meant
+# to make, and `git push --tags` is one keystroke from an accident.
+on:
+  push:
+    tags:
+      - 'v*'
+  # For testing the workflow itself without inventing a tag.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build a draft release for'
+        required: true
+      dry_run:
+        description: 'Build and smoke-test only — touch no release'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  appimage:
+    name: AppImage (ubuntu 22.04 container)
+    runs-on: ubuntu-latest
+    # The same base packaging/README.md documents, and for the reason
+    # ADR 0045 gives: built on a rolling-release host, the AppImage
+    # needs a glibc newer than most real systems have.
+    container: ubuntu:22.04
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends \
+            build-essential cmake g++ qt6-base-dev libgl-dev git \
+            ca-certificates curl file
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - name: Build
+        run: bash packaging/appimage/build-appimage.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: packaging/appimage/*.AppImage
+          if-no-files-found: error
+
+  deb:
+    name: deb (debian bookworm container)
+    runs-on: ubuntu-latest
+    container: debian:bookworm
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends \
+            cmake g++ qt6-base-dev git ca-certificates dpkg-dev
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - name: Build
+        run: bash packaging/debian/build-deb.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb
+          path: packaging/debian/*.deb
+          if-no-files-found: error
+
+  # Linking proves the artifact exists; it does not prove it starts.
+  # Both are run on a clean container with nothing of the build left
+  # over, which is the only place "self-contained" means anything.
+  smoke:
+    name: smoke test both artifacts
+    needs: [appimage, deb]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: appimage
+      - uses: actions/download-artifact@v4
+        with:
+          name: deb
+
+      # An AppImage is not fully self-contained by design: linuxdeploy's
+      # excludelist leaves out the font stack (harfbuzz, freetype,
+      # fontconfig) and the graphics drivers, because bundling those
+      # breaks rendering on a host whose fontconfig differs. So the test
+      # is "does it run on a desktop", not "does it run on nothing" —
+      # libqt6widgets6 pulls in exactly that stack.
+      - name: AppImage runs on a clean Ubuntu 22.04
+        run: |
+          docker run --rm -v "$PWD":/art ubuntu:22.04 bash -c '
+            apt-get update -qq >/dev/null
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+              --no-install-recommends xvfb libfuse2 libqt6widgets6 >/dev/null
+            printf "int main(void) { return 0; }\n" > /tmp/smoke.c
+            cp /art/*.AppImage /tmp/ase.AppImage
+            chmod +x /tmp/ase.AppImage
+            set +e
+            xvfb-run -a timeout --signal=TERM 20 \
+              /tmp/ase.AppImage --appimage-extract-and-run /tmp/smoke.c > /tmp/out 2>&1
+            status=$?
+            set -e
+            # 124: still running when the timeout fired. 143: took the
+            # SIGTERM and exited cleanly. Anything else means it died.
+            if [ "$status" -ne 124 ] && [ "$status" -ne 143 ]; then
+              echo "AppImage exited on its own with $status"
+              cat /tmp/out
+              exit 1
+            fi
+            echo "AppImage stayed up"
+          '
+
+      - name: deb installs and runs on a clean Debian bookworm
+        run: |
+          docker run --rm -v "$PWD":/art debian:bookworm bash -c '
+            apt-get update -qq >/dev/null
+            printf "int main(void) { return 0; }\n" > /tmp/smoke.c
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+              xvfb /art/*.deb >/dev/null
+            echo "installed $(dpkg-query -W -f="\${Version}" ase)"
+            set +e
+            xvfb-run -a timeout --signal=TERM 20 /usr/bin/ase_gui /tmp/smoke.c > /tmp/out 2>&1
+            status=$?
+            set -e
+            if [ "$status" -ne 124 ] && [ "$status" -ne 143 ]; then
+              echo "ase_gui exited on its own with $status"
+              cat /tmp/out
+              exit 1
+            fi
+            echo "deb stayed up"
+          '
+
+      # The version in the artifacts has to be the version in the tag,
+      # or the release ships something built from a different commit.
+      - name: Artifacts match the tag
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          EXPECTED="${TAG#v}"
+          for f in *.AppImage *.deb; do
+            # 0.4.0~beta1 in the .deb's filename against 0.4.0-beta in
+            # the tag: compare on the number and the stage word only.
+            got="$(echo "$f" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+[-~][a-z]+' | head -1)"
+            norm_got="$(echo "$got" | tr '~' '-')"
+            norm_exp="$(echo "$EXPECTED" | tr '~' '-')"
+            if [ "$norm_got" != "$norm_exp" ]; then
+              echo "$f does not carry $EXPECTED (read $got)"
+              exit 1
+            fi
+            echo "$f matches $EXPECTED"
+          done
+
+  draft:
+    name: draft release
+    needs: smoke
+    # A dry run proves the artifacts build and start without going near
+    # a release — which is how this workflow was tested against a tag
+    # that already had one published.
+    if: github.event_name == 'push' || github.event.inputs.dry_run != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: appimage
+      - uses: actions/download-artifact@v4
+        with:
+          name: deb
+
+      # GitHub strips `~` from an asset's filename, so a .deb uploaded
+      # as ase_0.4.0~beta1_amd64.deb arrives as ase_0.4.0.beta1... and
+      # no longer matches the name inside SHA256SUMS. Renamed here, so
+      # the checksums describe what a person actually downloads. The
+      # package's own Version: field is untouched, which is what apt
+      # orders on. See docs/adr/0129.
+      - name: Rename the deb away from `~`
+        run: |
+          for f in *~*.deb; do
+            [ -e "$f" ] || continue
+            mv -- "$f" "$(echo "$f" | tr '~' '-')"
+            echo "renamed to $(echo "$f" | tr '~' '-')"
+          done
+
+      - name: Checksums
+        run: |
+          sha256sum *.AppImage *.deb > SHA256SUMS
+          cat SHA256SUMS
+          sha256sum -c SHA256SUMS
+
+      - name: Create the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          PRERELEASE=""
+          case "$TAG" in
+            *alpha*|*beta*|*rc*) PRERELEASE="--prerelease" ;;
+          esac
+
+          # The release first and the assets after, deliberately. Doing
+          # both in one call cost v0.4.0-beta its first attempt: an
+          # HTTP 500 partway through the 26MB upload made gh delete the
+          # release it had just created, notes and all.
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --title "$TAG" \
+              --draft $PRERELEASE \
+              --verify-tag \
+              --generate-notes
+          fi
+
+          for f in *.AppImage *.deb SHA256SUMS; do
+            for attempt in 1 2 3; do
+              if gh release upload "$TAG" "$f" --clobber; then
+                echo "uploaded $f"
+                break
+              fi
+              if [ "$attempt" -eq 3 ]; then
+                echo "giving up on $f"
+                exit 1
+              fi
+              echo "retrying $f ($attempt)"
+              sleep 15
+            done
+          done
+
+          echo "Draft ready: $(gh release view "$TAG" --json url --jq .url)"
+          echo "Generated notes are a starting point — write the real ones, then publish."
