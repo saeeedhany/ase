@@ -9,6 +9,10 @@ jobs:
   core-headless:
     name: core (headless, ${{ matrix.os }})
     strategy:
+      # One platform's failure used to cancel the other two, so a
+      # Windows configure error hid whether Linux and macOS were even
+      # passing. See docs/adr/0130.
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}

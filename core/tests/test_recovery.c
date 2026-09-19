@@ -5,12 +5,44 @@
 
 #include "ase/recovery.h"
 
-#include <dirent.h>
 #include <sys/stat.h>
+
+/* This file drives a feature meant to work on Windows too, so it cannot
+ * reach for dirent.h, unistd.h or utime.h the way it did. See
+ * docs/adr/0130. */
+#if defined(_WIN32)
+#include <direct.h>
+#include <sys/utime.h>
+#define ase_test_rmdir _rmdir
+#define ase_test_utime _utime
+typedef struct _utimbuf AseTestUtimbuf;
+#else
 #include <unistd.h>
 #include <utime.h>
+#define ase_test_rmdir rmdir
+#define ase_test_utime utime
+typedef struct utimbuf AseTestUtimbuf;
+#endif
 
 static const char *kDir = "test_recovery_dir";
+
+/* memmem() is a GNU extension: without _GNU_SOURCE it is not declared,
+ * so it was implicitly typed as returning int, the pointer came back
+ * truncated to 32 bits, and the memcpy through it segfaulted. That is
+ * what every Ubuntu CI run had been reporting. Spelled out here rather
+ * than reached for again, since this file also has to build where
+ * memmem does not exist at all. See docs/adr/0130. */
+static char *find_bytes(char *haystack, size_t n, const char *needle, size_t m) {
+    if (m == 0 || n < m) {
+        return NULL;
+    }
+    for (size_t i = 0; i + m <= n; i++) {
+        if (memcmp(haystack + i, needle, m) == 0) {
+            return haystack + i;
+        }
+    }
+    return NULL;
+}
 
 /* Moves a snapshot's mtime back, so pruning by age is testable without
  * a test that takes a day. */
@@ -23,10 +55,10 @@ static void backdate_snapshot(const char *key, long seconds) {
         }
         struct stat st;
         CHECK(stat(list.paths[i], &st) == 0);
-        struct utimbuf times;
+        AseTestUtimbuf times;
         times.actime = st.st_atime - seconds;
         times.modtime = st.st_mtime - seconds;
-        CHECK(utime(list.paths[i], &times) == 0);
+        CHECK(ase_test_utime(list.paths[i], &times) == 0);
     }
     ase_recovery_list_free(&list);
 }
@@ -141,7 +173,7 @@ static void test_snapshot_naming_a_different_file_is_ignored(void) {
     CHECK(f != NULL);
     char head[256];
     size_t n = fread(head, 1, sizeof(head), f);
-    char *found = (char *)memmem(head, n, "/home/u/real.c", 14);
+    char *found = find_bytes(head, n, "/home/u/real.c", 14);
     CHECK(found != NULL);
     memcpy(found, "/home/u/FAKE.c", 14);
     fseek(f, 0, SEEK_SET);
@@ -249,24 +281,21 @@ static void remove_test_dirs(void) {
      * break a different test than the one that left it. */
     const char *dirs[] = {"test_recovery_dir/deeper/still", "test_recovery_dir/deeper",
                           "test_recovery_dir"};
+    /* Asking the library what is in there rather than walking the
+     * directory with an API that does not exist everywhere. Only
+     * snapshots are ever written to these, so this reaches all of it. */
     for (size_t d = 0; d < sizeof(dirs) / sizeof(dirs[0]); d++) {
-        DIR *dp = opendir(dirs[d]);
-        if (dp == NULL) {
+        AseRecoveryList list;
+        if (!ase_recovery_list(dirs[d], &list)) {
             continue;
         }
-        struct dirent *entry;
-        while ((entry = readdir(dp)) != NULL) {
-            if (entry->d_name[0] == '.') {
-                continue;
-            }
-            char full[1024];
-            snprintf(full, sizeof(full), "%s/%s", dirs[d], entry->d_name);
-            remove(full);
+        for (size_t i = 0; i < list.count; i++) {
+            remove(list.paths[i]);
         }
-        closedir(dp);
+        ase_recovery_list_free(&list);
     }
     for (size_t d = 0; d < sizeof(dirs) / sizeof(dirs[0]); d++) {
-        rmdir(dirs[d]);
+        ase_test_rmdir(dirs[d]);
     }
 }
 

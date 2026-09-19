@@ -20,7 +20,13 @@ set(ASE_VERSION_STAGE "beta")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
-set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
+# Only single-config generators have that cache entry to decorate. Visual
+# Studio is multi-config, so this ran against a variable that was never
+# created and failed the configure outright — every Windows CI run since
+# the default above was added. See docs/adr/0130.
+if(NOT CMAKE_CONFIGURATION_TYPES)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
+endif()
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)

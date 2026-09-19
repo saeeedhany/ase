@@ -1,6 +1,7 @@
 #include "test_assert.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <string.h>
 
 #include "ase/lsp_client.h"
@@ -63,10 +64,18 @@ static void test_missing_server_dies_on_poll(void) {
      * the spawn itself succeeds and the failure surfaces as the child
      * exiting: poll sees EOF and the client stops being alive. */
     const char *command[] = {"/this/path/does/not/exist/ase_fake_lsp", NULL};
+    errno = 0;
     AseLspClient *client = ase_lsp_client_start(command, NULL);
 #if defined(_WIN32)
     CHECK(client == NULL);
 #else
+    /* This has failed on a CI runner and on no machine it could be
+     * reproduced on. Spawning only returns NULL when pipe() or fork()
+     * does, so say which — a bare "client != NULL" names the symptom
+     * and nothing else. See docs/adr/0130. */
+    if (client == NULL) {
+        printf("spawn failed: %s\n", errno != 0 ? strerror(errno) : "errno unset");
+    }
     CHECK(client != NULL);
     CHECK(!ase_lsp_client_is_ready(client));
     for (int i = 0; i < 1000000 && ase_lsp_client_is_alive(client); i++) {
