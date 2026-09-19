@@ -74,7 +74,11 @@ static void test_missing_server_dies_on_poll(void) {
      * does, so say which — a bare "client != NULL" names the symptom
      * and nothing else. See docs/adr/0130. */
     if (client == NULL) {
-        printf("spawn failed: %s\n", errno != 0 ? strerror(errno) : "errno unset");
+        /* stderr, and flushed: CHECK aborts, and an abort throws away
+         * whatever is sitting in stdout's buffer — which is exactly
+         * where the first version of this diagnostic went. */
+        fprintf(stderr, "spawn failed: %s\n", errno != 0 ? strerror(errno) : "errno unset");
+        fflush(stderr);
     }
     CHECK(client != NULL);
     CHECK(!ase_lsp_client_is_ready(client));

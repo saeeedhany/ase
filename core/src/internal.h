@@ -8,6 +8,10 @@
 /* Internal to core: none of this appears in a public header. */
 
 char *ase_strdup(const char *s);
+
+/* strcasecmp is POSIX and lives in <strings.h>, which MSVC has no
+ * equivalent of; there the spelling is _stricmp. See docs/adr/0130. */
+int ase_strcasecmp(const char *a, const char *b);
 char *ase_memdup(const char *text, size_t len);
 
 /* Creates the directory holding `path`, and its parents. Best effort. */

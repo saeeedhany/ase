@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #if defined(_WIN32)
 #include <direct.h>
@@ -512,7 +511,7 @@ void ase_config_set_themed(AseConfig *config, const char *key, const char *value
          * because the starter file writes #689d6a and the theme table
          * #689D6A. See docs/adr/0114. */
         const char *shipped = shipped_default(key);
-        if (shipped == NULL || strcasecmp(config->entries[i].value, shipped) != 0) {
+        if (shipped == NULL || ase_strcasecmp(config->entries[i].value, shipped) != 0) {
             return;
         }
         /* The theme takes this slot, so the entry stops being the
@@ -545,7 +544,7 @@ bool ase_config_is_chosen_by_hand(const AseConfig *config, const char *key) {
             return false;
         }
         const char *shipped = shipped_default(key);
-        return shipped == NULL || strcasecmp(config->entries[i].value, shipped) != 0;
+        return shipped == NULL || ase_strcasecmp(config->entries[i].value, shipped) != 0;
     }
     return false;
 }

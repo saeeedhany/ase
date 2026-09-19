@@ -4,7 +4,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+/* usleep() is POSIX; Sleep() takes milliseconds and is the Windows
+ * spelling. See docs/adr/0130. */
+#if defined(_WIN32)
+#include <windows.h>
+#define ase_test_sleep_ms(ms) Sleep(ms)
+#else
 #include <unistd.h>
+#define ase_test_sleep_ms(ms) usleep((ms) * 1000)
+#endif
 
 #include "ase/process.h"
 
@@ -14,7 +22,7 @@
 static bool poll_until(bool (*predicate)(void *), void *arg, int timeout_ms) {
     int elapsed = 0;
     while (!predicate(arg) && elapsed < timeout_ms) {
-        usleep(10 * 1000);
+        ase_test_sleep_ms(10);
         elapsed += 10;
     }
     return predicate(arg);
@@ -96,7 +104,7 @@ static void test_write_roundtrip(void) {
             total += n;
             continue;
         }
-        usleep(10 * 1000);
+        ase_test_sleep_ms(10);
         elapsed += 10;
     }
     CHECK(total == (long)strlen(message));

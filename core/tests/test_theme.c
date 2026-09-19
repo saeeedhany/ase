@@ -2,8 +2,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <stdint.h>
+
+/* <strings.h> does not exist on MSVC, and strcasecmp is spelled
+ * _stricmp there. See docs/adr/0130. */
+#if defined(_WIN32)
+#define ase_test_strcasecmp _stricmp
+#else
+#include <strings.h>
+#define ase_test_strcasecmp strcasecmp
+#endif
 
 #include "ase/theme.h"
 
@@ -150,7 +158,7 @@ static void test_default_theme_matches_the_defaults(void) {
         const char *a = ase_config_get_string(plain, kColours[i]);
         const char *b = ase_config_get_string(themed, kColours[i]);
         CHECK(a != NULL && b != NULL);
-        if (strcasecmp(a, b) != 0) {
+        if (ase_test_strcasecmp(a, b) != 0) {
             printf("ase-default changes %s: %s vs %s\n", kColours[i], a, b);
             fflush(stdout);
             CHECK(0);

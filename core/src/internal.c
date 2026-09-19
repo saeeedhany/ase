@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if !defined(_WIN32)
+#include <strings.h>
+#endif
+
 #if defined(_WIN32)
 #include <direct.h>
 #include <io.h>
@@ -247,4 +251,12 @@ bool ase_write_atomically(const char *path, AseWriteFn write_fn, void *user) {
     free(tmp);
     free(resolved);
     return true;
+}
+
+int ase_strcasecmp(const char *a, const char *b) {
+#if defined(_WIN32)
+    return _stricmp(a, b);
+#else
+    return strcasecmp(a, b);
+#endif
 }
