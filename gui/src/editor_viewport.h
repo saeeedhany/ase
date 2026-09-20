@@ -333,6 +333,10 @@ private:
     void writeRecoverySnapshot();
     void openConfigFile();
     void runTheme(const QString &argument);
+    /* Re-reads <config dir>/themes/. Cheap, and called wherever the
+     * answer has to be current — a file dropped in does not touch
+     * config.ase, so nothing else would notice it. See docs/adr/0133. */
+    void reloadThemeFiles();
     bool writeConfigSetting(const QString &key, const QString &value);
     /* Rebuilds the font and its cached metrics; touches no config. */
     void rebuildFont(int pointSize);

@@ -40,7 +40,32 @@ made every theme a silent no-op. See
 
 ## Writing your own
 
-Set the nine keys in your config and leave `theme` unset:
+Put a file in `themes/` beside your config — `~/.config/ase/themes/` —
+named after the theme:
+
+```ini
+# ~/.config/ase/themes/inkwell.ase
+summary = Deep blue with warm accents
+background = #0B1021
+text       = #D8DEE9
+syntax_type   = #E2B714
+syntax_string = #7FB4CA
+```
+
+Then `:theme inkwell`, and `:theme save` to keep it. It is listed by
+`:theme` alongside the built-in ones, and a file named after a built-in
+replaces it rather than appearing twice.
+
+**Whatever you leave out comes from the defaults**, so changing two
+colours does not mean restating nine. The full set of keys is on
+[Every config key](../reference/config.md).
+
+A theme file is read when you run `:theme`, so one you have just written
+works without restarting or touching your config.
+
+### Or set the colours directly
+
+Nine keys in your config, with `theme` left unset:
 
 ```ini
 background       = #1C1C1C
@@ -57,5 +82,6 @@ diagnostic_warning = #D7AF5F
 Colours are `#RRGGBB` or `#RRGGBBAA`. The alpha channel is what makes the
 panels and the selection sit *over* the text rather than replacing it.
 
-There is no theme file format and no theme directory — a theme is just
-those keys, so sharing one means sharing nine lines.
+Colours set this way are yours and no theme overrides them, which is the
+difference between this and a theme file: a theme is a palette you can
+switch away from, and these are decisions.

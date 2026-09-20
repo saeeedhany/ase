@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cstdlib>
 
+#include <QDir>
 #include <QFileInfo>
 #include <QFontDatabase>
 #include <QFontMetrics>
@@ -47,8 +48,21 @@ void EditorViewport::loadConfig() {
     }
 }
 
+/* <config dir>/themes/, alongside plugins/ and recovery/. The set is
+ * global to the process and this replaces it, so several viewports
+ * calling it is a re-read rather than a pile-up. See docs/adr/0133. */
+void EditorViewport::reloadThemeFiles() {
+    if (m_configPath.isEmpty()) {
+        return;
+    }
+    QString themeDir = QFileInfo(m_configPath).dir().filePath(QStringLiteral("themes"));
+    ase_theme_load_directory(themeDir.toUtf8().constData());
+}
+
 void EditorViewport::rebuildConfig() {
     m_config = ase_config_load(m_configPath.isEmpty() ? nullptr : m_configPath.toUtf8().constData());
+
+    reloadThemeFiles();
 
     /* Under the file's own colours, never over them. A session theme
      * from `:theme` layers in exactly the same place as `theme =` in the

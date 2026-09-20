@@ -37,6 +37,25 @@ typedef struct {
     const char *diagnostic_warning;
 } AseTheme;
 
+/*
+ * Themes from files, so a palette can be shared as a file rather than
+ * as nine lines to paste. Each `*.ase` in `dir` becomes a theme named
+ * after the file, holding the same keys a config does; whatever it
+ * leaves out comes from the shipped defaults, so tweaking two colours
+ * does not mean restating nine.
+ *
+ * Replaces whatever a previous call loaded rather than adding to it —
+ * a config reload calls this again, and a set that only ever grew would
+ * keep a theme you deleted. A file named after a built-in shadows it:
+ * you put it there on purpose. A missing directory is not an error.
+ *
+ * See docs/adr/0133.
+ */
+size_t ase_theme_load_directory(const char *dir);
+/* Drops the loaded set; count/at/find go back to the built-ins. */
+void ase_theme_unload(void);
+
+/* Built-ins plus whatever ase_theme_load_directory() last loaded. */
 size_t ase_theme_count(void);
 const AseTheme *ase_theme_at(size_t index);
 const AseTheme *ase_theme_find(const char *name);

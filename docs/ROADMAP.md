@@ -973,9 +973,9 @@ something else.
 1. ~~**LSP rename.**~~ Done — `F2`, previewed like a project replace and
    applied into buffers, so nothing is written until you save
    ([ADR 0132](adr/0132-renaming-a-symbol.md)).
-2. **Theme files** — `theme = gruvbox` loading
-   `~/.config/ase/themes/gruvbox.ase`. The built-in half is done
-   ([ADR 0114](adr/0114-built-in-themes.md)); files are not.
+2. ~~**Theme files.**~~ Done — `<config dir>/themes/<name>.ase`, the
+   same keys a config uses, inheriting the defaults for whatever it
+   leaves out ([ADR 0133](adr/0133-a-theme-you-can-share-as-a-file.md)).
 3. **Vim sequences as data** — `dd` and `gg` go through a stateful
    Normal-mode dispatcher, not the chord table, so they cannot be
    rebound ([ADR 0113](adr/0113-keybindings-as-data.md)).

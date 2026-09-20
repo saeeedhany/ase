@@ -140,3 +140,4 @@ what changed.
 | [0130](0130-the-ci-nobody-was-reading.md) | The CI nobody was reading |
 | [0131](0131-replacing-across-files.md) | Replacing across files |
 | [0132](0132-renaming-a-symbol.md) | Renaming a symbol |
+| [0133](0133-a-theme-you-can-share-as-a-file.md) | A theme you can share as a file |

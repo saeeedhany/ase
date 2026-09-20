@@ -15,6 +15,15 @@
 
 #include "ase/theme.h"
 
+#include <sys/stat.h>
+#if defined(_WIN32)
+#include <direct.h>
+#define ase_test_rmdir _rmdir
+#else
+#include <unistd.h>
+#define ase_test_rmdir rmdir
+#endif
+
 static const char *kPath = "test_theme.tmp";
 
 static AseConfig *config_from(const char *text) {
@@ -34,6 +43,136 @@ static void expect_colour(const AseConfig *config, const char *key, const char *
         fflush(stdout);
         CHECK(0);
     }
+}
+
+/* ---- themes loaded from files (ADR 0133) ---- */
+
+static const char *kThemeDir = "test_theme_dir";
+
+static void write_theme_file(const char *name, const char *body) {
+    char path[512];
+#if defined(_WIN32)
+    _mkdir(kThemeDir);
+    snprintf(path, sizeof(path), "%s\\%s", kThemeDir, name);
+#else
+    mkdir(kThemeDir, 0755);
+    snprintf(path, sizeof(path), "%s/%s", kThemeDir, name);
+#endif
+    FILE *f = fopen(path, "w");
+    CHECK(f != NULL);
+    fputs(body, f);
+    fclose(f);
+}
+
+static void remove_theme_dir(void) {
+    const char *names[] = {"gruvbox.ase", "partial.ase", "ase-default.ase", "notes.txt",
+                           "shadow.ase"};
+    for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+        char path[512];
+#if defined(_WIN32)
+        snprintf(path, sizeof(path), "%s\\%s", kThemeDir, names[i]);
+#else
+        snprintf(path, sizeof(path), "%s/%s", kThemeDir, names[i]);
+#endif
+        remove(path);
+    }
+    ase_test_rmdir(kThemeDir);
+}
+
+static void test_a_file_becomes_a_theme(void) {
+    size_t builtins = ase_theme_count();
+    write_theme_file("gruvbox.ase",
+                     "summary = Retro groove\n"
+                     "background = #282828\n"
+                     "text = #ebdbb2\n"
+                     "selection = #504945AA\n"
+                     "find_match = #665c54AA\n"
+                     "panel_background = #282828E6\n"
+                     "syntax_type = #8ec07c\n"
+                     "syntax_string = #b8bb26\n"
+                     "diagnostic_error = #fb4934\n"
+                     "diagnostic_warning = #fabd2f\n");
+    CHECK(ase_theme_load_directory(kThemeDir) == 1);
+    CHECK(ase_theme_count() == builtins + 1);
+
+    const AseTheme *theme = ase_theme_find("gruvbox");
+    CHECK(theme != NULL);
+    CHECK(strcmp(theme->name, "gruvbox") == 0);
+    CHECK(strcmp(theme->summary, "Retro groove") == 0);
+    CHECK(ase_test_strcasecmp(theme->text, "#ebdbb2") == 0);
+    CHECK(ase_test_strcasecmp(theme->syntax_type, "#8ec07c") == 0);
+
+    /* And it applies like any other. */
+    AseConfig *config = ase_config_create_default();
+    CHECK(ase_config_apply_theme(config, "gruvbox"));
+    expect_colour(config, "text", "#ebdbb2");
+    ase_config_destroy(config);
+
+    ase_theme_unload();
+    CHECK(ase_theme_count() == builtins);
+    remove_theme_dir();
+}
+
+/* Tweaking two colours should not mean restating nine. What the file
+ * leaves out comes from the shipped defaults. */
+static void test_a_partial_file_inherits_the_defaults(void) {
+    write_theme_file("partial.ase", "background = #101010\n");
+    CHECK(ase_theme_load_directory(kThemeDir) == 1);
+
+    const AseTheme *theme = ase_theme_find("partial");
+    CHECK(theme != NULL);
+    CHECK(ase_test_strcasecmp(theme->background, "#101010") == 0);
+    /* Not stated, so whatever ships. */
+    const AseTheme *shipped = ase_theme_find("ase-default");
+    CHECK(shipped != NULL);
+    CHECK(ase_test_strcasecmp(theme->syntax_type, shipped->syntax_type) == 0);
+
+    ase_theme_unload();
+    remove_theme_dir();
+}
+
+/* A file named after a built-in wins: you put it there on purpose. */
+static void test_a_file_shadows_a_builtin_of_the_same_name(void) {
+    size_t builtins = ase_theme_count();
+    write_theme_file("ase-default.ase", "text = #FF0000\n");
+    CHECK(ase_theme_load_directory(kThemeDir) == 1);
+    /* Shadowed, not added alongside. */
+    CHECK(ase_theme_count() == builtins);
+
+    const AseTheme *theme = ase_theme_find("ase-default");
+    CHECK(theme != NULL);
+    CHECK(ase_test_strcasecmp(theme->text, "#FF0000") == 0);
+
+    ase_theme_unload();
+    CHECK(ase_test_strcasecmp(ase_theme_find("ase-default")->text, "#F5E6C8") == 0);
+    remove_theme_dir();
+}
+
+static void test_only_ase_files_count(void) {
+    write_theme_file("notes.txt", "background = #101010\n");
+    CHECK(ase_theme_load_directory(kThemeDir) == 0);
+    CHECK(ase_theme_find("notes") == NULL);
+    ase_theme_unload();
+    remove_theme_dir();
+}
+
+/* A config reload calls this again; it must re-read, not accumulate. */
+static void test_reloading_replaces_rather_than_accumulates(void) {
+    size_t builtins = ase_theme_count();
+    write_theme_file("gruvbox.ase", "text = #ebdbb2\n");
+    CHECK(ase_theme_load_directory(kThemeDir) == 1);
+    CHECK(ase_theme_load_directory(kThemeDir) == 1);
+    CHECK(ase_theme_count() == builtins + 1);
+    ase_theme_unload();
+    remove_theme_dir();
+}
+
+static void test_a_missing_directory_is_not_an_error(void) {
+    size_t builtins = ase_theme_count();
+    CHECK(ase_theme_load_directory("no_such_theme_dir") == 0);
+    CHECK(ase_theme_count() == builtins);
+    CHECK(ase_theme_load_directory(NULL) == 0);
+    CHECK(ase_theme_count() == builtins);
 }
 
 static void test_every_theme_is_complete(void) {
@@ -223,6 +362,12 @@ static void test_one_real_choice_among_defaults_survives(void) {
 }
 
 int main(void) {
+    RUN(test_a_file_becomes_a_theme);
+    RUN(test_a_partial_file_inherits_the_defaults);
+    RUN(test_a_file_shadows_a_builtin_of_the_same_name);
+    RUN(test_only_ase_files_count);
+    RUN(test_reloading_replaces_rather_than_accumulates);
+    RUN(test_a_missing_directory_is_not_an_error);
     RUN(test_every_theme_is_complete);
     RUN(test_names_are_unique);
     RUN(test_lookup);

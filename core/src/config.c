@@ -104,7 +104,7 @@ static const AseConfigKeyDoc kKeyDocs[] = {
     {"vim_mode", "true", "Modal editing. false for always-insert.", false},
     {"animations", "false", "true for a smooth caret fade instead of a blink.", false},
     {"line_numbers", "absolute", "off, absolute, or relative.", false},
-    {"theme", "ase-default", "Colour palette. :theme lists them.", false},
+    {"theme", "ase-default", "Colour palette. :theme lists them, including your own from <config dir>/themes/*.ase.", false},
     {"max_fps", NULL, "Cap the animation rate; unset follows the display.", false},
     {"build_command", NULL, ":compile runs this; %f is the current file.", false},
     {"lsp_command", NULL, "Language server for any language without its own.", false},
@@ -706,6 +706,11 @@ static const char kDefaultConfigTemplate[] =
     "# switches for the session; `:theme save` writes the choice here.\n"
     "# Any colour you set below wins over the theme's, so picking one\n"
     "# never undoes a colour you chose by hand. See docs/adr/0114.\n"
+    "#\n"
+    "# Your own go in themes/ beside this file, one `<name>.ase` each,\n"
+    "# holding the same colour keys. Whatever a theme file leaves out\n"
+    "# comes from the defaults, so changing two colours does not mean\n"
+    "# restating nine. See docs/adr/0133.\n"
     "theme = ase-default\n"
     "\n"
     "# Keys. `key.<chord> = <command>` binds a chord to a command; press\n"

@@ -815,6 +815,12 @@ void EditorViewport::restorePosition(size_t cursor, int scrollLine) {
  * does not touch the file: trying palettes should not edit something
  * the user also hand-edits, and the save is one more word. */
 void EditorViewport::runTheme(const QString &argument) {
+    /* Before listing or looking anything up: a theme file dropped in
+     * while the editor is running does not touch config.ase, so nothing
+     * else triggers a re-read and `:theme foo` would say there is no
+     * such theme. See docs/adr/0133. */
+    reloadThemeFiles();
+
     if (argument.isEmpty()) {
         QStringList names;
         const char *active = ase_config_get_string(m_config, "theme");

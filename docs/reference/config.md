@@ -29,7 +29,7 @@ project, which only that project reads.
 | `vim_mode` | `true` | Modal editing. false for always-insert. | — |
 | `animations` | `false` | true for a smooth caret fade instead of a blink. | — |
 | `line_numbers` | `absolute` | off, absolute, or relative. | — |
-| `theme` | `ase-default` | Colour palette. :theme lists them. | — |
+| `theme` | `ase-default` | Colour palette. :theme lists them, including your own from <config dir>/themes/*.ase. | — |
 | `max_fps` | *unset* | Cap the animation rate; unset follows the display. | — |
 | `build_command` | *unset* | :compile runs this; %f is the current file. | — |
 | `lsp_command` | *unset* | Language server for any language without its own. | — |
