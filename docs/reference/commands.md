@@ -43,6 +43,7 @@ Act on the buffer you are in.
 | `editor.quit` | Quit | Ctrl+Q |
 | `editor.redo` | Redo | Ctrl+Shift+Z, Ctrl+R (normal), Ctrl+R (insert), Ctrl+R (visual) |
 | `editor.replace` | Find and replace | Ctrl+H |
+| `editor.replace-in-project` | Replace across the project | Alt+R |
 | `editor.save` | Save the file | Ctrl+S |
 | `editor.save-as` | Save under a different name | Ctrl+Shift+S |
 | `editor.select-all` | Select the whole buffer | Ctrl+A |

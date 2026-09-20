@@ -42,6 +42,7 @@
 #include "motion.h"
 #include "notification.h"
 #include "output_panel.h"
+#include "project_edit.h"
 
 extern "C" {
 #include "ase/buffer.h"
@@ -125,6 +126,10 @@ private:
     void focusRegion(int direction);
     void closeFocusedRegion();
     void discardEveryRecovery();
+    void applyProjectReplace(const QString &root,
+                              const QVector<project::Replacement> &replacements, int needleLength,
+                              const QByteArray &replacement);
+    EditorViewport *viewportForPath(const QString &path);
     void registerWindowCommands();
     void installWindowShortcuts();
     CommandRegistry m_commands;
@@ -271,6 +276,11 @@ MainWindow::MainWindow() {
     centralLayout->addWidget(m_outputPanel);
     /* Opening the file is the window's job, landing on the line the
      * viewport's, so the two are joined here. */
+    connect(m_outputPanel, &OutputPanel::replaceRequested, this,
+            [this](const QString &root, const QVector<project::Replacement> &replacements,
+                   int needleLength, const QByteArray &replacement) {
+                applyProjectReplace(root, replacements, needleLength, replacement);
+            });
     connect(m_outputPanel, &OutputPanel::hitActivated, this, [this](const QString &path, int line) {
         recordJump();
         openBuffer(path);
@@ -950,6 +960,86 @@ void MainWindow::recoverUntitledBuffers() {
     /* markUnsaved() lands after addBuffer() built the row, so the dot
      * needs asking for again. */
     refreshBufferBar();
+}
+
+/* Defined further down, beside restoreSession() which also needs it. */
+static QString sameFileKey(const QString &path);
+
+/* Find-or-open, without making it the buffer you are looking at: a
+ * replace touching nine files should not walk you through nine tabs. */
+EditorViewport *MainWindow::viewportForPath(const QString &path) {
+    const QString wanted = sameFileKey(path);
+    for (EditorViewport *viewport : m_viewports) {
+        if (!wanted.isEmpty() && sameFileKey(viewport->filePath()) == wanted) {
+            return viewport;
+        }
+    }
+    AseBuffer *buffer = ase_buffer_create_from_file(path.toUtf8().constData());
+    if (buffer == nullptr) {
+        return nullptr; /* unreadable now, though the search read it */
+    }
+    return addBuffer(buffer, path);
+}
+
+/*
+ * Every accepted change, applied into buffers rather than onto disk.
+ *
+ * Nothing is written until you save, so the whole operation is undone
+ * by closing without saving, and each file keeps its own `u`. That is
+ * the trade this design made: the preview is the safety mechanism, and
+ * undo is per file. See docs/adr/0131.
+ */
+void MainWindow::applyProjectReplace(const QString &root,
+                                      const QVector<project::Replacement> &replacements,
+                                      int needleLength, const QByteArray &replacement) {
+    const QMap<QString, QVector<TextEdit>> byFile =
+        project::editsByFile(replacements, needleLength, replacement);
+    if (byFile.isEmpty()) {
+        return;
+    }
+
+    /* Restored at the end: opening nine files should leave you where
+     * you were, not in whichever one happened to be last. */
+    const int wasActive = m_stack->currentIndex();
+
+    int changedFiles = 0;
+    int changedEdits = 0;
+    int skippedFiles = 0;
+    for (auto it = byFile.constBegin(); it != byFile.constEnd(); ++it) {
+        EditorViewport *viewport = viewportForPath(QDir(root).filePath(it.key()));
+        if (viewport == nullptr) {
+            skippedFiles++;
+            continue;
+        }
+        int applied = viewport->applyLineEdits(it.value());
+        if (applied > 0) {
+            changedFiles++;
+            changedEdits += applied;
+        }
+        if (applied < it.value().size()) {
+            /* A hit that no longer describes the file it came from.
+             * Counted, not hidden: a replace that silently did less
+             * than it said is the failure worth reporting. */
+            skippedFiles++;
+        }
+    }
+
+    if (wasActive >= 0 && wasActive < m_viewports.size()) {
+        setActiveIndex(wasActive);
+    }
+    refreshBufferBar();
+
+    QString message = QStringLiteral("%1 %2 in %3 %4 — unsaved")
+                          .arg(changedEdits)
+                          .arg(changedEdits == 1 ? QStringLiteral("change") : QStringLiteral("changes"))
+                          .arg(changedFiles)
+                          .arg(changedFiles == 1 ? QStringLiteral("file") : QStringLiteral("files"));
+    if (skippedFiles > 0) {
+        message += QStringLiteral("; %1 %2 skipped, changed since the search")
+                       .arg(skippedFiles)
+                       .arg(skippedFiles == 1 ? QStringLiteral("file") : QStringLiteral("files"));
+    }
+    showMessage(skippedFiles > 0 ? NotifyLevel::Warning : NotifyLevel::Info, message);
 }
 
 void MainWindow::askAboutRecovery(EditorViewport *viewport, const QString &path) {

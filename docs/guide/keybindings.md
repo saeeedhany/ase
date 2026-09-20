@@ -100,6 +100,24 @@ Punctuation is spelled out — `semicolon`, `minus`, `plus`, `equal`,
 `backspace`, `delete`, `space`, `left`, `right`, `up`, `down`, `home`,
 `end`, `pageup`, `pagedown`, `insert`.
 
+## Replacing across files
+
+`Alt+R` takes a search term and a replacement, then shows every change it
+would make — one row per occurrence, with the line as it *would* read.
+
+| | |
+| --- | --- |
+| `space` | keep or drop the change under the cursor |
+| `Enter` | jump to it, to look before deciding |
+| `Ctrl+Enter` | apply what is left |
+
+Applying opens each affected file as a buffer and edits it there —
+**nothing is written until you save**, so closing without saving undoes
+the whole thing. Within one file, `u` takes back that file's share in one
+step. There is no single keystroke that reverses the whole operation
+across every file, which is why you are shown it first. See
+[ADR 0131](../adr/0131-replacing-across-files.md).
+
 ## Plugin commands
 
 A command a plugin registered can be bound like any other:

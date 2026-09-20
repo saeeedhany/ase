@@ -93,7 +93,10 @@ OutputPanel::OutputPanel(EditorViewport *viewport, QWidget *parent) : QWidget(pa
 
 void OutputPanel::setMode(Mode mode) {
     m_mode = mode;
-    bool results = (mode == Mode::SearchResults);
+    /* Both list modes show the list. Adding a mode without adding it
+     * here hides the rows and shows an empty text view instead, which
+     * looks like a search that found nothing. */
+    bool results = (mode == Mode::SearchResults || mode == Mode::ReplacePreview);
     m_resultsHeader->setVisible(results);
     m_results->setVisible(results);
     m_text->setVisible(!results);
@@ -124,6 +127,97 @@ void OutputPanel::showLocations(const QString &root, const QString &summary,
         /* Focus lands here so Up/Down/Enter work immediately — the list
          * is what you came to use. Escape hands focus back to the
          * editor (see keyPressEvent). */
+        m_results->setFocus();
+    }
+}
+
+/* The line as it would read, not as it reads — a preview that shows you
+ * what you already have is not one. Built by hand rather than by
+ * running the edit, because the edit runs against a buffer and this
+ * runs against a line of text pulled off disk by the search. */
+static QString lineWithReplacement(const project::SearchHit &hit, int needleLength,
+                                    const QByteArray &replacement) {
+    QByteArray line = hit.text.toUtf8();
+    /* textColumn, not column: `text` is the line with its indentation
+     * trimmed off, and column indexes the line as it is on disk. Using
+     * one for the other put the replacement four characters late in the
+     * very first file this was tried on. */
+    int at = hit.textColumn - 1;
+    if (at < 0 || at + needleLength > line.size()) {
+        return hit.text; /* a stale hit; applyLineEdits() will skip it too */
+    }
+    line.replace(at, needleLength, replacement);
+    return QString::fromUtf8(line);
+}
+
+QString OutputPanel::previewSummary() const {
+    const int accepted = project::acceptedCount(m_replacements);
+    const int files = project::acceptedFileCount(m_replacements);
+    if (accepted == 0) {
+        return QStringLiteral("nothing selected — space keeps a change, ctrl+enter applies");
+    }
+    return QStringLiteral("%1 of %2 %3 in %4 %5  ·  \"%6\" → \"%7\"  ·  space toggles, ctrl+enter applies")
+        .arg(accepted)
+        .arg(m_replacements.size())
+        .arg(m_replacements.size() == 1 ? QStringLiteral("change") : QStringLiteral("changes"))
+        .arg(files)
+        .arg(files == 1 ? QStringLiteral("file") : QStringLiteral("files"))
+        .arg(m_previewNeedle, QString::fromUtf8(m_previewReplacement));
+}
+
+void OutputPanel::refreshPreviewRows() {
+    const int needleLength = m_previewNeedle.toUtf8().size();
+    const int row = m_results->currentRow();
+    m_results->clear();
+    for (const project::Replacement &item : m_replacements) {
+        /* A dropped row keeps its place in the list rather than
+         * vanishing, so the thing you just pressed space on is still
+         * under the cursor. */
+        m_results->addItem(QStringLiteral("%1 %2:%3:  %4")
+                               .arg(item.accepted ? QStringLiteral("[x]") : QStringLiteral("[ ]"))
+                               .arg(item.hit.path)
+                               .arg(item.hit.line)
+                               .arg(item.accepted
+                                        ? lineWithReplacement(item.hit, needleLength,
+                                                               m_previewReplacement)
+                                        : item.hit.text));
+    }
+    m_resultsHeader->setText(previewSummary());
+    if (row >= 0 && row < m_results->count()) {
+        m_results->setCurrentRow(row);
+    }
+}
+
+void OutputPanel::togglePreviewRow(int row) {
+    if (row < 0 || row >= m_replacements.size()) {
+        return;
+    }
+    m_replacements[row].accepted = !m_replacements[row].accepted;
+    refreshPreviewRows();
+}
+
+void OutputPanel::showReplacePreview(const QString &root, const QString &needle,
+                                      const QByteArray &replacement,
+                                      const QVector<project::Replacement> &replacements) {
+    m_searchRoot = root;
+    m_replacements = replacements;
+    m_previewNeedle = needle;
+    m_previewReplacement = replacement;
+
+    /* Jumping to a row has to work here exactly as it does for a
+     * search, and that reads m_hits. */
+    m_hits.clear();
+    m_hits.reserve(replacements.size());
+    for (const project::Replacement &item : replacements) {
+        m_hits.push_back(item.hit);
+    }
+
+    setMode(Mode::ReplacePreview);
+    refreshPreviewRows();
+    refreshTheme();
+    show();
+    if (!m_replacements.isEmpty()) {
+        m_results->setCurrentRow(0);
         m_results->setFocus();
     }
 }
@@ -187,6 +281,22 @@ bool OutputPanel::eventFilter(QObject *watched, QEvent *event) {
         if (keyEvent->key() == Qt::Key_Escape && m_viewport != nullptr) {
             m_viewport->setFocus();
             return true;
+        }
+        if (m_mode == Mode::ReplacePreview) {
+            if (keyEvent->key() == Qt::Key_Space && keyEvent->modifiers() == Qt::NoModifier) {
+                togglePreviewRow(m_results->currentRow());
+                return true;
+            }
+            bool isReturn = keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter;
+            if (isReturn && (keyEvent->modifiers() & Qt::ControlModifier)) {
+                /* Nothing selected is not an edit; saying so beats
+                 * applying nothing and reporting success. */
+                if (project::acceptedCount(m_replacements) > 0) {
+                    emit replaceRequested(m_searchRoot, m_replacements,
+                                           m_previewNeedle.toUtf8().size(), m_previewReplacement);
+                }
+                return true;
+            }
         }
         /* The arrows already work here (QListWidget handles them); this
          * is only about Ctrl+J/K, which it does not — see

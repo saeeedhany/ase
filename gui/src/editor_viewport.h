@@ -118,6 +118,9 @@ public:
     void requestOpenFile(const QString &path) { emit fileOpenRequested(path); }
     /* Synchronous; see docs/adr/0066 for the caps that bound it. */
     void searchProject(const QString &needle);
+    /* Same search, previewed as what it would change. See
+     * docs/adr/0131. */
+    void replaceInProject(const QString &needle, const QByteArray &replacement);
     void goToDefinition();
     /* LSP's other half — see docs/adr/0116. */
     void findReferences();

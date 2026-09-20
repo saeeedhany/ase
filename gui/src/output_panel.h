@@ -1,6 +1,7 @@
 #ifndef ASE_OUTPUT_PANEL_H
 #define ASE_OUTPUT_PANEL_H
 
+#include "project_edit.h"
 #include "project_search.h"
 
 #include <QWidget>
@@ -32,7 +33,7 @@ class OutputPanel : public QWidget {
 public:
     /* :compile streams text; a project search fills a list. Whichever
      * shows, the other is hidden. */
-    enum class Mode { Output, SearchResults };
+    enum class Mode { Output, SearchResults, ReplacePreview };
     explicit OutputPanel(EditorViewport *viewport, QWidget *parent = nullptr);
 
     /* Shared by every buffer, so it is re-pointed at the active
@@ -47,6 +48,15 @@ public:
      * that are places in the project but not search matches. */
     void showLocations(const QString &root, const QString &summary,
                         const QVector<project::SearchHit> &hits);
+
+    /* Every hit a project replace would change, each row showing the
+     * line as it *would* read. Space keeps or drops one, Ctrl+Enter
+     * applies what is left — the preview is the safety mechanism for a
+     * multi-file edit, since undo only works a file at a time. See
+     * docs/adr/0131. */
+    void showReplacePreview(const QString &root, const QString &needle,
+                             const QByteArray &replacement,
+                             const QVector<project::Replacement> &replacements);
 
     /* Taller/shorter by one step, animated. Bound to keys so the panel
      * can be sized without reaching for the mouse — see docs/adr/0117. */
@@ -74,12 +84,20 @@ signals:
     /* The window opens the file; this panel knows nothing of buffers. */
     void hitActivated(const QString &absolutePath, int line);
 
+    /* The window owns every buffer, so it is the only thing that can
+     * apply an edit spanning files. This panel decides *what*. */
+    void replaceRequested(const QString &root, const QVector<project::Replacement> &replacements,
+                           int needleLength, const QByteArray &replacement);
+
 private:
     void resizeByDrag(int delta);
     void selectRowSmoothly(int row);
     void applyHeight(int height, bool animated);
     void setMode(Mode mode);
     void activateRow(QListWidgetItem *item);
+    void refreshPreviewRows();
+    void togglePreviewRow(int row);
+    QString previewSummary() const;
 
     EditorViewport *m_viewport;
     PanelResizeHandle *m_handle = nullptr;
@@ -94,6 +112,11 @@ private:
     Mode m_mode = Mode::Output;
     QString m_searchRoot;
     QVector<project::SearchHit> m_hits;
+    /* Only in ReplacePreview mode; m_hits mirrors their hits so that
+     * jumping to a row works exactly as it does for a search. */
+    QVector<project::Replacement> m_replacements;
+    QByteArray m_previewReplacement;
+    QString m_previewNeedle;
 };
 
 #endif /* ASE_OUTPUT_PANEL_H */

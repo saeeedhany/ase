@@ -73,6 +73,7 @@ This editor's own, where there is no convention to inherit.
 | Alt+O | `editor.open` | any |
 | Alt+I | `editor.about` | any |
 | Alt+F | `editor.find-in-project` | any |
+| Alt+R | `editor.replace-in-project` | any |
 | Alt+S | `editor.document-symbols` | any |
 | Alt+B | `editor.compile` | any |
 | Alt+P | `editor.output-panel` | any |

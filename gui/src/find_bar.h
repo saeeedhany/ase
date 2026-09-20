@@ -22,7 +22,7 @@ public:
      * same badge, field, theming and Escape handling, and the only
      * difference is what Enter does with what you typed. See
      * docs/adr/0066. */
-    enum class Mode { Find, Replace, Project };
+    enum class Mode { Find, Replace, Project, ProjectReplace };
 
     /* `viewport` is both the logic owner and the host FloatingPanel
      * centers over. */

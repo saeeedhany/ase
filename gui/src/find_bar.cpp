@@ -52,7 +52,9 @@ FindBar::FindBar(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport
         /* Project mode types a query for *another* search; highlighting
          * it in this buffer as you go would be a different answer to a
          * question nobody asked. */
-        if (m_mode != Mode::Project) {
+        /* Incremental highlighting is for the buffer you are in; a
+         * project search has not run yet and has nothing to highlight. */
+        if (m_mode != Mode::Project && m_mode != Mode::ProjectReplace) {
             m_viewport->setFindQuery(text);
         }
     });
@@ -61,11 +63,12 @@ FindBar::FindBar(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport
 void FindBar::openFor(Mode mode) {
     m_mode = mode;
     refreshTheme();
-    bool replaceMode = (mode == Mode::Replace);
+    bool replaceMode = (mode == Mode::Replace || mode == Mode::ProjectReplace);
     m_replaceRow->setVisible(replaceMode);
     /* G for grep — the word everyone already has for this, and
      * unambiguous against F and R. */
-    m_findBadge->setLetter(mode == Mode::Project ? QLatin1Char('G') : QLatin1Char('F'));
+    bool projectMode = (mode == Mode::Project || mode == Mode::ProjectReplace);
+    m_findBadge->setLetter(projectMode ? QLatin1Char('G') : QLatin1Char('F'));
 
     /* Pre-fill from the current selection, single-line only — a
      * multi-line "needle" as a starting point is more surprising than
@@ -84,7 +87,7 @@ void FindBar::openFor(Mode mode) {
     openPanel();
     m_findEdit->setFocus();
     m_findEdit->selectAll();
-    if (mode != Mode::Project) {
+    if (!projectMode) {
         m_viewport->setFindQuery(m_findEdit->text());
     }
 }
@@ -144,7 +147,14 @@ bool FindBar::eventFilter(QObject *watched, QEvent *event) {
 
         bool isReturn = keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter;
         if (isReturn) {
-            if (watched == m_findEdit && m_mode == Mode::Project) {
+            if (m_mode == Mode::ProjectReplace) {
+                /* Enter from either field: both are filled in before
+                 * anything runs, and Tab moves between them. */
+                QString needle = m_findEdit->text();
+                QByteArray replacement = m_replaceEdit->text().toUtf8();
+                hideBar();
+                m_viewport->replaceInProject(needle, replacement);
+            } else if (watched == m_findEdit && m_mode == Mode::Project) {
                 QString needle = m_findEdit->text();
                 hideBar();
                 m_viewport->searchProject(needle);

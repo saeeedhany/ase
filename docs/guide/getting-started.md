@@ -31,6 +31,7 @@ saves, `Ctrl+Z` undoes.
 | `:` | The command line — `:w`, `:q`, `:theme`. Also `Alt+;`. |
 | `Ctrl+P` | Open any file in the project by name |
 | `Alt+F` | Search the whole project |
+| `Alt+R` | Replace across the whole project, previewed before it happens |
 | `Ctrl+W` then a key | Move between panes, resize them, close them |
 | `Ctrl+S` | Save |
 

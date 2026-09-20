@@ -166,6 +166,7 @@ nav:
     - adr/0128-one-name-one-command.md
     - adr/0129-a-release-that-builds-itself.md
     - adr/0130-the-ci-nobody-was-reading.md
+    - adr/0131-replacing-across-files.md
 
 theme:
   name: material

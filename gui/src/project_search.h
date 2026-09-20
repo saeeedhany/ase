@@ -25,7 +25,11 @@ struct SearchHit {
     QString path; /* relative to the project root */
     int line;     /* 1-based, for display and for jumping */
     int column;   /* 1-based byte column of the match within the line */
-    QString text; /* the whole line, for context in the results list */
+    QString text; /* the line, trimmed, for context in the results list */
+    /* Where the match sits within `text`, which is not `column`, because
+     * `text` has had its indentation trimmed off. A preview that shows
+     * the line as it would read needs to index what it is showing. */
+    int textColumn = 1;
 };
 
 struct SearchResult {
@@ -38,8 +42,16 @@ struct SearchResult {
     bool truncated = false;
 };
 
+/*
+ * `everyOccurrence` is false for searching and true for replacing.
+ *
+ * A results list wants one row per line: a line containing the needle
+ * six times is one place to look, and six near-identical rows push real
+ * hits off the screen. A replace wants all six, because five of them
+ * silently surviving is the worst thing it could do.
+ */
 SearchResult search(const QString &root, const QStringList &relativePaths, const QByteArray &needle,
-                    int maxHits);
+                    int maxHits, bool everyOccurrence = false);
 
 } // namespace project
 

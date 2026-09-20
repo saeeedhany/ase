@@ -509,6 +509,51 @@ void EditorViewport::goToLine(int oneBasedLine) {
  * refuses to show. Synchronous: the caps bound the worst case rather
  * than a thread doing it. See docs/adr/0066.
  */
+/*
+ * The same search, shown as what it would change rather than as what it
+ * found. Nothing is edited here — the panel previews it and the window
+ * applies it, because applying spans buffers and this class owns one.
+ * See docs/adr/0131.
+ */
+void EditorViewport::replaceInProject(const QString &needle, const QByteArray &replacement) {
+    if (m_outputPanel == nullptr) {
+        return;
+    }
+    QString trimmed = needle.trimmed();
+    if (trimmed.isEmpty()) {
+        return;
+    }
+
+    QString startDir = m_filePath.isEmpty() ? QDir::currentPath() : QFileInfo(m_filePath).absolutePath();
+    QString root = project::rootFor(startDir);
+    bool truncatedFileList = false;
+    QStringList files = project::collect(root, kProjectFileCap, &truncatedFileList);
+    /* Every occurrence, not one per line: a replace that quietly left
+     * five of six on a line would be worse than one that refused. */
+    project::SearchResult result =
+        project::search(root, files, trimmed.toUtf8(), kProjectSearchHitCap, true);
+
+    if (result.hits.isEmpty()) {
+        notify(NotifyLevel::Warning, QStringLiteral("no matches for \"%1\"").arg(trimmed));
+        return;
+    }
+    if (result.truncated || truncatedFileList) {
+        /* Replacing a prefix of the matches while implying it was all
+         * of them is the one outcome worth refusing outright. */
+        notify(NotifyLevel::Error,
+               QStringLiteral("too many matches for \"%1\" to replace safely — narrow it")
+                   .arg(trimmed));
+        return;
+    }
+
+    QVector<project::Replacement> replacements;
+    replacements.reserve(result.hits.size());
+    for (const project::SearchHit &hit : result.hits) {
+        replacements.push_back({hit, true});
+    }
+    m_outputPanel->showReplacePreview(root, trimmed, replacement, replacements);
+}
+
 void EditorViewport::searchProject(const QString &needle) {
     if (m_outputPanel == nullptr) {
         return;

@@ -109,6 +109,7 @@ QVector<HelpSection> helpSections(const AseConfig *config) {
         {"Find &amp; replace", nullptr,
          {{keysFor(config, "editor.find"), "Find"},
           {keysFor(config, "editor.find-in-project"), "Search every file in the project"},
+          {keysFor(config, "editor.replace-in-project"), "Replace across the project"},
           {keysFor(config, "editor.go-to-definition"),
            "Go to definition (needs a language server)"},
           {keysFor(config, "editor.find-references"),

@@ -5,10 +5,14 @@
  */
 #include "editor_viewport.h"
 #include "project_edit.h"
+#include "project_search.h"
 
 #include "ase/buffer.h"
 
 #include <QApplication>
+#include <QDir>
+#include <QFile>
+#include <QTemporaryDir>
 #include <QKeyEvent>
 #include <QTest>
 
@@ -174,6 +178,74 @@ private slots:
         auto byFile = project::editsByFile(items, 3, QByteArray());
         QCOMPARE(byFile[QStringLiteral("a.c")].size(), 1);
         QVERIFY(byFile[QStringLiteral("a.c")][0].replacement.isEmpty());
+    }
+
+    /* ---- what the search has to hand over ---- */
+
+    /* `text` is trimmed but `column` indexes the untrimmed line, so a
+     * preview drawn with `column` landed one indent late — four
+     * characters, in the first file this was ever run on. */
+    void textColumnIndexesTheTrimmedLine() {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        QFile f(QDir(dir.path()).filePath(QStringLiteral("a.c")));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("    return widget_total;\n");
+        f.close();
+
+        auto result = project::search(dir.path(), {QStringLiteral("a.c")}, QByteArray("widget"), 50);
+        QCOMPARE(result.hits.size(), 1);
+        const project::SearchHit &hit = result.hits[0];
+        QCOMPARE(hit.column, 12);     /* on disk, past four spaces */
+        QCOMPARE(hit.textColumn, 8);  /* in the trimmed text */
+        QCOMPARE(hit.text.mid(hit.textColumn - 1, 6), QStringLiteral("widget"));
+    }
+
+    /* A results list wants one row per line. A replace wants all of
+     * them, because the ones it silently skipped is the worst thing it
+     * could do. */
+    void everyOccurrenceIsOptedIntoSeparately() {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        QFile f(QDir(dir.path()).filePath(QStringLiteral("a.c")));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("void widget_reset(void) { widget_total = 0; }\n");
+        f.close();
+
+        auto forSearch = project::search(dir.path(), {QStringLiteral("a.c")}, QByteArray("widget"), 50);
+        QCOMPARE(forSearch.hits.size(), 1);
+
+        auto forReplace =
+            project::search(dir.path(), {QStringLiteral("a.c")}, QByteArray("widget"), 50, true);
+        QCOMPARE(forReplace.hits.size(), 2);
+        QVERIFY(forReplace.hits[0].column < forReplace.hits[1].column);
+    }
+
+    /* Both occurrences on one line, applied together, is the case the
+     * reverse-order pass exists for. */
+    void bothOccurrencesOnALineAreReplaced() {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QByteArray line = "void widget_reset(void) { widget_total = 0; }\n";
+        QFile f(QDir(dir.path()).filePath(QStringLiteral("a.c")));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(line);
+        f.close();
+
+        auto result =
+            project::search(dir.path(), {QStringLiteral("a.c")}, QByteArray("widget"), 50, true);
+        QCOMPARE(result.hits.size(), 2);
+
+        QVector<project::Replacement> items;
+        for (const project::SearchHit &hit : result.hits) {
+            items.push_back({hit, true});
+        }
+        auto byFile = project::editsByFile(items, 6, QByteArray("gadget"));
+
+        AseBuffer *buffer = bufferFrom(line);
+        EditorViewport viewport(buffer, QString());
+        QCOMPARE(viewport.applyLineEdits(byFile[QStringLiteral("a.c")]), 2);
+        QCOMPARE(textOf(buffer), QByteArray("void gadget_reset(void) { gadget_total = 0; }\n"));
     }
 
     /* ---- end to end, one buffer ---- */

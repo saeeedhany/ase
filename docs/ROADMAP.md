@@ -987,9 +987,12 @@ something else.
 6. **A concurrent parse**, which would give both an instant open *and*
    colours on a large file; the size cap is the cheap answer until then
    ([ADR 0107](adr/0107-the-large-file-wall.md)).
-7. **Replace across files** — the read-only half of project search is
-   done; editing every file in a project from one keystroke wants its
-   own design pass.
+7. ~~**Replace across files.**~~ Done — `Alt+R`, previewed before it
+   happens, applied into buffers rather than onto disk so nothing is
+   written until you save
+   ([ADR 0131](adr/0131-replacing-across-files.md)). **LSP rename** is
+   still open, but now only needs a `WorkspaceEdit` turned into the edit
+   set that machinery already takes.
 8. **Per-capture syntax colours as data** — EXTENSIBILITY.md,
    recommendation 5.
 

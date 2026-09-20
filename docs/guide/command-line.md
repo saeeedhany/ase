@@ -13,6 +13,7 @@ panel, so you never have to go back to the buffer first just to type
 | `:q!` | Close, discarding changes. Deliberately skips the panel rule: it is the escape hatch. |
 | `:42` | Go to line 42 |
 | `:s/from/to/` | Substitute on this line. `/g` for every match, `/i` to ignore case. |
+| `:editor.replace-in-project` | Replace across every file in the project, previewed first |
 | `:compile` | Run `build_command` and show the output |
 | `:output` | Show or hide the output panel |
 | `:config` | Open your config file |

@@ -1,5 +1,7 @@
 #include "project_search.h"
 
+#include <cctype>
+
 #include <QDir>
 #include <QFile>
 
@@ -30,7 +32,7 @@ bool looksBinary(const QByteArray &contents) {
 } // namespace
 
 project::SearchResult project::search(const QString &root, const QStringList &relativePaths,
-                                       const QByteArray &needle, int maxHits) {
+                                       const QByteArray &needle, int maxHits, bool everyOccurrence) {
     SearchResult result;
     if (needle.isEmpty()) {
         return result;
@@ -84,7 +86,15 @@ project::SearchResult project::search(const QString &root, const QStringList &re
             hit.path = relative;
             hit.line = line;
             hit.column = at - lineStart + 1;
-            hit.text = QString::fromUtf8(contents.mid(lineStart, lineEnd - lineStart)).trimmed();
+            const QByteArray rawLine = contents.mid(lineStart, lineEnd - lineStart);
+            /* How much indentation trimmed() will take off the front,
+             * so the match can be found again in what is displayed. */
+            int leading = 0;
+            while (leading < rawLine.size() && isspace(static_cast<unsigned char>(rawLine[leading]))) {
+                leading++;
+            }
+            hit.text = QString::fromUtf8(rawLine).trimmed();
+            hit.textColumn = (at - lineStart) - leading + 1;
             result.hits.push_back(hit);
 
             if (result.hits.size() >= maxHits) {
@@ -94,7 +104,9 @@ project::SearchResult project::search(const QString &root, const QStringList &re
             /* One hit per line: a line containing the needle six times
              * is one place to look, and six identical rows in the
              * results list is noise that pushes real hits off screen. */
-            from = lineEnd + 1;
+            /* One per line for a search, every one for a replace — see
+             * the header. */
+            from = everyOccurrence ? at + needleLower.size() : lineEnd + 1;
         }
     }
 

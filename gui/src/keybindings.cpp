@@ -108,6 +108,7 @@ const QVector<keys::Binding> &keys::defaults() {
         {"alt+o", "editor.open", ""},
         {"alt+i", "editor.about", ""},
         {"alt+f", "editor.find-in-project", ""},
+        {"alt+r", "editor.replace-in-project", ""},
         {"alt+s", "editor.document-symbols", ""},
         {"alt+b", "editor.compile", ""},
         {"alt+p", "editor.output-panel", ""},
