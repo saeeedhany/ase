@@ -112,6 +112,7 @@ static const AseConfigKeyDoc kKeyDocs[] = {
     {"restore_session", "true", "Reopen last session's files when started bare.", false},
     {"git_marks", "true", "Gutter bars for lines changed since the last commit.", false},
     {"key.<chord>", NULL, "Run a command on a chord, e.g. key.ctrl+s = editor.save.", false},
+    {"vim.<key>", NULL, "Make a Normal/Visual key stand for other keys, e.g. vim.normal.Y = y$. Also vim.normal.* and vim.visual.*.", false},
     {"lang.<id>.lsp", NULL, "Language server for one language, e.g. lang.cpp.lsp.", false},
     {"filetype.<suffix>", NULL, "What a suffix means, e.g. filetype.h = cpp.", true},
 };
@@ -712,6 +713,13 @@ static const char kDefaultConfigTemplate[] =
     "# comes from the defaults, so changing two colours does not mean\n"
     "# restating nine. See docs/adr/0133.\n"
     "theme = ase-default\n"
+    "\n"
+    "# Vim keys. `vim.normal.<key> = <keys>` makes one Normal-mode key\n"
+    "# stand for others, which is vim's own `nnoremap`: `vim.normal.Y =\n"
+    "# y$`, or `vim.normal.n = j` to move a motion for your layout. Use\n"
+    "# vim.visual.* for Visual only, or vim.* for both. The right-hand\n"
+    "# side is not itself remapped, so two keys can be swapped without\n"
+    "# looping. See docs/adr/0134.\n"
     "\n"
     "# Keys. `key.<chord> = <command>` binds a chord to a command; press\n"
     "# F1 for every command name. A chord is modifiers and a key, in any\n"

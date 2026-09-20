@@ -61,6 +61,18 @@ QString commandFor(const AseConfig *config, const QString &chord, const QString 
 /* Every problem in the user's `key.*` settings: an unparseable chord, or
  * a command no one registered. Returned rather than printed so the
  * caller decides how to say it. */
+/*
+ * vim's `nnoremap`, as config: `vim.normal.Y = y$` makes Y behave as
+ * y$. The value is a key sequence replayed through the Normal-mode
+ * dispatcher, so counts and a pending operator compose with it for
+ * free. Empty when the key is not remapped.
+ *
+ * `vim.<key>` applies in both Normal and Visual; `vim.normal.<key>` and
+ * `vim.visual.<key>` are one each, and beat the unqualified form.
+ * See docs/adr/0134.
+ */
+QString vimRemap(const AseConfig *config, const QString &mode, QChar key);
+
 QStringList problems(const AseConfig *config, const CommandRegistry &registry,
                      const QStringList &alsoKnown = QStringList());
 

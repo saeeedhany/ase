@@ -118,6 +118,18 @@ step. There is no single keystroke that reverses the whole operation
 across every file, which is why you are shown it first. See
 [ADR 0131](../adr/0131-replacing-across-files.md).
 
+## Vim's own keys
+
+Bare keys are Vim's, so they are not bound with `key.` — they are
+remapped with `vim.`:
+
+```ini
+vim.normal.Y = y$
+vim.n = j
+```
+
+See [Moving the keys](vim.md#moving-the-keys).
+
 ## Plugin commands
 
 A command a plugin registered can be bound like any other:

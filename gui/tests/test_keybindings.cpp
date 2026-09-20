@@ -254,6 +254,25 @@ private slots:
         }
     }
 
+    /* A vim remap that names no single key would match nothing and do
+     * nothing quietly. See docs/adr/0134. */
+    void malformedVimRemapsAreReported() {
+        CommandRegistry registry;
+        AseConfig *config = configFrom("vim.normal.Y = y$\n"
+                                        "vim.j = k\n"
+                                        "vim.normal.abc = j\n"
+                                        "vim.sideways.n = j\n");
+        QStringList found = keys::problems(config, registry);
+        QCOMPARE(found.size(), 2);
+        const QString all = found.join(QLatin1Char('\n'));
+        QVERIFY(all.contains(QStringLiteral("abc")));
+        QVERIFY(all.contains(QStringLiteral("sideways")));
+        /* The two good ones are not complained about. */
+        QVERIFY(!all.contains(QStringLiteral("vim.normal.Y")));
+        QVERIFY(!all.contains(QStringLiteral("vim.j")));
+        ase_config_destroy(config);
+    }
+
     void defaultTableHasNoEmptyFields() {
         for (const keys::Binding &binding : keys::defaults()) {
             QVERIFY(binding.chord != nullptr && *binding.chord != '\0');

@@ -37,6 +37,7 @@ project, which only that project reads.
 | `restore_session` | `true` | Reopen last session's files when started bare. | — |
 | `git_marks` | `true` | Gutter bars for lines changed since the last commit. | — |
 | `key.<chord>` | *unset* | Run a command on a chord, e.g. key.ctrl+s = editor.save. | — |
+| `vim.<key>` | *unset* | Make a Normal/Visual key stand for other keys, e.g. vim.normal.Y = y$. Also vim.normal.* and vim.visual.*. | — |
 | `lang.<id>.lsp` | *unset* | Language server for one language, e.g. lang.cpp.lsp. | — |
 | `filetype.<suffix>` | *unset* | What a suffix means, e.g. filetype.h = cpp. | yes |
 

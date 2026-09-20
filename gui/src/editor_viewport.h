@@ -930,6 +930,11 @@ private:
     /* Suppresses recording while replaying, so a repeat never rewrites
      * the change it is repeating. */
     bool m_dotReplaying = false;
+    /* Set while a vim remap's right-hand side is being replayed, so the
+     * replayed keys are not themselves remapped. This is the "nore" in
+     * nnoremap, and without it `vim.normal.x = dd` plus
+     * `vim.normal.d = x` is an infinite loop. See docs/adr/0134. */
+    bool m_vimRemapping = false;
     /* A flag on Visual, not a fourth mode: everything already works
      * off the selection range. See docs/adr/0056. */
     bool m_vimVisualLinewise = false;

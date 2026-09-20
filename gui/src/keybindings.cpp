@@ -197,6 +197,28 @@ QString keys::commandFor(const AseConfig *config, const QString &chord, const QS
     return QString();
 }
 
+QString keys::vimRemap(const AseConfig *config, const QString &mode, QChar key) {
+    if (config == nullptr || key.isNull()) {
+        return QString();
+    }
+    /* On the Normal-mode keystroke path, so the same shape as
+     * commandFor(): a mode-qualified lookup, then the unqualified one,
+     * and nothing built unless something is there. */
+    const QString qualified =
+        mode.isEmpty() ? QString() : QStringLiteral("vim.%1.%2").arg(mode, key);
+    const QString plain = QStringLiteral("vim.%1").arg(key);
+    for (const QString &lookup : {qualified, plain}) {
+        if (lookup.isEmpty()) {
+            continue;
+        }
+        const char *mapped = ase_config_get_string(config, lookup.toUtf8().constData());
+        if (mapped != nullptr && *mapped != '\0') {
+            return QString::fromUtf8(mapped);
+        }
+    }
+    return QString();
+}
+
 QStringList keys::problems(const AseConfig *config, const CommandRegistry &registry,
                             const QStringList &alsoKnown) {
     QStringList found;
@@ -206,8 +228,11 @@ QStringList keys::problems(const AseConfig *config, const CommandRegistry &regis
     const char *const *configKeys = nullptr;
     const char *const *values = nullptr;
     size_t count = 0;
+    /* Not an early return: a config with no `key.` settings may still
+     * have `vim.` ones, and returning here meant those went unchecked
+     * whenever nothing else was bound. */
     if (!ase_config_entries_with_prefix(config, "key.", &configKeys, &values, &count)) {
-        return found;
+        count = 0;
     }
 
     for (size_t i = 0; i < count; i++) {
@@ -236,6 +261,38 @@ QStringList keys::problems(const AseConfig *config, const CommandRegistry &regis
         }
         if (!registry.contains(command) && !alsoKnown.contains(command)) {
             found << QStringLiteral("%1: no command called '%2'").arg(setting, command);
+        }
+    }
+
+    /*
+     * A vim remap names a single key. `vim.normal.abc = j` would match
+     * nothing and do nothing quietly, which is the failure this whole
+     * function exists to prevent. See docs/adr/0134.
+     */
+    const char *const *vimKeys = nullptr;
+    const char *const *vimValues = nullptr;
+    size_t vimCount = 0;
+    if (ase_config_entries_with_prefix(config, "vim.", &vimKeys, &vimValues, &vimCount)) {
+        for (size_t i = 0; i < vimCount; i++) {
+            QString setting = QString::fromUtf8(vimKeys[i]);
+            QString rest = setting.mid(4); /* past "vim." */
+            int dot = rest.indexOf(QLatin1Char('.'));
+            if (dot > 0) {
+                QString mode = rest.left(dot);
+                if (mode != QLatin1String("normal") && mode != QLatin1String("visual")) {
+                    found << QStringLiteral("%1: '%2' is not normal or visual").arg(setting, mode);
+                    continue;
+                }
+                rest = rest.mid(dot + 1);
+            }
+            if (rest.size() != 1) {
+                found << QStringLiteral("%1: a vim remap names one key, not '%2'")
+                             .arg(setting, rest);
+                continue;
+            }
+            if (QString::fromUtf8(vimValues[i]).isEmpty()) {
+                found << QStringLiteral("%1: remapped to nothing").arg(setting);
+            }
         }
     }
     return found;

@@ -27,6 +27,24 @@ struct VimPending {
 
     void reset() { *this = VimPending(); }
 
+    /*
+     * True when the next key is an argument rather than a command: the
+     * target of `f`, the replacement for `r`, a mark's name, a
+     * register, the object after `i`/`a`, the second half of `g`.
+     *
+     * A remap must not touch those. Remapping the target of `f` would
+     * make it unable to find a character you had rebound, and `"ayy`
+     * would yank into whatever register `a` maps to.
+     *
+     * A pending *operator* is deliberately absent: after `d` the next
+     * key is a motion, and a remapped motion composing with a pending
+     * operator is the whole point. See docs/adr/0134.
+     */
+    bool expectsArgument() const {
+        return find != '\0' || replace || mark != '\0' || macro != '\0' ||
+               textObject != '\0' || awaitingRegister || g;
+    }
+
     /* vim multiplies the two counts: 2d3w deletes six words. An unset
      * count reads as one. */
     int count() const { return std::max(1, count1) * std::max(1, count2); }

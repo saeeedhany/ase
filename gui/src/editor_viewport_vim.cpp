@@ -1,6 +1,8 @@
 #include "editor_viewport.h"
 
 #include "editor_viewport_internal.h"
+
+#include "keybindings.h"
 #include "vim_register.h"
 
 #include "command_line.h"
@@ -2613,6 +2615,30 @@ bool EditorViewport::handleVimNormalOrVisualKey(QKeyEvent *event) {
         return false;
     }
     QChar qc = text.at(0);
+
+    /*
+     * A remap stands in for the key before anything else looks at it,
+     * so a count already typed and an operator already pending compose
+     * with it exactly as they would with the key it stands for.
+     *
+     * Not while a pending key is awaited, though: after `f` or `r` or
+     * `"` the next key is an argument, not a command, and remapping it
+     * would make `f` unable to find a character you had rebound.
+     */
+    if (!m_vimRemapping && !m_vimPending.expectsArgument()) {
+        const QString mapped = keys::vimRemap(m_config, currentModeName(), qc);
+        if (!mapped.isEmpty()) {
+            vimRecordKey(qc);
+            m_vimRemapping = true;
+            for (QChar ch : mapped) {
+                QKeyEvent replay(QEvent::KeyPress, 0, Qt::NoModifier, QString(ch));
+                handleVimNormalOrVisualKey(&replay);
+            }
+            m_vimRemapping = false;
+            return true;
+        }
+    }
+
     vimRecordKey(qc);
 
     if (vimResolvePendingKey(qc, event->key())) {

@@ -169,6 +169,7 @@ nav:
     - adr/0131-replacing-across-files.md
     - adr/0132-renaming-a-symbol.md
     - adr/0133-a-theme-you-can-share-as-a-file.md
+    - adr/0134-vim-keys-you-can-move.md
 
 theme:
   name: material

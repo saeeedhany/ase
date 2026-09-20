@@ -141,3 +141,4 @@ what changed.
 | [0131](0131-replacing-across-files.md) | Replacing across files |
 | [0132](0132-renaming-a-symbol.md) | Renaming a symbol |
 | [0133](0133-a-theme-you-can-share-as-a-file.md) | A theme you can share as a file |
+| [0134](0134-vim-keys-you-can-move.md) | Vim keys you can move |

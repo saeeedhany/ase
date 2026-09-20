@@ -55,6 +55,33 @@ which end you are moving. `r`, `J`, `~`, `>` and `<` work on it too.
 **Beyond Vim** — `gd` goes to the definition under the cursor, using the
 language server rather than a local scan.
 
+## Moving the keys
+
+`vim.normal.<key> = <keys>` in your config is vim's `nnoremap`: the key
+on the left stands for the keys on the right, before anything else looks
+at it.
+
+```ini
+vim.normal.Y = y$     # the classic
+vim.n = j             # a layout remap, in Normal and Visual
+vim.e = k
+```
+
+`vim.visual.<key>` is Visual only; plain `vim.<key>` is both, and a
+mode-qualified one wins.
+
+Because the substitution happens before the dispatcher, a count and a
+pending operator compose with it — `3n` and `dn` work as `3j` and `dj`
+without saying anything more.
+
+The right-hand side is **not** itself remapped, so two keys can be
+swapped without looping. And a key that is an argument — the target of
+`f`, the register after `"`, the object after `i` — is never remapped,
+or `f` could not find a character you had rebound.
+
+A remap that names no single key is reported when you save the config,
+not ignored. See [ADR 0134](../adr/0134-vim-keys-you-can-move.md).
+
 ## The command line
 
 `:` opens it. See [The command line](command-line.md) for what it takes,

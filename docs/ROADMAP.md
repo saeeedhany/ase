@@ -912,9 +912,10 @@ something else.
 
 - ~~**Keybindings as data**~~ Done — `key.<chord> = <command>` in
   `config.ase`, with built-ins, window actions and plugin commands in one
-  registry, so binding a key to a plugin needs no new API. Vim's own
-  `dd`/`gg` sequences are still not chords and stay as they are
-  ([ADR 0113](adr/0113-keybindings-as-data.md)).
+  registry, so binding a key to a plugin needs no new API. Vim's own keys
+  are moved a different way, by remapping rather than by binding
+  ([ADR 0113](adr/0113-keybindings-as-data.md),
+  [ADR 0134](adr/0134-vim-keys-you-can-move.md)).
 - ~~**Project-wide search**~~ Done for the read-only half — search, and
   jump to a hit ([ADR 0066](adr/0066-project-wide-search.md)). **Replace
   across files** is deliberately still open: editing every file in a
@@ -976,9 +977,12 @@ something else.
 2. ~~**Theme files.**~~ Done — `<config dir>/themes/<name>.ase`, the
    same keys a config uses, inheriting the defaults for whatever it
    leaves out ([ADR 0133](adr/0133-a-theme-you-can-share-as-a-file.md)).
-3. **Vim sequences as data** — `dd` and `gg` go through a stateful
-   Normal-mode dispatcher, not the chord table, so they cannot be
-   rebound ([ADR 0113](adr/0113-keybindings-as-data.md)).
+3. ~~**Vim sequences as data.**~~ Done, as a remap rather than a table:
+   `vim.normal.<key> = <keys>` stands in for a key before the dispatcher
+   sees it, so counts and pending operators compose with it
+   ([ADR 0134](adr/0134-vim-keys-you-can-move.md)). The dispatcher
+   itself is still a state machine, deliberately — `d2w` is not a table
+   entry.
 4. ~~**An unnamed buffer gets no crash snapshot.**~~ Done — a snapshot is
    filed under a key rather than a path, and untitled buffers are
    offered back at startup because nothing else will ever reopen them
