@@ -101,6 +101,11 @@ void EditorViewport::registerCommands(CommandRegistry *registry) {
             m_findBar->openFor(FindBar::Mode::Project);
         }
     });
+    add("editor.rename-symbol", "Rename the symbol everywhere", [this]() {
+        if (m_findBar != nullptr) {
+            m_findBar->openFor(FindBar::Mode::Rename);
+        }
+    });
     add("editor.replace-in-project", "Replace across the project", [this]() {
         if (m_findBar != nullptr) {
             m_findBar->openFor(FindBar::Mode::ProjectReplace);

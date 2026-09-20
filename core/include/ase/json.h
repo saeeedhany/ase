@@ -58,6 +58,13 @@ size_t ase_json_array_size(const AseJsonValue *array); /* 0 if not an array */
 AseJsonValue *ase_json_array_get(const AseJsonValue *array, size_t index); /* NULL if out of range */
 AseJsonValue *ase_json_object_get(const AseJsonValue *object, const char *key); /* NULL if absent */
 
+/* Objects by index, for the ones whose keys are data rather than a
+ * fixed vocabulary — a WorkspaceEdit's `changes` is keyed by file URI,
+ * so there is nothing to look up by name. See docs/adr/0132. */
+size_t ase_json_object_size(const AseJsonValue *object); /* 0 if not an object */
+const char *ase_json_object_key(const AseJsonValue *object, size_t index);   /* NULL if out of range */
+AseJsonValue *ase_json_object_value(const AseJsonValue *object, size_t index); /* NULL if out of range */
+
 /* --- Parse / serialize --- */
 
 /* NULL on malformed input. `len` need not include a NUL terminator. */

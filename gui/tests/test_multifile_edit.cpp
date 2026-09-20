@@ -5,6 +5,7 @@
  */
 #include "editor_viewport.h"
 #include "project_edit.h"
+#include "lsp_workspace_edit.h"
 #include "project_search.h"
 
 #include "ase/buffer.h"
@@ -43,7 +44,7 @@ void press(EditorViewport &viewport, int key, const QString &text = QString()) {
 }
 
 TextEdit edit(int line, int column, int length, const char *replacement) {
-    return TextEdit{line, column, length, QByteArray(replacement)};
+    return TextEdit{line, column, length, QByteArray(replacement), QByteArray()};
 }
 
 } // namespace
@@ -127,11 +128,11 @@ private slots:
 
     void acceptedHitsGroupByFile() {
         QVector<project::Replacement> items = {
-            {{QStringLiteral("a.c"), 3, 5, QStringLiteral("x")}, true},
-            {{QStringLiteral("b.c"), 1, 1, QStringLiteral("y")}, true},
-            {{QStringLiteral("a.c"), 9, 2, QStringLiteral("z")}, true},
+            {{QStringLiteral("a.c"), 3, 5, QStringLiteral("x")}, 3, QByteArray("NEW"), {}, true},
+            {{QStringLiteral("b.c"), 1, 1, QStringLiteral("y")}, 3, QByteArray("NEW"), {}, true},
+            {{QStringLiteral("a.c"), 9, 2, QStringLiteral("z")}, 3, QByteArray("NEW"), {}, true},
         };
-        auto byFile = project::editsByFile(items, 3, QByteArray("NEW"));
+        auto byFile = project::editsByFile(items);
         QCOMPARE(byFile.size(), 2);
         QCOMPARE(byFile[QStringLiteral("a.c")].size(), 2);
         QCOMPARE(byFile[QStringLiteral("b.c")].size(), 1);
@@ -146,11 +147,11 @@ private slots:
      * it one. */
     void rejectedHitsAreLeftOut() {
         QVector<project::Replacement> items = {
-            {{QStringLiteral("a.c"), 1, 1, QStringLiteral("x")}, true},
-            {{QStringLiteral("a.c"), 2, 1, QStringLiteral("y")}, false},
-            {{QStringLiteral("b.c"), 1, 1, QStringLiteral("z")}, false},
+            {{QStringLiteral("a.c"), 1, 1, QStringLiteral("x")}, 3, QByteArray("NEW"), {}, true},
+            {{QStringLiteral("a.c"), 2, 1, QStringLiteral("y")}, 3, QByteArray("NEW"), {}, false},
+            {{QStringLiteral("b.c"), 1, 1, QStringLiteral("z")}, 3, QByteArray("NEW"), {}, false},
         };
-        auto byFile = project::editsByFile(items, 3, QByteArray("NEW"));
+        auto byFile = project::editsByFile(items);
         QCOMPARE(byFile.size(), 1);
         QCOMPARE(byFile[QStringLiteral("a.c")].size(), 1);
         QCOMPARE(byFile[QStringLiteral("a.c")][0].line, 1);
@@ -162,9 +163,9 @@ private slots:
 
     void rejectingEverythingGroupsNothing() {
         QVector<project::Replacement> items = {
-            {{QStringLiteral("a.c"), 1, 1, QStringLiteral("x")}, false},
+            {{QStringLiteral("a.c"), 1, 1, QStringLiteral("x")}, 3, QByteArray("NEW"), {}, false},
         };
-        QVERIFY(project::editsByFile(items, 3, QByteArray("NEW")).isEmpty());
+        QVERIFY(project::editsByFile(items).isEmpty());
         QCOMPARE(project::acceptedCount(items), 0);
         QCOMPARE(project::acceptedFileCount(items), 0);
     }
@@ -173,11 +174,55 @@ private slots:
      * and is not the same as having nothing to do. */
     void anEmptyReplacementIsStillAnEdit() {
         QVector<project::Replacement> items = {
-            {{QStringLiteral("a.c"), 1, 1, QStringLiteral("x")}, true},
+            {{QStringLiteral("a.c"), 1, 1, QStringLiteral("x")}, 3, QByteArray("NEW"), {}, true},
         };
-        auto byFile = project::editsByFile(items, 3, QByteArray());
+        items[0].replacement = QByteArray();
+        auto byFile = project::editsByFile(items);
         QCOMPARE(byFile[QStringLiteral("a.c")].size(), 1);
         QVERIFY(byFile[QStringLiteral("a.c")][0].replacement.isEmpty());
+    }
+
+    /* ---- `expected`: the guard that makes an edit checkable ---- */
+
+    /* The whole point: a file that changed between the search and the
+     * apply must not be edited at the offsets the search found. */
+    void anEditWhoseBytesMovedIsSkipped() {
+        AseBuffer *buffer = bufferFrom("int widget_total;\n");
+        EditorViewport viewport(buffer, QString());
+        TextEdit stale{1, 5, 6, QByteArray("gadget"), QByteArray("WIDGET")};
+        QCOMPARE(viewport.applyLineEdits({stale}), 0);
+        QCOMPARE(textOf(buffer), QByteArray("int widget_total;\n"));
+    }
+
+    void anEditWhoseBytesMatchIsApplied() {
+        AseBuffer *buffer = bufferFrom("int widget_total;\n");
+        EditorViewport viewport(buffer, QString());
+        TextEdit good{1, 5, 6, QByteArray("gadget"), QByteArray("widget")};
+        QCOMPARE(viewport.applyLineEdits({good}), 1);
+        QCOMPARE(textOf(buffer), QByteArray("int gadget_total;\n"));
+    }
+
+    /* One bad edit in a set must not take the good ones with it, and
+     * must not leave the good ones shifted by the bad one's length. */
+    void aStaleEditDoesNotDisturbItsNeighbours() {
+        AseBuffer *buffer = bufferFrom("aaa bbb ccc\n");
+        EditorViewport viewport(buffer, QString());
+        QVector<TextEdit> edits = {
+            {1, 1, 3, QByteArray("XXX"), QByteArray("aaa")},
+            {1, 5, 3, QByteArray("YYY"), QByteArray("zzz")}, /* not what is there */
+            {1, 9, 3, QByteArray("ZZZ"), QByteArray("ccc")},
+        };
+        QCOMPARE(viewport.applyLineEdits(edits), 2);
+        QCOMPARE(textOf(buffer), QByteArray("XXX bbb ZZZ\n"));
+    }
+
+    /* An empty `expected` means the producer did not know, which has to
+     * keep working — it is how every edit arrived before the field. */
+    void anEditWithNoExpectationIsTrusted() {
+        AseBuffer *buffer = bufferFrom("anything\n");
+        EditorViewport viewport(buffer, QString());
+        QCOMPARE(viewport.applyLineEdits({edit(1, 1, 3, "XYZ")}), 1);
+        QCOMPARE(textOf(buffer), QByteArray("XYZthing\n"));
     }
 
     /* ---- what the search has to hand over ---- */
@@ -238,14 +283,85 @@ private slots:
 
         QVector<project::Replacement> items;
         for (const project::SearchHit &hit : result.hits) {
-            items.push_back({hit, true});
+            items.push_back({hit, 6, QByteArray("gadget"), {}, true});
         }
-        auto byFile = project::editsByFile(items, 6, QByteArray("gadget"));
+        auto byFile = project::editsByFile(items);
 
         AseBuffer *buffer = bufferFrom(line);
         EditorViewport viewport(buffer, QString());
         QCOMPARE(viewport.applyLineEdits(byFile[QStringLiteral("a.c")]), 2);
         QCOMPARE(textOf(buffer), QByteArray("void gadget_reset(void) { gadget_total = 0; }\n"));
+    }
+
+    /* ---- reading a server's WorkspaceEdit ---- */
+
+    void changesShapeIsRead() {
+        const char *json = "{\"changes\":{ \"file:///p/a.c\":[{\"range\":{\"start\":{\"line\":2,\"character\":4}, \"end\":{\"line\":2,\"character\":10}},\"newText\":\"gadget\"}, {\"range\":{\"start\":{\"line\":7,\"character\":0}, \"end\":{\"line\":7,\"character\":6}},\"newText\":\"gadget\"}], \"file:///p/b.c\":[{\"range\":{\"start\":{\"line\":0,\"character\":1}, \"end\":{\"line\":0,\"character\":7}},\"newText\":\"gadget\"}]}}";
+        AseJsonValue *v = ase_json_parse(json, strlen(json));
+        QVERIFY(v != nullptr);
+        auto items = lsp::replacementsFrom(v, QDir(QStringLiteral("/p")), QByteArray("widget"));
+        QCOMPARE(items.size(), 3);
+        /* 0-based on the wire, 1-based here. */
+        QCOMPARE(items[0].hit.line, 3);
+        QCOMPARE(items[0].hit.column, 5);
+        QCOMPARE(items[0].length, 6);
+        QCOMPARE(items[0].replacement, QByteArray("gadget"));
+        QCOMPARE(items[0].expected, QByteArray("widget"));
+        QCOMPARE(items[0].hit.path, QStringLiteral("a.c"));
+        ase_json_destroy(v);
+    }
+
+    /* The other shape servers may answer in. Reading only one of them
+     * works until a server that picks the other is used. */
+    void documentChangesShapeIsRead() {
+        const char *json = "{\"documentChanges\":[ {\"textDocument\":{\"uri\":\"file:///p/a.c\",\"version\":3}, \"edits\":[{\"range\":{\"start\":{\"line\":1,\"character\":2}, \"end\":{\"line\":1,\"character\":8}},\"newText\":\"gadget\"}]}]}";
+        AseJsonValue *v = ase_json_parse(json, strlen(json));
+        QVERIFY(v != nullptr);
+        auto items = lsp::replacementsFrom(v, QDir(QStringLiteral("/p")), QByteArray("widget"));
+        QCOMPARE(items.size(), 1);
+        QCOMPARE(items[0].hit.line, 2);
+        QCOMPARE(items[0].hit.path, QStringLiteral("a.c"));
+        ase_json_destroy(v);
+    }
+
+    /* A range this cannot represent must be dropped, not approximated:
+     * applying a guess at a multi-line range eats code. */
+    void aMultiLineRangeIsRefused() {
+        const char *json = "{\"changes\":{\"file:///p/a.c\":[ {\"range\":{\"start\":{\"line\":1,\"character\":0}, \"end\":{\"line\":4,\"character\":6}},\"newText\":\"gadget\"}, {\"range\":{\"start\":{\"line\":6,\"character\":0}, \"end\":{\"line\":6,\"character\":6}},\"newText\":\"gadget\"}]}}";
+        AseJsonValue *v = ase_json_parse(json, strlen(json));
+        QVERIFY(v != nullptr);
+        auto items = lsp::replacementsFrom(v, QDir(QStringLiteral("/p")), QByteArray("widget"));
+        /* The good one survives; the impossible one does not. */
+        QCOMPARE(items.size(), 1);
+        QCOMPARE(items[0].hit.line, 7);
+        ase_json_destroy(v);
+    }
+
+    void malformedEntriesAreSkipped() {
+        const char *json = "{\"changes\":{\"file:///p/a.c\":[ {\"newText\":\"gadget\"}, {\"range\":{\"start\":{\"line\":1,\"character\":5}, \"end\":{\"line\":1,\"character\":5}},\"newText\":\"gadget\"}, {\"range\":{\"start\":{\"line\":2,\"character\":0}, \"end\":{\"line\":2,\"character\":6}}}, {\"range\":{\"start\":{\"line\":3,\"character\":0}, \"end\":{\"line\":3,\"character\":6}},\"newText\":\"ok\"}]}}";
+        AseJsonValue *v = ase_json_parse(json, strlen(json));
+        QVERIFY(v != nullptr);
+        auto items = lsp::replacementsFrom(v, QDir(QStringLiteral("/p")), QByteArray("widget"));
+        /* No range, an empty range, and no newText all drop out. */
+        QCOMPARE(items.size(), 1);
+        QCOMPARE(items[0].replacement, QByteArray("ok"));
+        ase_json_destroy(v);
+    }
+
+    void aNonFileUriIsSkipped() {
+        const char *json = "{\"changes\":{\"jar:///inside.class\":[ {\"range\":{\"start\":{\"line\":0,\"character\":0}, \"end\":{\"line\":0,\"character\":6}},\"newText\":\"gadget\"}]}}";
+        AseJsonValue *v = ase_json_parse(json, strlen(json));
+        QVERIFY(v != nullptr);
+        QVERIFY(lsp::replacementsFrom(v, QDir(QStringLiteral("/p")), QByteArray("widget")).isEmpty());
+        ase_json_destroy(v);
+    }
+
+    void anEmptyOrWrongResultIsEmpty() {
+        QVERIFY(lsp::replacementsFrom(nullptr, QDir(QStringLiteral("/p")), QByteArray()).isEmpty());
+        const char *json = "[]";
+        AseJsonValue *v = ase_json_parse(json, strlen(json));
+        QVERIFY(lsp::replacementsFrom(v, QDir(QStringLiteral("/p")), QByteArray()).isEmpty());
+        ase_json_destroy(v);
     }
 
     /* ---- end to end, one buffer ---- */
@@ -256,10 +372,10 @@ private slots:
         EditorViewport viewport(buffer, QString());
 
         QVector<project::Replacement> items = {
-            {{QStringLiteral("x.c"), 1, 1, QStringLiteral("foo bar")}, true},
-            {{QStringLiteral("x.c"), 2, 5, QStringLiteral("baz foo")}, true},
+            {{QStringLiteral("x.c"), 1, 1, QStringLiteral("foo bar")}, 3, QByteArray("qux"), {}, true},
+            {{QStringLiteral("x.c"), 2, 5, QStringLiteral("baz foo")}, 3, QByteArray("qux"), {}, true},
         };
-        auto byFile = project::editsByFile(items, 3, QByteArray("qux"));
+        auto byFile = project::editsByFile(items);
         QCOMPARE(viewport.applyLineEdits(byFile[QStringLiteral("x.c")]), 2);
         QCOMPARE(textOf(buffer), QByteArray("qux bar\nbaz qux\n"));
     }

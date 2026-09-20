@@ -83,6 +83,21 @@ bool ase_lsp_client_request_references(AseLspClient *client, const char *uri, As
                                         bool include_declaration, AseLspResultCallback callback,
                                         void *user_data);
 
+/*
+ * A new name for the symbol at `position`.
+ *
+ * The result is a WorkspaceEdit: `changes`, an object keyed by file
+ * URI, or `documentChanges`, an array carrying the same thing plus the
+ * version each edit was computed against. Servers pick; the caller
+ * reads whichever arrived.
+ *
+ * Nothing is edited here. The reply says what *would* change, and what
+ * to do with that is the caller's — see docs/adr/0132.
+ */
+bool ase_lsp_client_request_rename(AseLspClient *client, const char *uri, AseLspPosition position,
+                                    const char *new_name, AseLspResultCallback callback,
+                                    void *user_data);
+
 /* Everything the file declares, as either a flat SymbolInformation
  * array or a nested DocumentSymbol tree — the server chooses, and the
  * caller has to read both. */

@@ -33,6 +33,7 @@ blank.
 | --- | --- |
 | `F12` | Go to definition (`gd` in Vim mode) |
 | `Shift+F12` | Every use of the symbol under the cursor |
+| `F2` | Rename the symbol everywhere, previewed before it happens |
 | `Alt+S` | Outline of this file |
 | hover | Hold still over a symbol |
 | completion | As you type |
@@ -42,6 +43,15 @@ Find-references and the document outline open the panel below the buffer.
 `Ctrl+W j` moves focus into it, `Ctrl+J` / `Ctrl+K` move through the
 results, `Enter` jumps — and keeps the keyboard in the panel, so you can
 walk a list of twenty references without reaching back for it each time.
+
+Rename shows you every change first, across every file the server names
+— `space` keeps or drops one, `Ctrl+Enter` applies. The files it changes
+are opened as buffers and **nothing is written until you save**, so
+closing them without saving undoes the whole thing. See
+[Replacing across files](keybindings.md#replacing-across-files) for the
+same preview, and [ADR 0132](../adr/0132-renaming-a-symbol.md) for why an
+edit the server describes in a way this editor cannot represent exactly
+is skipped rather than guessed at.
 
 `Ctrl+O` and `Ctrl+I` go back and forward through the jumps you made.
 

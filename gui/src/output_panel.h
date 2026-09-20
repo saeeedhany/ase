@@ -86,8 +86,8 @@ signals:
 
     /* The window owns every buffer, so it is the only thing that can
      * apply an edit spanning files. This panel decides *what*. */
-    void replaceRequested(const QString &root, const QVector<project::Replacement> &replacements,
-                           int needleLength, const QByteArray &replacement);
+    void replaceRequested(const QString &root,
+                           const QVector<project::Replacement> &replacements);
 
 private:
     void resizeByDrag(int delta);

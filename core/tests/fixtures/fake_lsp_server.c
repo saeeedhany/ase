@@ -12,7 +12,7 @@
  * error was just fixed," so a test can prove didChange actually
  * refreshes diagnostics rather than leaving the didOpen-time snapshot
  * stale — see docs/adr/0029), textDocument/completion,
- * textDocument/definition, textDocument/references,
+ * textDocument/definition, textDocument/references, textDocument/rename,
  * textDocument/documentSymbol, textDocument/hover, shutdown, exit.
  * Anything else is silently ignored, matching how a real server
  * tolerates unknown methods.
@@ -117,6 +117,24 @@ int main(void) {
                      "{\"jsonrpc\":\"2.0\",\"id\":%ld,\"result\":{\"uri\":\"file:///fake.txt\","
                      "\"range\":{\"start\":{\"line\":2,\"character\":4},"
                      "\"end\":{\"line\":2,\"character\":10}}}}",
+                     id);
+            send_message(response);
+        } else if (has_method(body, "textDocument/rename")) {
+            long id = extract_id(body);
+            char response[1024];
+            /* A WorkspaceEdit in `changes` shape, two files, and two
+             * edits in one of them — a caller that reads only the first
+             * file or only the first edit is caught either way. */
+            snprintf(response, sizeof(response),
+                     "{\"jsonrpc\":\"2.0\",\"id\":%ld,\"result\":{\"changes\":{"
+                     "\"file:///fake.txt\":["
+                     "{\"range\":{\"start\":{\"line\":2,\"character\":4},"
+                     "\"end\":{\"line\":2,\"character\":10}},\"newText\":\"gadget\"},"
+                     "{\"range\":{\"start\":{\"line\":5,\"character\":0},"
+                     "\"end\":{\"line\":5,\"character\":6}},\"newText\":\"gadget\"}],"
+                     "\"file:///other.txt\":["
+                     "{\"range\":{\"start\":{\"line\":9,\"character\":2},"
+                     "\"end\":{\"line\":9,\"character\":8}},\"newText\":\"gadget\"}]}}}",
                      id);
             send_message(response);
         } else if (has_method(body, "textDocument/references")) {

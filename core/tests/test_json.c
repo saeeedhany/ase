@@ -183,7 +183,25 @@ static void test_ownership_on_failed_append(void) {
     ase_json_destroy(not_an_object);
 }
 
+static void test_object_by_index(void) {
+    /* An object whose keys are data, not a vocabulary — nothing to look
+     * up by name, so it has to be walkable. */
+    const char *text = "{\"file:///a.c\":1,\"file:///b.c\":2}";
+    AseJsonValue *v = ase_json_parse(text, strlen(text));
+    CHECK(v != NULL);
+    CHECK(ase_json_object_size(v) == 2);
+    CHECK(strcmp(ase_json_object_key(v, 0), "file:///a.c") == 0);
+    CHECK(strcmp(ase_json_object_key(v, 1), "file:///b.c") == 0);
+    CHECK(ase_json_get_number(ase_json_object_value(v, 1), 0) == 2);
+    /* Out of range, and the wrong type, both answer rather than crash. */
+    CHECK(ase_json_object_key(v, 2) == NULL);
+    CHECK(ase_json_object_value(v, 2) == NULL);
+    CHECK(ase_json_object_size(ase_json_object_value(v, 0)) == 0);
+    ase_json_destroy(v);
+}
+
 int main(void) {
+    test_object_by_index();
     test_parse_primitives();
     test_whitespace_tolerance();
     test_string_escapes();

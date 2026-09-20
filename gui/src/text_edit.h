@@ -17,6 +17,15 @@ struct TextEdit {
     int column;
     int length;
     QByteArray replacement;
+    /* What must already be there, when the producer knows. An edit
+     * whose bytes do not match is skipped.
+     *
+     * It is what makes an edit checkable rather than trusted: a file
+     * that changed between the search and the apply, and an LSP range
+     * measured in UTF-16 units against a line this treats as bytes,
+     * both land here rather than corrupting the file. See
+     * docs/adr/0131. */
+    QByteArray expected;
 };
 
 #endif /* ASE_TEXT_EDIT_H */

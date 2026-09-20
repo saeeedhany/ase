@@ -56,6 +56,7 @@ add_library(ase_gui_objects OBJECT
     src/project_files.cpp
     src/project_search.cpp
     src/project_edit.cpp
+    src/lsp_workspace_edit.cpp
     src/help_panel.cpp
     src/about_panel.cpp
     src/floating_panel.cpp

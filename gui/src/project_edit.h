@@ -23,14 +23,18 @@ namespace project {
  * toggles. */
 struct Replacement {
     SearchHit hit;
+    /* Per item, not per operation: a rename's WorkspaceEdit may replace
+     * different lengths with different text in different places, and a
+     * search-and-replace is only the special case where they all
+     * match. */
+    int length = 0;
+    QByteArray replacement;
+    QByteArray expected;
     bool accepted = true;
 };
 
-/* The accepted replacements, grouped by the file they belong to.
- * `needleLength` is how many bytes each hit stands for — the hits do
- * not carry it, because a search knows its own needle. */
-QMap<QString, QVector<TextEdit>> editsByFile(const QVector<Replacement> &replacements,
-                                              int needleLength, const QByteArray &replacement);
+/* The accepted replacements, grouped by the file they belong to. */
+QMap<QString, QVector<TextEdit>> editsByFile(const QVector<Replacement> &replacements);
 
 /* How many files and how many hits the accepted set covers, for saying
  * what is about to happen before it happens. */

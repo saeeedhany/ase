@@ -135,18 +135,18 @@ void OutputPanel::showLocations(const QString &root, const QString &summary,
  * what you already have is not one. Built by hand rather than by
  * running the edit, because the edit runs against a buffer and this
  * runs against a line of text pulled off disk by the search. */
-static QString lineWithReplacement(const project::SearchHit &hit, int needleLength,
-                                    const QByteArray &replacement) {
+static QString lineWithReplacement(const project::Replacement &item) {
+    const project::SearchHit &hit = item.hit;
     QByteArray line = hit.text.toUtf8();
     /* textColumn, not column: `text` is the line with its indentation
      * trimmed off, and column indexes the line as it is on disk. Using
      * one for the other put the replacement four characters late in the
      * very first file this was tried on. */
     int at = hit.textColumn - 1;
-    if (at < 0 || at + needleLength > line.size()) {
+    if (at < 0 || at + item.length > line.size()) {
         return hit.text; /* a stale hit; applyLineEdits() will skip it too */
     }
-    line.replace(at, needleLength, replacement);
+    line.replace(at, item.length, item.replacement);
     return QString::fromUtf8(line);
 }
 
@@ -166,7 +166,6 @@ QString OutputPanel::previewSummary() const {
 }
 
 void OutputPanel::refreshPreviewRows() {
-    const int needleLength = m_previewNeedle.toUtf8().size();
     const int row = m_results->currentRow();
     m_results->clear();
     for (const project::Replacement &item : m_replacements) {
@@ -177,10 +176,7 @@ void OutputPanel::refreshPreviewRows() {
                                .arg(item.accepted ? QStringLiteral("[x]") : QStringLiteral("[ ]"))
                                .arg(item.hit.path)
                                .arg(item.hit.line)
-                               .arg(item.accepted
-                                        ? lineWithReplacement(item.hit, needleLength,
-                                                               m_previewReplacement)
-                                        : item.hit.text));
+                               .arg(item.accepted ? lineWithReplacement(item) : item.hit.text));
     }
     m_resultsHeader->setText(previewSummary());
     if (row >= 0 && row < m_results->count()) {
@@ -292,8 +288,7 @@ bool OutputPanel::eventFilter(QObject *watched, QEvent *event) {
                 /* Nothing selected is not an edit; saying so beats
                  * applying nothing and reporting success. */
                 if (project::acceptedCount(m_replacements) > 0) {
-                    emit replaceRequested(m_searchRoot, m_replacements,
-                                           m_previewNeedle.toUtf8().size(), m_previewReplacement);
+                    emit replaceRequested(m_searchRoot, m_replacements);
                 }
                 return true;
             }

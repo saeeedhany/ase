@@ -90,4 +90,5 @@ Ask the language server.
 | F1 | `editor.help` | any |
 | F12 | `editor.go-to-definition` | any |
 | Shift+F12 | `editor.find-references` | any |
+| F2 | `editor.rename-symbol` | any |
 

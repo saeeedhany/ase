@@ -62,6 +62,11 @@ int EditorViewport::applyLineEdits(const QVector<TextEdit> &edits) {
         if (static_cast<int>(offset) + edit.length > lineEnd) {
             continue;
         }
+        /* The bytes have to be the ones the producer was looking at. */
+        if (!edit.expected.isEmpty() &&
+            m_cache.mid(static_cast<int>(offset), edit.length) != edit.expected) {
+            continue;
+        }
         resolved.push_back({offset, edit.length, edit.replacement});
     }
     if (resolved.isEmpty()) {

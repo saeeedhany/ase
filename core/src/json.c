@@ -209,6 +209,27 @@ AseJsonValue *ase_json_object_get(const AseJsonValue *object, const char *key) {
     return NULL;
 }
 
+size_t ase_json_object_size(const AseJsonValue *object) {
+    if (object == NULL || object->type != ASE_JSON_OBJECT) {
+        return 0;
+    }
+    return object->as.object.count;
+}
+
+const char *ase_json_object_key(const AseJsonValue *object, size_t index) {
+    if (object == NULL || object->type != ASE_JSON_OBJECT || index >= object->as.object.count) {
+        return NULL;
+    }
+    return object->as.object.entries[index].key;
+}
+
+AseJsonValue *ase_json_object_value(const AseJsonValue *object, size_t index) {
+    if (object == NULL || object->type != ASE_JSON_OBJECT || index >= object->as.object.count) {
+        return NULL;
+    }
+    return object->as.object.entries[index].value;
+}
+
 /* ---------------------------------------------------------------- parser */
 
 typedef struct {

@@ -114,6 +114,7 @@ QVector<HelpSection> helpSections(const AseConfig *config) {
            "Go to definition (needs a language server)"},
           {keysFor(config, "editor.find-references"),
            "Every use of the symbol under the cursor"},
+          {keysFor(config, "editor.rename-symbol"), "Rename the symbol everywhere"},
           {keysFor(config, "editor.document-symbols"), "Outline of this file"},
           {keysFor(config, "editor.jump-back") + " / " + keysFor(config, "editor.jump-forward"),
            "Jump back / forward"},

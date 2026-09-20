@@ -127,8 +127,7 @@ private:
     void closeFocusedRegion();
     void discardEveryRecovery();
     void applyProjectReplace(const QString &root,
-                              const QVector<project::Replacement> &replacements, int needleLength,
-                              const QByteArray &replacement);
+                              const QVector<project::Replacement> &replacements);
     EditorViewport *viewportForPath(const QString &path);
     void registerWindowCommands();
     void installWindowShortcuts();
@@ -277,9 +276,8 @@ MainWindow::MainWindow() {
     /* Opening the file is the window's job, landing on the line the
      * viewport's, so the two are joined here. */
     connect(m_outputPanel, &OutputPanel::replaceRequested, this,
-            [this](const QString &root, const QVector<project::Replacement> &replacements,
-                   int needleLength, const QByteArray &replacement) {
-                applyProjectReplace(root, replacements, needleLength, replacement);
+            [this](const QString &root, const QVector<project::Replacement> &replacements) {
+                applyProjectReplace(root, replacements);
             });
     connect(m_outputPanel, &OutputPanel::hitActivated, this, [this](const QString &path, int line) {
         recordJump();
@@ -990,10 +988,8 @@ EditorViewport *MainWindow::viewportForPath(const QString &path) {
  * undo is per file. See docs/adr/0131.
  */
 void MainWindow::applyProjectReplace(const QString &root,
-                                      const QVector<project::Replacement> &replacements,
-                                      int needleLength, const QByteArray &replacement) {
-    const QMap<QString, QVector<TextEdit>> byFile =
-        project::editsByFile(replacements, needleLength, replacement);
+                                      const QVector<project::Replacement> &replacements) {
+    const QMap<QString, QVector<TextEdit>> byFile = project::editsByFile(replacements);
     if (byFile.isEmpty()) {
         return;
     }
@@ -1618,7 +1614,17 @@ bool MainWindow::dumpDocs(const QString &outDir) {
         {"Alt", "This editor's own, where there is no convention to inherit.",
          [](const QString &c) { return c.startsWith(QLatin1String("alt+")); }},
         {"Function keys", "Ask the language server.",
-         [](const QString &c) { return c.contains(QLatin1String("f1")) || c.contains(QLatin1String("f12")); }},
+         [](const QString &c) {
+             /* The key itself, not a substring: matching "f1" anywhere
+              * claimed shift+f12 by accident and refused f2 outright. */
+             const QString key = c.section(QLatin1Char('+'), -1);
+             if (key.size() < 2 || key[0] != QLatin1Char('f')) {
+                 return false;
+             }
+             bool ok = false;
+             key.mid(1).toInt(&ok);
+             return ok;
+         }},
     };
 
     /* A row matching no layer would simply not be written, and the page

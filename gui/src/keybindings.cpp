@@ -120,6 +120,7 @@ const QVector<keys::Binding> &keys::defaults() {
         {"f1", "editor.help", ""},
         {"f12", "editor.go-to-definition", ""},
         {"shift+f12", "editor.find-references", ""},
+        {"f2", "editor.rename-symbol", ""},
     };
     return table;
 }

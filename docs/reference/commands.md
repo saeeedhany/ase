@@ -42,6 +42,7 @@ Act on the buffer you are in.
 | `editor.paste` | Paste the system clipboard | Ctrl+V |
 | `editor.quit` | Quit | Ctrl+Q |
 | `editor.redo` | Redo | Ctrl+Shift+Z, Ctrl+R (normal), Ctrl+R (insert), Ctrl+R (visual) |
+| `editor.rename-symbol` | Rename the symbol everywhere | F2 |
 | `editor.replace` | Find and replace | Ctrl+H |
 | `editor.replace-in-project` | Replace across the project | Alt+R |
 | `editor.save` | Save the file | Ctrl+S |

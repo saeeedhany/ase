@@ -1,4 +1,6 @@
 #include "editor_viewport.h"
+
+#include "lsp_workspace_edit.h"
 #include <QHash>
 #include <QFile>
 #include <QDir>
@@ -13,6 +15,7 @@
 #include "hover_panel.h"
 
 #include <algorithm>
+#include <cctype>
 
 #include <QFileInfo>
 #include <QStringList>
@@ -67,6 +70,9 @@ void lspHoverTrampoline(void *user_data, const AseJsonValue *result, const char 
 }
 void lspReferencesTrampoline(void *user_data, const AseJsonValue *result, const char *error_message) {
     static_cast<EditorViewport *>(user_data)->applyLspReferences(result, error_message);
+}
+void lspRenameTrampoline(void *user_data, const AseJsonValue *result, const char *error_message) {
+    static_cast<EditorViewport *>(user_data)->applyLspRename(result, error_message);
 }
 void lspDocumentSymbolsTrampoline(void *user_data, const AseJsonValue *result,
                                    const char *error_message) {
@@ -627,9 +633,22 @@ void fillLineText(QVector<project::SearchHit> &hits) {
         const QList<QByteArray> lines = file.readAll().split('\n');
         for (int index : it.value()) {
             int line = hits[index].line;
-            if (line >= 1 && line <= lines.size()) {
-                hits[index].text = QString::fromUtf8(lines.at(line - 1)).trimmed();
+            if (line < 1 || line > lines.size()) {
+                continue;
             }
+            const QByteArray raw = lines.at(line - 1);
+            hits[index].text = QString::fromUtf8(raw).trimmed();
+            /* Where the hit sits in what is displayed, which is the
+             * line minus its indentation. Derived from how much was
+             * trimmed, not by searching for the name: a line holding it
+             * twice would otherwise point both hits at the first one,
+             * and the preview would draw the same picture for two
+             * different changes. See docs/adr/0132. */
+            int leading = 0;
+            while (leading < raw.size() && isspace(static_cast<unsigned char>(raw[leading]))) {
+                leading++;
+            }
+            hits[index].textColumn = std::max(1, hits[index].column - leading);
         }
     }
 }
@@ -656,6 +675,80 @@ void EditorViewport::findReferences() {
     pos.character = columnForOffset(cursor, line);
     ase_lsp_client_request_references(m_lspClient, m_lspUri.toUtf8().constData(), pos, true,
                                        lspReferencesTrampoline, this);
+}
+
+QString EditorViewport::symbolUnderCursor() const {
+    if (m_cursors.isEmpty() || m_cache.isEmpty()) {
+        return QString();
+    }
+    QString symbol = identifierAt(m_cache, m_cursors[0]);
+    /* identifierAt() answers "this" when the caret is not in a word,
+     * which is right for a message and wrong for a prompt to prefill. */
+    return symbol == QStringLiteral("this") ? QString() : symbol;
+}
+
+void EditorViewport::renameSymbolTo(const QString &newName) {
+    if (m_lspClient == nullptr || !ase_lsp_client_is_ready(m_lspClient)) {
+        notify(NotifyLevel::Warning, QStringLiteral("no language server for this file"));
+        return;
+    }
+    const QString trimmed = newName.trimmed();
+    if (trimmed.isEmpty()) {
+        return;
+    }
+    m_lspRenameFrom = symbolUnderCursor();
+    if (m_lspRenameFrom.isEmpty()) {
+        notify(NotifyLevel::Warning, QStringLiteral("put the cursor on a name to rename it"));
+        return;
+    }
+    if (trimmed == m_lspRenameFrom) {
+        notify(NotifyLevel::Info, QStringLiteral("that is already its name"));
+        return;
+    }
+    m_lspRenameTo = trimmed;
+
+    size_t cursor = m_cursors[0];
+    int line = lineForOffset(cursor);
+    AseLspPosition pos;
+    pos.line = line;
+    pos.character = columnForOffset(cursor, line);
+    ase_lsp_client_request_rename(m_lspClient, m_lspUri.toUtf8().constData(), pos,
+                                   trimmed.toUtf8().constData(), lspRenameTrampoline, this);
+}
+
+void EditorViewport::applyLspRename(const AseJsonValue *result, const char *error_message) {
+    if (error_message != nullptr) {
+        notify(NotifyLevel::Error, QString::fromUtf8(error_message));
+        return;
+    }
+
+    const QString root = project::rootFor(m_filePath.isEmpty() ? QDir::currentPath()
+                                                                : QFileInfo(m_filePath).absolutePath());
+    QVector<project::Replacement> replacements =
+        lsp::replacementsFrom(result, QDir(root), m_lspRenameFrom.toUtf8());
+    if (replacements.isEmpty()) {
+        notify(NotifyLevel::Warning, QStringLiteral("the server would not rename that"));
+        return;
+    }
+
+    /* The results list shows the line, and only the file has it. */
+    QVector<project::SearchHit> hits;
+    hits.reserve(replacements.size());
+    for (const project::Replacement &item : replacements) {
+        project::SearchHit hit = item.hit;
+        hit.path = QDir(root).filePath(item.hit.path);
+        hits.push_back(hit);
+    }
+    fillLineText(hits);
+    for (int i = 0; i < replacements.size(); ++i) {
+        replacements[i].hit.text = hits[i].text;
+        replacements[i].hit.textColumn = hits[i].textColumn;
+    }
+
+    if (m_outputPanel != nullptr) {
+        m_outputPanel->showReplacePreview(root, m_lspRenameFrom, m_lspRenameTo.toUtf8(),
+                                           replacements);
+    }
 }
 
 void EditorViewport::applyLspReferences(const AseJsonValue *result, const char *error_message) {

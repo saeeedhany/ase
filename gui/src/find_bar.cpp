@@ -54,7 +54,8 @@ FindBar::FindBar(EditorViewport *viewport) : FloatingPanel(viewport), m_viewport
          * question nobody asked. */
         /* Incremental highlighting is for the buffer you are in; a
          * project search has not run yet and has nothing to highlight. */
-        if (m_mode != Mode::Project && m_mode != Mode::ProjectReplace) {
+        if (m_mode != Mode::Project && m_mode != Mode::ProjectReplace &&
+            m_mode != Mode::Rename) {
             m_viewport->setFindQuery(text);
         }
     });
@@ -68,14 +69,23 @@ void FindBar::openFor(Mode mode) {
     /* G for grep — the word everyone already has for this, and
      * unambiguous against F and R. */
     bool projectMode = (mode == Mode::Project || mode == Mode::ProjectReplace);
-    m_findBadge->setLetter(projectMode ? QLatin1Char('G') : QLatin1Char('F'));
+    /* N for name — this one field is the new one, not a search. */
+    m_findBadge->setLetter(mode == Mode::Rename ? QLatin1Char('N')
+                                                 : (projectMode ? QLatin1Char('G')
+                                                                : QLatin1Char('F')));
 
-    /* Pre-fill from the current selection, single-line only — a
-     * multi-line "needle" as a starting point is more surprising than
-     * helpful. */
-    QString selection = m_viewport->primarySelectionText();
-    if (!selection.isEmpty() && !selection.contains(QLatin1Char('\n'))) {
-        m_findEdit->setText(selection);
+    if (mode == Mode::Rename) {
+        /* The name being changed, so the common edit is a few
+         * keystrokes rather than retyping it. */
+        m_findEdit->setText(m_viewport->symbolUnderCursor());
+    } else {
+        /* Pre-fill from the current selection, single-line only — a
+         * multi-line "needle" as a starting point is more surprising
+         * than helpful. */
+        QString selection = m_viewport->primarySelectionText();
+        if (!selection.isEmpty() && !selection.contains(QLatin1Char('\n'))) {
+            m_findEdit->setText(selection);
+        }
     }
 
     /* One jump per search, recorded where you *started* — incremental
@@ -87,7 +97,7 @@ void FindBar::openFor(Mode mode) {
     openPanel();
     m_findEdit->setFocus();
     m_findEdit->selectAll();
-    if (!projectMode) {
+    if (!projectMode && mode != Mode::Rename) {
         m_viewport->setFindQuery(m_findEdit->text());
     }
 }
@@ -147,7 +157,11 @@ bool FindBar::eventFilter(QObject *watched, QEvent *event) {
 
         bool isReturn = keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter;
         if (isReturn) {
-            if (m_mode == Mode::ProjectReplace) {
+            if (m_mode == Mode::Rename) {
+                QString newName = m_findEdit->text();
+                hideBar();
+                m_viewport->renameSymbolTo(newName);
+            } else if (m_mode == Mode::ProjectReplace) {
                 /* Enter from either field: both are filled in before
                  * anything runs, and Tab moves between them. */
                 QString needle = m_findEdit->text();

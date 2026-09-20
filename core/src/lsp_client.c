@@ -669,6 +669,17 @@ bool ase_lsp_client_request_references(AseLspClient *client, const char *uri, As
     return send_request(client, "textDocument/references", params, callback, user_data, NULL);
 }
 
+bool ase_lsp_client_request_rename(AseLspClient *client, const char *uri, AseLspPosition position,
+                                    const char *new_name, AseLspResultCallback callback,
+                                    void *user_data) {
+    if (client == NULL || !client->alive || new_name == NULL || *new_name == '\0') {
+        return false;
+    }
+    AseJsonValue *params = make_text_document_position_params(uri, position);
+    ase_json_object_set(params, "newName", ase_json_string(new_name));
+    return send_request(client, "textDocument/rename", params, callback, user_data, NULL);
+}
+
 /* No position: this one is about the whole file. */
 bool ase_lsp_client_request_document_symbols(AseLspClient *client, const char *uri,
                                               AseLspResultCallback callback, void *user_data) {

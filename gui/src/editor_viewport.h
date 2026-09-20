@@ -121,6 +121,14 @@ public:
     /* Same search, previewed as what it would change. See
      * docs/adr/0131. */
     void replaceInProject(const QString &needle, const QByteArray &replacement);
+
+    /* The identifier the caret is in, for prefilling a rename prompt
+     * with the name being changed. Empty when the caret is not in one. */
+    QString symbolUnderCursor() const;
+    /* Asks the server what renaming it would change, and previews the
+     * answer. Nothing is edited here. See docs/adr/0132. */
+    void renameSymbolTo(const QString &newName);
+    void applyLspRename(const AseJsonValue *result, const char *error_message);
     void goToDefinition();
     /* LSP's other half — see docs/adr/0116. */
     void findReferences();
@@ -751,6 +759,10 @@ private:
     QString m_sessionTheme;
     /* What findReferences() asked about, for the summary line. */
     QString m_lspReferenceSymbol;
+    /* What the rename in flight is changing, and to what. Kept because
+     * the reply carries neither. */
+    QString m_lspRenameFrom;
+    QString m_lspRenameTo;
     /* Vim's showcmd: keys typed toward a command not yet resolved. */
     QString m_vimPendingKeys;
     bool m_syntaxOverSizeCap = false;

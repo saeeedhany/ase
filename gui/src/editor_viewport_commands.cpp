@@ -548,8 +548,13 @@ void EditorViewport::replaceInProject(const QString &needle, const QByteArray &r
 
     QVector<project::Replacement> replacements;
     replacements.reserve(result.hits.size());
+    const QByteArray needleBytes = trimmed.toUtf8();
     for (const project::SearchHit &hit : result.hits) {
-        replacements.push_back({hit, true});
+        /* `expected` is the needle as it is spelled *here*: the search
+         * is case-insensitive, so the bytes on the line need not match
+         * what was typed. Read back from the line rather than assumed. */
+        QByteArray here = hit.text.toUtf8().mid(hit.textColumn - 1, needleBytes.size());
+        replacements.push_back({hit, static_cast<int>(needleBytes.size()), replacement, here, true});
     }
     m_outputPanel->showReplacePreview(root, trimmed, replacement, replacements);
 }

@@ -926,9 +926,9 @@ something else.
   ([ADR 0070](adr/0070-the-jumplist.md)), ~~find-references~~ and
   ~~document symbols~~
   ([ADR 0116](adr/0116-find-references-and-document-symbols.md)) are in.
-  **rename is not**: it returns a WorkspaceEdit touching files that are
-  not open, and applying that wants a preview and an undo story spanning
-  buffers — the same design pass replace-across-files is waiting for.
+  ~~rename~~ is in too ([ADR 0132](adr/0132-renaming-a-symbol.md)): the
+  WorkspaceEdit it returns becomes the same edit set a project replace
+  produces, previewed before anything happens and applied into buffers.
 - ~~**Git gutter marks**~~ Done — added, changed and deleted per line,
   from `git diff -U0`'s hunk headers, hidden while an unsaved edit has
   moved the lines around ([ADR 0112](adr/0112-git-gutter-marks.md)).
@@ -970,8 +970,9 @@ something else.
 
 ### Still open, in rough order of value
 
-1. **LSP rename** — the last of LSP's useful half, and the one that
-   needs a cross-buffer undo story first. See Tier 2 above.
+1. ~~**LSP rename.**~~ Done — `F2`, previewed like a project replace and
+   applied into buffers, so nothing is written until you save
+   ([ADR 0132](adr/0132-renaming-a-symbol.md)).
 2. **Theme files** — `theme = gruvbox` loading
    `~/.config/ase/themes/gruvbox.ase`. The built-in half is done
    ([ADR 0114](adr/0114-built-in-themes.md)); files are not.

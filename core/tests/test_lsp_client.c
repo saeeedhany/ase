@@ -167,6 +167,28 @@ static void test_full_lifecycle(void) {
     /* Nested children survive the round trip too. */
     CHECK(strstr(symbols_capture.result_text, "inner_symbol") != NULL);
 
+    ResultCapture rename_capture;
+    memset(&rename_capture, 0, sizeof(rename_capture));
+    CHECK(ase_lsp_client_request_rename(client, "file:///fake.txt", pos, "gadget", on_result,
+                                         &rename_capture));
+    poll_until(client, &rename_capture.called, 1000000);
+    CHECK(rename_capture.called);
+    CHECK(!rename_capture.had_error);
+    /* Both files and both edits in the first one — a reader that stops
+     * at the first of either is caught here. */
+    CHECK(strstr(rename_capture.result_text, "changes") != NULL);
+    CHECK(strstr(rename_capture.result_text, "file:///fake.txt") != NULL);
+    CHECK(strstr(rename_capture.result_text, "file:///other.txt") != NULL);
+    CHECK(strstr(rename_capture.result_text, "gadget") != NULL);
+
+    /* An empty new name is refused before anything is sent: a rename to
+     * nothing is not a rename. */
+    ResultCapture unused_capture;
+    memset(&unused_capture, 0, sizeof(unused_capture));
+    CHECK(!ase_lsp_client_request_rename(client, "file:///fake.txt", pos, "", on_result,
+                                          &unused_capture));
+    CHECK(!unused_capture.called);
+
     ResultCapture definition_capture;
     memset(&definition_capture, 0, sizeof(definition_capture));
     CHECK(ase_lsp_client_request_definition(client, "file:///fake.txt", pos, on_result, &definition_capture));
