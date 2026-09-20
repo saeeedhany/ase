@@ -18,6 +18,92 @@ constexpr int kVerticalScrollMargin = 3;
 constexpr int kHorizontalScrollMarginChars = 4;
 } // namespace
 
+/*
+ * One file's share of a multi-file edit, as a single undo group.
+ *
+ * Applied last-first, because every replacement shifts the offsets of
+ * everything after it — and the caller has no reason to have sorted
+ * them, so they are sorted here rather than trusted. Two edits on one
+ * line is the case that makes this necessary and the case a producer
+ * hands over most often.
+ *
+ * An edit naming a place the buffer does not have is skipped, not
+ * fatal: a search hit can outlive the file it was found in, and half a
+ * rename is worse than none of it. See docs/adr/0131.
+ */
+int EditorViewport::applyLineEdits(const QVector<TextEdit> &edits) {
+    if (edits.isEmpty()) {
+        return 0;
+    }
+
+    struct Resolved {
+        size_t offset;
+        int length;
+        QByteArray replacement;
+    };
+    QVector<Resolved> resolved;
+    resolved.reserve(edits.size());
+
+    const int size = m_cache.size();
+    for (const TextEdit &edit : edits) {
+        if (edit.line < 1 || edit.line > m_lineStarts.size() || edit.column < 1 ||
+            edit.length < 0) {
+            continue;
+        }
+        /* offsetForLineColumn() counts from zero on both axes, and
+         * clamps rather than refusing, so a 1-based value handed
+         * straight to it lands one line late and silently. */
+        int lineIndex = edit.line - 1;
+        size_t offset = offsetForLineColumn(lineIndex, edit.column - 1);
+        int lineEnd = (lineIndex + 1 < m_lineStarts.size()) ? m_lineStarts[lineIndex + 1] - 1 : size;
+        /* Clamped to the line it names, not just to the buffer: a
+         * length that runs off the end of the line is a stale hit, and
+         * replacing across a line break is never what was meant. */
+        if (static_cast<int>(offset) + edit.length > lineEnd) {
+            continue;
+        }
+        resolved.push_back({offset, edit.length, edit.replacement});
+    }
+    if (resolved.isEmpty()) {
+        return 0;
+    }
+
+    std::sort(resolved.begin(), resolved.end(),
+              [](const Resolved &a, const Resolved &b) { return a.offset < b.offset; });
+
+    beginUndoSession();
+    beginUndoStep();
+    int applied = 0;
+    for (int i = resolved.size() - 1; i >= 0; --i) {
+        const Resolved &edit = resolved[i];
+        QByteArray removed = m_cache.mid(static_cast<int>(edit.offset), edit.length);
+        if (edit.length > 0) {
+            if (!ase_buffer_delete(m_buffer, edit.offset, static_cast<size_t>(edit.length))) {
+                continue;
+            }
+            ase_undo_record_delete(m_undo, edit.offset, removed.constData(),
+                                    static_cast<size_t>(removed.size()));
+        }
+        if (!edit.replacement.isEmpty() &&
+            ase_buffer_insert(m_buffer, edit.offset, edit.replacement.constData(),
+                               static_cast<size_t>(edit.replacement.size()))) {
+            ase_undo_record_insert(m_undo, edit.offset, edit.replacement.constData(),
+                                    static_cast<size_t>(edit.replacement.size()));
+        }
+        applied++;
+    }
+    endUndoStep();
+    endUndoSession();
+
+    collapseToOneCursor();
+    refreshCache();
+    m_cursors[0] = std::min(m_cursors[0], static_cast<size_t>(m_cache.size()));
+    m_selectionAnchors[0] = m_cursors[0];
+    ensureCursorVisible();
+    update();
+    return applied;
+}
+
 void EditorViewport::normalizeCursors() {
     QVector<size_t> anchors = m_selectionAnchors;
     QVector<int> order(m_cursors.size());

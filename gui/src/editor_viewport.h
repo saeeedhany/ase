@@ -16,6 +16,7 @@
 #include "notification.h"
 #include "ase/vcs.h"
 #include "command_registry.h"
+#include "text_edit.h"
 #include "vim_pending.h"
 
 extern "C" {
@@ -126,6 +127,12 @@ public:
     void goToLine(int oneBasedLine);
     /* Restores an exact column rather than the first non-blank. */
     void goToLineColumn(int oneBasedLine, int oneBasedColumn);
+
+    /* Applies all of them as a single undo group, so one `u` takes back
+     * this file's whole share of a multi-file edit. Returns how many
+     * landed; one naming a place that is not there is skipped rather
+     * than fatal, because a hit can outlive the file it was found in. */
+    int applyLineEdits(const QVector<TextEdit> &edits);
     /* 1-based. */
     int cursorLine() const { return lineForOffset(m_cursors.isEmpty() ? 0 : m_cursors[0]) + 1; }
     int cursorColumn() const;
