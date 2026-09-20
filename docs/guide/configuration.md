@@ -61,6 +61,17 @@ If you *have* set one by hand, a theme leaves it alone. A value you
 changed is a decision; a value still equal to what shipped is not, and a
 theme may replace it.
 
+## Large files
+
+Syntax highlighting is parsed on its own thread, so a large file opens
+and edits without waiting for it — the colours arrive when the parse
+finishes and the text is plain until then.
+
+`syntax_max_kb` (4096 by default) is the point past which a file gets no
+highlighting at all. That bounds **memory**, not responsiveness: a parsed
+buffer costs roughly 26 times its source size. Raise it if you routinely
+open very large files and have the memory for it.
+
 ## Languages and servers
 
 ```ini

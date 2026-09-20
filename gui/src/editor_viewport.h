@@ -16,6 +16,7 @@
 #include "notification.h"
 #include "ase/vcs.h"
 #include "command_registry.h"
+#include "syntax_worker.h"
 #include "text_edit.h"
 #include "vim_pending.h"
 
@@ -55,6 +56,7 @@ struct GuiCompletionItem {
     QString detail;
 };
 
+class QThread;
 class QTimer;
 class QPainter;
 class FindBar;
@@ -238,6 +240,12 @@ public:
     /* True when this file is past syntax_max_kb and is deliberately
      * being shown without colours. */
     bool syntaxSkippedForSize() const { return m_syntaxOverSizeCap; }
+    /* True while a worker is parsing and the window it will fill is
+     * still empty, so the text is drawn plain. See docs/adr/0135. */
+    bool highlightPending() const { return m_highlightDeferred; }
+    /* What the capture window covers, for asserting that a worker's
+     * answer actually landed. */
+    int highlightWindowBytes() const { return m_captureWindowEnd - m_captureWindowStart; }
 
     /* Unsaved work from a session that did not end cleanly — see
      * docs/adr/0110. */
@@ -319,10 +327,11 @@ private:
     QColor colorForVcsStatus(AseVcsLineStatus status) const;
     static constexpr double kVcsBarWidth = 2.0;
     static constexpr int kVcsOutputCap = 4 * 1024 * 1024;
-    /* Past this the highlight is deferred to a pause in typing rather
-     * than run on the keystroke — see docs/adr/0107. */
+    /* Past this the parse moves to a worker thread rather than running
+     * on the keystroke. It used to wait for a pause in typing instead,
+     * which meant a large file was plain while you typed — see
+     * docs/adr/0107 and docs/adr/0135. */
     static constexpr int kSyncHighlightBytes = 256 * 1024;
-    static constexpr int kHighlightDelayMs = 40;
     /* Present but plainly not taking input. Bright enough to find, dim
      * enough that it is not where your eye goes. */
     static constexpr int kUnfocusedCaretAlpha = 70;
@@ -746,7 +755,6 @@ private:
      * the history was discarded, so a fresh stack reads "as loaded". */
     bool m_historyDiscardedWhileDirty = false;
 
-    QTimer *m_highlightTimer = nullptr;
     /* The window's: buffer list, jumplist, panel size. */
     CommandRegistry *m_commands = nullptr;
     /* This buffer's own, so a command always acts on the buffer whose
@@ -784,6 +792,34 @@ private:
     bool m_animationsEnabled = false;
 
     AseSyntax *m_syntax = nullptr; /* null for unsupported file types — see docs/adr/0007 */
+
+    /*
+     * The parse for a file too big to do on the keystroke. Exactly one
+     * of m_syntax and m_syntaxThread is ever live: below the threshold
+     * the parse is immediate and on this thread, above it there is a
+     * worker and this thread never touches a parser at all. See
+     * docs/adr/0135.
+     */
+    QThread *m_syntaxThread = nullptr;
+    SyntaxWorker *m_syntaxWorker = nullptr;
+    /* Bumped by every refreshCache(). A result carrying an older one
+     * describes a buffer that has since changed and is dropped. */
+    quint64 m_syntaxVersion = 0;
+    /* One request in flight at a time: typing faster than the parser
+     * would otherwise queue a parse per keystroke, each already stale
+     * when it started. The latest wanted window is kept instead and
+     * asked for when the worker comes back. */
+    bool m_syntaxBusy = false;
+    bool m_syntaxWantsAnother = false;
+    int m_syntaxPendingStart = 0;
+    int m_syntaxPendingEnd = 0;
+
+    void startSyntaxWorker(AseLanguage language);
+    void stopSyntaxWorker();
+    /* Asks the worker, or remembers to, once it is free. */
+    void requestAsyncHighlight(int windowStart, int windowEnd);
+    void applyWorkerSpans(const QVector<AseHighlightSpan> &spans, quint64 version, int windowStart,
+                           int windowEnd);
     /* Loaded from <config dir>/plugins/; reached via `:name`. */
     AsePluginHost *m_pluginHost = nullptr;
 

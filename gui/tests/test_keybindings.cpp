@@ -273,6 +273,107 @@ private slots:
         ase_config_destroy(config);
     }
 
+    /* Opening a large file must not parse it here. The parse moved to a
+     * worker precisely so that construction returns before it finishes;
+     * if it ever comes back to this thread, this is what says so. See
+     * docs/adr/0135. */
+    void openingALargeFileDoesNotParseOnThisThread() {
+        QByteArray body;
+        for (int i = 0; i < 20000; ++i) {
+            body += QByteArray("static int value_") + QByteArray::number(i) + " = " +
+                    QByteArray::number(i) + ";\n";
+        }
+        QVERIFY(body.size() > 256 * 1024);
+        QString path = QDir(QDir::tempPath()).filePath(QStringLiteral("ase_open_big.c"));
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(body);
+        file.close();
+
+        AseBuffer *buffer = ase_buffer_create();
+        ase_buffer_insert(buffer, 0, body.constData(), static_cast<size_t>(body.size()));
+
+        QElapsedTimer timer;
+        timer.start();
+        {
+            EditorViewport viewport(buffer, path);
+            viewport.resize(900, 650);
+        }
+        qint64 openMs = timer.elapsed();
+        qInfo("opened %lld KB of C in %lld ms", static_cast<long long>(body.size() / 1024),
+              static_cast<long long>(openMs));
+        /* Parsing this synchronously was ~150ms. Generous against a
+         * loaded machine, and nowhere near it if the parse came back. */
+        QVERIFY2(openMs < 100, qPrintable(QStringLiteral("took %1ms").arg(openMs)));
+
+        QFile::remove(path);
+    }
+
+    /* The other half of the same claim: not parsing here is only an
+     * improvement if the answer still arrives. Spins the event loop,
+     * because that is how a queued result gets delivered. */
+    void aWorkerFillsTheWindowItWasAskedFor() {
+        QByteArray body;
+        for (int i = 0; i < 20000; ++i) {
+            body += QByteArray("static int value_") + QByteArray::number(i) + " = " +
+                    QByteArray::number(i) + ";\n";
+        }
+        QString path = QDir(QDir::tempPath()).filePath(QStringLiteral("ase_worker.c"));
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(body);
+        file.close();
+
+        AseBuffer *buffer = ase_buffer_create();
+        ase_buffer_insert(buffer, 0, body.constData(), static_cast<size_t>(body.size()));
+        EditorViewport viewport(buffer, path);
+        viewport.resize(900, 650);
+
+        /* Nothing yet: that is the point of not doing it here. */
+        QVERIFY(viewport.highlightPending());
+        QCOMPARE(viewport.highlightWindowBytes(), 0);
+
+        QTRY_VERIFY_WITH_TIMEOUT(!viewport.highlightPending(), 10000);
+        QVERIFY(viewport.highlightWindowBytes() > 0);
+
+        QFile::remove(path);
+    }
+
+    /* An edit while a parse is in flight must not be answered with the
+     * stale result — the version is what makes that decidable. */
+    void anEditDuringAParseStillEndsUpHighlighted() {
+        QByteArray body;
+        for (int i = 0; i < 20000; ++i) {
+            body += QByteArray("static int value_") + QByteArray::number(i) + " = " +
+                    QByteArray::number(i) + ";\n";
+        }
+        QString path = QDir(QDir::tempPath()).filePath(QStringLiteral("ase_worker2.c"));
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(body);
+        file.close();
+
+        AseBuffer *buffer = ase_buffer_create();
+        ase_buffer_insert(buffer, 0, body.constData(), static_cast<size_t>(body.size()));
+        EditorViewport viewport(buffer, path);
+        viewport.resize(900, 650);
+
+        /* Type into it immediately, while the first parse is running. */
+        QKeyEvent enterInsert(QEvent::KeyPress, Qt::Key_I, Qt::NoModifier, QStringLiteral("i"));
+        QApplication::sendEvent(&viewport, &enterInsert);
+        for (int i = 0; i < 20; ++i) {
+            QKeyEvent press(QEvent::KeyPress, Qt::Key_X, Qt::NoModifier, QStringLiteral("x"));
+            QApplication::sendEvent(&viewport, &press);
+        }
+
+        /* The pump has to get back to the current version, not stop at
+         * whichever stale answer arrived first. */
+        QTRY_VERIFY_WITH_TIMEOUT(!viewport.highlightPending(), 15000);
+        QVERIFY(viewport.highlightWindowBytes() > 0);
+
+        QFile::remove(path);
+    }
+
     void defaultTableHasNoEmptyFields() {
         for (const keys::Binding &binding : keys::defaults()) {
             QVERIFY(binding.chord != nullptr && *binding.chord != '\0');

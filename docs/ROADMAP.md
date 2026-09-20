@@ -989,9 +989,11 @@ something else.
    ([ADR 0127](adr/0127-the-buffer-with-nothing-to-fall-back-on.md)).
 5. ~~**Snapshots are never pruned.**~~ Done — anything untouched for 30
    days goes at startup (ADR 0127).
-6. **A concurrent parse**, which would give both an instant open *and*
-   colours on a large file; the size cap is the cheap answer until then
-   ([ADR 0107](adr/0107-the-large-file-wall.md)).
+6. ~~**A concurrent parse.**~~ Done — the parse runs on a worker thread
+   past 256KB, so a large file is responsive *and* coloured, including
+   while being typed into. The size cap stays, now bounding memory
+   rather than lag
+   ([ADR 0135](adr/0135-the-parse-moves-off-the-ui-thread.md)).
 7. ~~**Replace across files.**~~ Done — `Alt+R`, previewed before it
    happens, applied into buffers rather than onto disk so nothing is
    written until you save

@@ -14,6 +14,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QThread>
 #include <QTimer>
 
 namespace {
@@ -37,18 +38,6 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     if (m_vimModeEnabled) {
         m_vimMode = VimMode::Normal;
     }
-
-    /* Before refreshCache(), which arms it. */
-    m_highlightTimer = new QTimer(this);
-    m_highlightTimer->setSingleShot(true);
-    connect(m_highlightTimer, &QTimer::timeout, this, [this]() {
-        m_highlightDeferred = false;
-        int visibleStart = 0;
-        int visibleEnd = 0;
-        visibleByteRange(&visibleStart, &visibleEnd);
-        ensureCaptureWindow(visibleStart, visibleEnd, true);
-        update();
-    });
 
     rebuildSyntax();
 
@@ -120,6 +109,7 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
 /* A language with no grammar still highlights nothing, but it is the
  * same answer the LSP gate gets — see docs/adr/0086. */
 void EditorViewport::rebuildSyntax() {
+    stopSyntaxWorker();
     ase_syntax_destroy(m_syntax);
     m_syntax = nullptr;
     m_syntaxOverSizeCap = false;
@@ -130,11 +120,15 @@ void EditorViewport::rebuildSyntax() {
         return;
     }
 
-    /* Tree-sitter has to parse the whole file to build a tree, however
-     * little of it is on screen: 25ms at 113KB of C, 230ms at 1MB, 1.07s
-     * at 4.5MB. Past the cap the file opens instantly with no colours
-     * rather than freezing first. See docs/adr/0107. */
-    long capKb = ase_config_get_int(m_config, "syntax_max_kb", 1024);
+    /*
+     * The cap used to be about time: tree-sitter parses the whole file
+     * however little is on screen, and 1.07s at 4.5MB on the UI thread
+     * is a freeze (ADR 0107). The parse is on a worker now, so what is
+     * left to bound is memory — measured at ~26x the source, 61MB
+     * against 114MB for the same 2MB file parsed and not. Hence a
+     * higher default and a different reason for it. See docs/adr/0135.
+     */
+    long capKb = ase_config_get_int(m_config, "syntax_max_kb", 4096);
     if (capKb > 0 && ase_buffer_length(m_buffer) > static_cast<size_t>(capKb) * 1024) {
         m_syntaxOverSizeCap = true;
         return;
@@ -151,10 +145,121 @@ void EditorViewport::rebuildSyntax() {
         {"lua", ASE_LANG_LUA},
     };
     for (const auto &entry : kGrammars) {
-        if (strcmp(language, entry.name) == 0) {
-            m_syntax = ase_syntax_create(entry.language);
-            return;
+        if (strcmp(language, entry.name) != 0) {
+            continue;
         }
+        /*
+         * Big enough that parsing it would be felt, so it goes to a
+         * thread that is not drawing. Below this it stays here, where
+         * the answer is immediate and there is nothing to coordinate —
+         * a 13KB file's colours arriving a frame late would be a
+         * regression, not a fix. See docs/adr/0135.
+         */
+        if (ase_buffer_length(m_buffer) > static_cast<size_t>(kSyncHighlightBytes)) {
+            startSyntaxWorker(entry.language);
+        } else {
+            m_syntax = ase_syntax_create(entry.language);
+        }
+        return;
+    }
+}
+
+/*
+ * The worker is created on the thread that will run it — moveToThread
+ * moves the object, and creating the AseSyntax in its constructor would
+ * build a parser on this thread for another one to use. It builds it on
+ * its first parse instead.
+ */
+void EditorViewport::startSyntaxWorker(AseLanguage language) {
+    /* Not parented to this: the thread has to outlive the viewport long
+     * enough to finish what it is doing — see stopSyntaxWorker(). */
+    m_syntaxThread = new QThread;
+    m_syntaxWorker = new SyntaxWorker(language);
+    m_syntaxWorker->moveToThread(m_syntaxThread);
+    connect(m_syntaxThread, &QThread::finished, m_syntaxWorker, &QObject::deleteLater);
+    connect(m_syntaxThread, &QThread::finished, m_syntaxThread, &QObject::deleteLater);
+    connect(m_syntaxWorker, &SyntaxWorker::parsed, this, &EditorViewport::applyWorkerSpans);
+    m_syntaxThread->start();
+}
+
+/*
+ * Let go without waiting.
+ *
+ * Waiting was the obvious thing and it cost what the worker was
+ * supposed to save: closing a 603KB buffer blocked for 125ms, and a 4MB
+ * one would block for about a second — a freeze on close instead of a
+ * freeze on open.
+ *
+ * Nothing is shared to wait for. The worker owns its own AseSyntax, and
+ * the text it holds is a QByteArray, whose refcount is atomic — it
+ * keeps the bytes alive on its own however soon this object dies.
+ * Disconnecting first means the result it is midway through computing
+ * is simply not delivered, which is what dropping it would do anyway.
+ */
+void EditorViewport::stopSyntaxWorker() {
+    if (m_syntaxThread == nullptr) {
+        return;
+    }
+    disconnect(m_syntaxWorker, &SyntaxWorker::parsed, this, &EditorViewport::applyWorkerSpans);
+    m_syntaxThread->quit();
+    /* Both delete themselves once the loop has stopped, via the
+     * finished connections made above. */
+    m_syntaxThread = nullptr;
+    m_syntaxWorker = nullptr;
+    m_syntaxBusy = false;
+    m_syntaxWantsAnother = false;
+}
+
+void EditorViewport::requestAsyncHighlight(int windowStart, int windowEnd) {
+    if (m_syntaxWorker == nullptr) {
+        return;
+    }
+    if (m_syntaxBusy) {
+        /* Replaced, not queued: the older request is already answering
+         * a question about a buffer that has changed. */
+        m_syntaxWantsAnother = true;
+        m_syntaxPendingStart = windowStart;
+        m_syntaxPendingEnd = windowEnd;
+        return;
+    }
+    m_syntaxBusy = true;
+    /* m_cache is implicitly shared, so this hands over a pointer and a
+     * refcount. The next edit reassigns m_cache and leaves the worker
+     * holding what it was given. */
+    QMetaObject::invokeMethod(m_syntaxWorker, "parse", Qt::QueuedConnection,
+                               Q_ARG(QByteArray, m_cache), Q_ARG(quint64, m_syntaxVersion),
+                               Q_ARG(int, windowStart), Q_ARG(int, windowEnd));
+}
+
+void EditorViewport::applyWorkerSpans(const QVector<AseHighlightSpan> &spans, quint64 version,
+                                       int windowStart, int windowEnd) {
+    m_syntaxBusy = false;
+
+    if (version == m_syntaxVersion) {
+        /* Same shape as the synchronous path: clear the window, fill it
+         * from the spans, and remember what it covers. */
+        m_highlights = spans;
+        windowStart = std::clamp(windowStart, 0, static_cast<int>(m_captureAt.size()));
+        windowEnd = std::clamp(windowEnd, windowStart, static_cast<int>(m_captureAt.size()));
+        for (int i = windowStart; i < windowEnd; ++i) {
+            m_captureAt[i] = static_cast<uint8_t>(ASE_HL_NONE);
+        }
+        for (const AseHighlightSpan &span : m_highlights) {
+            int spanStart = std::clamp(static_cast<int>(span.start), windowStart, windowEnd);
+            int spanEnd = std::clamp(static_cast<int>(span.end), windowStart, windowEnd);
+            for (int i = spanStart; i < spanEnd; ++i) {
+                m_captureAt[i] = static_cast<uint8_t>(span.capture);
+            }
+        }
+        m_captureWindowStart = windowStart;
+        m_captureWindowEnd = windowEnd;
+        m_highlightDeferred = false;
+        update();
+    }
+
+    if (m_syntaxWantsAnother) {
+        m_syntaxWantsAnother = false;
+        requestAsyncHighlight(m_syntaxPendingStart, m_syntaxPendingEnd);
     }
 }
 
@@ -168,6 +273,7 @@ EditorViewport::~EditorViewport() {
     ase_process_destroy(m_compileProcess);
     ase_process_destroy_detached(m_vcsProcess);
     ase_vcs_diff_destroy(m_vcsDiff);
+    stopSyntaxWorker();
     ase_syntax_destroy(m_syntax);
     ase_config_destroy(m_config);
     ase_undo_destroy(m_undo);
@@ -210,10 +316,21 @@ void EditorViewport::refreshCache() {
      * Under the threshold it runs now, so colours never lag; over it the
      * parse waits for a pause in typing and the text is drawn plain
      * until it lands. See docs/adr/0107. */
-    m_highlightDeferred = m_cache.size() > kSyncHighlightBytes && m_syntax != nullptr;
-    if (m_highlightDeferred) {
-        m_highlightTimer->start(kHighlightDelayMs);
-    } else if (m_cache.size() <= kSyncHighlightBytes) {
+    /* Every edit invalidates whatever a parse in flight is about to
+     * answer, so the version it carries stops matching. */
+    m_syntaxVersion++;
+
+    /*
+     * Deferred now means "a worker is doing it", not "a timer will".
+     * Nothing is debounced: the parse is not on this thread, so there
+     * is nothing to protect from it, and requestAsyncHighlight() keeps
+     * exactly one in flight however fast the typing is. The window
+     * stays empty until the answer lands, so the text draws plain and
+     * the caret is measured plain to match — the invariant ADR 0124
+     * established. See docs/adr/0135.
+     */
+    m_highlightDeferred = m_syntaxWorker != nullptr;
+    if (m_syntax != nullptr || m_syntaxWorker != nullptr) {
         int visibleStart = 0;
         int visibleEnd = 0;
         visibleByteRange(&visibleStart, &visibleEnd);
@@ -247,10 +364,25 @@ void EditorViewport::ensureCaptureWindowForViewport() {
 }
 
 void EditorViewport::ensureCaptureWindow(int startByte, int endByte, bool force) {
-    if (m_syntax == nullptr || m_cache.isEmpty()) {
+    if (m_cache.isEmpty() || (m_syntax == nullptr && m_syntaxWorker == nullptr)) {
         return;
     }
     if (!force && startByte >= m_captureWindowStart && endByte <= m_captureWindowEnd) {
+        return;
+    }
+
+    /* About a screenful either side, so paging usually stays inside.
+     * Computed before the split, because both modes want the same
+     * window — the only difference is who parses it. */
+    const int pad = std::max(4096, (endByte - startByte) * 2);
+    const int paddedStart = std::max(0, startByte - pad);
+    const int paddedEnd = std::min(static_cast<int>(m_cache.size()), endByte + pad);
+
+    if (m_syntaxWorker != nullptr) {
+        /* Asked for, not waited for. The window stays as it is until
+         * the answer arrives, which for a file this size is the whole
+         * point. See docs/adr/0135. */
+        requestAsyncHighlight(paddedStart, paddedEnd);
         return;
     }
     /* Zeroing the window above put every unforced caller back here, so
@@ -262,10 +394,8 @@ void EditorViewport::ensureCaptureWindow(int startByte, int endByte, bool force)
         return;
     }
 
-    /* About a screenful either side, so paging usually stays inside. */
-    int pad = std::max(4096, (endByte - startByte) * 2);
-    int windowStart = std::max(0, startByte - pad);
-    int windowEnd = std::min(static_cast<int>(m_cache.size()), endByte + pad);
+    const int windowStart = paddedStart;
+    const int windowEnd = paddedEnd;
 
     m_highlights.clear();
     ase_syntax_highlight_range(m_syntax, m_cache.constData(), static_cast<size_t>(m_cache.size()),

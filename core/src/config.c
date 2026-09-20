@@ -108,7 +108,7 @@ static const AseConfigKeyDoc kKeyDocs[] = {
     {"max_fps", NULL, "Cap the animation rate; unset follows the display.", false},
     {"build_command", NULL, ":compile runs this; %f is the current file.", false},
     {"lsp_command", NULL, "Language server for any language without its own.", false},
-    {"syntax_max_kb", "1024", "Skip highlighting past this file size, in KB.", false},
+    {"syntax_max_kb", "4096", "Skip highlighting past this file size, in KB. Bounds memory, not lag: the parse is on its own thread.", false},
     {"restore_session", "true", "Reopen last session's files when started bare.", false},
     {"git_marks", "true", "Gutter bars for lines changed since the last commit.", false},
     {"key.<chord>", NULL, "Run a command on a chord, e.g. key.ctrl+s = editor.save.", false},
@@ -701,7 +701,7 @@ static const char kDefaultConfigTemplate[] =
     "# at 1MB, 1.07s at 4.5MB. Past this size a file opens with no colours\n"
     "# instead of freezing first, and the status bar says so. Raise it if\n"
     "# you would rather wait, or set 0 to never skip. See docs/adr/0107.\n"
-    "syntax_max_kb = 1024\n"
+    "syntax_max_kb = 4096\n"
     "\n"
     "# Colour palette to start from. `:theme` lists what is built in and\n"
     "# switches for the session; `:theme save` writes the choice here.\n"

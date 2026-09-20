@@ -33,7 +33,7 @@ project, which only that project reads.
 | `max_fps` | *unset* | Cap the animation rate; unset follows the display. | — |
 | `build_command` | *unset* | :compile runs this; %f is the current file. | — |
 | `lsp_command` | *unset* | Language server for any language without its own. | — |
-| `syntax_max_kb` | `1024` | Skip highlighting past this file size, in KB. | — |
+| `syntax_max_kb` | `4096` | Skip highlighting past this file size, in KB. Bounds memory, not lag: the parse is on its own thread. | — |
 | `restore_session` | `true` | Reopen last session's files when started bare. | — |
 | `git_marks` | `true` | Gutter bars for lines changed since the last commit. | — |
 | `key.<chord>` | *unset* | Run a command on a chord, e.g. key.ctrl+s = editor.save. | — |
