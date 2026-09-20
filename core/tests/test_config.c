@@ -480,23 +480,23 @@ static void test_starter_file_leaves_colours_to_the_theme(void) {
 }
 
 int main(void) {
-    test_defaults();
-    test_load_missing_file_keeps_defaults();
-    test_load_overlays_defaults();
-    test_color_parsing_edge_cases();
-    test_write_default_if_missing();
-    test_default_path_resolves();
-    test_language_for_path();
-    test_filetype_override();
-    test_lang_string();
-    test_project_key_allowlist();
-    test_project_overlay_refuses_commands();
-    test_project_overlay_missing_file();
-    test_find_project_file_walks_up();
-    test_key_docs_cover_everything();
-    test_entries_with_prefix();
-    test_starter_file_leaves_colours_to_the_theme();
-    test_starter_file_documents_every_key();
+    RUN(test_defaults);
+    RUN(test_load_missing_file_keeps_defaults);
+    RUN(test_load_overlays_defaults);
+    RUN(test_color_parsing_edge_cases);
+    RUN(test_write_default_if_missing);
+    RUN(test_default_path_resolves);
+    RUN(test_language_for_path);
+    RUN(test_filetype_override);
+    RUN(test_lang_string);
+    RUN(test_project_key_allowlist);
+    RUN(test_project_overlay_refuses_commands);
+    RUN(test_project_overlay_missing_file);
+    RUN(test_find_project_file_walks_up);
+    RUN(test_key_docs_cover_everything);
+    RUN(test_entries_with_prefix);
+    RUN(test_starter_file_leaves_colours_to_the_theme);
+    RUN(test_starter_file_documents_every_key);
 
     printf("all config tests passed\n");
     return 0;

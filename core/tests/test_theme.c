@@ -223,17 +223,17 @@ static void test_one_real_choice_among_defaults_survives(void) {
 }
 
 int main(void) {
-    test_every_theme_is_complete();
-    test_names_are_unique();
-    test_lookup();
-    test_applying_replaces_the_defaults();
-    test_a_hand_set_colour_survives();
-    test_a_config_full_of_shipped_defaults_still_themes();
-    test_one_real_choice_among_defaults_survives();
-    test_switching_themes_leaves_nothing_behind();
-    test_hand_set_survives_switching();
-    test_unknown_theme_changes_nothing();
-    test_default_theme_matches_the_defaults();
+    RUN(test_every_theme_is_complete);
+    RUN(test_names_are_unique);
+    RUN(test_lookup);
+    RUN(test_applying_replaces_the_defaults);
+    RUN(test_a_hand_set_colour_survives);
+    RUN(test_a_config_full_of_shipped_defaults_still_themes);
+    RUN(test_one_real_choice_among_defaults_survives);
+    RUN(test_switching_themes_leaves_nothing_behind);
+    RUN(test_hand_set_survives_switching);
+    RUN(test_unknown_theme_changes_nothing);
+    RUN(test_default_theme_matches_the_defaults);
 
     printf("all theme tests passed\n");
     return 0;

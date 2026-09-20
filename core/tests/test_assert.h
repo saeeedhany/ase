@@ -34,4 +34,20 @@
         }                                                                                          \
     } while (0)
 
+/*
+ * Names each case before it runs, on stderr and flushed.
+ *
+ * Three of these suites segfaulted on their first Windows run with no
+ * output at all — a crash prints nothing, so "which test" was not
+ * knowable from a CI log on a platform nobody here can attach a
+ * debugger to. The last name printed is the one that died.
+ * See docs/adr/0130.
+ */
+#define RUN(fn)                                                                                    \
+    do {                                                                                           \
+        fprintf(stderr, "  %s\n", #fn);                                                            \
+        fflush(stderr);                                                                            \
+        fn();                                                                                      \
+    } while (0)
+
 #endif /* ASE_TEST_ASSERT_H */

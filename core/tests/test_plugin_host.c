@@ -98,10 +98,10 @@ static void test_broken_lua_script_is_skipped_not_fatal(void) {
 }
 
 int main(void) {
-    test_register_and_run();
-    test_load_directory_missing_is_not_an_error();
-    test_lua_and_native_plugins_from_directory();
-    test_broken_lua_script_is_skipped_not_fatal();
+    RUN(test_register_and_run);
+    RUN(test_load_directory_missing_is_not_an_error);
+    RUN(test_lua_and_native_plugins_from_directory);
+    RUN(test_broken_lua_script_is_skipped_not_fatal);
 
     printf("all plugin host tests passed\n");
     return 0;
