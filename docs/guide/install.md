@@ -38,12 +38,13 @@ On Debian and Ubuntu the Qt dependency is `qt6-base-dev`.
 **Linux.** That is where the GUI is built, tested and packaged, and it is
 what a release is a release for.
 
-The core library is built and tested on macOS and Windows in CI too, and
-the GUI has no deliberate Linux dependency — but it has never been built
-on either, so treat them as unverified rather than supported. On Windows
-there is a known gap beyond that: `ase_process_spawn()` is not
-implemented, so the language server and `:compile` are present and do
-nothing.
+The core library is built and tested on macOS in CI too, and the GUI has
+no deliberate Linux dependency — but the GUI has never been built on
+either, so treat them as unverified rather than supported.
+
+Windows is further behind: the core compiles there and three of its test
+suites crash, and `ase_process_spawn()` is unimplemented, so the language
+server and `:compile` are present and do nothing.
 
 ## Headless
 

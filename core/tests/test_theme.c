@@ -37,13 +37,9 @@ static void expect_colour(const AseConfig *config, const char *key, const char *
 }
 
 static void test_every_theme_is_complete(void) {
-    TRACE("before theme_count");
-    TRACE("theme_count = %zu", ase_theme_count());
     CHECK(ase_theme_count() >= 3);
     for (size_t i = 0; i < ase_theme_count(); i++) {
-        TRACE("theme_at(%zu)", i);
         const AseTheme *theme = ase_theme_at(i);
-        TRACE("theme_at(%zu) = %p", i, (const void *)theme);
         CHECK(theme != NULL);
         /* A theme missing a colour would leave the previous theme's
          * showing through, which reads as a rendering bug. */

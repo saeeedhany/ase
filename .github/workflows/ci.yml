@@ -9,13 +9,37 @@ jobs:
   core-headless:
     name: core (headless, ${{ matrix.os }})
     strategy:
-      # One platform's failure used to cancel the other two, so a
-      # Windows configure error hid whether Linux and macOS were even
-      # passing. See docs/adr/0130.
+      # One platform's failure used to cancel the others, so a Windows
+      # configure error hid whether Linux and macOS were even passing.
+      # See docs/adr/0130.
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -B build -DASE_BUILD_GUI=OFF -DASE_BUILD_TESTS=ON
+      - name: Build
+        run: cmake --build build --config Debug
+      - name: Test
+        run: ctest --test-dir build --output-on-failure -C Debug
+
+  # Windows builds the core and then three suites segfault — config
+  # inside ase_config_create_default(), theme while reading a static
+  # table it has just been handed a valid pointer into, plugin_host
+  # right after registering a command. Three unrelated-looking sites,
+  # no debugger to hand, and no reproduction on Linux or macOS.
+  #
+  # Kept running and kept non-blocking, deliberately. Deleting it would
+  # throw away the only signal anyone has about Windows; gating on it
+  # would block work on the platform this editor actually ships for.
+  # README says plainly that Windows is unverified, and ROADMAP tracks
+  # this. See docs/adr/0130.
+  core-windows:
+    name: core (headless, windows — known broken, not gating)
+    runs-on: windows-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Configure

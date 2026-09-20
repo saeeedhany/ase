@@ -60,8 +60,10 @@ are snapshotted where a crash cannot reach them and offered back on the
 next launch.
 
 Everything above is covered by 18 test suites: the core builds and runs
-on Linux, macOS and Windows in CI, the GUI suites run on Linux against
-the Qt 6.2 floor, and both are built again under ASan and UBSan. See
+on Linux and macOS in CI, the GUI suites run on Linux against the Qt 6.2
+floor, and both are built again under ASan and UBSan. The core compiles
+on Windows but three of its suites crash there, so that job runs without
+gating — see [Supported platforms](#supported-platforms). See
 [`docs/ROADMAP.md`](docs/ROADMAP.md) for what is still open and
 [`docs/adr/`](docs/adr/) for why any of it is the way it is.
 
@@ -70,12 +72,15 @@ the Qt 6.2 floor, and both are built again under ASan and UBSan. See
 **Linux.** That is where the GUI is built, tested and packaged, and it is
 what a release is a release for.
 
-The core library is built and tested on macOS and Windows in CI too, and
-the GUI has no deliberate Linux dependency — but it has never been built
-on either, so treat them as unverified rather than supported. On Windows
-there is a known gap beyond that: `ase_process_spawn()` is not
-implemented, so the language server and `:compile` are present and do
-nothing.
+The core library is built and tested on macOS in CI too, and the GUI has
+no deliberate Linux dependency — but the GUI has never been built on
+either, so treat them as unverified rather than supported.
+
+Windows is further behind than that. The core compiles there and three
+of its test suites segfault, which went unnoticed because CI had never
+passed for anyone to read; that job now runs without gating the build.
+`ase_process_spawn()` is also unimplemented on Windows, so the language
+server and `:compile` are present and do nothing.
 
 ## Architecture
 
