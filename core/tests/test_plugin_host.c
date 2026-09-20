@@ -22,11 +22,14 @@ static void noop_command(AseBuffer *buffer, void *user_data) {
 }
 
 static void test_register_and_run(void) {
+    TRACE("before host_create");
     AsePluginHost *host = ase_plugin_host_create();
+    TRACE("host_create returned %p", (void *)host);
     CHECK(host != NULL);
     CHECK(ase_plugin_host_command_count(host) == 0);
-
+    TRACE("before register_command");
     CHECK(ase_plugin_host_register_command(host, "noop", noop_command, NULL));
+    TRACE("register_command ok");
     CHECK(ase_plugin_host_command_count(host) == 1);
 
     AseBuffer *buf = ase_buffer_create();

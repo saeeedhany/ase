@@ -20,11 +20,15 @@
 
 
 static void test_defaults(void) {
+    TRACE("before create_default");
     AseConfig *config = ase_config_create_default();
+    TRACE("create_default returned %p", (void *)config);
     CHECK(config != NULL);
 
     uint8_t r, g, b, a;
+    TRACE("before get_color(background)");
     CHECK(ase_config_get_color(config, "background", &r, &g, &b, &a));
+    TRACE("get_color ok");
     CHECK(r == 0x28 && g == 0x28 && b == 0x28 && a == 0xFF);
 
     CHECK(ase_config_get_color(config, "text", &r, &g, &b, &a));

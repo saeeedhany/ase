@@ -43,6 +43,15 @@
  * debugger to. The last name printed is the one that died.
  * See docs/adr/0130.
  */
+/* Temporary, for pinning down a crash on a platform with no debugger
+ * to hand. Remove once Windows is green. */
+#define TRACE(...)                                                                                 \
+    do {                                                                                           \
+        fprintf(stderr, "    [trace] " __VA_ARGS__);                                               \
+        fprintf(stderr, "\n");                                                                     \
+        fflush(stderr);                                                                            \
+    } while (0)
+
 #define RUN(fn)                                                                                    \
     do {                                                                                           \
         fprintf(stderr, "  %s\n", #fn);                                                            \

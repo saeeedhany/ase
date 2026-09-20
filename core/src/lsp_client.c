@@ -523,13 +523,23 @@ AseLspClient *ase_lsp_client_start(const char *const *command, const char *root_
      * which then sends `initialized` and releases everything queued
      * meanwhile. Waiting here blocked the UI thread for as long as the
      * server took to start — see docs/adr/0093. */
-    if (!send_request_ex(client, "initialize", params, initialize_callback, client, NULL, true)) {
-        ase_process_destroy(client->process);
-        free(client->pending);
-        free(client->read_buffer);
-        free(client);
-        return NULL;
-    }
+    /*
+     * A failed write here is not a failed start. It means the child was
+     * already gone — a command that does not exist execs, fails, and
+     * _exit()s, and if it loses the race to the parent's write the pipe
+     * has no reader and the write takes EPIPE. Winning that race
+     * instead put the bytes in the pipe buffer and succeeded.
+     *
+     * Tearing the client down on one side of that race and not the
+     * other made a misconfigured `lsp_command` behave differently
+     * depending on machine load, which is how it surfaced: a CI runner
+     * failing a test that passed on every machine it was tried on.
+     *
+     * write_framed() has already set alive = false, so the caller sees
+     * the same dead client either way and poll() reports it. That is
+     * what ADR 0093 says happens when the handshake is not awaited.
+     */
+    (void)send_request_ex(client, "initialize", params, initialize_callback, client, NULL, true);
 
     return client;
 }
