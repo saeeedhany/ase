@@ -192,6 +192,14 @@ void EditorViewport::applyConfig() {
     m_vimModeEnabled = vimModeStr != nullptr &&
                        QString::fromUtf8(vimModeStr).compare(QLatin1String("true"), Qt::CaseInsensitive) == 0;
 
+    /* On by default, which is a deliberate divergence: vim ships with
+     * `autoindent` off, and nearly every real vimrc turns it on. See
+     * docs/adr/0136. */
+    const char *autoIndentStr = ase_config_get_string(m_config, "auto_indent");
+    m_autoIndent = autoIndentStr == nullptr ||
+                    QString::fromUtf8(autoIndentStr).compare(QLatin1String("false"),
+                                                              Qt::CaseInsensitive) != 0;
+
     /* On by default, unlike animations — see docs/adr/0014, decision 4.
      * An unrecognized value falls back to "absolute" rather than
      * treating it as an error — a bad config value should never break

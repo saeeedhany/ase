@@ -104,6 +104,7 @@ static const AseConfigKeyDoc kKeyDocs[] = {
     {"vim_mode", "true", "Modal editing. false for always-insert.", false},
     {"animations", "false", "true for a smooth caret fade instead of a blink.", false},
     {"line_numbers", "absolute", "off, absolute, or relative.", false},
+    {"auto_indent", "true", "A new line starts where the one above it started.", false},
     {"theme", "ase-default", "Colour palette. :theme lists them, including your own from <config dir>/themes/*.ase.", false},
     {"max_fps", NULL, "Cap the animation rate; unset follows the display.", false},
     {"build_command", NULL, ":compile runs this; %f is the current file.", false},
@@ -685,6 +686,11 @@ static const char kDefaultConfigTemplate[] =
     "# off / absolute / relative (relative shows distance from the current\n"
     "# line, Vim-style, except the current line itself which stays absolute).\n"
     "line_numbers = absolute\n"
+    "\n"
+    "# A new line starts where the one above it started, copying its\n"
+    "# leading whitespace exactly rather than re-rendering it as tabs or\n"
+    "# spaces. Vim ships this off and nearly every vimrc turns it on.\n"
+    "auto_indent = true\n"
     "\n"
     "# Animation runs at the display's refresh rate -- a 144Hz screen\n"
     "# animates at 144Hz. Set this to cap it (battery), not to raise it:\n"

@@ -143,3 +143,4 @@ what changed.
 | [0133](0133-a-theme-you-can-share-as-a-file.md) | A theme you can share as a file |
 | [0134](0134-vim-keys-you-can-move.md) | Vim keys you can move |
 | [0135](0135-the-parse-moves-off-the-ui-thread.md) | The parse moves off the UI thread |
+| [0136](0136-a-new-line-starts-where-the-last-one-did.md) | A new line starts where the last one did |

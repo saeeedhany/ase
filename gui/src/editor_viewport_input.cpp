@@ -288,6 +288,9 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
             if (m_vimReplacing) {
                 vimLeaveReplaceMode();
             }
+            /* Before the cursor steps back, and before the undo session
+             * closes, so taking it back is part of the same change. */
+            dropUnusedAutoIndent();
             /* Steps back a column, as vim does, unless already at 0. */
             if (m_cursors[0] > static_cast<size_t>(m_lineStarts[lineForOffset(m_cursors[0])])) {
                 moveCursorLeftAt(0, false);
@@ -404,7 +407,7 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
         if (m_vimReplacing) {
             vimReplaceTyped(QByteArrayLiteral("\n"));
         } else {
-            insertText(QByteArrayLiteral("\n"));
+            insertNewlineWithIndent();
         }
         break;
     default:

@@ -55,6 +55,20 @@ which end you are moving. `r`, `J`, `~`, `>` and `<` work on it too.
 **Beyond Vim** — `gd` goes to the definition under the cursor, using the
 language server rather than a local scan.
 
+## Indentation
+
+A new line starts where the one it came from started — from `o`, `O` and
+Enter. The leading whitespace is copied exactly, so a tab-indented file
+stays tab-indented and nothing is silently converted.
+
+An indent you never type on is taken back: `o` then `Esc` leaves the line
+empty rather than full of spaces, as vim does.
+
+`auto_indent = false` turns it off. It is on by default, which is a
+deliberate divergence — vim ships `autoindent` off and nearly every vimrc
+turns it on. See
+[ADR 0136](../adr/0136-a-new-line-starts-where-the-last-one-did.md).
+
 ## Moving the keys
 
 `vim.normal.<key> = <keys>` in your config is vim's `nnoremap`: the key

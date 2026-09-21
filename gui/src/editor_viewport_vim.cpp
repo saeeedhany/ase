@@ -1013,16 +1013,110 @@ void EditorViewport::vimPasteBefore() {
     vimInsertPaste(insertAt, bytes, linewise);
 }
 
+QByteArray EditorViewport::indentOfLine(int line) const {
+    if (!m_autoIndent || line < 0 || line >= m_lineStarts.size()) {
+        return QByteArray();
+    }
+    int start = m_lineStarts[line];
+    int end = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1
+                                                : static_cast<int>(m_cache.size());
+    int scan = start;
+    while (scan < end && (m_cache[scan] == ' ' || m_cache[scan] == '\t')) {
+        scan++;
+    }
+    return m_cache.mid(start, scan - start);
+}
+
+void EditorViewport::insertNewlineWithIndent() {
+    const int line = lineForOffset(m_cursors[0]);
+    const QByteArray indent = indentOfLine(line);
+    if (indent.isEmpty()) {
+        insertText(QByteArrayLiteral("\n"));
+        m_autoIndentLine = -1;
+        return;
+    }
+
+    /*
+     * The indent replaces whatever whitespace the split would otherwise
+     * have pushed onto the new line, rather than adding to it.
+     *
+     * Splitting `    hello| world` gives `    world` in vim, not
+     * `     world` — derived, not assumed, and the difference only
+     * shows when the break lands on a space. See docs/adr/0136.
+     */
+    const int lineEnd = (line + 1 < m_lineStarts.size())
+                            ? m_lineStarts[line + 1] - 1
+                            : static_cast<int>(m_cache.size());
+    size_t scan = m_cursors[0];
+    while (scan < static_cast<size_t>(lineEnd) &&
+           (m_cache[static_cast<int>(scan)] == ' ' || m_cache[static_cast<int>(scan)] == '\t')) {
+        scan++;
+    }
+
+    const size_t at = m_cursors[0];
+    vimReplaceRange(at, scan, QByteArrayLiteral("\n") + indent);
+    const size_t landed = at + 1 + static_cast<size_t>(indent.size());
+    collapseToOneCursor();
+    m_cursors[0] = std::min(landed, static_cast<size_t>(m_cache.size()));
+    m_selectionAnchors[0] = m_cursors[0];
+    /* Remembered so Escape can take it back if nothing was typed on it,
+     * which is what vim does. */
+    m_autoIndentLine = lineForOffset(m_cursors[0]);
+    ensureCursorVisible();
+    update();
+}
+
+/*
+ * vim leaves no trailing whitespace behind an indent you never used:
+ * `o<Esc>` on an indented line leaves the line empty, not four spaces
+ * wide. Derived from real vim rather than assumed — see docs/adr/0136.
+ */
+void EditorViewport::dropUnusedAutoIndent() {
+    if (m_autoIndentLine < 0) {
+        return;
+    }
+    int line = m_autoIndentLine;
+    m_autoIndentLine = -1;
+    if (line >= m_lineStarts.size()) {
+        return;
+    }
+    int start = m_lineStarts[line];
+    int end = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1
+                                                : static_cast<int>(m_cache.size());
+    if (end <= start) {
+        return;
+    }
+    for (int i = start; i < end; ++i) {
+        if (m_cache[i] != ' ' && m_cache[i] != '\t') {
+            return; /* something real was typed; the indent is earned */
+        }
+    }
+    vimReplaceRange(static_cast<size_t>(start), static_cast<size_t>(end), QByteArray());
+    /* The cursor was inside what just went. Left where it was it clamps
+     * to the end of the buffer, and the next `o` opens after the wrong
+     * line. */
+    collapseToOneCursor();
+    m_cursors[0] = static_cast<size_t>(start);
+    m_selectionAnchors[0] = m_cursors[0];
+}
+
 void EditorViewport::vimOpenLineAbove() {
     int line = lineForOffset(m_cursors[0]);
     size_t at = static_cast<size_t>(m_lineStarts[line]);
+    /* Taken before the insert, from the line this one is going above. */
+    const QByteArray indent = indentOfLine(line);
+    const QByteArray inserted = indent + QByteArrayLiteral("\n");
     beginUndoStep();
-    if (ase_buffer_insert(m_buffer, at, "\n", 1)) {
-        ase_undo_record_insert(m_undo, at, "\n", 1);
+    if (ase_buffer_insert(m_buffer, at, inserted.constData(),
+                           static_cast<size_t>(inserted.size()))) {
+        ase_undo_record_insert(m_undo, at, inserted.constData(),
+                                static_cast<size_t>(inserted.size()));
     }
     endUndoStep();
+    at += static_cast<size_t>(indent.size());
     m_cursors[0] = at;
     m_selectionAnchors[0] = at;
+    m_autoIndentLine = indent.isEmpty() ? -1 : line;
     refreshCache();
     ensureCursorVisible();
     update();
@@ -2436,7 +2530,7 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
         /* Before the line break, or undo leaves the blank line behind. */
         beginUndoSession();
         moveCursorEndAt(0, false);
-        insertText(QByteArrayLiteral("\n"));
+        insertNewlineWithIndent();
         m_vimMode = VimMode::Insert;
         vimMarkChange();
         vimBeginInsertCapture();

@@ -278,6 +278,29 @@ CASES = [
 # Cases real vim cannot be scripted into producing, with the reason and
 # the behaviour each one pins down. Verified by hand against interactive
 # vim; see docs/adr/0104.
+# Derived with `set autoindent`, unlike everything above.
+#
+# vim ships autoindent off, and `vim -u NONE` therefore has it off — but
+# this editor has it on, because nearly every real vimrc does and every
+# other editor does. So these cases have to be produced from a vim
+# configured the way this editor behaves, or they would assert the
+# opposite. See docs/adr/0136.
+AUTOINDENT_CASES = [
+    ("ai: o inherits", "int f(void) {\n    int x;\n}\n", 2, 5, "oint y;<Esc>"),
+    ("ai: O inherits", "int f(void) {\n    int x;\n}\n", 2, 5, "Oint y;<Esc>"),
+    ("ai: o from column zero", "aaa\nbbb\n", 1, 1, "ozz<Esc>"),
+    # The one that is not obvious: an indent you never typed on is taken
+    # back, so the line is left empty rather than full of spaces.
+    ("ai: o then Esc leaves it empty", "int f(void) {\n    int x;\n}\n", 2, 5, "o<Esc>"),
+    ("ai: O then Esc leaves it empty", "int f(void) {\n    int x;\n}\n", 2, 5, "O<Esc>"),
+    ("ai: Enter at end of line", "    aaa\n", 1, 5, "A<CR>bbb<Esc>"),
+    ("ai: Enter mid-line", "    hello world\n", 1, 10, "i<CR><Esc>"),
+    ("ai: o on a blank line", "aaa\n\nbbb\n", 2, 1, "ozz<Esc>"),
+    ("ai: two opens keep it", "        deep;\n", 1, 9, "oa<Esc>ob<Esc>"),
+    ("ai: o Esc o starts fresh", "    aaa\n", 1, 5, "o<Esc>obbb<Esc>"),
+    ("ai: deeper nesting", "if (x) {\n        y();\n}\n", 2, 9, "oz();<Esc>"),
+]
+
 MANUAL_CASES = []
 
 
@@ -344,6 +367,21 @@ def main():
                        cwd=work, capture_output=True)
         expected = open(os.path.join(work, "out.txt")).read()
         rows.append((name, text, line, col, keys, expected))
+
+    for name, text, line, col, keys in AUTOINDENT_CASES:
+        open(os.path.join(work, "in.txt"), "w").write(text)
+        script = (
+            "set nofixeol\n"
+            "set shiftwidth=4 expandtab\n"
+            "set autoindent\n"
+            "call cursor(%d,%d)\n"
+            'call feedkeys("%s", "xt")\n'
+            "write! %s/out.txt\nq!\n" % (line, col, to_vim(keys), work)
+        )
+        open(os.path.join(work, "case.vim"), "w").write(script)
+        subprocess.run(["vim", "-u", "NONE", "-i", "NONE", "-N", "-es", "-S", "case.vim", "in.txt"],
+                       cwd=work, capture_output=True)
+        rows.append((name, text, line, col, keys, open(os.path.join(work, "out.txt")).read()))
 
     cmd_rows = []
     for name, text, line, col, command in COMMAND_CASES:

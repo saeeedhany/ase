@@ -506,6 +506,28 @@ private:
     void vimToggleCaseInPlace(QByteArray &text);
     void vimInsertPaste(size_t insertAt, const QByteArray &bytes, bool linewise);
     void vimIndentLines(int startLine, int lineCount, bool right);
+
+    /*
+     * A new line starts where the one it came from started.
+     *
+     * The leading whitespace is copied verbatim rather than re-rendered
+     * as tabs or spaces: this editor has no tab policy to normalise
+     * towards, and converting a file's existing indentation because you
+     * pressed Enter is worse than inheriting whatever it already uses.
+     * Vim with `expandtab` does normalise, so this is a deliberate
+     * divergence — see docs/adr/0136.
+     */
+    QByteArray indentOfLine(int line) const;
+    /* Inserts a line break plus that indent at the cursor. */
+    void insertNewlineWithIndent();
+    /* Vim removes an indent you never typed on top of. Called when
+     * Insert mode ends. */
+    void dropUnusedAutoIndent();
+
+    bool m_autoIndent = true;
+    /* The line auto-indent last wrote to, and how much of it is that
+     * indent. -1 when there is nothing to take back. */
+    int m_autoIndentLine = -1;
     void vimAddToNumber(int delta);
     size_t vimLinewiseDeleteStart(size_t start, size_t end) const;
     /* Never crosses a line. A miss returns the cursor unchanged.
