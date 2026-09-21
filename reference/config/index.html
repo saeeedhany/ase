@@ -1485,6 +1485,22 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5123,6 +5139,230 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0129-a-release-that-builds-itself/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0129: A release that builds itself
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0130-the-ci-nobody-was-reading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0130: The CI nobody was reading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0131-replacing-across-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0131: Replacing across files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0132-renaming-a-symbol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0132: Renaming a symbol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0133-a-theme-you-can-share-as-a-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0133: A theme you can share as a file
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0134-vim-keys-you-can-move/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0134: Vim keys you can move
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0135-the-parse-moves-off-the-ui-thread/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0135: The parse moves off the UI thread
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0136-a-new-line-starts-where-the-last-one-did/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0136: A new line starts where the last one did
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5298,9 +5538,15 @@ project, which only that project reads.</p>
 <td>—</td>
 </tr>
 <tr>
+<td><code>auto_indent</code></td>
+<td><code>true</code></td>
+<td>A new line starts where the one above it started.</td>
+<td>—</td>
+</tr>
+<tr>
 <td><code>theme</code></td>
 <td><code>ase-default</code></td>
-<td>Colour palette. :theme lists them.</td>
+<td>Colour palette. :theme lists them, including your own from <config dir>/themes/*.ase.</td>
 <td>—</td>
 </tr>
 <tr>
@@ -5323,8 +5569,8 @@ project, which only that project reads.</p>
 </tr>
 <tr>
 <td><code>syntax_max_kb</code></td>
-<td><code>1024</code></td>
-<td>Skip highlighting past this file size, in KB.</td>
+<td><code>4096</code></td>
+<td>Skip highlighting past this file size, in KB. Bounds memory, not lag: the parse is on its own thread.</td>
 <td>—</td>
 </tr>
 <tr>
@@ -5343,6 +5589,12 @@ project, which only that project reads.</p>
 <td><code>key.&lt;chord&gt;</code></td>
 <td><em>unset</em></td>
 <td>Run a command on a chord, e.g. key.ctrl+s = editor.save.</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>vim.&lt;key&gt;</code></td>
+<td><em>unset</em></td>
+<td>Make a Normal/Visual key stand for other keys, e.g. vim.normal.Y = y$. Also vim.normal.<em> and vim.visual.</em>.</td>
 <td>—</td>
 </tr>
 <tr>

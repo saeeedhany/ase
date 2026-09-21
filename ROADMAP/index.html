@@ -1626,6 +1626,22 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5264,6 +5280,230 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0129-a-release-that-builds-itself/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0129: A release that builds itself
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0130-the-ci-nobody-was-reading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0130: The CI nobody was reading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0131-replacing-across-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0131: Replacing across files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0132-renaming-a-symbol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0132: Renaming a symbol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0133-a-theme-you-can-share-as-a-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0133: A theme you can share as a file
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0134-vim-keys-you-can-move/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0134: Vim keys you can move
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0135-the-parse-moves-off-the-ui-thread/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0135: The parse moves off the UI thread
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0136-a-new-line-starts-where-the-last-one-did/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0136: A new line starts where the last one did
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6377,9 +6617,10 @@ something else.</p>
 <ul>
 <li>~~<strong>Keybindings as data</strong>~~ Done — <code>key.&lt;chord&gt; = &lt;command&gt;</code> in
   <code>config.ase</code>, with built-ins, window actions and plugin commands in one
-  registry, so binding a key to a plugin needs no new API. Vim's own
-  <code>dd</code>/<code>gg</code> sequences are still not chords and stay as they are
-  (<a href="../adr/0113-keybindings-as-data/">ADR 0113</a>).</li>
+  registry, so binding a key to a plugin needs no new API. Vim's own keys
+  are moved a different way, by remapping rather than by binding
+  (<a href="../adr/0113-keybindings-as-data/">ADR 0113</a>,
+  <a href="../adr/0134-vim-keys-you-can-move/">ADR 0134</a>).</li>
 <li>~~<strong>Project-wide search</strong>~~ Done for the read-only half — search, and
   jump to a hit (<a href="../adr/0066-project-wide-search/">ADR 0066</a>). <strong>Replace
   across files</strong> is deliberately still open: editing every file in a
@@ -6391,9 +6632,9 @@ something else.</p>
   (<a href="../adr/0070-the-jumplist/">ADR 0070</a>), ~~find-references~~ and
   ~~document symbols~~
   (<a href="../adr/0116-find-references-and-document-symbols/">ADR 0116</a>) are in.
-  <strong>rename is not</strong>: it returns a WorkspaceEdit touching files that are
-  not open, and applying that wants a preview and an undo story spanning
-  buffers — the same design pass replace-across-files is waiting for.</li>
+  ~~rename~~ is in too (<a href="../adr/0132-renaming-a-symbol/">ADR 0132</a>): the
+  WorkspaceEdit it returns becomes the same edit set a project replace
+  produces, previewed before anything happens and applied into buffers.</li>
 <li>~~<strong>Git gutter marks</strong>~~ Done — added, changed and deleted per line,
   from <code>git diff -U0</code>'s hunk headers, hidden while an unsaved edit has
   moved the lines around (<a href="../adr/0112-git-gutter-marks/">ADR 0112</a>).</li>
@@ -6435,26 +6676,35 @@ something else.</p>
 </ul>
 <h3 id="still-open-in-rough-order-of-value">Still open, in rough order of value<a class="headerlink" href="#still-open-in-rough-order-of-value" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>LSP rename</strong> — the last of LSP's useful half, and the one that
-   needs a cross-buffer undo story first. See Tier 2 above.</li>
-<li><strong>Theme files</strong> — <code>theme = gruvbox</code> loading
-   <code>~/.config/ase/themes/gruvbox.ase</code>. The built-in half is done
-   (<a href="../adr/0114-built-in-themes/">ADR 0114</a>); files are not.</li>
-<li><strong>Vim sequences as data</strong> — <code>dd</code> and <code>gg</code> go through a stateful
-   Normal-mode dispatcher, not the chord table, so they cannot be
-   rebound (<a href="../adr/0113-keybindings-as-data/">ADR 0113</a>).</li>
+<li>~~<strong>LSP rename.</strong>~~ Done — <code>F2</code>, previewed like a project replace and
+   applied into buffers, so nothing is written until you save
+   (<a href="../adr/0132-renaming-a-symbol/">ADR 0132</a>).</li>
+<li>~~<strong>Theme files.</strong>~~ Done — <code>&lt;config dir&gt;/themes/&lt;name&gt;.ase</code>, the
+   same keys a config uses, inheriting the defaults for whatever it
+   leaves out (<a href="../adr/0133-a-theme-you-can-share-as-a-file/">ADR 0133</a>).</li>
+<li>~~<strong>Vim sequences as data.</strong>~~ Done, as a remap rather than a table:
+   <code>vim.normal.&lt;key&gt; = &lt;keys&gt;</code> stands in for a key before the dispatcher
+   sees it, so counts and pending operators compose with it
+   (<a href="../adr/0134-vim-keys-you-can-move/">ADR 0134</a>). The dispatcher
+   itself is still a state machine, deliberately — <code>d2w</code> is not a table
+   entry.</li>
 <li>~~<strong>An unnamed buffer gets no crash snapshot.</strong>~~ Done — a snapshot is
    filed under a key rather than a path, and untitled buffers are
    offered back at startup because nothing else will ever reopen them
    (<a href="../adr/0127-the-buffer-with-nothing-to-fall-back-on/">ADR 0127</a>).</li>
 <li>~~<strong>Snapshots are never pruned.</strong>~~ Done — anything untouched for 30
    days goes at startup (ADR 0127).</li>
-<li><strong>A concurrent parse</strong>, which would give both an instant open <em>and</em>
-   colours on a large file; the size cap is the cheap answer until then
-   (<a href="../adr/0107-the-large-file-wall/">ADR 0107</a>).</li>
-<li><strong>Replace across files</strong> — the read-only half of project search is
-   done; editing every file in a project from one keystroke wants its
-   own design pass.</li>
+<li>~~<strong>A concurrent parse.</strong>~~ Done — the parse runs on a worker thread
+   past 256KB, so a large file is responsive <em>and</em> coloured, including
+   while being typed into. The size cap stays, now bounding memory
+   rather than lag
+   (<a href="../adr/0135-the-parse-moves-off-the-ui-thread/">ADR 0135</a>).</li>
+<li>~~<strong>Replace across files.</strong>~~ Done — <code>Alt+R</code>, previewed before it
+   happens, applied into buffers rather than onto disk so nothing is
+   written until you save
+   (<a href="../adr/0131-replacing-across-files/">ADR 0131</a>). <strong>LSP rename</strong> is
+   still open, but now only needs a <code>WorkspaceEdit</code> turned into the edit
+   set that machinery already takes.</li>
 <li><strong>Per-capture syntax colours as data</strong> — EXTENSIBILITY.md,
    recommendation 5.</li>
 </ol>
@@ -6483,6 +6733,13 @@ against the code on that date.</p>
   attempted because it is unverifiable without a live AT-SPI client in
   this environment (ADR 0012, decision 4). Needs dedicated follow-up
   with proper assistive-technology test tooling.</li>
+<li><strong>Three core suites segfault on Windows.</strong> <code>ase_config_tests</code> inside
+  <code>ase_config_create_default()</code>, <code>ase_theme_tests</code> while reading a static
+  table it has just been handed a valid pointer into, and
+  <code>ase_plugin_host_tests</code> immediately after registering a command. None
+  reproduces on Linux or macOS, with or without sanitizers. The job runs
+  in CI without gating so the signal is not lost
+  (<a href="../adr/0130-the-ci-nobody-was-reading/">ADR 0130</a>).</li>
 <li><strong>The LSP client and <code>:compile</code> are POSIX-only.</strong>
   <code>ase_process_spawn()</code> returns NULL on Windows (<code>core/src/process.c</code>),
   so both features are present and do nothing there. Async child-process
@@ -6495,6 +6752,10 @@ against the code on that date.</p>
   cursor (only single-cursor mode does) — a minor, rare-in-practice
   paper cut (ADR 0012, decision 1).</li>
 <li><code>Ctrl+D</code> "select next occurrence" doesn't wrap around the buffer.</li>
+<li><strong>Counts on <code>o</code> and <code>O</code> are ignored.</strong> <code>3ob</code> opens one line; vim opens
+  three. Found while deriving the auto-indent cases
+  (<a href="../adr/0136-a-new-line-starts-where-the-last-one-did/">ADR 0136</a>) —
+  it is unrelated to indentation and reproduces with <code>autoindent</code> off.</li>
 <li>The buffer bar doesn't elide long names
   (<a href="../adr/0057-always-on-tab-strip-and-welcome-rework/">ADR 0057</a>).</li>
 </ul>

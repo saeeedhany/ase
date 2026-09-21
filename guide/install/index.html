@@ -1529,6 +1529,22 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5167,6 +5183,230 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0129-a-release-that-builds-itself/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0129: A release that builds itself
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0130-the-ci-nobody-was-reading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0130: The CI nobody was reading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0131-replacing-across-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0131: Replacing across files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0132-renaming-a-symbol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0132: Renaming a symbol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0133-a-theme-you-can-share-as-a-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0133: A theme you can share as a file
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0134-vim-keys-you-can-move/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0134: Vim keys you can move
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0135-the-parse-moves-off-the-ui-thread/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0135: The parse moves off the UI thread
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0136-a-new-line-starts-where-the-last-one-did/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0136: A new line starts where the last one did
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5306,12 +5546,12 @@ path along with a <code>.desktop</code> entry and an icon.</p>
 <h2 id="which-platforms">Which platforms<a class="headerlink" href="#which-platforms" title="Permanent link">&para;</a></h2>
 <p><strong>Linux.</strong> That is where the GUI is built, tested and packaged, and it is
 what a release is a release for.</p>
-<p>The core library is built and tested on macOS and Windows in CI too, and
-the GUI has no deliberate Linux dependency — but it has never been built
-on either, so treat them as unverified rather than supported. On Windows
-there is a known gap beyond that: <code>ase_process_spawn()</code> is not
-implemented, so the language server and <code>:compile</code> are present and do
-nothing.</p>
+<p>The core library is built and tested on macOS in CI too, and the GUI has
+no deliberate Linux dependency — but the GUI has never been built on
+either, so treat them as unverified rather than supported.</p>
+<p>Windows is further behind: the core compiles there and three of its test
+suites crash, and <code>ase_process_spawn()</code> is unimplemented, so the language
+server and <code>:compile</code> are present and do nothing.</p>
 <h2 id="headless">Headless<a class="headerlink" href="#headless" title="Permanent link">&para;</a></h2>
 <p>The editing engine is a C library with no Qt dependency at all, and can
 be built on its own:</p>

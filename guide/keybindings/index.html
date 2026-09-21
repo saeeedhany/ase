@@ -745,6 +745,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#replacing-across-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Replacing across files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vims-own-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vim's own keys
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#plugin-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1316,6 +1338,22 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -5212,6 +5250,230 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0129-a-release-that-builds-itself/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0129: A release that builds itself
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0130-the-ci-nobody-was-reading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0130: The CI nobody was reading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0131-replacing-across-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0131: Replacing across files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0132-renaming-a-symbol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0132: Renaming a symbol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0133-a-theme-you-can-share-as-a-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0133: A theme you can share as a file
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0134-vim-keys-you-can-move/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0134: Vim keys you can move
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0135-the-parse-moves-off-the-ui-thread/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0135: The parse moves off the UI thread
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0136-a-new-line-starts-where-the-last-one-did/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0136: A new line starts where the last one did
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5328,6 +5590,28 @@
     <span class="md-ellipsis">
       
         Writing a chord
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#replacing-across-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Replacing across files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vims-own-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vim's own keys
       
     </span>
   </a>
@@ -5459,6 +5743,44 @@ chord stays a prefix for the others.</p>
 <code>bracketright</code>, <code>grave</code>. Named keys are <code>escape</code>, <code>tab</code>, <code>return</code>,
 <code>backspace</code>, <code>delete</code>, <code>space</code>, <code>left</code>, <code>right</code>, <code>up</code>, <code>down</code>, <code>home</code>,
 <code>end</code>, <code>pageup</code>, <code>pagedown</code>, <code>insert</code>.</p>
+<h2 id="replacing-across-files">Replacing across files<a class="headerlink" href="#replacing-across-files" title="Permanent link">&para;</a></h2>
+<p><code>Alt+R</code> takes a search term and a replacement, then shows every change it
+would make — one row per occurrence, with the line as it <em>would</em> read.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>space</code></td>
+<td>keep or drop the change under the cursor</td>
+</tr>
+<tr>
+<td><code>Enter</code></td>
+<td>jump to it, to look before deciding</td>
+</tr>
+<tr>
+<td><code>Ctrl+Enter</code></td>
+<td>apply what is left</td>
+</tr>
+</tbody>
+</table>
+<p>Applying opens each affected file as a buffer and edits it there —
+<strong>nothing is written until you save</strong>, so closing without saving undoes
+the whole thing. Within one file, <code>u</code> takes back that file's share in one
+step. There is no single keystroke that reverses the whole operation
+across every file, which is why you are shown it first. See
+<a href="../../adr/0131-replacing-across-files/">ADR 0131</a>.</p>
+<h2 id="vims-own-keys">Vim's own keys<a class="headerlink" href="#vims-own-keys" title="Permanent link">&para;</a></h2>
+<p>Bare keys are Vim's, so they are not bound with <code>key.</code> — they are
+remapped with <code>vim.</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="na">vim.normal.Y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">y$</span>
+<span class="na">vim.n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">j</span>
+</code></pre></div>
+<p>See <a href="../vim/#moving-the-keys">Moving the keys</a>.</p>
 <h2 id="plugin-commands">Plugin commands<a class="headerlink" href="#plugin-commands" title="Permanent link">&para;</a></h2>
 <p>A command a plugin registered can be bound like any other:</p>
 <div class="highlight"><pre><span></span><code><span class="na">key.alt+u</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">uppercase_all</span>

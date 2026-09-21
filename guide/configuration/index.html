@@ -644,6 +644,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#large-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Large files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#languages-and-servers" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1282,6 +1293,22 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -5178,6 +5205,230 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0129-a-release-that-builds-itself/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0129: A release that builds itself
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0130-the-ci-nobody-was-reading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0130: The CI nobody was reading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0131-replacing-across-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0131: Replacing across files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0132-renaming-a-symbol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0132: Renaming a symbol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0133-a-theme-you-can-share-as-a-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0133: A theme you can share as a file
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0134-vim-keys-you-can-move/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0134: Vim keys you can move
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0135-the-parse-moves-off-the-ui-thread/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0135: The parse moves off the UI thread
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0136-a-new-line-starts-where-the-last-one-did/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0136: A new line starts where the last one did
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5249,6 +5500,17 @@
     <span class="md-ellipsis">
       
         Colours
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#large-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Large files
       
     </span>
   </a>
@@ -5358,6 +5620,14 @@ by hand — pick a <a href="../themes/">theme</a> instead, which sets all nine.<
 <p>If you <em>have</em> set one by hand, a theme leaves it alone. A value you
 changed is a decision; a value still equal to what shipped is not, and a
 theme may replace it.</p>
+<h2 id="large-files">Large files<a class="headerlink" href="#large-files" title="Permanent link">&para;</a></h2>
+<p>Syntax highlighting is parsed on its own thread, so a large file opens
+and edits without waiting for it — the colours arrive when the parse
+finishes and the text is plain until then.</p>
+<p><code>syntax_max_kb</code> (4096 by default) is the point past which a file gets no
+highlighting at all. That bounds <strong>memory</strong>, not responsiveness: a parsed
+buffer costs roughly 26 times its source size. Raise it if you routinely
+open very large files and have the memory for it.</p>
 <h2 id="languages-and-servers">Languages and servers<a class="headerlink" href="#languages-and-servers" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="na">lsp_command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">clangd</span><span class="w">              </span><span class="c1"># any language without its own</span>
 <span class="na">lang.python.lsp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">pylsp</span><span class="w">           </span><span class="c1"># one language</span>

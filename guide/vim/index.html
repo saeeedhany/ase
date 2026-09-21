@@ -734,6 +734,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#indentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Indentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#moving-the-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Moving the keys
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-command-line" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1260,6 +1282,22 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -5156,6 +5194,230 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0129-a-release-that-builds-itself/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0129: A release that builds itself
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0130-the-ci-nobody-was-reading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0130: The CI nobody was reading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0131-replacing-across-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0131: Replacing across files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0132-renaming-a-symbol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0132: Renaming a symbol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0133-a-theme-you-can-share-as-a-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0133: A theme you can share as a file
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0134-vim-keys-you-can-move/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0134: Vim keys you can move
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0135-the-parse-moves-off-the-ui-thread/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0135: The parse moves off the UI thread
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0136-a-new-line-starts-where-the-last-one-did/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0136: A new line starts where the last one did
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5205,6 +5467,28 @@
     <span class="md-ellipsis">
       
         What is implemented
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#indentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Indentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#moving-the-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Moving the keys
       
     </span>
   </a>
@@ -5297,6 +5581,35 @@ the cursor.</p>
 which end you are moving. <code>r</code>, <code>J</code>, <code>~</code>, <code>&gt;</code> and <code>&lt;</code> work on it too.</p>
 <p><strong>Beyond Vim</strong> — <code>gd</code> goes to the definition under the cursor, using the
 language server rather than a local scan.</p>
+<h2 id="indentation">Indentation<a class="headerlink" href="#indentation" title="Permanent link">&para;</a></h2>
+<p>A new line starts where the one it came from started — from <code>o</code>, <code>O</code> and
+Enter. The leading whitespace is copied exactly, so a tab-indented file
+stays tab-indented and nothing is silently converted.</p>
+<p>An indent you never type on is taken back: <code>o</code> then <code>Esc</code> leaves the line
+empty rather than full of spaces, as vim does.</p>
+<p><code>auto_indent = false</code> turns it off. It is on by default, which is a
+deliberate divergence — vim ships <code>autoindent</code> off and nearly every vimrc
+turns it on. See
+<a href="../../adr/0136-a-new-line-starts-where-the-last-one-did/">ADR 0136</a>.</p>
+<h2 id="moving-the-keys">Moving the keys<a class="headerlink" href="#moving-the-keys" title="Permanent link">&para;</a></h2>
+<p><code>vim.normal.&lt;key&gt; = &lt;keys&gt;</code> in your config is vim's <code>nnoremap</code>: the key
+on the left stands for the keys on the right, before anything else looks
+at it.</p>
+<div class="highlight"><pre><span></span><code><span class="na">vim.normal.Y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">y$</span><span class="w">     </span><span class="c1"># the classic</span>
+<span class="na">vim.n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">j</span><span class="w">             </span><span class="c1"># a layout remap, in Normal and Visual</span>
+<span class="na">vim.e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">k</span>
+</code></pre></div>
+<p><code>vim.visual.&lt;key&gt;</code> is Visual only; plain <code>vim.&lt;key&gt;</code> is both, and a
+mode-qualified one wins.</p>
+<p>Because the substitution happens before the dispatcher, a count and a
+pending operator compose with it — <code>3n</code> and <code>dn</code> work as <code>3j</code> and <code>dj</code>
+without saying anything more.</p>
+<p>The right-hand side is <strong>not</strong> itself remapped, so two keys can be
+swapped without looping. And a key that is an argument — the target of
+<code>f</code>, the register after <code>"</code>, the object after <code>i</code> — is never remapped,
+or <code>f</code> could not find a character you had rebound.</p>
+<p>A remap that names no single key is reported when you save the config,
+not ignored. See <a href="../../adr/0134-vim-keys-you-can-move/">ADR 0134</a>.</p>
 <h2 id="the-command-line">The command line<a class="headerlink" href="#the-command-line" title="Permanent link">&para;</a></h2>
 <p><code>:</code> opens it. See <a href="../command-line/">The command line</a> for what it takes,
 including <code>:s/from/to/</code> and <code>:42</code> to jump to a line.</p>

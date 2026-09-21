@@ -1518,6 +1518,22 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5156,6 +5172,230 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0129-a-release-that-builds-itself/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0129: A release that builds itself
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0130-the-ci-nobody-was-reading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0130: The CI nobody was reading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0131-replacing-across-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0131: Replacing across files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0132-renaming-a-symbol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0132: Renaming a symbol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0133-a-theme-you-can-share-as-a-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0133: A theme you can share as a file
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0134-vim-keys-you-can-move/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0134: Vim keys you can move
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0135-the-parse-moves-off-the-ui-thread/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0135: The parse moves off the UI thread
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0136-a-new-line-starts-where-the-last-one-did/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0136: A new line starts where the last one did
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5298,6 +5538,10 @@ blank.</p>
 <td>Every use of the symbol under the cursor</td>
 </tr>
 <tr>
+<td><code>F2</code></td>
+<td>Rename the symbol everywhere, previewed before it happens</td>
+</tr>
+<tr>
 <td><code>Alt+S</code></td>
 <td>Outline of this file</td>
 </tr>
@@ -5319,6 +5563,14 @@ blank.</p>
 <code>Ctrl+W j</code> moves focus into it, <code>Ctrl+J</code> / <code>Ctrl+K</code> move through the
 results, <code>Enter</code> jumps — and keeps the keyboard in the panel, so you can
 walk a list of twenty references without reaching back for it each time.</p>
+<p>Rename shows you every change first, across every file the server names
+— <code>space</code> keeps or drops one, <code>Ctrl+Enter</code> applies. The files it changes
+are opened as buffers and <strong>nothing is written until you save</strong>, so
+closing them without saving undoes the whole thing. See
+<a href="../keybindings/#replacing-across-files">Replacing across files</a> for the
+same preview, and <a href="../../adr/0132-renaming-a-symbol/">ADR 0132</a> for why an
+edit the server describes in a way this editor cannot represent exactly
+is skipped rather than guessed at.</p>
 <p><code>Ctrl+O</code> and <code>Ctrl+I</code> go back and forward through the jumps you made.</p>
 <h2 id="per-project">Per project<a class="headerlink" href="#per-project" title="Permanent link">&para;</a></h2>
 <p>One server per project per window, shared by every buffer in it, so

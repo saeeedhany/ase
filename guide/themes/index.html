@@ -658,6 +658,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Writing your own">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#or-set-the-colours-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Or set the colours directly
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1249,6 +1266,22 @@
       
         
           
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
         
       
         
@@ -5145,6 +5178,230 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0129-a-release-that-builds-itself/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0129: A release that builds itself
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0130-the-ci-nobody-was-reading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0130: The CI nobody was reading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0131-replacing-across-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0131: Replacing across files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0132-renaming-a-symbol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0132: Renaming a symbol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0133-a-theme-you-can-share-as-a-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0133: A theme you can share as a file
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0134-vim-keys-you-can-move/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0134: Vim keys you can move
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0135-the-parse-moves-off-the-ui-thread/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0135: The parse moves off the UI thread
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0136-a-new-line-starts-where-the-last-one-did/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0136: A new line starts where the last one did
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5209,6 +5466,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Writing your own">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#or-set-the-colours-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Or set the colours directly
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -5266,7 +5540,25 @@ full of values its owner had never picked — and treating those as choices
 made every theme a silent no-op. See
 <a href="../../adr/0114-built-in-themes/">ADR 0114</a>.</p>
 <h2 id="writing-your-own">Writing your own<a class="headerlink" href="#writing-your-own" title="Permanent link">&para;</a></h2>
-<p>Set the nine keys in your config and leave <code>theme</code> unset:</p>
+<p>Put a file in <code>themes/</code> beside your config — <code>~/.config/ase/themes/</code> —
+named after the theme:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ~/.config/ase/themes/inkwell.ase</span>
+<span class="na">summary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Deep blue with warm accents</span>
+<span class="na">background</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="c1">#0B1021</span>
+<span class="na">text</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="c1">#D8DEE9</span>
+<span class="na">syntax_type</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="c1">#E2B714</span>
+<span class="na">syntax_string</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="c1">#7FB4CA</span>
+</code></pre></div>
+<p>Then <code>:theme inkwell</code>, and <code>:theme save</code> to keep it. It is listed by
+<code>:theme</code> alongside the built-in ones, and a file named after a built-in
+replaces it rather than appearing twice.</p>
+<p><strong>Whatever you leave out comes from the defaults</strong>, so changing two
+colours does not mean restating nine. The full set of keys is on
+<a href="../../reference/config/">Every config key</a>.</p>
+<p>A theme file is read when you run <code>:theme</code>, so one you have just written
+works without restarting or touching your config.</p>
+<h3 id="or-set-the-colours-directly">Or set the colours directly<a class="headerlink" href="#or-set-the-colours-directly" title="Permanent link">&para;</a></h3>
+<p>Nine keys in your config, with <code>theme</code> left unset:</p>
 <div class="highlight"><pre><span></span><code><span class="na">background</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="c1">#1C1C1C</span>
 <span class="na">text</span><span class="w">             </span><span class="o">=</span><span class="w"> </span><span class="c1">#D0D0D0</span>
 <span class="na">selection</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="c1">#303030AA</span>
@@ -5279,8 +5571,9 @@ made every theme a silent no-op. See
 </code></pre></div>
 <p>Colours are <code>#RRGGBB</code> or <code>#RRGGBBAA</code>. The alpha channel is what makes the
 panels and the selection sit <em>over</em> the text rather than replacing it.</p>
-<p>There is no theme file format and no theme directory — a theme is just
-those keys, so sharing one means sharing nine lines.</p>
+<p>Colours set this way are yours and no theme overrides them, which is the
+difference between this and a theme file: a theme is a palette you can
+switch away from, and these are decisions.</p>
 
 
 
