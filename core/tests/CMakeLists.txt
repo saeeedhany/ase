@@ -94,6 +94,16 @@ set_target_properties(test_native_plugin PROPERTIES
     PREFIX ""
 )
 
+# Built the way an ABI 1 plugin was: no version symbol. Lands in the
+# same directory so the loader meets it during a normal load.
+add_library(stale_native_plugin MODULE fixtures/stale_native_plugin.c)
+target_link_libraries(stale_native_plugin PRIVATE ase_core)
+set_target_properties(stale_native_plugin PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${ASE_PLUGIN_FIXTURES_DIR}
+    RUNTIME_OUTPUT_DIRECTORY ${ASE_PLUGIN_FIXTURES_DIR}
+    PREFIX ""
+)
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/uppercase.lua
     ${ASE_PLUGIN_FIXTURES_DIR}/uppercase.lua
@@ -107,7 +117,7 @@ target_link_libraries(ase_plugin_host_tests PRIVATE ase_core)
 target_compile_definitions(ase_plugin_host_tests PRIVATE
     ASE_TEST_FIXTURES_DIR="${ASE_PLUGIN_FIXTURES_DIR}"
 )
-add_dependencies(ase_plugin_host_tests test_native_plugin)
+add_dependencies(ase_plugin_host_tests test_native_plugin stale_native_plugin)
 add_test(NAME ase_plugin_host_tests COMMAND ase_plugin_host_tests)
 
 # Fake LSP server test fixture — a standalone black-box executable, not

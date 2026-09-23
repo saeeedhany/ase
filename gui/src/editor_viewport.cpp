@@ -268,6 +268,7 @@ EditorViewport::~EditorViewport() {
      * was saved or the user chose to drop it, and either way there is
      * nothing to recover. */
     discardRecovery();
+    ase_editor_context_destroy(m_pluginContext);
     ase_plugin_host_destroy(m_pluginHost);
     releaseLspClient();
     ase_process_destroy(m_compileProcess);

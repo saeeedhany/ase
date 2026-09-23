@@ -1,8 +1,8 @@
 /*
- * A plugin command through a real EditorViewport: it edits the buffer
- * directly, underneath the undo stack, so the question is what the undo
- * stack holds afterwards. It used to hold nothing — the history was
- * thrown away on every plugin run. See docs/adr/0128.
+ * A plugin command through a real EditorViewport. Two things are being
+ * asked: what the undo stack holds afterwards, since the plugin edits
+ * the buffer underneath it (docs/adr/0128), and what the plugin can
+ * reach besides the text (docs/adr/0141).
  */
 #include "editor_viewport.h"
 
@@ -12,6 +12,7 @@
 #include <QDir>
 #include <QFile>
 #include <QKeyEvent>
+#include <QSignalSpy>
 #include <QTest>
 
 namespace {
@@ -19,6 +20,13 @@ namespace {
 QString pluginDir() {
     return QDir(qEnvironmentVariable("XDG_CONFIG_HOME"))
         .filePath(QStringLiteral("ase/plugins"));
+}
+
+void writePlugin(const QString &name, const QByteArray &source) {
+    QFile plugin(QDir(pluginDir()).filePath(name));
+    QVERIFY(plugin.open(QIODevice::WriteOnly | QIODevice::Text));
+    plugin.write(source);
+    plugin.close();
 }
 
 AseBuffer *bufferFrom(const QByteArray &text) {
@@ -70,6 +78,94 @@ private slots:
             "    ase.buffer_insert(buf, 0, string.upper(text))\n"
             "end)\n");
         plugin.close();
+
+        /* What ABI 1 made impossible: reaching the caret, the selection,
+         * the config and the status line. */
+        writePlugin(QStringLiteral("context.lua"),
+                    "ase.register_command(\"mark_here\", function(ctx)\n"
+                    "    ase.buffer_insert(ctx, ase.cursor(ctx), \"<>\")\n"
+                    "end)\n"
+                    "ase.register_command(\"bracket\", function(ctx)\n"
+                    "    local a, b = ase.selection(ctx)\n"
+                    "    if a == nil then\n"
+                    "        ase.status(ctx, \"nothing selected\")\n"
+                    "        return\n"
+                    "    end\n"
+                    "    ase.buffer_insert(ctx, b, \"]\")\n"
+                    "    ase.buffer_insert(ctx, a, \"[\")\n"
+                    "    ase.set_cursor(ctx, a)\n"
+                    "end)\n"
+                    "ase.register_command(\"go_home\", function(ctx)\n"
+                    "    ase.set_cursor(ctx, 0)\n"
+                    "end)\n"
+                    "ase.register_command(\"say_font\", function(ctx)\n"
+                    "    ase.status(ctx, \"font=\" .. tostring(ase.config(ctx, \"font_family\")))\n"
+                    "end)\n"
+                    "ase.register_command(\"far_off\", function(ctx)\n"
+                    "    ase.set_cursor(ctx, 9999)\n"
+                    "end)\n");
+    }
+
+    /* ---- what the context reaches (ADR 0141) ---- */
+
+    void aPluginSeesWhereTheCaretIs() {
+        AseBuffer *buffer = bufferFrom("hello world\n");
+        EditorViewport viewport(buffer, QString());
+        viewport.restorePosition(5, 0);
+
+        QVERIFY(viewport.runCommandByName(QStringLiteral("mark_here")));
+        QCOMPARE(textOf(buffer), QByteArray("hello<> world\n"));
+    }
+
+    void aPluginMovesTheCaret() {
+        AseBuffer *buffer = bufferFrom("hello world\n");
+        EditorViewport viewport(buffer, QString());
+        viewport.restorePosition(7, 0);
+
+        QVERIFY(viewport.runCommandByName(QStringLiteral("go_home")));
+        QCOMPARE(viewport.cursorOffset(), size_t(0));
+    }
+
+    /* A caret past the end of what the plugin left behind is the crash
+     * this clamp exists for. */
+    void aCaretPastTheEndIsClamped() {
+        AseBuffer *buffer = bufferFrom("hello\n");
+        EditorViewport viewport(buffer, QString());
+        QVERIFY(viewport.runCommandByName(QStringLiteral("far_off")));
+        QCOMPARE(viewport.cursorOffset(), size_t(6));
+    }
+
+    void aPluginReadsConfigAndSaysSomething() {
+        EditorViewport viewport(bufferFrom("x\n"), QString());
+        QSignalSpy said(&viewport, &EditorViewport::messagePosted);
+
+        QVERIFY(viewport.runCommandByName(QStringLiteral("say_font")));
+        QCOMPARE(said.count(), 1);
+        QVERIFY(said.first().at(1).toString().startsWith(QStringLiteral("font=")));
+    }
+
+    /* Surround-the-selection is the plugin everyone writes first, and
+     * ABI 1 could not express it at all. */
+    void aPluginSurroundsTheSelection() {
+        AseBuffer *buffer = bufferFrom("hello world\n");
+        EditorViewport viewport(buffer, QString());
+        viewport.restorePosition(0, 0);
+        press(viewport, Qt::Key_V, QStringLiteral("v"));
+        for (int i = 0; i < 4; ++i) {
+            press(viewport, Qt::Key_L, QStringLiteral("l"));
+        }
+
+        QVERIFY(viewport.runCommandByName(QStringLiteral("bracket")));
+        QCOMPARE(textOf(buffer), QByteArray("[hello] world\n"));
+    }
+
+    void withNothingSelectedTheSameCommandSaysSo() {
+        EditorViewport viewport(bufferFrom("hello world\n"), QString());
+        QSignalSpy said(&viewport, &EditorViewport::messagePosted);
+
+        QVERIFY(viewport.runCommandByName(QStringLiteral("bracket")));
+        QCOMPARE(said.count(), 1);
+        QCOMPARE(said.first().at(1).toString(), QStringLiteral("nothing selected"));
     }
 
     /* The whole point of loading the directory. */
@@ -135,7 +231,9 @@ private slots:
     }
 
     void cleanupTestCase() {
-        QFile::remove(QDir(pluginDir()).filePath(QStringLiteral("shout.lua")));
+        for (const QString &name : {QStringLiteral("shout.lua"), QStringLiteral("context.lua")}) {
+            QFile::remove(QDir(pluginDir()).filePath(name));
+        }
     }
 };
 

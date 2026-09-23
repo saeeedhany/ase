@@ -108,6 +108,13 @@ public:
     /* :name dispatch into the plugin registry, checked after every
      * built-in so plugins can't shadow one. False if unregistered. */
     bool runPluginCommand(const QString &name);
+    /* The plugin ABI reaches the editor through these — see
+     * docs/adr/0141. Public because the C vtable's functions are free
+     * functions, not members. */
+    AseBuffer *buffer() const { return m_buffer; }
+    bool primarySelection(size_t *start, size_t *end) const;
+    void requestPluginCursor(size_t offset);
+    void requestPluginSelection(size_t start, size_t end);
 
     QString filePath() const { return m_filePath; }
 
@@ -436,6 +443,8 @@ private:
     void moveCursorRightAt(int i, bool extend);
     void moveCursorVerticallyAt(int i, int lineDelta, bool extend);
     void ensureDesiredColumns();
+    AseEditorContext *pluginContext();
+    void applyPluginCursorRequest();
     size_t vimClampOffLineEnd(size_t offset, int line) const;
     void moveCursorHomeAt(int i, bool extend);
     void moveCursorEndAt(int i, bool extend);
@@ -874,6 +883,12 @@ private:
                            int windowEnd);
     /* Loaded from <config dir>/plugins/; reached via `:name`. */
     AsePluginHost *m_pluginHost = nullptr;
+    /* What a plugin command sees of this editor, and what it asked for
+     * while it ran — see docs/adr/0141. */
+    AseEditorContext *m_pluginContext = nullptr;
+    long long m_pluginCursorRequest = -1;
+    long long m_pluginSelectionStart = -1;
+    long long m_pluginSelectionEnd = -1;
 
     QVector<AseHighlightSpan> m_highlights;
     /* m_highlights flattened to one byte per buffer byte — the form

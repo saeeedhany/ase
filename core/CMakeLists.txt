@@ -42,6 +42,7 @@ add_library(ase_core
     src/internal.c
     src/buffer.c
     src/config.c
+    src/editor_context.c
     src/plugin_host.c
     src/json.c
     src/process.c

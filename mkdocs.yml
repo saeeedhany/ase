@@ -176,6 +176,7 @@ nav:
     - adr/0138-two-paper-cuts.md
     - adr/0139-the-column-a-caret-is-aiming-for.md
     - adr/0140-the-styles-a-capture-can-have.md
+    - adr/0141-what-a-plugin-is-handed.md
 
 theme:
   name: material

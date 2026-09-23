@@ -12,23 +12,32 @@ extern "C" {
  * docs/adr/0009-plugin-abi-and-lua-host.md.
  */
 
-#define ASE_PLUGIN_ABI_VERSION 1
+#define ASE_PLUGIN_ABI_VERSION 2
 
-/* Handed to a native plugin's ase_plugin_register(). Deliberately
- * small — registering commands is the whole surface for now. */
+/* Handed to a native plugin's ase_plugin_register(). Still small:
+ * what a command can *do* lives on AseEditorContext, which grows by
+ * gaining functions rather than by this struct gaining pointers. */
 typedef struct {
     int abi_version;
     bool (*register_command)(AsePluginHost *host, const char *name,
                               AseCommandFn fn, void *user_data);
 } AsePluginApi;
 
-/* Every native plugin must export exactly this symbol (checked via
- * dlsym/GetProcAddress by name):
+/* Every native plugin must export exactly these two symbols (both
+ * looked up by name via dlsym/GetProcAddress):
  *
+ *     ASE_PLUGIN_ABI;
  *     void ase_plugin_register(AsePluginHost *host, const AsePluginApi *api);
  *
- * Called once, immediately after the plugin is loaded. Register your
- * commands via api->register_command and return. */
+ * ase_plugin_register is called once, immediately after the plugin is
+ * loaded. Register your commands via api->register_command and return.
+ *
+ * The version symbol is what stops a plugin built against an older ABI
+ * from being called through the current one — the command signature
+ * changed in 2, and without the check that is a wrong-type call rather
+ * than a message. A plugin that does not export it is refused. */
+#define ASE_PLUGIN_ABI const int ase_plugin_abi_version = ASE_PLUGIN_ABI_VERSION
+
 typedef void (*AsePluginRegisterFn)(AsePluginHost *host, const AsePluginApi *api);
 
 #ifdef __cplusplus

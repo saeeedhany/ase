@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 #include "ase/buffer.h"
+#include "ase/editor_context.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,10 +19,13 @@ extern "C" {
 
 typedef struct AsePluginHost AsePluginHost;
 
-/* A command a plugin registers: acts on `buffer`. `user_data` is
+/* A command a plugin registers: acts on the editor through `ctx` — its
+ * buffer, caret, selection, config and status line. `user_data` is
  * whatever the registering plugin attached at registration time (NULL
- * for Lua-backed commands — the Lua closure carries its own state). */
-typedef void (*AseCommandFn)(AseBuffer *buffer, void *user_data);
+ * for Lua-backed commands — the Lua closure carries its own state).
+ *
+ * Took a bare AseBuffer * before ABI 2; see docs/adr/0141. */
+typedef void (*AseCommandFn)(AseEditorContext *ctx, void *user_data);
 
 AsePluginHost *ase_plugin_host_create(void);
 void ase_plugin_host_destroy(AsePluginHost *host);
@@ -31,8 +35,9 @@ void ase_plugin_host_destroy(AsePluginHost *host);
 bool ase_plugin_host_register_command(AsePluginHost *host, const char *name,
                                        AseCommandFn fn, void *user_data);
 
-/* Returns false if no command named `name` is registered. */
-bool ase_plugin_host_run_command(AsePluginHost *host, const char *name, AseBuffer *buffer);
+/* Returns false if no command named `name` is registered. `ctx` may be
+ * NULL, which a command sees as an editor that answers nothing. */
+bool ase_plugin_host_run_command(AsePluginHost *host, const char *name, AseEditorContext *ctx);
 
 size_t ase_plugin_host_command_count(const AsePluginHost *host);
 

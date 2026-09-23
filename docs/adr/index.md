@@ -148,3 +148,4 @@ what changed.
 | [0138](0138-two-paper-cuts.md) | Two paper cuts |
 | [0139](0139-the-column-a-caret-is-aiming-for.md) | The column a caret is aiming for |
 | [0140](0140-the-styles-a-capture-can-have.md) | The styles a capture can have |
+| [0141](0141-what-a-plugin-is-handed.md) | What a plugin is handed |

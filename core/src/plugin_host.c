@@ -83,12 +83,12 @@ static bool plugin_host_register_command_owned(AsePluginHost *host, const char *
     return true;
 }
 
-static void lua_command_trampoline(AseBuffer *buffer, void *user_data) {
+static void lua_command_trampoline(AseEditorContext *editor, void *user_data) {
     LuaCommandContext *ctx = (LuaCommandContext *)user_data;
     lua_State *L = ctx->host->L;
 
     lua_rawgeti(L, LUA_REGISTRYINDEX, ctx->lua_ref);
-    lua_pushlightuserdata(L, buffer);
+    lua_pushlightuserdata(L, editor);
     if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
         fprintf(stderr, "ase: lua command error: %s\n", lua_tostring(L, -1));
         lua_pop(L, 1);
@@ -118,8 +118,16 @@ static int l_register_command(lua_State *L) {
     return 0;
 }
 
+static AseEditorContext *check_ctx_arg(lua_State *L, int index) {
+    return (AseEditorContext *)lua_touserdata(L, index);
+}
+
+/* A Lua command's argument became the context in ABI 2, and every
+ * buffer_* function takes it. Scripts written against ABI 1 pass
+ * whatever they were handed straight back, so they keep working without
+ * a line changed — see docs/adr/0141. */
 static AseBuffer *check_buffer_arg(lua_State *L, int index) {
-    return (AseBuffer *)lua_touserdata(L, index);
+    return ase_ctx_buffer(check_ctx_arg(L, index));
 }
 
 static int l_buffer_length(lua_State *L) {
@@ -165,6 +173,56 @@ static int l_buffer_delete(lua_State *L) {
     return 1;
 }
 
+static int l_cursor(lua_State *L) {
+    lua_pushinteger(L, (lua_Integer)ase_ctx_cursor(check_ctx_arg(L, 1)));
+    return 1;
+}
+
+static int l_set_cursor(lua_State *L) {
+    lua_Integer at = luaL_checkinteger(L, 2);
+    if (at >= 0) {
+        ase_ctx_set_cursor(check_ctx_arg(L, 1), (size_t)at);
+    }
+    return 0;
+}
+
+/* Two values or none, so `local a, b = ase.selection(ctx)` reads as
+ * "nothing is selected" the same way the C accessor returns false. */
+static int l_selection(lua_State *L) {
+    size_t start = 0;
+    size_t end = 0;
+    if (!ase_ctx_selection(check_ctx_arg(L, 1), &start, &end)) {
+        return 0;
+    }
+    lua_pushinteger(L, (lua_Integer)start);
+    lua_pushinteger(L, (lua_Integer)end);
+    return 2;
+}
+
+static int l_set_selection(lua_State *L) {
+    lua_Integer start = luaL_checkinteger(L, 2);
+    lua_Integer end = luaL_checkinteger(L, 3);
+    if (start >= 0 && end >= 0) {
+        ase_ctx_set_selection(check_ctx_arg(L, 1), (size_t)start, (size_t)end);
+    }
+    return 0;
+}
+
+static int l_config(lua_State *L) {
+    const char *value = ase_ctx_config(check_ctx_arg(L, 1), luaL_checkstring(L, 2));
+    if (value == NULL) {
+        lua_pushnil(L);
+    } else {
+        lua_pushstring(L, value);
+    }
+    return 1;
+}
+
+static int l_status(lua_State *L) {
+    ase_ctx_status(check_ctx_arg(L, 1), luaL_checkstring(L, 2));
+    return 0;
+}
+
 static void setup_lua_bindings(AsePluginHost *host) {
     lua_State *L = host->L;
 
@@ -180,6 +238,19 @@ static void setup_lua_bindings(AsePluginHost *host) {
     lua_setfield(L, -2, "buffer_insert");
     lua_pushcfunction(L, l_buffer_delete);
     lua_setfield(L, -2, "buffer_delete");
+
+    lua_pushcfunction(L, l_cursor);
+    lua_setfield(L, -2, "cursor");
+    lua_pushcfunction(L, l_set_cursor);
+    lua_setfield(L, -2, "set_cursor");
+    lua_pushcfunction(L, l_selection);
+    lua_setfield(L, -2, "selection");
+    lua_pushcfunction(L, l_set_selection);
+    lua_setfield(L, -2, "set_selection");
+    lua_pushcfunction(L, l_config);
+    lua_setfield(L, -2, "config");
+    lua_pushcfunction(L, l_status);
+    lua_setfield(L, -2, "status");
 
     lua_pushlightuserdata(L, host);
     lua_pushcclosure(L, l_register_command, 1);
@@ -241,13 +312,13 @@ bool ase_plugin_host_register_command(AsePluginHost *host, const char *name,
     return plugin_host_register_command_owned(host, name, fn, user_data, false);
 }
 
-bool ase_plugin_host_run_command(AsePluginHost *host, const char *name, AseBuffer *buffer) {
+bool ase_plugin_host_run_command(AsePluginHost *host, const char *name, AseEditorContext *ctx) {
     if (host == NULL || name == NULL) {
         return false;
     }
     for (size_t i = 0; i < host->command_count; i++) {
         if (strcmp(host->commands[i].name, name) == 0) {
-            host->commands[i].fn(buffer, host->commands[i].user_data);
+            host->commands[i].fn(ctx, host->commands[i].user_data);
             return true;
         }
     }
@@ -322,6 +393,7 @@ static bool load_native_plugin(AsePluginHost *host, const char *path) {
         return false;
     }
     AsePluginRegisterFn register_fn = (AsePluginRegisterFn)GetProcAddress(handle, "ase_plugin_register");
+    const int *plugin_abi = (const int *)GetProcAddress(handle, "ase_plugin_abi_version");
 #else
     void *handle = dlopen(path, RTLD_NOW);
     if (handle == NULL) {
@@ -329,7 +401,21 @@ static bool load_native_plugin(AsePluginHost *host, const char *path) {
         return false;
     }
     AsePluginRegisterFn register_fn = (AsePluginRegisterFn)dlsym(handle, "ase_plugin_register");
+    const int *plugin_abi = (const int *)dlsym(handle, "ase_plugin_abi_version");
 #endif
+
+    /* Before register_fn is called, not after: calling a plugin built
+     * for another ABI is the thing being prevented. */
+    if (plugin_abi == NULL || *plugin_abi != ASE_PLUGIN_ABI_VERSION) {
+        fprintf(stderr, "ase: plugin '%s' is built for ABI %d, this editor speaks %d\n", path,
+                plugin_abi == NULL ? 0 : *plugin_abi, ASE_PLUGIN_ABI_VERSION);
+#if defined(_WIN32)
+        FreeLibrary(handle);
+#else
+        dlclose(handle);
+#endif
+        return false;
+    }
 
     if (register_fn == NULL) {
         fprintf(stderr, "ase: plugin '%s' has no ase_plugin_register symbol\n", path);

@@ -24,6 +24,11 @@ anything, or react to an event. That's not a criticism of ADR 0009 —
 it deliberately shipped the smallest thing that worked — but it is the
 real starting point.
 
+> Written before any of this was built. Recommendations 1, 2 and 4 have
+> since been done, and each is marked below. The command shape is now
+> `void (*)(AseEditorContext *ctx, void *user_data)`, and binding a key
+> is config.
+
 Customization has the same shape: `config.ase` is genuinely live
 (hot-reloaded, ADR 0008) and covers colors, font, animations, line
 numbers, Vim mode, and the LSP/build commands. But **every keybinding in
@@ -53,6 +58,13 @@ plugins against the narrow ABI is what will tell you which parts of the
 ABI actually need widening, rather than guessing.
 
 ## Recommendation 2 — give plugins a context, not more function pointers
+
+> **Done**, in [ADR 0141](adr/0141-what-a-plugin-is-handed.md), at ABI 2.
+> The shape below is what was built. Two things it did not say: a plugin
+> built for ABI 1 is refused rather than called through the wrong
+> signature, and Lua plugins needed no change at all, because the
+> `ase.buffer_*` functions take the context now.
+
 
 The temptation is to keep adding fields to `AsePluginApi`. Resist it: an
 ABI that grows a pointer per feature is one that breaks on every release.
@@ -169,17 +181,22 @@ right shape if this is ever wanted.
 
 ## Suggested order
 
-> Steps 1 and 3 are done; 2, 4 and 5 are open.
+> Steps 1, 2, 3 and 5 are done. Step 4, events, is the open one.
 
 
 The ordering matters more than the list — each step makes the next one
 informed rather than speculative:
 
-1. Wire the host into the GUI (`:<name>` runs plugin commands).
-2. `AseEditorContext` with cursor/selection/config accessors.
-3. Keybindings as data, with built-ins registered as commands.
+1. Wire the host into the GUI (`:<name>` runs plugin commands) —
+   [ADR 0054](adr/0054-multiple-buffers-and-plugin-host-wiring.md).
+2. `AseEditorContext` with cursor/selection/config accessors —
+   [ADR 0141](adr/0141-what-a-plugin-is-handed.md).
+3. Keybindings as data, with built-ins registered as commands —
+   [ADR 0113](adr/0113-keybindings-as-data.md).
 4. Events.
-5. Theme files + per-capture syntax colors.
+5. Theme files + per-capture syntax colors —
+   [ADR 0133](adr/0133-a-theme-you-can-share-as-a-file.md) and
+   [ADR 0140](adr/0140-the-styles-a-capture-can-have.md).
 
-Steps 1–2 are small and unlock most real plugins. Step 3 is the large
-one, and is what turns "configurable" into "customizable at all points."
+Steps 1–2 were small and unlock most real plugins. Step 3 was the large
+one, and is what turned "configurable" into "customizable at all points."

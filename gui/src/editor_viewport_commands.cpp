@@ -429,13 +429,94 @@ void EditorViewport::openConfigFile() {
  * what a single command should cost, and the rest of the history
  * survives. See docs/adr/0128.
  */
+namespace {
+
+/*
+ * The editor, as a plugin sees it — see docs/adr/0141. Free functions
+ * rather than members because the ABI is C and the vtable is filled
+ * once, statically.
+ *
+ * Cursor and selection are *requests*: runPluginCommand() takes the
+ * buffer apart and puts it back to record one undo step, so a caret
+ * written straight into m_cursors would be overwritten by the rebuild.
+ * They are recorded here and applied after it.
+ */
+EditorViewport *viewportOf(void *host) { return static_cast<EditorViewport *>(host); }
+
+AseBuffer *ctxBuffer(void *host) { return viewportOf(host)->buffer(); }
+
+size_t ctxCursor(void *host) { return viewportOf(host)->cursorOffset(); }
+
+void ctxSetCursor(void *host, size_t offset) { viewportOf(host)->requestPluginCursor(offset); }
+
+bool ctxSelection(void *host, size_t *start, size_t *end) {
+    return viewportOf(host)->primarySelection(start, end);
+}
+
+void ctxSetSelection(void *host, size_t start, size_t end) {
+    viewportOf(host)->requestPluginSelection(start, end);
+}
+
+const char *ctxConfig(void *host, const char *key) {
+    return ase_config_get_string(viewportOf(host)->config(), key);
+}
+
+void ctxStatus(void *host, const char *message) {
+    viewportOf(host)->notify(NotifyLevel::Info, QString::fromUtf8(message));
+}
+
+const AseEditorContextOps kPluginOps = {ctxBuffer,    ctxCursor,       ctxSetCursor, ctxSelection,
+                                        ctxSetSelection, ctxConfig,    ctxStatus};
+
+} // namespace
+
+void EditorViewport::requestPluginCursor(size_t offset) {
+    m_pluginCursorRequest = static_cast<long long>(offset);
+}
+
+void EditorViewport::requestPluginSelection(size_t start, size_t end) {
+    m_pluginSelectionStart = static_cast<long long>(start);
+    m_pluginSelectionEnd = static_cast<long long>(end);
+}
+
+/* Through vimVisualEnd(), so a plugin is handed the range that is
+ * highlighted on screen. Vim's visual selection includes the character
+ * under the caret and this editor's anchor/cursor pair does not, so
+ * selectionMaxAt() alone would hand back a selection one character
+ * shorter than the one the user can see. Same reason the painter and
+ * every visual operator go through it — see docs/adr/0078. */
+bool EditorViewport::primarySelection(size_t *start, size_t *end) const {
+    if (m_cursors.isEmpty()) {
+        return false;
+    }
+    size_t from = selectionMinAt(0);
+    size_t to = vimVisualEnd(0);
+    if (to <= from) {
+        return false;
+    }
+    *start = from;
+    *end = to;
+    return true;
+}
+
+AseEditorContext *EditorViewport::pluginContext() {
+    if (m_pluginContext == nullptr) {
+        m_pluginContext = ase_editor_context_create(&kPluginOps, this);
+    }
+    return m_pluginContext;
+}
+
 bool EditorViewport::runPluginCommand(const QString &name) {
     if (m_pluginHost == nullptr) {
         return false;
     }
 
+    m_pluginCursorRequest = -1;
+    m_pluginSelectionStart = -1;
+    m_pluginSelectionEnd = -1;
+
     const QByteArray before = m_cache;
-    if (!ase_plugin_host_run_command(m_pluginHost, name.toUtf8().constData(), m_buffer)) {
+    if (!ase_plugin_host_run_command(m_pluginHost, name.toUtf8().constData(), pluginContext())) {
         return false; /* no such command — the caller reports it */
     }
 
@@ -469,12 +550,29 @@ bool EditorViewport::runPluginCommand(const QString &name) {
 
     collapseToOneCursor();
     refreshCache();
-    /* The buffer may have shrunk under the cursor. */
-    m_cursors[0] = std::min(m_cursors[0], static_cast<size_t>(m_cache.size()));
-    m_selectionAnchors[0] = m_cursors[0];
+    applyPluginCursorRequest();
     ensureCursorVisible();
     update();
     return true;
+}
+
+/* Whatever the plugin asked for, clamped to the buffer it left behind.
+ * Asking for nothing keeps the caret where it was, which is also
+ * clamped: the buffer may have shrunk under it. */
+void EditorViewport::applyPluginCursorRequest() {
+    const size_t len = static_cast<size_t>(m_cache.size());
+    size_t cursor = m_pluginCursorRequest >= 0 ? static_cast<size_t>(m_pluginCursorRequest)
+                                               : m_cursors[0];
+    m_cursors[0] = std::min(cursor, len);
+
+    if (m_pluginSelectionStart >= 0 && m_pluginSelectionEnd >= 0) {
+        m_selectionAnchors[0] = std::min(static_cast<size_t>(m_pluginSelectionStart), len);
+        m_cursors[0] = std::min(static_cast<size_t>(m_pluginSelectionEnd), len);
+    } else {
+        m_selectionAnchors[0] = m_cursors[0];
+    }
+    m_desiredColumns.clear();
+    m_desiredColumnAt.clear();
 }
 
 int EditorViewport::cursorColumn() const {
