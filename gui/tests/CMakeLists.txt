@@ -61,3 +61,17 @@ add_test(NAME ase_vim_remap_tests COMMAND ase_vim_remap_tests)
 set_tests_properties(ase_vim_remap_tests PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/remap-config"
 )
+
+add_executable(ase_multicursor_tests test_multicursor.cpp)
+target_link_libraries(ase_multicursor_tests PRIVATE ase_gui_objects Qt6::Test ase_warnings)
+add_test(NAME ase_multicursor_tests COMMAND ase_multicursor_tests)
+set_tests_properties(ase_multicursor_tests PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/config"
+)
+
+add_executable(ase_buffer_bar_tests test_buffer_bar.cpp)
+target_link_libraries(ase_buffer_bar_tests PRIVATE ase_gui_objects Qt6::Test ase_warnings)
+add_test(NAME ase_buffer_bar_tests COMMAND ase_buffer_bar_tests)
+set_tests_properties(ase_buffer_bar_tests PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/config"
+)

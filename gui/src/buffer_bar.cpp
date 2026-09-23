@@ -33,6 +33,23 @@ constexpr int kPlusArm = 5.0;
 constexpr int kPlusHitWidth = 34;
 } // namespace
 
+namespace bufferbar {
+
+/* Long enough for almost every real filename, short enough that one
+ * pathological name cannot push the strip off the screen. */
+int maxTabNameWidth(const QFontMetrics &metrics) {
+    return metrics.averageCharWidth() * 22;
+}
+
+QString elideTabName(const QFontMetrics &metrics, const QString &name, int maxWidth) {
+    if (maxWidth <= 0 || metrics.horizontalAdvance(name) <= maxWidth) {
+        return name;
+    }
+    return metrics.elidedText(name, Qt::ElideMiddle, maxWidth);
+}
+
+} // namespace bufferbar
+
 BufferBar::BufferBar(QWidget *parent) : QWidget(parent) {
     setMouseTracking(true); /* hover state without a button held */
     setAttribute(Qt::WA_OpaquePaintEvent);
@@ -153,7 +170,9 @@ void BufferBar::relayout(bool animate, int previousActiveIndex) {
     for (int i = 0; i < m_items.size(); ++i) {
         Tab tab;
         tab.id = m_items[i].id;
-        tab.name = m_items[i].name;
+        /* Shortened here, so the width computed below is the one drawn. */
+        tab.name = bufferbar::elideTabName(metrics, m_items[i].name,
+                                            bufferbar::maxTabNameWidth(metrics));
         tab.dirty = m_items[i].dirty;
         /* Every tab reserves the close mark's width, so it fades in
          * rather than shoving neighbours sideways. */

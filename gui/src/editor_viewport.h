@@ -114,6 +114,10 @@ public:
     /* Enough to put the caret and the viewport back where the last
      * session left them — see docs/adr/0111. */
     size_t cursorOffset() const { return m_cursors.isEmpty() ? 0 : m_cursors[0]; }
+    /* How many carets there are, and where each one is — for the status
+     * bar's multi-cursor count and for asserting on it. */
+    int cursorCount() const { return static_cast<int>(m_cursors.size()); }
+    QVector<size_t> cursorOffsets() const { return m_cursors; }
     int scrollLine() const { return m_scrollLine; }
     void restorePosition(size_t cursor, int scrollLine);
     bool isDirty() const;

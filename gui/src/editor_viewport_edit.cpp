@@ -174,14 +174,38 @@ void EditorViewport::addCursorAtNextOccurrence() {
     QByteArray word = m_cache.mid(wordStart, wordEnd - wordStart);
     int wordLen = word.size();
 
-    for (int searchStart = wordEnd; searchStart + wordLen <= len; ++searchStart) {
-        if (m_cache.mid(searchStart, wordLen) != word) {
-            continue;
+    /* A whole word, not a substring: `in` must not match inside
+     * `int`. */
+    auto isWholeWordAt = [&](int at) {
+        if (at < 0 || at + wordLen > len || m_cache.mid(at, wordLen) != word) {
+            return false;
         }
-        bool boundaryBefore = (searchStart == 0) || !isWordChar(m_cache[searchStart - 1]);
-        bool boundaryAfter = (searchStart + wordLen == len) || !isWordChar(m_cache[searchStart + wordLen]);
-        if (boundaryBefore && boundaryAfter) {
-            size_t newCursor = static_cast<size_t>(searchStart + wordLen);
+        bool before = (at == 0) || !isWordChar(m_cache[at - 1]);
+        bool after = (at + wordLen == len) || !isWordChar(m_cache[at + wordLen]);
+        return before && after;
+    };
+    /* Any caret inside the word counts: only the added ones land after it. */
+    auto alreadyTaken = [&](int at) {
+        for (size_t cursor : m_cursors) {
+            if (cursor >= static_cast<size_t>(at) && cursor <= static_cast<size_t>(at + wordLen)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    /* Forward from the last caret, then round to the top — see docs/adr/0138. */
+    for (int pass = 0; pass < 2; ++pass) {
+        const int from = (pass == 0) ? wordEnd : 0;
+        const int to = (pass == 0) ? len - wordLen : wordStart - 1;
+        for (int at = from; at <= to; ++at) {
+            if (!isWholeWordAt(at)) {
+                continue;
+            }
+            if (alreadyTaken(at)) {
+                continue;
+            }
+            size_t newCursor = static_cast<size_t>(at + wordLen);
             m_cursors.push_back(newCursor);
             m_selectionAnchors.push_back(newCursor);
             normalizeCursors();
@@ -190,7 +214,6 @@ void EditorViewport::addCursorAtNextOccurrence() {
             return;
         }
     }
-    /* no further occurrence forward — no-op, see docs/adr/0012 */
 }
 
 /* One cursor spanning the buffer, so it composes with everything that

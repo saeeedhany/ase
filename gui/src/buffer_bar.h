@@ -9,8 +9,19 @@
 #include <QVector>
 #include <QWidget>
 
+class QFontMetrics;
 class QVariantAnimation;
 class QWheelEvent;
+
+namespace bufferbar {
+
+/* A tab name shortened to fit `maxWidth` pixels, middle-elided so both
+ * ends of the filename survive. See docs/adr/0138. */
+QString elideTabName(const QFontMetrics &metrics, const QString &name, int maxWidth);
+
+int maxTabNameWidth(const QFontMetrics &metrics);
+
+} // namespace bufferbar
 
 /*
  * The open-buffer tab strip. Deliberately not a QTabBar: native tab
