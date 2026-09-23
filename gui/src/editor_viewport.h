@@ -353,6 +353,8 @@ private:
     bool writeConfigSetting(const QString &key, const QString &value);
     /* Rebuilds the font and its cached metrics; touches no config. */
     void rebuildFont(int pointSize);
+    bool configFlag(const char *key, bool fallback) const;
+    int configAlpha(const char *key, int fallbackPercent) const;
     /* Ctrl+=/Ctrl+-. A hot-reload doesn't clear an active override;
      * Ctrl+0 is the only way back to the configured size. */
     void adjustFontSize(int delta);
@@ -935,6 +937,11 @@ private:
      * defaults must match ase_config_create_default(). */
     QColor m_syntaxTypeColor {0x68, 0x9d, 0x6a};
     QColor m_syntaxStringColor {0xd7, 0x99, 0x21};
+    /* What the captures without a hue vary instead — see docs/adr/0140. */
+    bool m_syntaxKeywordBold = true;
+    bool m_syntaxTypeItalic = false;
+    int m_syntaxCommentAlpha = 145;
+    int m_syntaxNumberAlpha = 200;
     /* A couple of entries at most: one wiping in, one wiping out. */
     QVector<DiagnosticLineHighlight> m_diagnosticLineHighlights;
 
@@ -1064,6 +1071,7 @@ private:
     /* One per capture-style variant, cached in applyConfig(). */
     QFontMetrics m_metrics {m_font};
     QFontMetrics m_boldMetrics {m_font};
+    QFontMetrics m_italicMetrics {m_font};
 
     QTimer *m_blinkTimer = nullptr;
     bool m_caretVisible = true;

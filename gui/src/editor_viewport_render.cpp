@@ -709,15 +709,23 @@ QString EditorViewport::gutterLabelForLine(int line, int cursorLine) const {
 
 QFont EditorViewport::fontForCapture(AseHighlightCapture capture) const {
     QFont font = m_font;
-    if (capture == ASE_HL_KEYWORD) {
+    if (capture == ASE_HL_KEYWORD && m_syntaxKeywordBold) {
         font.setBold(true);
+    }
+    if (capture == ASE_HL_TYPE && m_syntaxTypeItalic) {
+        font.setItalic(true);
     }
     return font;
 }
 
+/* Has to agree with fontForCapture() exactly: this is what the caret and
+ * the run widths are measured with. */
 const QFontMetrics &EditorViewport::metricsForCapture(AseHighlightCapture capture) const {
-    if (capture == ASE_HL_KEYWORD) {
+    if (capture == ASE_HL_KEYWORD && m_syntaxKeywordBold) {
         return m_boldMetrics;
+    }
+    if (capture == ASE_HL_TYPE && m_syntaxTypeItalic) {
+        return m_italicMetrics;
     }
     return m_metrics;
 }
@@ -731,13 +739,13 @@ QColor EditorViewport::colorForCapture(AseHighlightCapture capture) const {
         return m_syntaxStringColor;
     case ASE_HL_NUMBER: {
         QColor color = m_textColor;
-        color.setAlpha(200);
+        color.setAlpha(m_syntaxNumberAlpha);
         return color;
     }
     case ASE_HL_COMMENT: {
-        /* 145, not 115: the latter measured 3.64:1, below WCAG AA. */
+        /* Default 57%, not 45%: the latter measured 3.64:1, below WCAG AA. */
         QColor color = m_textColor;
-        color.setAlpha(145);
+        color.setAlpha(m_syntaxCommentAlpha);
         return color;
     }
     case ASE_HL_KEYWORD:

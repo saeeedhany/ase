@@ -171,6 +171,12 @@ void EditorViewport::applyConfig() {
     if (ase_config_get_color(m_config, "syntax_string", &r, &g, &b, &a)) {
         m_syntaxStringColor = QColor(r, g, b, a);
     }
+    /* Everything else a capture can be, for the ones without a hue.
+     * Opacity is a percentage here and an alpha in the painter. */
+    m_syntaxKeywordBold = configFlag("syntax_keyword_bold", true);
+    m_syntaxTypeItalic = configFlag("syntax_type_italic", false);
+    m_syntaxCommentAlpha = configAlpha("syntax_comment_opacity", 57);
+    m_syntaxNumberAlpha = configAlpha("syntax_number_opacity", 78);
 
     const char *familyStr = ase_config_get_string(m_config, "font_family");
     m_fontFamily = familyStr != nullptr ? QString::fromUtf8(familyStr) : QStringLiteral("monospace");
@@ -217,6 +223,19 @@ void EditorViewport::applyConfig() {
     }
 }
 
+bool EditorViewport::configFlag(const char *key, bool fallback) const {
+    const char *value = ase_config_get_string(m_config, key);
+    if (value == nullptr) {
+        return fallback;
+    }
+    return QString::fromUtf8(value).compare(QLatin1String("true"), Qt::CaseInsensitive) == 0;
+}
+
+int EditorViewport::configAlpha(const char *key, int fallbackPercent) const {
+    long percent = ase_config_get_int(m_config, key, fallbackPercent);
+    return std::clamp(static_cast<int>(percent), 0, 100) * 255 / 100;
+}
+
 void EditorViewport::rebuildFont(int pointSize) {
     m_font = m_fontFamily.compare(QLatin1String("monospace"), Qt::CaseInsensitive) == 0
                  ? QFontDatabase::systemFont(QFontDatabase::FixedFont)
@@ -229,6 +248,9 @@ void EditorViewport::rebuildFont(int pointSize) {
     QFont boldFont = m_font;
     boldFont.setBold(true);
     m_boldMetrics = QFontMetrics(boldFont);
+    QFont italicFont = m_font;
+    italicFont.setItalic(true);
+    m_italicMetrics = QFontMetrics(italicFont);
 
     m_lineHeight = m_metrics.height();
     m_charWidth = m_metrics.horizontalAdvance(QLatin1Char('M'));

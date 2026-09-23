@@ -24,6 +24,10 @@ project, which only that project reads.
 | `diagnostic_warning` | `#E5C07B` | Language-server warning underline. | — |
 | `syntax_type` | `#689d6a` | Types. One of only two syntax colours. | — |
 | `syntax_string` | `#d79921` | String literals. The other one. | — |
+| `syntax_keyword_bold` | `true` | Draw keywords bold. | — |
+| `syntax_type_italic` | `false` | Draw types italic, as well as coloured. | — |
+| `syntax_comment_opacity` | `57` | How strongly comments read, 0-100. | — |
+| `syntax_number_opacity` | `78` | How strongly numbers read, 0-100. | — |
 | `font_family` | `monospace` | Editor font. | — |
 | `font_size` | `11` | Point size. Ctrl+= / Ctrl+- override it live. | — |
 | `vim_mode` | `true` | Modal editing. false for always-insert. | — |

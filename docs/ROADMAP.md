@@ -1043,9 +1043,6 @@ against the code on that date.
   so both features are present and do nothing there. Async child-process
   I/O on Windows needs overlapped I/O or a reader thread (ADR 0011,
   decision 6) — real work, not a quick add-on.
-- Syntax highlight capture styles (bold keyword, italic type, comment
-  opacity — ADR 0007) are hardcoded in `EditorViewport`, not exposed as
-  config keys.
 - Counts on `s`, `S`, `C` and `c`-with-a-motion are ignored. The other
   six insert commands read theirs
   ([ADR 0137](adr/0137-a-count-before-an-insert.md)); these four each

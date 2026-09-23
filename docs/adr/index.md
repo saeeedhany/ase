@@ -147,3 +147,4 @@ what changed.
 | [0137](0137-a-count-before-an-insert.md) | A count before an insert |
 | [0138](0138-two-paper-cuts.md) | Two paper cuts |
 | [0139](0139-the-column-a-caret-is-aiming-for.md) | The column a caret is aiming for |
+| [0140](0140-the-styles-a-capture-can-have.md) | The styles a capture can have |

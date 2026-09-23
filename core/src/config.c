@@ -99,6 +99,11 @@ static const AseConfigKeyDoc kKeyDocs[] = {
     {"diagnostic_warning", "#E5C07B", "Language-server warning underline.", false},
     {"syntax_type", "#689d6a", "Types. One of only two syntax colours.", false},
     {"syntax_string", "#d79921", "String literals. The other one.", false},
+    {"syntax_keyword_bold", "true", "Draw keywords bold.", false},
+    {"syntax_type_italic", "false", "Draw types italic, as well as coloured.", false},
+    /* 57, not the 45 ADR 0007 proposed: 45 measured 3.64:1, below WCAG AA. */
+    {"syntax_comment_opacity", "57", "How strongly comments read, 0-100.", false},
+    {"syntax_number_opacity", "78", "How strongly numbers read, 0-100.", false},
     {"font_family", "monospace", "Editor font.", false},
     {"font_size", "11", "Point size. Ctrl+= / Ctrl+- override it live.", false},
     {"vim_mode", "true", "Modal editing. false for always-insert.", false},
@@ -674,6 +679,13 @@ static const char kDefaultConfigTemplate[] =
     "# used for types and string literals only. See docs/adr/0048.\n"
     "# syntax_type = #689d6a\n"
     "# syntax_string = #d79921\n"
+    "\n"
+    "# What the other captures vary instead of hue: weight, slant and how\n"
+    "# strongly they read. Opacity is a percentage of the text colour.\n"
+    "# syntax_keyword_bold = true\n"
+    "# syntax_type_italic = false\n"
+    "# syntax_comment_opacity = 57\n"
+    "# syntax_number_opacity = 78\n"
     "\n"
     "font_family = monospace\n"
     "font_size = 11\n"
