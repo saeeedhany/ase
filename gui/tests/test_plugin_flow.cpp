@@ -6,13 +6,17 @@
  */
 #include "editor_viewport.h"
 
+#include "command_registry.h"
+
 #include "ase/buffer.h"
 
 #include <QApplication>
 #include <QDir>
 #include <QFile>
 #include <QKeyEvent>
+#include <QHash>
 #include <QSignalSpy>
+#include <QTemporaryDir>
 #include <QTest>
 
 namespace {
@@ -60,10 +64,35 @@ void press(EditorViewport &viewport, int key, const QString &text = QString()) {
     QApplication::sendEvent(&viewport, &event);
 }
 
+/* The hook plugin keeps its counts in Lua; :report posts them to the
+ * status bar, which is the only way back out. */
+QHash<QString, int> counts(const QString &status) {
+    QHash<QString, int> out;
+    for (const QString &pair : status.split(QLatin1Char(' '), Qt::SkipEmptyParts)) {
+        const QStringList halves = pair.split(QLatin1Char('='));
+        if (halves.size() == 2) {
+            out.insert(halves.at(0), halves.at(1).toInt());
+        }
+    }
+    return out;
+}
+
 } // namespace
 
 class PluginFlow : public QObject {
     Q_OBJECT
+
+private:
+    CommandRegistry m_windowCommands;
+
+    QHash<QString, int> report(EditorViewport &viewport) {
+        QSignalSpy said(&viewport, &EditorViewport::messagePosted);
+        viewport.runCommandByName(QStringLiteral("report"));
+        if (said.isEmpty()) {
+            return {};
+        }
+        return counts(said.last().at(1).toString());
+    }
 
 private slots:
     void initTestCase() {
@@ -104,6 +133,106 @@ private slots:
                     "ase.register_command(\"far_off\", function(ctx)\n"
                     "    ase.set_cursor(ctx, 9999)\n"
                     "end)\n");
+
+        /* Hooks (ADR 0142). Each one counts itself into a buffer the
+         * test can read, since a hook returns nothing. */
+        writePlugin(QStringLiteral("hooks.lua"),
+                    "counts = {changed = 0, moved = 0, saved = 0, opened = 0}\n"
+                    "ase.on(\"buffer_changed\", function(ctx) counts.changed = counts.changed + 1 end)\n"
+                    "ase.on(\"cursor_moved\", function(ctx) counts.moved = counts.moved + 1 end)\n"
+                    "ase.on(\"file_saved\", function(ctx) counts.saved = counts.saved + 1 end)\n"
+                    "ase.on(\"file_opened\", function(ctx) counts.opened = counts.opened + 1 end)\n"
+                    "ase.register_command(\"report\", function(ctx)\n"
+                    "    ase.status(ctx, string.format(\"c=%d m=%d s=%d o=%d\",\n"
+                    "        counts.changed, counts.moved, counts.saved, counts.opened))\n"
+                    "end)\n"
+                    "ase.register_command(\"reset_counts\", function(ctx)\n"
+                    "    counts = {changed = 0, moved = 0, saved = 0, opened = 0}\n"
+                    "end)\n"
+                    /* A hook that edits: proof that a hook's own edit
+                     * does not raise the event that called it. */
+                    "ase.on(\"file_saved\", function(ctx)\n"
+                    "    ase.buffer_insert(ctx, 0, \"!\")\n"
+                    "end)\n");
+    }
+
+    /* ---- events (ADR 0142) ---- */
+
+    /* Typing a burst is one buffer_changed, not one per keystroke —
+     * the whole reason these are coalesced. */
+    void aBurstOfTypingIsOneEvent() {
+        AseBuffer *buffer = bufferFrom("");
+        EditorViewport viewport(buffer, QString());
+        QVERIFY(viewport.runCommandByName(QStringLiteral("reset_counts")));
+
+        type(viewport, QStringLiteral("ihello world"));
+        press(viewport, Qt::Key_Escape);
+        QCOMPARE(report(viewport).value(QStringLiteral("c")), 0); /* nothing yet */
+
+        QTest::qWait(150);
+        QCOMPARE(report(viewport).value(QStringLiteral("c")), 1);
+        QCOMPARE(report(viewport).value(QStringLiteral("m")), 1);
+    }
+
+    /* Moving without typing is a cursor_moved and no buffer_changed. */
+    void movingTheCaretIsNotAnEdit() {
+        AseBuffer *buffer = bufferFrom("one\ntwo\nthree\n");
+        EditorViewport viewport(buffer, QString());
+        QTest::qWait(150);
+        QVERIFY(viewport.runCommandByName(QStringLiteral("reset_counts")));
+
+        press(viewport, Qt::Key_J, QStringLiteral("j"));
+        press(viewport, Qt::Key_J, QStringLiteral("j"));
+        QTest::qWait(150);
+
+        QCOMPARE(report(viewport).value(QStringLiteral("m")), 1);
+        QCOMPARE(report(viewport).value(QStringLiteral("c")), 0);
+    }
+
+    /* A caret that ends where it started did not move. */
+    void aRoundTripIsNotAMove() {
+        AseBuffer *buffer = bufferFrom("one\ntwo\nthree\n");
+        EditorViewport viewport(buffer, QString());
+        QTest::qWait(150);
+        QVERIFY(viewport.runCommandByName(QStringLiteral("reset_counts")));
+
+        press(viewport, Qt::Key_J, QStringLiteral("j"));
+        press(viewport, Qt::Key_K, QStringLiteral("k"));
+        QTest::qWait(150);
+
+        QCOMPARE(report(viewport).value(QStringLiteral("m")), 0);
+    }
+
+    void openingAFileIsAnEvent() {
+        AseBuffer *buffer = bufferFrom("x\n");
+        EditorViewport viewport(buffer, QString());
+        QTest::qWait(150);
+        QCOMPARE(report(viewport).value(QStringLiteral("o")), 1);
+    }
+
+    /* Saving fires after the write, and the hook that edits on save
+     * does not set off a cascade. */
+    void savingIsAnEventAndAHookMayEdit() {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString path = dir.filePath(QStringLiteral("saved.txt"));
+
+        AseBuffer *buffer = bufferFrom("body\n");
+        EditorViewport viewport(buffer, path);
+        viewport.registerCommands(&m_windowCommands); /* :editor.save is a built-in */
+        QTest::qWait(150);
+        QVERIFY(viewport.runCommandByName(QStringLiteral("reset_counts")));
+
+        QVERIFY(viewport.runCommandByName(QStringLiteral("editor.save")));
+        QCOMPARE(report(viewport).value(QStringLiteral("s")), 1);
+        /* The hook's insert landed. */
+        QCOMPARE(textOf(buffer), QByteArray("!body\n"));
+
+        /* And settled: the hook's own edit did not raise buffer_changed,
+         * and nothing kept firing. */
+        QTest::qWait(200);
+        QCOMPARE(report(viewport).value(QStringLiteral("s")), 1);
+        QCOMPARE(report(viewport).value(QStringLiteral("c")), 0);
     }
 
     /* ---- what the context reaches (ADR 0141) ---- */
@@ -231,7 +360,8 @@ private slots:
     }
 
     void cleanupTestCase() {
-        for (const QString &name : {QStringLiteral("shout.lua"), QStringLiteral("context.lua")}) {
+        for (const QString &name : {QStringLiteral("shout.lua"), QStringLiteral("context.lua"),
+                                     QStringLiteral("hooks.lua")}) {
             QFile::remove(QDir(pluginDir()).filePath(name));
         }
     }

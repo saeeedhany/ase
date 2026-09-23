@@ -64,6 +64,54 @@ static const AseEditorContextOps kFakeOps = {fake_buffer,        fake_cursor, fa
                                              fake_selection,     fake_set_selection,
                                              fake_config,        fake_status};
 
+/* Hooks that record what happened, so order and count are assertable. */
+static char g_trace[128];
+
+static void trace(const char *what) {
+    size_t len = strlen(g_trace);
+    snprintf(g_trace + len, sizeof(g_trace) - len, "%s%s", len > 0 ? "," : "", what);
+}
+
+static void hook_a(AseEditorContext *ctx, void *user_data) {
+    (void)ctx;
+    (void)user_data;
+    trace("a");
+}
+
+static void hook_b(AseEditorContext *ctx, void *user_data) {
+    (void)ctx;
+    (void)user_data;
+    trace("b");
+}
+
+static void hook_carrying_data(AseEditorContext *ctx, void *user_data) {
+    (void)ctx;
+    trace((const char *)user_data);
+}
+
+static AsePluginHost *g_reentrant_host = NULL;
+
+/* The hook every guard exists for: it causes the event it is handling. */
+static void hook_that_emits_again(AseEditorContext *ctx, void *user_data) {
+    (void)user_data;
+    trace("outer");
+    ase_plugin_host_emit(g_reentrant_host, ASE_EVENT_BUFFER_CHANGED, ctx);
+}
+
+/* And the two-event version: buffer_changed moves the caret, whose hook
+ * edits the buffer. One flag for all events is what stops this. */
+static void hook_emits_other_event(AseEditorContext *ctx, void *user_data) {
+    (void)user_data;
+    trace("changed");
+    ase_plugin_host_emit(g_reentrant_host, ASE_EVENT_CURSOR_MOVED, ctx);
+}
+
+static void hook_emits_back(AseEditorContext *ctx, void *user_data) {
+    (void)user_data;
+    trace("moved");
+    ase_plugin_host_emit(g_reentrant_host, ASE_EVENT_BUFFER_CHANGED, ctx);
+}
+
 static void noop_command(AseEditorContext *ctx, void *user_data) {
     (void)ctx;
     (void)user_data;
@@ -226,7 +274,112 @@ static void test_context_tolerates_an_empty_host(void) {
     ase_editor_context_destroy(NULL);
 }
 
+static void test_event_names_round_trip(void) {
+    AseEventKind event;
+    CHECK(ase_event_from_name("buffer_changed", &event) && event == ASE_EVENT_BUFFER_CHANGED);
+    CHECK(ase_event_from_name("cursor_moved", &event) && event == ASE_EVENT_CURSOR_MOVED);
+    CHECK(ase_event_from_name("file_saved", &event) && event == ASE_EVENT_FILE_SAVED);
+    CHECK(ase_event_from_name("file_opened", &event) && event == ASE_EVENT_FILE_OPENED);
+    CHECK(!ase_event_from_name("on_the_third_tuesday", &event));
+    CHECK(!ase_event_from_name(NULL, &event));
+
+    /* Every kind has a name, and it is the one that parses back. */
+    for (int i = 0; i < ASE_EVENT_COUNT; i++) {
+        const char *name = ase_event_name((AseEventKind)i);
+        CHECK(name != NULL && name[0] != '\0');
+        CHECK(ase_event_from_name(name, &event) && event == (AseEventKind)i);
+    }
+    CHECK(ase_event_name(ASE_EVENT_COUNT) == NULL);
+}
+
+static void test_hooks_run_in_order(void) {
+    AsePluginHost *host = ase_plugin_host_create();
+    CHECK(host != NULL);
+    CHECK(ase_plugin_host_hook_count(host, ASE_EVENT_FILE_SAVED) == 0);
+
+    CHECK(ase_plugin_host_on(host, ASE_EVENT_FILE_SAVED, hook_a, NULL));
+    CHECK(ase_plugin_host_on(host, ASE_EVENT_FILE_SAVED, hook_b, NULL));
+    CHECK(ase_plugin_host_on(host, ASE_EVENT_FILE_OPENED, hook_a, NULL));
+    CHECK(ase_plugin_host_hook_count(host, ASE_EVENT_FILE_SAVED) == 2);
+
+    g_trace[0] = '\0';
+    ase_plugin_host_emit(host, ASE_EVENT_FILE_SAVED, NULL);
+    CHECK(strcmp(g_trace, "a,b") == 0);
+
+    /* An event nobody hooked is silence, not the other event's hooks. */
+    g_trace[0] = '\0';
+    ase_plugin_host_emit(host, ASE_EVENT_CURSOR_MOVED, NULL);
+    CHECK(g_trace[0] == '\0');
+
+    /* Each hook gets its own user_data back. */
+    CHECK(ase_plugin_host_on(host, ASE_EVENT_CURSOR_MOVED, hook_carrying_data, (void *)"mine"));
+    g_trace[0] = '\0';
+    ase_plugin_host_emit(host, ASE_EVENT_CURSOR_MOVED, NULL);
+    CHECK(strcmp(g_trace, "mine") == 0);
+
+    ase_plugin_host_destroy(host);
+}
+
+static void test_a_hook_cannot_re_enter(void) {
+    AsePluginHost *host = ase_plugin_host_create();
+    CHECK(host != NULL);
+    g_reentrant_host = host;
+
+    CHECK(ase_plugin_host_on(host, ASE_EVENT_BUFFER_CHANGED, hook_that_emits_again, NULL));
+    g_trace[0] = '\0';
+    ase_plugin_host_emit(host, ASE_EVENT_BUFFER_CHANGED, NULL);
+    /* Once. Without the guard this recurses until the stack runs out. */
+    CHECK(strcmp(g_trace, "outer") == 0);
+
+    ase_plugin_host_destroy(host);
+    g_reentrant_host = NULL;
+}
+
+static void test_two_hooks_cannot_bounce(void) {
+    AsePluginHost *host = ase_plugin_host_create();
+    CHECK(host != NULL);
+    g_reentrant_host = host;
+
+    CHECK(ase_plugin_host_on(host, ASE_EVENT_BUFFER_CHANGED, hook_emits_other_event, NULL));
+    CHECK(ase_plugin_host_on(host, ASE_EVENT_CURSOR_MOVED, hook_emits_back, NULL));
+
+    g_trace[0] = '\0';
+    ase_plugin_host_emit(host, ASE_EVENT_BUFFER_CHANGED, NULL);
+    /* The second event is dropped too: the guard is one flag for all of
+     * them, or this pair loops forever. */
+    CHECK(strcmp(g_trace, "changed") == 0);
+
+    /* And the host still works afterwards — the flag was cleared. */
+    g_trace[0] = '\0';
+    ase_plugin_host_emit(host, ASE_EVENT_CURSOR_MOVED, NULL);
+    CHECK(strcmp(g_trace, "moved") == 0);
+
+    ase_plugin_host_destroy(host);
+    g_reentrant_host = NULL;
+}
+
+static void test_emit_tolerates_nonsense(void) {
+    AsePluginHost *host = ase_plugin_host_create();
+    CHECK(host != NULL);
+
+    CHECK(!ase_plugin_host_on(NULL, ASE_EVENT_FILE_SAVED, hook_a, NULL));
+    CHECK(!ase_plugin_host_on(host, ASE_EVENT_FILE_SAVED, NULL, NULL));
+    CHECK(!ase_plugin_host_on(host, ASE_EVENT_COUNT, hook_a, NULL));
+    CHECK(ase_plugin_host_hook_count(NULL, ASE_EVENT_FILE_SAVED) == 0);
+    CHECK(ase_plugin_host_hook_count(host, ASE_EVENT_COUNT) == 0);
+
+    ase_plugin_host_emit(NULL, ASE_EVENT_FILE_SAVED, NULL);
+    ase_plugin_host_emit(host, ASE_EVENT_COUNT, NULL);
+
+    ase_plugin_host_destroy(host);
+}
+
 int main(void) {
+    RUN(test_event_names_round_trip);
+    RUN(test_hooks_run_in_order);
+    RUN(test_a_hook_cannot_re_enter);
+    RUN(test_two_hooks_cannot_bounce);
+    RUN(test_emit_tolerates_nonsense);
     RUN(test_context_accessors);
     RUN(test_context_tolerates_an_empty_host);
     RUN(test_register_and_run);

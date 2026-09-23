@@ -599,6 +599,8 @@ void EditorViewport::moveCursorEndAt(int i, bool extend) {
 }
 
 void EditorViewport::ensureCursorVisible() {
+    schedulePluginEvents();
+
     size_t cursor = m_cursors.last();
     int line = lineForOffset(cursor);
     int visibleLines = std::max(1, height() / m_lineHeight);

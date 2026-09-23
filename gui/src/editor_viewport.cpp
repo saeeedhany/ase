@@ -64,6 +64,15 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
         ase_plugin_host_load_directory(m_pluginHost, pluginDir.toUtf8().constData());
     }
 
+    m_pluginEventTimer = new QTimer(this);
+    m_pluginEventTimer->setSingleShot(true);
+    m_pluginEventTimer->setInterval(50);
+    connect(m_pluginEventTimer, &QTimer::timeout, this, [this]() { flushPluginEvents(); });
+
+    /* Deferred, so a hook is not handed a viewport whose constructor has
+     * not finished. */
+    QTimer::singleShot(0, this, [this]() { emitPluginEvent(ASE_EVENT_FILE_OPENED); });
+
     m_blinkTimer = new QTimer(this);
     connect(m_blinkTimer, &QTimer::timeout, this, [this]() {
         m_idleTicks++;
@@ -282,6 +291,9 @@ EditorViewport::~EditorViewport() {
 }
 
 void EditorViewport::refreshCache() {
+    m_bufferChangedSinceEmit = true;
+    schedulePluginEvents();
+
     size_t len = ase_buffer_length(m_buffer);
     m_cache.resize(static_cast<qsizetype>(len));
     if (len > 0) {

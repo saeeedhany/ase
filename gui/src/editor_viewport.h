@@ -445,6 +445,10 @@ private:
     void ensureDesiredColumns();
     AseEditorContext *pluginContext();
     void applyPluginCursorRequest();
+    void schedulePluginEvents();
+    void flushPluginEvents();
+    void emitPluginEvent(AseEventKind event);
+    bool recordExternalEdit(const QByteArray &before);
     size_t vimClampOffLineEnd(size_t offset, int line) const;
     void moveCursorHomeAt(int i, bool extend);
     void moveCursorEndAt(int i, bool extend);
@@ -886,6 +890,11 @@ private:
     /* What a plugin command sees of this editor, and what it asked for
      * while it ran — see docs/adr/0141. */
     AseEditorContext *m_pluginContext = nullptr;
+    /* Coalescing for the two hot events — see docs/adr/0142. The timer
+     * only exists while something is listening. */
+    QTimer *m_pluginEventTimer = nullptr;
+    bool m_bufferChangedSinceEmit = false;
+    size_t m_lastEmittedCursor = 0;
     long long m_pluginCursorRequest = -1;
     long long m_pluginSelectionStart = -1;
     long long m_pluginSelectionEnd = -1;

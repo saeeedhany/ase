@@ -24,10 +24,10 @@ anything, or react to an event. That's not a criticism of ADR 0009 —
 it deliberately shipped the smallest thing that worked — but it is the
 real starting point.
 
-> Written before any of this was built. Recommendations 1, 2 and 4 have
-> since been done, and each is marked below. The command shape is now
-> `void (*)(AseEditorContext *ctx, void *user_data)`, and binding a key
-> is config.
+> Written before any of this was built. Every recommendation below has
+> since been done, and each is marked. The command shape is now
+> `void (*)(AseEditorContext *ctx, void *user_data)`, binding a key is
+> config, and a plugin can react to four events.
 
 Customization has the same shape: `config.ase` is genuinely live
 (hot-reloaded, ADR 0008) and covers colors, font, animations, line
@@ -97,6 +97,15 @@ Why this shape specifically:
   invariant every Vim operator already follows (ADR 0046).
 
 ## Recommendation 3 — events, kept to a deliberately short list
+
+> **Done**, in [ADR 0142](adr/0142-four-things-a-plugin-can-react-to.md).
+> Both constraints below were taken: the two hot events are coalesced
+> onto a timer that only runs while something is listening, and
+> re-entry is guarded rather than mutation forbidden. Two things the
+> sketch did not anticipate — a hook's edit needed the same one-step
+> undo recording a command's does, and `file_saved` had to write the
+> file again when a hook reformats, or format-on-save takes two saves.
+
 
 Commands alone are pull-only; a plugin can't react. Add a small hook
 registry:
@@ -181,7 +190,7 @@ right shape if this is ever wanted.
 
 ## Suggested order
 
-> Steps 1, 2, 3 and 5 are done. Step 4, events, is the open one.
+> All five are done.
 
 
 The ordering matters more than the list — each step makes the next one
@@ -193,7 +202,7 @@ informed rather than speculative:
    [ADR 0141](adr/0141-what-a-plugin-is-handed.md).
 3. Keybindings as data, with built-ins registered as commands —
    [ADR 0113](adr/0113-keybindings-as-data.md).
-4. Events.
+4. Events — [ADR 0142](adr/0142-four-things-a-plugin-can-react-to.md).
 5. Theme files + per-capture syntax colors —
    [ADR 0133](adr/0133-a-theme-you-can-share-as-a-file.md) and
    [ADR 0140](adr/0140-the-styles-a-capture-can-have.md).

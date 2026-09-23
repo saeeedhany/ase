@@ -27,6 +27,28 @@ typedef struct AsePluginHost AsePluginHost;
  * Took a bare AseBuffer * before ABI 2; see docs/adr/0141. */
 typedef void (*AseCommandFn)(AseEditorContext *ctx, void *user_data);
 
+/*
+ * The four things a plugin can react to. Deliberately four: each one is
+ * a thing plugins actually want (format on save, lint on change, a
+ * status widget, project tooling), and every extra one is a promise
+ * about when it fires that has to hold forever. See docs/adr/0142.
+ */
+typedef enum {
+    ASE_EVENT_BUFFER_CHANGED,
+    ASE_EVENT_CURSOR_MOVED,
+    ASE_EVENT_FILE_SAVED,
+    ASE_EVENT_FILE_OPENED,
+    ASE_EVENT_COUNT
+} AseEventKind;
+
+/* Same shape as a command: a hook is a command nobody typed. */
+typedef void (*AseEventFn)(AseEditorContext *ctx, void *user_data);
+
+/* The name used in config, in Lua and in messages — "buffer_changed" and
+ * so on. NULL if `event` is out of range. */
+const char *ase_event_name(AseEventKind event);
+bool ase_event_from_name(const char *name, AseEventKind *out);
+
 AsePluginHost *ase_plugin_host_create(void);
 void ase_plugin_host_destroy(AsePluginHost *host);
 
@@ -38,6 +60,18 @@ bool ase_plugin_host_register_command(AsePluginHost *host, const char *name,
 /* Returns false if no command named `name` is registered. `ctx` may be
  * NULL, which a command sees as an editor that answers nothing. */
 bool ase_plugin_host_run_command(AsePluginHost *host, const char *name, AseEditorContext *ctx);
+
+/* Hooks run in registration order. The same function may be registered
+ * more than once; nothing deduplicates. Returns false on allocation
+ * failure or an out-of-range event. */
+bool ase_plugin_host_on(AsePluginHost *host, AseEventKind event, AseEventFn fn, void *user_data);
+
+/* Runs every hook for `event`. A hook that causes another event does not
+ * re-enter: the inner emit is dropped, so no chain of hooks can loop.
+ * See docs/adr/0142. */
+void ase_plugin_host_emit(AsePluginHost *host, AseEventKind event, AseEditorContext *ctx);
+
+size_t ase_plugin_host_hook_count(const AsePluginHost *host, AseEventKind event);
 
 size_t ase_plugin_host_command_count(const AsePluginHost *host);
 

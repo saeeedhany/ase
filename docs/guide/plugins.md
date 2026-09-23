@@ -46,6 +46,7 @@ not just its text — and every other function takes it:
 - `ase.set_selection(ctx, start, end)`
 - `ase.config(ctx, key)` — any `config.ase` value, or nil
 - `ase.status(ctx, message)` — say something in the status bar
+- `ase.on(event, function(ctx) ... end)` — react to something
 
 ```lua
 -- ~/.config/ase/plugins/uppercase.lua
@@ -81,7 +82,73 @@ first would move everything after it, `b` included.
 The selection you get is the one highlighted on screen. In Visual mode
 that includes the character under the caret, as Vim's does.
 
+## Reacting to things
+
+A command waits to be asked. A hook runs when something happens:
+
+```lua
+-- ~/.config/ase/plugins/strip.lua
+ase.on("file_saved", function(ctx)
+    local len = ase.buffer_length(ctx)
+    local text = ase.buffer_get_text(ctx, 0, len)
+    local stripped = text:gsub("[ \t]+\n", "\n")
+    if stripped ~= text then
+        ase.buffer_delete(ctx, 0, len)
+        ase.buffer_insert(ctx, 0, stripped)
+    end
+end)
+```
+
+Four events, and there will not be many more:
+
+| event | when |
+| --- | --- |
+| `buffer_changed` | the text may have changed |
+| `cursor_moved` | the caret is somewhere else |
+| `file_saved` | the file is on disk |
+| `file_opened` | a buffer is ready to be worked on |
+
+Hooks run in the order they were registered, and the same function may
+be registered more than once.
+
+### What you can rely on
+
+**`buffer_changed` and `cursor_moved` are coalesced.** Typing a word is
+one `buffer_changed`, not one per keystroke, and holding `j` is one
+`cursor_moved`. They describe what changed since the last one, not every
+step in between. A caret that ends where it started never fires at all.
+
+**A hook runs on the thread that draws, so it must be fast.** A hook
+that takes 30ms makes the editor stutter. Shell out and come back later
+rather than doing the work inline.
+
+**What a hook does is not itself an event.** A `file_saved` hook that
+edits the buffer does not trigger `buffer_changed`, and nothing a hook
+does can trigger the event it is handling. Hooks cannot make each other
+loop.
+
+**A hook that edits is one undo step**, exactly like a command, so `u`
+takes back what it did.
+
+**`file_saved` fires after the write, and the file is written again if
+your hook changed anything** — so a formatter gets what it produced onto
+disk in one save, and the buffer is left clean rather than dirty.
+
 ## In C
+
+The same four events, and `ase_plugin_host_on` to register:
+
+```c
+static void on_saved(AseEditorContext *ctx, void *user_data) {
+    (void)user_data;
+    ase_ctx_status(ctx, "saved");
+}
+
+void ase_plugin_register(AsePluginHost *host, const AsePluginApi *api) {
+    (void)api;
+    ase_plugin_host_on(host, ASE_EVENT_FILE_SAVED, on_saved, NULL);
+}
+```
 
 Two symbols, one of them a macro:
 
@@ -145,8 +212,10 @@ is an added function rather than a changed struct — your plugin keeps
 working across a version that adds something it does not call. See
 [ADR 0141](../adr/0141-what-a-plugin-is-handed.md).
 
-It still cannot draw anything or react to an event. Events are the next
-step, sketched in [Extensibility](../EXTENSIBILITY.md).
+It can also react to four events — see above, and
+[ADR 0142](../adr/0142-four-things-a-plugin-can-react-to.md).
+
+It still cannot draw anything.
 
 ### One thing to know
 

@@ -177,6 +177,7 @@ nav:
     - adr/0139-the-column-a-caret-is-aiming-for.md
     - adr/0140-the-styles-a-capture-can-have.md
     - adr/0141-what-a-plugin-is-handed.md
+    - adr/0142-four-things-a-plugin-can-react-to.md
 
 theme:
   name: material

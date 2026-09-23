@@ -25,12 +25,30 @@ typedef struct {
     bool owns_user_data; /* true for Lua-backed commands' context struct */
 } CommandEntry;
 
+typedef struct {
+    AseEventFn fn;
+    void *user_data;
+    bool owns_user_data;
+} HookEntry;
+
+typedef struct {
+    HookEntry *entries;
+    size_t count;
+    size_t capacity;
+} HookList;
+
 struct AsePluginHost {
     lua_State *L;
 
     CommandEntry *commands;
     size_t command_count;
     size_t command_capacity;
+
+    HookList hooks[ASE_EVENT_COUNT];
+    /* One flag for every event, not one per event: a buffer_changed hook
+     * that moves the caret would otherwise bounce between two kinds
+     * forever. See docs/adr/0142. */
+    bool emitting;
 
     void **native_handles;
     size_t native_handle_count;
@@ -44,6 +62,80 @@ typedef struct {
     AsePluginHost *host;
     int lua_ref;
 } LuaCommandContext;
+
+static const char *const kEventNames[ASE_EVENT_COUNT] = {"buffer_changed", "cursor_moved",
+                                                           "file_saved", "file_opened"};
+
+const char *ase_event_name(AseEventKind event) {
+    if (event < 0 || event >= ASE_EVENT_COUNT) {
+        return NULL;
+    }
+    return kEventNames[event];
+}
+
+bool ase_event_from_name(const char *name, AseEventKind *out) {
+    if (name == NULL || out == NULL) {
+        return false;
+    }
+    for (int i = 0; i < ASE_EVENT_COUNT; i++) {
+        if (strcmp(kEventNames[i], name) == 0) {
+            *out = (AseEventKind)i;
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool plugin_host_on_owned(AsePluginHost *host, AseEventKind event, AseEventFn fn,
+                                  void *user_data, bool owns_user_data) {
+    if (host == NULL || fn == NULL || event < 0 || event >= ASE_EVENT_COUNT) {
+        return false;
+    }
+    HookList *list = &host->hooks[event];
+    if (list->count == list->capacity) {
+        size_t new_cap = list->capacity == 0 ? 4 : list->capacity * 2;
+        HookEntry *grown = (HookEntry *)realloc(list->entries, new_cap * sizeof(HookEntry));
+        if (grown == NULL) {
+            return false;
+        }
+        list->entries = grown;
+        list->capacity = new_cap;
+    }
+    list->entries[list->count].fn = fn;
+    list->entries[list->count].user_data = user_data;
+    list->entries[list->count].owns_user_data = owns_user_data;
+    list->count++;
+    return true;
+}
+
+bool ase_plugin_host_on(AsePluginHost *host, AseEventKind event, AseEventFn fn, void *user_data) {
+    return plugin_host_on_owned(host, event, fn, user_data, false);
+}
+
+void ase_plugin_host_emit(AsePluginHost *host, AseEventKind event, AseEditorContext *ctx) {
+    if (host == NULL || event < 0 || event >= ASE_EVENT_COUNT || host->emitting) {
+        return;
+    }
+    /* Read the count once: a hook that registers another must not have it
+     * run in the same pass, or registering from a hook is an infinite
+     * loop with extra steps. */
+    const size_t count = host->hooks[event].count;
+    if (count == 0) {
+        return;
+    }
+    host->emitting = true;
+    for (size_t i = 0; i < count; i++) {
+        host->hooks[event].entries[i].fn(ctx, host->hooks[event].entries[i].user_data);
+    }
+    host->emitting = false;
+}
+
+size_t ase_plugin_host_hook_count(const AsePluginHost *host, AseEventKind event) {
+    if (host == NULL || event < 0 || event >= ASE_EVENT_COUNT) {
+        return 0;
+    }
+    return host->hooks[event].count;
+}
 
 static bool plugin_host_register_command_owned(AsePluginHost *host, const char *name,
                                                  AseCommandFn fn, void *user_data,
@@ -83,16 +175,24 @@ static bool plugin_host_register_command_owned(AsePluginHost *host, const char *
     return true;
 }
 
-static void lua_command_trampoline(AseEditorContext *editor, void *user_data) {
-    LuaCommandContext *ctx = (LuaCommandContext *)user_data;
+/* Shared by commands and hooks: both are a Lua function called with the
+ * context, and both keep the function alive through the registry. */
+static void lua_call_ref(LuaCommandContext *ctx, AseEditorContext *editor, const char *what) {
     lua_State *L = ctx->host->L;
-
     lua_rawgeti(L, LUA_REGISTRYINDEX, ctx->lua_ref);
     lua_pushlightuserdata(L, editor);
     if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
-        fprintf(stderr, "ase: lua command error: %s\n", lua_tostring(L, -1));
+        fprintf(stderr, "ase: lua %s error: %s\n", what, lua_tostring(L, -1));
         lua_pop(L, 1);
     }
+}
+
+static void lua_hook_trampoline(AseEditorContext *editor, void *user_data) {
+    lua_call_ref((LuaCommandContext *)user_data, editor, "hook");
+}
+
+static void lua_command_trampoline(AseEditorContext *editor, void *user_data) {
+    lua_call_ref((LuaCommandContext *)user_data, editor, "command");
 }
 
 static int l_register_command(lua_State *L) {
@@ -170,6 +270,38 @@ static int l_buffer_delete(lua_State *L) {
     lua_Integer at = luaL_checkinteger(L, 2);
     lua_Integer len = luaL_checkinteger(L, 3);
     lua_pushboolean(L, at >= 0 && len >= 0 && ase_buffer_delete(buf, (size_t)at, (size_t)len));
+    return 1;
+}
+
+static int l_on(lua_State *L) {
+    AsePluginHost *host = (AsePluginHost *)lua_touserdata(L, lua_upvalueindex(1));
+    const char *name = luaL_checkstring(L, 1);
+    luaL_checktype(L, 2, LUA_TFUNCTION);
+
+    AseEventKind event;
+    if (!ase_event_from_name(name, &event)) {
+        return luaL_error(L, "unknown event '%s'", name);
+    }
+
+    lua_pushvalue(L, 2);
+    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    LuaCommandContext *ctx = (LuaCommandContext *)malloc(sizeof(LuaCommandContext));
+    if (ctx == NULL) {
+        luaL_unref(L, LUA_REGISTRYINDEX, ref);
+        lua_pushboolean(L, 0);
+        return 1;
+    }
+    ctx->host = host;
+    ctx->lua_ref = ref;
+
+    if (!plugin_host_on_owned(host, event, lua_hook_trampoline, ctx, true)) {
+        luaL_unref(L, LUA_REGISTRYINDEX, ref);
+        free(ctx);
+        lua_pushboolean(L, 0);
+        return 1;
+    }
+    lua_pushboolean(L, 1);
     return 1;
 }
 
@@ -255,6 +387,9 @@ static void setup_lua_bindings(AsePluginHost *host) {
     lua_pushlightuserdata(L, host);
     lua_pushcclosure(L, l_register_command, 1);
     lua_setfield(L, -2, "register_command");
+    lua_pushlightuserdata(L, host);
+    lua_pushcclosure(L, l_on, 1);
+    lua_setfield(L, -2, "on");
 
     lua_setglobal(L, "ase");
 }
@@ -287,6 +422,15 @@ void ase_plugin_host_destroy(AsePluginHost *host) {
         }
     }
     free(host->commands);
+
+    for (int e = 0; e < ASE_EVENT_COUNT; e++) {
+        for (size_t i = 0; i < host->hooks[e].count; i++) {
+            if (host->hooks[e].entries[i].owns_user_data) {
+                free(host->hooks[e].entries[i].user_data);
+            }
+        }
+        free(host->hooks[e].entries);
+    }
 
     if (host->L != NULL) {
         lua_close(host->L);

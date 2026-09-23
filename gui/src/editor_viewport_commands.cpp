@@ -46,6 +46,25 @@ void EditorViewport::save() {
         ensureCursorVisible(); /* pushes the cleared dirty flag (and title) through statusChanged */
         notify(NotifyLevel::Info, QStringLiteral("saved %1").arg(QFileInfo(m_filePath).fileName()));
     }
+    /*
+     * After the write, so a hook asking "is it on disk yet" can answer
+     * yes — and if the hook reformats, the file is written again so
+     * what is on disk is what the hook produced. Format-on-save has to
+     * work in one save or it is not format-on-save.
+     *
+     * Once, not until it settles: a hook's own edit does not raise
+     * file_saved, so the second write cannot call it again. See
+     * docs/adr/0142.
+     */
+    const QByteArray beforeHooks = m_cache;
+    emitPluginEvent(ASE_EVENT_FILE_SAVED);
+    if (m_cache != beforeHooks && ase_buffer_save_to_file(m_buffer, m_filePath.toUtf8().constData())) {
+        m_savedStateId = ase_undo_state_id(m_undo);
+        m_historyDiscardedWhileDirty = false;
+        discardRecovery();
+        refreshVcsMarks();
+        ensureCursorVisible();
+    }
 }
 
 /* Derived, never latched: an edit and its undo return the stack to the
@@ -506,6 +525,123 @@ AseEditorContext *EditorViewport::pluginContext() {
     return m_pluginContext;
 }
 
+/*
+ * buffer_changed and cursor_moved would otherwise fire on every
+ * keystroke, on the thread that draws — a slow hook would be typing
+ * latency. They are coalesced onto a short timer instead, so a burst of
+ * typing is one event. See docs/adr/0142.
+ *
+ * Nothing is scheduled when nothing is listening, so an editor with no
+ * plugins never starts the timer at all.
+ */
+void EditorViewport::schedulePluginEvents() {
+    if (m_pluginHost == nullptr || m_pluginEventTimer == nullptr) {
+        return;
+    }
+    if (ase_plugin_host_hook_count(m_pluginHost, ASE_EVENT_BUFFER_CHANGED) == 0 &&
+        ase_plugin_host_hook_count(m_pluginHost, ASE_EVENT_CURSOR_MOVED) == 0) {
+        return;
+    }
+    if (!m_pluginEventTimer->isActive()) {
+        m_pluginEventTimer->start();
+    }
+}
+
+/* What changed since the last tick, not what happened during it: a
+ * coalesced event describes state. The caret is compared rather than
+ * flagged, so the 56 places that move it need no instrumenting and a
+ * move that ends where it started is correctly not a move. */
+void EditorViewport::flushPluginEvents() {
+    if (m_bufferChangedSinceEmit) {
+        m_bufferChangedSinceEmit = false;
+        emitPluginEvent(ASE_EVENT_BUFFER_CHANGED);
+    }
+    size_t cursor = cursorOffset();
+    if (cursor != m_lastEmittedCursor) {
+        m_lastEmittedCursor = cursor;
+        emitPluginEvent(ASE_EVENT_CURSOR_MOVED);
+    }
+}
+
+/*
+ * What a hook does is not itself an event.
+ *
+ * The same rule as the re-entrancy guard in the host, extended across
+ * the coalescing timer, and it is load-bearing: refreshCache() below
+ * sets the buffer-changed flag, so a hook that edits would otherwise
+ * raise the event that called it, one tick later, forever.
+ *
+ * Only the hook's own contribution is taken back — a change that was
+ * already waiting to be reported still is. Clearing the flags outright
+ * meant the file_opened hook swallowed the typing that happened before
+ * it ran.
+ */
+void EditorViewport::emitPluginEvent(AseEventKind event) {
+    if (m_pluginHost == nullptr || ase_plugin_host_hook_count(m_pluginHost, event) == 0) {
+        return;
+    }
+    const bool bufferAlreadyPending = m_bufferChangedSinceEmit;
+    const size_t cursorBefore = cursorOffset();
+    const QByteArray before = m_cache;
+
+    m_pluginCursorRequest = -1;
+    m_pluginSelectionStart = -1;
+    m_pluginSelectionEnd = -1;
+    ase_plugin_host_emit(m_pluginHost, event, pluginContext());
+
+    /* A hook may have edited the buffer or moved the caret underneath
+     * the editor, exactly as a command does, and its edit goes on the
+     * undo stack for the same reason. */
+    recordExternalEdit(before);
+    refreshCache();
+    applyPluginCursorRequest();
+
+    m_bufferChangedSinceEmit = bufferAlreadyPending;
+    if (cursorOffset() != cursorBefore) {
+        m_lastEmittedCursor = cursorOffset();
+    }
+    update();
+}
+
+/*
+ * A plugin edits the AseBuffer directly, underneath the undo stack, so
+ * the stack can no longer describe the buffer it is attached to. The
+ * edit is put back and redone through the stack as one step: `u` takes
+ * back the whole command, and the history before it survives. See
+ * docs/adr/0128.
+ *
+ * Shared by commands and by hooks — a hook that edits is the same
+ * problem, and used not to be recorded at all.
+ */
+bool EditorViewport::recordExternalEdit(const QByteArray &before) {
+    size_t afterLen = ase_buffer_length(m_buffer);
+    QByteArray after(static_cast<int>(afterLen), Qt::Uninitialized);
+    if (afterLen > 0) {
+        ase_buffer_get_text(m_buffer, 0, afterLen, after.data());
+    }
+    if (after == before) {
+        return false;
+    }
+
+    ase_buffer_delete(m_buffer, 0, afterLen);
+    if (!before.isEmpty()) {
+        ase_buffer_insert(m_buffer, 0, before.constData(), static_cast<size_t>(before.size()));
+    }
+
+    beginUndoSession();
+    beginUndoStep();
+    if (!before.isEmpty() && ase_buffer_delete(m_buffer, 0, static_cast<size_t>(before.size()))) {
+        ase_undo_record_delete(m_undo, 0, before.constData(), static_cast<size_t>(before.size()));
+    }
+    if (!after.isEmpty() &&
+        ase_buffer_insert(m_buffer, 0, after.constData(), static_cast<size_t>(after.size()))) {
+        ase_undo_record_insert(m_undo, 0, after.constData(), static_cast<size_t>(after.size()));
+    }
+    endUndoStep();
+    endUndoSession();
+    return true;
+}
+
 bool EditorViewport::runPluginCommand(const QString &name) {
     if (m_pluginHost == nullptr) {
         return false;
@@ -516,41 +652,20 @@ bool EditorViewport::runPluginCommand(const QString &name) {
     m_pluginSelectionEnd = -1;
 
     const QByteArray before = m_cache;
+    const bool bufferAlreadyPending = m_bufferChangedSinceEmit;
     if (!ase_plugin_host_run_command(m_pluginHost, name.toUtf8().constData(), pluginContext())) {
         return false; /* no such command — the caller reports it */
     }
 
-    size_t afterLen = ase_buffer_length(m_buffer);
-    QByteArray after(static_cast<int>(afterLen), Qt::Uninitialized);
-    if (afterLen > 0) {
-        ase_buffer_get_text(m_buffer, 0, afterLen, after.data());
-    }
-
-    if (after != before) {
-        /* Put back and redone through the undo stack, so what it holds
-         * describes the buffer it is attached to. */
-        ase_buffer_delete(m_buffer, 0, afterLen);
-        if (!before.isEmpty()) {
-            ase_buffer_insert(m_buffer, 0, before.constData(), static_cast<size_t>(before.size()));
-        }
-
-        beginUndoSession();
-        beginUndoStep();
-        if (!before.isEmpty() && ase_buffer_delete(m_buffer, 0, static_cast<size_t>(before.size()))) {
-            ase_undo_record_delete(m_undo, 0, before.constData(),
-                                    static_cast<size_t>(before.size()));
-        }
-        if (!after.isEmpty() &&
-            ase_buffer_insert(m_buffer, 0, after.constData(), static_cast<size_t>(after.size()))) {
-            ase_undo_record_insert(m_undo, 0, after.constData(), static_cast<size_t>(after.size()));
-        }
-        endUndoStep();
-        endUndoSession();
-    }
+    const bool edited = recordExternalEdit(before);
 
     collapseToOneCursor();
     refreshCache();
     applyPluginCursorRequest();
+    /* refreshCache() marks the buffer changed because it is the edit
+     * choke point, but a command that read and changed nothing did not
+     * change anything — and running one must not look like typing. */
+    m_bufferChangedSinceEmit = bufferAlreadyPending || edited;
     ensureCursorVisible();
     update();
     return true;
