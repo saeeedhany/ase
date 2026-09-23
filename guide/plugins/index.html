@@ -1562,6 +1562,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5424,6 +5434,146 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0137-a-count-before-an-insert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0137: A count before an insert
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0138-two-paper-cuts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0138: Two paper cuts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0139-the-column-a-caret-is-aiming-for/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0139: The column a caret is aiming for
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0140-the-styles-a-capture-can-have/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0140: The styles a capture can have
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0141-what-a-plugin-is-handed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0141: What a plugin is handed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5574,29 +5724,56 @@ and a native one are indistinguishable from the outside.</p>
 including the ones your plugins registered — so a binding at a name
 nothing provides is reported when you save your config.</p>
 <h2 id="in-lua">In Lua<a class="headerlink" href="#in-lua" title="Permanent link">&para;</a></h2>
-<p>One global table, <code>ase</code>:</p>
+<p>One global table, <code>ase</code>. Your command is handed a context — the editor,
+not just its text — and every other function takes it:</p>
 <ul>
-<li><code>ase.register_command(name, function(buffer) ... end)</code></li>
-<li><code>ase.buffer_length(buffer)</code></li>
-<li><code>ase.buffer_get_text(buffer, at, len)</code></li>
-<li><code>ase.buffer_insert(buffer, at, text)</code></li>
-<li><code>ase.buffer_delete(buffer, at, len)</code></li>
+<li><code>ase.register_command(name, function(ctx) ... end)</code></li>
+<li><code>ase.buffer_length(ctx)</code></li>
+<li><code>ase.buffer_get_text(ctx, at, len)</code></li>
+<li><code>ase.buffer_insert(ctx, at, text)</code></li>
+<li><code>ase.buffer_delete(ctx, at, len)</code></li>
+<li><code>ase.cursor(ctx)</code> — byte offset of the caret</li>
+<li><code>ase.set_cursor(ctx, offset)</code></li>
+<li><code>ase.selection(ctx)</code> — start and end, or nothing when nothing is selected</li>
+<li><code>ase.set_selection(ctx, start, end)</code></li>
+<li><code>ase.config(ctx, key)</code> — any <code>config.ase</code> value, or nil</li>
+<li><code>ase.status(ctx, message)</code> — say something in the status bar</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="c1">-- ~/.config/ase/plugins/uppercase.lua</span>
-<span class="nv">ase</span><span class="p">.</span><span class="nf">register_command</span><span class="p">(</span><span class="s2">"uppercase_all"</span><span class="p">,</span><span class="w"> </span><span class="kr">function</span><span class="p">(</span><span class="nv">buf</span><span class="p">)</span>
-<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ase</span><span class="p">.</span><span class="nf">buffer_length</span><span class="p">(</span><span class="nv">buf</span><span class="p">)</span>
-<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ase</span><span class="p">.</span><span class="nf">buffer_get_text</span><span class="p">(</span><span class="nv">buf</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nv">len</span><span class="p">)</span>
-<span class="w">    </span><span class="nv">ase</span><span class="p">.</span><span class="nf">buffer_delete</span><span class="p">(</span><span class="nv">buf</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nv">len</span><span class="p">)</span>
-<span class="w">    </span><span class="nv">ase</span><span class="p">.</span><span class="nf">buffer_insert</span><span class="p">(</span><span class="nv">buf</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nb">string.upper</span><span class="p">(</span><span class="nv">text</span><span class="p">))</span>
+<span class="nv">ase</span><span class="p">.</span><span class="nf">register_command</span><span class="p">(</span><span class="s2">"uppercase_all"</span><span class="p">,</span><span class="w"> </span><span class="kr">function</span><span class="p">(</span><span class="nv">ctx</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ase</span><span class="p">.</span><span class="nf">buffer_length</span><span class="p">(</span><span class="nv">ctx</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ase</span><span class="p">.</span><span class="nf">buffer_get_text</span><span class="p">(</span><span class="nv">ctx</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nv">len</span><span class="p">)</span>
+<span class="w">    </span><span class="nv">ase</span><span class="p">.</span><span class="nf">buffer_delete</span><span class="p">(</span><span class="nv">ctx</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nv">len</span><span class="p">)</span>
+<span class="w">    </span><span class="nv">ase</span><span class="p">.</span><span class="nf">buffer_insert</span><span class="p">(</span><span class="nv">ctx</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nb">string.upper</span><span class="p">(</span><span class="nv">text</span><span class="p">))</span>
 <span class="kr">end</span><span class="p">)</span>
 </code></pre></div>
 <p>That is a complete, working plugin.</p>
+<p>Selection and caret make the commands people actually want:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- ~/.config/ase/plugins/surround.lua</span>
+<span class="nv">ase</span><span class="p">.</span><span class="nf">register_command</span><span class="p">(</span><span class="s2">"surround"</span><span class="p">,</span><span class="w"> </span><span class="kr">function</span><span class="p">(</span><span class="nv">ctx</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">a</span><span class="p">,</span><span class="w"> </span><span class="nv">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ase</span><span class="p">.</span><span class="nf">selection</span><span class="p">(</span><span class="nv">ctx</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="nv">a</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="kr">then</span>
+<span class="w">        </span><span class="nv">ase</span><span class="p">.</span><span class="nf">status</span><span class="p">(</span><span class="nv">ctx</span><span class="p">,</span><span class="w"> </span><span class="s2">"select something first"</span><span class="p">)</span>
+<span class="w">        </span><span class="kr">return</span>
+<span class="w">    </span><span class="kr">end</span>
+<span class="w">    </span><span class="nv">ase</span><span class="p">.</span><span class="nf">buffer_insert</span><span class="p">(</span><span class="nv">ctx</span><span class="p">,</span><span class="w"> </span><span class="nv">b</span><span class="p">,</span><span class="w"> </span><span class="s2">")"</span><span class="p">)</span>
+<span class="w">    </span><span class="nv">ase</span><span class="p">.</span><span class="nf">buffer_insert</span><span class="p">(</span><span class="nv">ctx</span><span class="p">,</span><span class="w"> </span><span class="nv">a</span><span class="p">,</span><span class="w"> </span><span class="s2">"("</span><span class="p">)</span>
+<span class="w">    </span><span class="nv">ase</span><span class="p">.</span><span class="nf">set_cursor</span><span class="p">(</span><span class="nv">ctx</span><span class="p">,</span><span class="w"> </span><span class="nv">a</span><span class="p">)</span>
+<span class="kr">end</span><span class="p">)</span>
+</code></pre></div>
+<p>Insert at the end before the start, as above: inserting at the start
+first would move everything after it, <code>b</code> included.</p>
+<p>The selection you get is the one highlighted on screen. In Visual mode
+that includes the character under the caret, as Vim's does.</p>
 <h2 id="in-c">In C<a class="headerlink" href="#in-c" title="Permanent link">&para;</a></h2>
-<p>Export exactly one symbol:</p>
+<p>Two symbols, one of them a macro:</p>
 <div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">"ase/plugin_abi.h"</span>
 
-<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">reverse_command</span><span class="p">(</span><span class="n">AseBuffer</span><span class="w"> </span><span class="o">*</span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">user_data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="n">ASE_PLUGIN_ABI</span><span class="p">;</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">reverse_command</span><span class="p">(</span><span class="n">AseEditorContext</span><span class="w"> </span><span class="o">*</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">user_data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">user_data</span><span class="p">;</span>
+<span class="w">    </span><span class="n">AseBuffer</span><span class="w"> </span><span class="o">*</span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ase_ctx_buffer</span><span class="p">(</span><span class="n">ctx</span><span class="p">);</span>
 <span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ase_buffer_length</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">len</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">return</span><span class="p">;</span>
@@ -5611,6 +5788,7 @@ nothing provides is reported when you save your config.</p>
 <span class="w">    </span><span class="n">ase_buffer_delete</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">);</span>
 <span class="w">    </span><span class="n">ase_buffer_insert</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">);</span>
 <span class="w">    </span><span class="n">free</span><span class="p">(</span><span class="n">text</span><span class="p">);</span>
+<span class="w">    </span><span class="n">ase_ctx_set_cursor</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
 <span class="p">}</span>
 
 <span class="kt">void</span><span class="w"> </span><span class="nf">ase_plugin_register</span><span class="p">(</span><span class="n">AsePluginHost</span><span class="w"> </span><span class="o">*</span><span class="n">host</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">AsePluginApi</span><span class="w"> </span><span class="o">*</span><span class="n">api</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -5618,29 +5796,42 @@ nothing provides is reported when you save your config.</p>
 <span class="p">}</span>
 </code></pre></div>
 <p>Build it as a shared module and drop it in the plugins directory.</p>
+<p><code>ASE_PLUGIN_ABI;</code> is not optional. It declares which ABI the plugin was
+built against, and a plugin without it is refused with a message rather
+than called through a signature it does not have.</p>
 <p>A crashing native plugin crashes the editor. That is the inherent cost of
 native over Lua, not something this layer pretends to sandbox.</p>
 <h2 id="what-a-plugin-can-do-today">What a plugin can do today<a class="headerlink" href="#what-a-plugin-can-do-today" title="Permanent link">&para;</a></h2>
-<p>Read and change buffer text. That is the whole ABI:</p>
-<div class="highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="n">AseBuffer</span><span class="w"> </span><span class="o">*</span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">user_data</span><span class="p">)</span>
+<p>Read and change buffer text, read and move the caret, read and set the
+selection, read any config value, and write to the status bar. In C that
+is:</p>
+<div class="highlight"><pre><span></span><code><span class="n">AseBuffer</span><span class="w">  </span><span class="o">*</span><span class="nf">ase_ctx_buffer</span><span class="p">(</span><span class="n">AseEditorContext</span><span class="w"> </span><span class="o">*</span><span class="n">ctx</span><span class="p">);</span>
+<span class="kt">size_t</span><span class="w">      </span><span class="nf">ase_ctx_cursor</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">AseEditorContext</span><span class="w"> </span><span class="o">*</span><span class="n">ctx</span><span class="p">);</span>
+<span class="kt">void</span><span class="w">        </span><span class="nf">ase_ctx_set_cursor</span><span class="p">(</span><span class="n">AseEditorContext</span><span class="w"> </span><span class="o">*</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">offset</span><span class="p">);</span>
+<span class="kt">bool</span><span class="w">        </span><span class="nf">ase_ctx_selection</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">AseEditorContext</span><span class="w"> </span><span class="o">*</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="o">*</span><span class="n">start</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="o">*</span><span class="n">end</span><span class="p">);</span>
+<span class="kt">void</span><span class="w">        </span><span class="nf">ase_ctx_set_selection</span><span class="p">(</span><span class="n">AseEditorContext</span><span class="w"> </span><span class="o">*</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">start</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">end</span><span class="p">);</span>
+<span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="nf">ase_ctx_config</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">AseEditorContext</span><span class="w"> </span><span class="o">*</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">key</span><span class="p">);</span>
+<span class="kt">void</span><span class="w">        </span><span class="nf">ase_ctx_status</span><span class="p">(</span><span class="n">AseEditorContext</span><span class="w"> </span><span class="o">*</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">message</span><span class="p">);</span>
 </code></pre></div>
-<p>It cannot yet read or move the cursor, touch the selection, read config,
-draw anything, or react to an event. ADR 0009 deliberately shipped the
-smallest thing that worked, and the plan for widening it — an opaque
-context handle with accessors, rather than more function pointers — is
-written up in <a href="../../EXTENSIBILITY/">Extensibility</a>.</p>
+<p>The handle is opaque and each capability is a function, so gaining one
+is an added function rather than a changed struct — your plugin keeps
+working across a version that adds something it does not call. See
+<a href="../../adr/0141-what-a-plugin-is-handed/">ADR 0141</a>.</p>
+<p>It still cannot draw anything or react to an event. Events are the next
+step, sketched in <a href="../../EXTENSIBILITY/">Extensibility</a>.</p>
 <h3 id="one-thing-to-know">One thing to know<a class="headerlink" href="#one-thing-to-know" title="Permanent link">&para;</a></h3>
-<p>Running a plugin command discards the undo history for that buffer. The
-plugin edits the buffer directly, underneath the undo stack, so the stack
-can no longer describe what happened. The buffer stays marked as modified
-so you cannot lose the file by accident, but you cannot <code>u</code> your way back
-past the plugin.</p>
+<p>A plugin command is one undo step. <code>u</code> takes back everything it did,
+and the history from before it survives — running a formatter does not
+cost you the rest of your session.</p>
+<p>A caret you set is clamped to the buffer you leave behind, so moving it
+past the end is harmless rather than a crash.</p>
 <h2 id="working-examples">Working examples<a class="headerlink" href="#working-examples" title="Permanent link">&para;</a></h2>
 <p><code>core/tests/fixtures/</code> has a complete Lua plugin and a complete native
 one, and <code>core/tests/test_plugin_host.c</code> shows how they are loaded and
 invoked. Both are real tests, so they cannot rot.</p>
-<p>The design rationale is
-<a href="../../adr/0009-plugin-abi-and-lua-host/">ADR 0009</a>.</p>
+<p>The design rationale is <a href="../../adr/0009-plugin-abi-and-lua-host/">ADR 0009</a>
+for the registry and <a href="../../adr/0141-what-a-plugin-is-handed/">ADR 0141</a>
+for what a command is handed.</p>
 
 
 

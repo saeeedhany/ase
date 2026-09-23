@@ -1642,6 +1642,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5504,6 +5514,146 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0137-a-count-before-an-insert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0137: A count before an insert
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0138-two-paper-cuts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0138: Two paper cuts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0139-the-column-a-caret-is-aiming-for/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0139: The column a caret is aiming for
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0140-the-styles-a-capture-can-have/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0140: The styles a capture can have
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0141-what-a-plugin-is-handed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0141: What a plugin is handed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6745,19 +6895,10 @@ against the code on that date.</p>
   so both features are present and do nothing there. Async child-process
   I/O on Windows needs overlapped I/O or a reader thread (ADR 0011,
   decision 6) — real work, not a quick add-on.</li>
-<li>Syntax highlight capture styles (bold keyword, italic type, comment
-  opacity — ADR 0007) are hardcoded in <code>EditorViewport</code>, not exposed as
-  config keys.</li>
-<li>Vertical multi-cursor movement doesn't track a sticky column per
-  cursor (only single-cursor mode does) — a minor, rare-in-practice
-  paper cut (ADR 0012, decision 1).</li>
-<li><code>Ctrl+D</code> "select next occurrence" doesn't wrap around the buffer.</li>
-<li><strong>Counts on <code>o</code> and <code>O</code> are ignored.</strong> <code>3ob</code> opens one line; vim opens
-  three. Found while deriving the auto-indent cases
-  (<a href="../adr/0136-a-new-line-starts-where-the-last-one-did/">ADR 0136</a>) —
-  it is unrelated to indentation and reproduces with <code>autoindent</code> off.</li>
-<li>The buffer bar doesn't elide long names
-  (<a href="../adr/0057-always-on-tab-strip-and-welcome-rework/">ADR 0057</a>).</li>
+<li>Counts on <code>s</code>, <code>S</code>, <code>C</code> and <code>c</code>-with-a-motion are ignored. The other
+  six insert commands read theirs
+  (<a href="../adr/0137-a-count-before-an-insert/">ADR 0137</a>); these four each
+  have their own deletion semantics to settle first.</li>
 </ul>
 
 

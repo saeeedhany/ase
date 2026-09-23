@@ -1570,6 +1570,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5432,6 +5442,146 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0137-a-count-before-an-insert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0137: A count before an insert
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0138-two-paper-cuts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0138: Two paper cuts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0139-the-column-a-caret-is-aiming-for/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0139: The column a caret is aiming for
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0140-the-styles-a-capture-can-have/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0140: The styles a capture can have
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0141-what-a-plugin-is-handed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0141: What a plugin is handed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5589,6 +5739,12 @@ move the cursor, touch the selection, read config, bind a key, draw
 anything, or react to an event. That's not a criticism of ADR 0009 —
 it deliberately shipped the smallest thing that worked — but it is the
 real starting point.</p>
+<blockquote>
+<p>Written before any of this was built. Recommendations 1, 2 and 4 have
+since been done, and each is marked below. The command shape is now
+<code>void (*)(AseEditorContext *ctx, void *user_data)</code>, and binding a key
+is config.</p>
+</blockquote>
 <p>Customization has the same shape: <code>config.ase</code> is genuinely live
 (hot-reloaded, ADR 0008) and covers colors, font, animations, line
 numbers, Vim mode, and the LSP/build commands. But <strong>every keybinding in
@@ -5613,6 +5769,13 @@ dispatch is ready for it.</p>
 plugins against the narrow ABI is what will tell you which parts of the
 ABI actually need widening, rather than guessing.</p>
 <h2 id="recommendation-2-give-plugins-a-context-not-more-function-pointers">Recommendation 2 — give plugins a context, not more function pointers<a class="headerlink" href="#recommendation-2-give-plugins-a-context-not-more-function-pointers" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Done</strong>, in <a href="../adr/0141-what-a-plugin-is-handed/">ADR 0141</a>, at ABI 2.
+The shape below is what was built. Two things it did not say: a plugin
+built for ABI 1 is refused rather than called through the wrong
+signature, and Lua plugins needed no change at all, because the
+<code>ase.buffer_*</code> functions take the context now.</p>
+</blockquote>
 <p>The temptation is to keep adding fields to <code>AsePluginApi</code>. Resist it: an
 ABI that grows a pointer per feature is one that breaks on every release.</p>
 <p>Pass commands an opaque <code>AseEditorContext *</code> instead of a bare <code>AseBuffer *</code>,
@@ -5710,19 +5873,24 @@ A single <code>animation_speed</code> multiplier over all of them would be the
 right shape if this is ever wanted.</p>
 <h2 id="suggested-order">Suggested order<a class="headerlink" href="#suggested-order" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>Steps 1 and 3 are done; 2, 4 and 5 are open.</p>
+<p>Steps 1, 2, 3 and 5 are done. Step 4, events, is the open one.</p>
 </blockquote>
 <p>The ordering matters more than the list — each step makes the next one
 informed rather than speculative:</p>
 <ol>
-<li>Wire the host into the GUI (<code>:&lt;name&gt;</code> runs plugin commands).</li>
-<li><code>AseEditorContext</code> with cursor/selection/config accessors.</li>
-<li>Keybindings as data, with built-ins registered as commands.</li>
+<li>Wire the host into the GUI (<code>:&lt;name&gt;</code> runs plugin commands) —
+   <a href="../adr/0054-multiple-buffers-and-plugin-host-wiring/">ADR 0054</a>.</li>
+<li><code>AseEditorContext</code> with cursor/selection/config accessors —
+   <a href="../adr/0141-what-a-plugin-is-handed/">ADR 0141</a>.</li>
+<li>Keybindings as data, with built-ins registered as commands —
+   <a href="../adr/0113-keybindings-as-data/">ADR 0113</a>.</li>
 <li>Events.</li>
-<li>Theme files + per-capture syntax colors.</li>
+<li>Theme files + per-capture syntax colors —
+   <a href="../adr/0133-a-theme-you-can-share-as-a-file/">ADR 0133</a> and
+   <a href="../adr/0140-the-styles-a-capture-can-have/">ADR 0140</a>.</li>
 </ol>
-<p>Steps 1–2 are small and unlock most real plugins. Step 3 is the large
-one, and is what turns "configurable" into "customizable at all points."</p>
+<p>Steps 1–2 were small and unlock most real plugins. Step 3 was the large
+one, and is what turned "configurable" into "customizable at all points."</p>
 
 
 
