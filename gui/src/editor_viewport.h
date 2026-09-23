@@ -523,11 +523,32 @@ private:
     /* Vim removes an indent you never typed on top of. Called when
      * Insert mode ends. */
     void dropUnusedAutoIndent();
+    void noteAutoIndentedLine(int line);
 
     bool m_autoIndent = true;
-    /* The line auto-indent last wrote to, and how much of it is that
-     * indent. -1 when there is nothing to take back. */
-    int m_autoIndentLine = -1;
+    /*
+     * The span of lines this Insert session auto-indented, so leaving it
+     * can take back the ones nothing was typed on.
+     *
+     * A span rather than a single line because one session can indent
+     * several: `o<CR><CR><Esc>` leaves three blank lines and vim strips
+     * all three, and a count multiplies them further. -1 means nothing
+     * to take back. See docs/adr/0137.
+     */
+    int m_autoIndentFirst = -1;
+    int m_autoIndentLast = -1;
+
+    /*
+     * A count given to i/a/I/A/o/O repeats the whole insert that many
+     * times when it ends — `3iab` types "ababab". For o and O each
+     * repeat opens its own line first. See docs/adr/0137.
+     */
+    int m_insertCount = 1;
+    bool m_insertOpensLine = false;
+    /* Set while those repeats are being replayed, so they are neither
+     * re-captured for `.` nor counted again. */
+    bool m_insertRepeating = false;
+    void vimRepeatInsertForCount(const QByteArray &typed);
     void vimAddToNumber(int delta);
     size_t vimLinewiseDeleteStart(size_t start, size_t end) const;
     /* Never crosses a line. A miss returns the cursor unchanged.
@@ -622,6 +643,7 @@ private:
     /* Called where a command actually changes the buffer, which is what
      * makes it repeatable. Yanks and motions do not call it. */
     void vimMarkChange();
+    void vimBeginInsert(int count, bool opensLine);
     void vimBeginInsertCapture();
     void vimEndInsertCapture();
     void vimRepeatChange(int count);

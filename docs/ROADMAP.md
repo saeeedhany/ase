@@ -1050,9 +1050,9 @@ against the code on that date.
   cursor (only single-cursor mode does) — a minor, rare-in-practice
   paper cut (ADR 0012, decision 1).
 - `Ctrl+D` "select next occurrence" doesn't wrap around the buffer.
-- **Counts on `o` and `O` are ignored.** `3ob` opens one line; vim opens
-  three. Found while deriving the auto-indent cases
-  ([ADR 0136](adr/0136-a-new-line-starts-where-the-last-one-did.md)) —
-  it is unrelated to indentation and reproduces with `autoindent` off.
+- Counts on `s`, `S`, `C` and `c`-with-a-motion are ignored. The other
+  six insert commands read theirs
+  ([ADR 0137](adr/0137-a-count-before-an-insert.md)); these four each
+  have their own deletion semantics to settle first.
 - The buffer bar doesn't elide long names
   ([ADR 0057](adr/0057-always-on-tab-strip-and-welcome-rework.md)).

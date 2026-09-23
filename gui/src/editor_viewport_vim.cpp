@@ -1032,7 +1032,6 @@ void EditorViewport::insertNewlineWithIndent() {
     const QByteArray indent = indentOfLine(line);
     if (indent.isEmpty()) {
         insertText(QByteArrayLiteral("\n"));
-        m_autoIndentLine = -1;
         return;
     }
 
@@ -1061,7 +1060,7 @@ void EditorViewport::insertNewlineWithIndent() {
     m_selectionAnchors[0] = m_cursors[0];
     /* Remembered so Escape can take it back if nothing was typed on it,
      * which is what vim does. */
-    m_autoIndentLine = lineForOffset(m_cursors[0]);
+    noteAutoIndentedLine(lineForOffset(m_cursors[0]));
     ensureCursorVisible();
     update();
 }
@@ -1071,33 +1070,89 @@ void EditorViewport::insertNewlineWithIndent() {
  * `o<Esc>` on an indented line leaves the line empty, not four spaces
  * wide. Derived from real vim rather than assumed — see docs/adr/0136.
  */
+void EditorViewport::noteAutoIndentedLine(int line) {
+    if (m_autoIndentFirst < 0) {
+        m_autoIndentFirst = line;
+    }
+    m_autoIndentFirst = std::min(m_autoIndentFirst, line);
+    m_autoIndentLast = std::max(m_autoIndentLast, line);
+}
+
 void EditorViewport::dropUnusedAutoIndent() {
-    if (m_autoIndentLine < 0) {
+    if (m_autoIndentFirst < 0) {
         return;
     }
-    int line = m_autoIndentLine;
-    m_autoIndentLine = -1;
-    if (line >= m_lineStarts.size()) {
+    const int first = m_autoIndentFirst;
+    const int last = m_autoIndentLast;
+    m_autoIndentFirst = -1;
+    m_autoIndentLast = -1;
+
+    /* Bottom-up, because removing one line's indent shifts the offsets
+     * of every line after it. */
+    bool moved = false;
+    for (int line = std::min(last, static_cast<int>(m_lineStarts.size()) - 1); line >= first;
+         --line) {
+        if (line < 0) {
+            break;
+        }
+        int start = m_lineStarts[line];
+        int end = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1
+                                                    : static_cast<int>(m_cache.size());
+        if (end <= start) {
+            continue;
+        }
+        bool blank = true;
+        for (int i = start; i < end; ++i) {
+            if (m_cache[i] != ' ' && m_cache[i] != '\t') {
+                blank = false; /* something real was typed; the indent is earned */
+                break;
+            }
+        }
+        if (!blank) {
+            continue;
+        }
+        vimReplaceRange(static_cast<size_t>(start), static_cast<size_t>(end), QByteArray());
+        /* The cursor may have been inside what just went. Left where it
+         * was it clamps to the end of the buffer, and the next `o`
+         * opens after the wrong line. */
+        collapseToOneCursor();
+        m_cursors[0] = static_cast<size_t>(start);
+        m_selectionAnchors[0] = m_cursors[0];
+        moved = true;
+    }
+    if (moved) {
+        m_selectionAnchors[0] = m_cursors[0];
+    }
+}
+
+/*
+ * `3iab` types "ababab"; `3oab` opens three lines each holding "ab".
+ * The captured insert is replayed verbatim, which is what makes
+ * `2ia<CR>b` come out as "a\nba\nb" — vim repeats the bytes, not the
+ * keystrokes. See docs/adr/0137.
+ */
+void EditorViewport::vimRepeatInsertForCount(const QByteArray &typed) {
+    if (m_insertCount <= 1 || m_insertRepeating) {
+        m_insertCount = 1;
         return;
     }
-    int start = m_lineStarts[line];
-    int end = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1
-                                                : static_cast<int>(m_cache.size());
-    if (end <= start) {
-        return;
+    const int count = m_insertCount;
+    const bool opensLine = m_insertOpensLine;
+    m_insertCount = 1;
+    if (typed.isEmpty() && !opensLine) {
+        return; /* nothing to repeat, and no line to open */
     }
-    for (int i = start; i < end; ++i) {
-        if (m_cache[i] != ' ' && m_cache[i] != '\t') {
-            return; /* something real was typed; the indent is earned */
+
+    m_insertRepeating = true;
+    for (int n = 1; n < count; ++n) {
+        if (opensLine) {
+            insertNewlineWithIndent();
+        }
+        if (!typed.isEmpty()) {
+            insertText(typed);
         }
     }
-    vimReplaceRange(static_cast<size_t>(start), static_cast<size_t>(end), QByteArray());
-    /* The cursor was inside what just went. Left where it was it clamps
-     * to the end of the buffer, and the next `o` opens after the wrong
-     * line. */
-    collapseToOneCursor();
-    m_cursors[0] = static_cast<size_t>(start);
-    m_selectionAnchors[0] = m_cursors[0];
+    m_insertRepeating = false;
 }
 
 void EditorViewport::vimOpenLineAbove() {
@@ -1116,7 +1171,9 @@ void EditorViewport::vimOpenLineAbove() {
     at += static_cast<size_t>(indent.size());
     m_cursors[0] = at;
     m_selectionAnchors[0] = at;
-    m_autoIndentLine = indent.isEmpty() ? -1 : line;
+    if (!indent.isEmpty()) {
+        noteAutoIndentedLine(line);
+    }
     refreshCache();
     ensureCursorVisible();
     update();
@@ -1316,6 +1373,16 @@ void EditorViewport::vimMarkChange() {
     m_dotInserted.clear();
 }
 
+/* Entering Insert from a Normal-mode command, remembering the count so
+ * leaving can repeat what was typed. See docs/adr/0137. */
+void EditorViewport::vimBeginInsert(int count, bool opensLine) {
+    m_vimMode = VimMode::Insert;
+    m_insertCount = m_insertRepeating ? 1 : std::max(1, count);
+    m_insertOpensLine = opensLine;
+    vimMarkChange();
+    vimBeginInsertCapture();
+}
+
 void EditorViewport::vimBeginInsertCapture() {
     if (m_dotReplaying) {
         return;
@@ -1390,6 +1457,11 @@ void EditorViewport::vimRepeatChange(int count) {
         if (m_vimReplacing) {
             vimLeaveReplaceMode();
         }
+        /* The replayed keys carried the original count, and the text
+         * came from m_dotInserted rather than through the capture
+         * buffer, so the repeat has to be handed it explicitly. */
+        vimRepeatInsertForCount(m_dotInserted);
+        dropUnusedAutoIndent();
         if (m_cursors[0] > static_cast<size_t>(m_lineStarts[lineForOffset(m_cursors[0])])) {
             moveCursorLeftAt(0, false);
         }
@@ -2498,49 +2570,39 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
         break;
     case 'i':
         beginUndoSession();
-        m_vimMode = VimMode::Insert;
-        vimMarkChange();
-        vimBeginInsertCapture();
+        vimBeginInsert(count, false);
         break;
     case 'a':
         beginUndoSession();
         moveCursorRightAt(0, false);
-        m_vimMode = VimMode::Insert;
-        vimMarkChange();
-        vimBeginInsertCapture();
+        vimBeginInsert(count, false);
         break;
     case 'I': {
         beginUndoSession();
         size_t target = vimFirstNonBlank(lineForOffset(m_cursors[0]));
         m_cursors[0] = target;
         m_selectionAnchors[0] = target;
-        m_vimMode = VimMode::Insert;
-        vimMarkChange();
-        vimBeginInsertCapture();
+        vimBeginInsert(count, false);
         break;
     }
     case 'A':
         beginUndoSession();
         moveCursorEndAt(0, false);
-        m_vimMode = VimMode::Insert;
-        vimMarkChange();
-        vimBeginInsertCapture();
+        vimBeginInsert(count, false);
         break;
     case 'o':
         /* Before the line break, or undo leaves the blank line behind. */
         beginUndoSession();
         moveCursorEndAt(0, false);
         insertNewlineWithIndent();
-        m_vimMode = VimMode::Insert;
-        vimMarkChange();
-        vimBeginInsertCapture();
+        vimBeginInsert(count, true);
         break;
     case 'O':
         beginUndoSession();
         vimOpenLineAbove();
-        m_vimMode = VimMode::Insert;
-        vimMarkChange();
-        vimBeginInsertCapture();
+        /* Each repeat opens below the one before it, which is what vim
+         * does: 3O leaves the three new lines in the order typed. */
+        vimBeginInsert(count, true);
         break;
     case 'x': {
         size_t start = m_cursors[0];

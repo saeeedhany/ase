@@ -288,6 +288,9 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
             if (m_vimReplacing) {
                 vimLeaveReplaceMode();
             }
+            /* Before the indent is taken back, so the lines the repeats
+             * open are in the span it considers. */
+            vimRepeatInsertForCount(m_dotInsertBuf);
             /* Before the cursor steps back, and before the undo session
              * closes, so taking it back is part of the same change. */
             dropUnusedAutoIndent();

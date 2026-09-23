@@ -301,6 +301,29 @@ AUTOINDENT_CASES = [
     ("ai: deeper nesting", "if (x) {\n        y();\n}\n", 2, 9, "oz();<Esc>"),
 ]
 
+# Counts on the commands that enter Insert mode. Derived with autoindent
+# on, like the block above, because o and O interact with it.
+INSERT_COUNT_CASES = [
+    ("count: 3i", "XY\n", 1, 1, "3iab<Esc>"),
+    ("count: 3a", "XY\n", 1, 1, "3aab<Esc>"),
+    ("count: 3A", "XY\n", 1, 1, "3Aab<Esc>"),
+    ("count: 3I", "  XY\n", 1, 3, "3Iab<Esc>"),
+    ("count: 3o", "XY\n", 1, 1, "3oab<Esc>"),
+    ("count: 3O", "XY\n", 1, 1, "3Oab<Esc>"),
+    ("count: 1o is one", "aaa\n", 1, 1, "1ob<Esc>"),
+    ("count: 3o indented", "    aaa\n", 1, 5, "3ob<Esc>"),
+    # The indent is taken back on every line nothing was typed on, not
+    # just the last.
+    ("count: 3o empty", "    aaa\n", 1, 5, "3o<Esc>"),
+    ("count: o CR CR", "    aaa\n", 1, 5, "o<CR><CR><Esc>"),
+    ("count: 2o typed then blank", "    aaa\n", 1, 5, "2ox<CR><Esc>"),
+    # The bytes are repeated, not the keystrokes.
+    ("count: 2i with a newline", "XY\n", 1, 1, "2ia<CR>b<Esc>"),
+    ("count: 3i nothing typed", "XY\n", 1, 1, "3i<Esc>"),
+    ("count: 3o mid-buffer", "aaa\nccc\n", 1, 1, "3ob<Esc>"),
+    ("count: dot after 3o", "aaa\n", 1, 1, "3ob<Esc>."),
+]
+
 MANUAL_CASES = []
 
 
@@ -374,6 +397,19 @@ def main():
             "set nofixeol\n"
             "set shiftwidth=4 expandtab\n"
             "set autoindent\n"
+            "call cursor(%d,%d)\n"
+            'call feedkeys("%s", "xt")\n'
+            "write! %s/out.txt\nq!\n" % (line, col, to_vim(keys), work)
+        )
+        open(os.path.join(work, "case.vim"), "w").write(script)
+        subprocess.run(["vim", "-u", "NONE", "-i", "NONE", "-N", "-es", "-S", "case.vim", "in.txt"],
+                       cwd=work, capture_output=True)
+        rows.append((name, text, line, col, keys, open(os.path.join(work, "out.txt")).read()))
+
+    for name, text, line, col, keys in INSERT_COUNT_CASES:
+        open(os.path.join(work, "in.txt"), "w").write(text)
+        script = (
+            "set nofixeol\nset shiftwidth=4 expandtab\nset autoindent\n"
             "call cursor(%d,%d)\n"
             'call feedkeys("%s", "xt")\n'
             "write! %s/out.txt\nq!\n" % (line, col, to_vim(keys), work)
