@@ -519,8 +519,9 @@ size_t EditorViewport::vimClampOffLineEnd(size_t offset, int line) const {
 
 void EditorViewport::ensureDesiredColumns() {
     if (m_desiredColumns.size() != m_cursors.size()) {
-        m_desiredColumns.assign(m_cursors.size(), -1);
-        m_desiredColumnAt.assign(m_cursors.size(), 0);
+        /* fill(), not assign(): assign() is Qt 6.6 and the floor is 6.2. */
+        m_desiredColumns.fill(-1, m_cursors.size());
+        m_desiredColumnAt.fill(0, m_cursors.size());
     }
 }
 
