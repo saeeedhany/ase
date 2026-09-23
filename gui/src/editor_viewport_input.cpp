@@ -322,7 +322,6 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
      * they never reached the table that claims to own every chord —
      * rebinding either did nothing, and Shift+F12 arrived as F12. They
      * are rows in keys::defaults() like everything else now. */
-    m_desiredColumn = -1;
 
     if (vimModeActive() && m_vimMode != VimMode::Insert) {
         if (handleVimNormalOrVisualKey(event)) {
@@ -421,7 +420,7 @@ void EditorViewport::keyPressEvent(QKeyEvent *event) {
                 return;
             }
             /* Defense-in-depth, not the primary enforcement point: the
-             * gate above (m_desiredColumn = -1's neighbor) already
+             * gate above (the sticky-column reset's neighbor) already
              * claims every printable key while Vim mode is on and not
              * in Insert, so this should be unreachable in that state —
              * see docs/adr/0046. */
@@ -510,7 +509,8 @@ void EditorViewport::mousePressEvent(QMouseEvent *event) {
         m_selectionAnchors.push_back(offset);
     }
 
-    m_desiredColumn = -1;
+    m_desiredColumns.clear();
+    m_desiredColumnAt.clear();
     resetCaretBlink();
     ensureCursorVisible();
     update();

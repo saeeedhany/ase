@@ -433,6 +433,8 @@ private:
     void moveCursorLeftAt(int i, bool extend);
     void moveCursorRightAt(int i, bool extend);
     void moveCursorVerticallyAt(int i, int lineDelta, bool extend);
+    void ensureDesiredColumns();
+    size_t vimClampOffLineEnd(size_t offset, int line) const;
     void moveCursorHomeAt(int i, bool extend);
     void moveCursorEndAt(int i, bool extend);
 
@@ -956,7 +958,12 @@ private:
 
     int m_scrollLine = 0;
     int m_scrollX = 0; /* leftmost visible pixel, not column — see docs/adr/0014 */
-    int m_desiredColumn = -1; /* sticky column — single-cursor mode only, see docs/adr/0012 */
+    /* The column each caret is aiming for while moving vertically, and the
+     * offset that answer was true at. A caret found somewhere else has been
+     * moved by something other than j/k, so its column is recomputed — see
+     * docs/adr/0139. */
+    QVector<int> m_desiredColumns;
+    QVector<size_t> m_desiredColumnAt;
     QString m_lineNumberMode = QStringLiteral("absolute"); /* "off" / "absolute" / "relative" */
 
     /* Defaulting m_vimMode to Insert makes "off" and "on, in Insert"

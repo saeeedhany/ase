@@ -1046,10 +1046,6 @@ against the code on that date.
 - Syntax highlight capture styles (bold keyword, italic type, comment
   opacity — ADR 0007) are hardcoded in `EditorViewport`, not exposed as
   config keys.
-- Vertical multi-cursor movement doesn't track a sticky column per
-  cursor (only single-cursor mode does) — a minor, rare-in-practice
-  paper cut (ADR 0012, decision 1). Wrapping and tab elision came off
-  this list in [ADR 0138](adr/0138-two-paper-cuts.md).
 - Counts on `s`, `S`, `C` and `c`-with-a-motion are ignored. The other
   six insert commands read theirs
   ([ADR 0137](adr/0137-a-count-before-an-insert.md)); these four each

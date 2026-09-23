@@ -72,5 +72,7 @@ cost a debugging pass.
 Both changes were verified by reverting them — one pass instead of two
 fails two of the wrap tests.
 
-Still on the list: vertical multi-cursor movement has no per-cursor
-sticky column, and the highlight capture styles remain hardcoded.
+Still on the list: the highlight capture styles remain hardcoded. The
+sticky column came off it immediately afterwards, and turned out not to
+be the multi-cursor paper cut it was filed as —
+[ADR 0139](0139-the-column-a-caret-is-aiming-for.md).

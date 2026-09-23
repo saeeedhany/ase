@@ -221,7 +221,8 @@ void EditorViewport::addCursorAtNextOccurrence() {
 void EditorViewport::selectAll() {
     m_cursors = {static_cast<size_t>(m_cache.size())};
     m_selectionAnchors = {0};
-    m_desiredColumn = -1;
+    m_desiredColumns.clear();
+    m_desiredColumnAt.clear();
     resetCaretBlink();
     ensureCursorVisible();
     update();
@@ -493,48 +494,62 @@ void EditorViewport::moveCursorRightAt(int i, bool extend) {
     }
 }
 
-void EditorViewport::moveCursorVertically(int lineDelta, bool extend) {
-    if (m_cursors.size() == 1) {
-        /* sticky column — see docs/adr/0012, decision 1 */
-        size_t &cursor = m_cursors[0];
-        if (!extend && hasSelectionAt(0)) {
-            cursor = (lineDelta < 0) ? selectionMinAt(0) : selectionMaxAt(0);
-            m_selectionAnchors[0] = cursor;
-            m_desiredColumn = -1;
-            return;
-        }
-
-        int line = lineForOffset(cursor);
-        int column = (m_desiredColumn >= 0) ? m_desiredColumn : columnForOffset(cursor, line);
-        m_desiredColumn = column;
-
-        int newLine = line + lineDelta;
-        if (newLine >= 0 && newLine < m_lineStarts.size()) {
-            cursor = offsetForLineColumn(newLine, column);
-        }
-        if (!extend) {
-            m_selectionAnchors[0] = cursor;
-        }
-        return;
+/* Vim's caret sits on a character, never on the newline past the last
+ * one. Only an empty line leaves it with nowhere to go. */
+size_t EditorViewport::vimClampOffLineEnd(size_t offset, int line) const {
+    if (!vimModeActive() || m_vimMode == VimMode::Insert) {
+        return offset;
     }
+    size_t lineStart = static_cast<size_t>(m_lineStarts[line]);
+    if (offset <= lineStart) {
+        return offset;
+    }
+    size_t lineEnd = (line + 1 < m_lineStarts.size())
+                         ? static_cast<size_t>(m_lineStarts[line + 1] - 1)
+                         : static_cast<size_t>(m_cache.size());
+    if (offset < lineEnd) {
+        return offset;
+    }
+    size_t back = offset - 1;
+    while (back > lineStart && isUtf8ContinuationByte(m_cache[static_cast<int>(back)])) {
+        back--;
+    }
+    return back;
+}
 
+void EditorViewport::ensureDesiredColumns() {
+    if (m_desiredColumns.size() != m_cursors.size()) {
+        m_desiredColumns.assign(m_cursors.size(), -1);
+        m_desiredColumnAt.assign(m_cursors.size(), 0);
+    }
+}
+
+void EditorViewport::moveCursorVertically(int lineDelta, bool extend) {
     for (int i = 0; i < m_cursors.size(); ++i) {
         moveCursorVerticallyAt(i, lineDelta, extend);
     }
-    normalizeCursors();
+    if (m_cursors.size() > 1) {
+        normalizeCursors();
+    }
 }
 
 void EditorViewport::moveCursorVerticallyAt(int i, int lineDelta, bool extend) {
+    ensureDesiredColumns();
     size_t &cursor = m_cursors[i];
     if (!extend && hasSelectionAt(i)) {
         cursor = (lineDelta < 0) ? selectionMinAt(i) : selectionMaxAt(i);
+        m_desiredColumns[i] = -1;
     } else {
         int line = lineForOffset(cursor);
-        int column = columnForOffset(cursor, line);
+        bool stillThere = (m_desiredColumns[i] >= 0 && m_desiredColumnAt[i] == cursor);
+        int column = stillThere ? m_desiredColumns[i] : columnForOffset(cursor, line);
+
         int newLine = line + lineDelta;
         if (newLine >= 0 && newLine < m_lineStarts.size()) {
-            cursor = offsetForLineColumn(newLine, column);
+            cursor = vimClampOffLineEnd(offsetForLineColumn(newLine, column), newLine);
         }
+        m_desiredColumns[i] = column;
+        m_desiredColumnAt[i] = cursor;
     }
     if (!extend) {
         m_selectionAnchors[i] = cursor;

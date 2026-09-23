@@ -52,6 +52,20 @@ CASES = [
     ("10l then x",        "abc\ndefgh\nij\n",         2, 1, "10lx"),
     ("10h then x",        "abc\ndefgh\nij\n",         2, 3, "10hx"),
 
+    # --- the sticky column (curswant) ---
+    # A caret crossing a short line remembers the column it wanted, and
+    # a horizontal motion is what makes it forget. Every line is distinct
+    # characters so that deleting the wrong column is visible.
+    ("jj keeps the column",  "abcdefgh\nij\nklmnopqr\n", 1, 5, "jjx"),
+    ("j clamps to the line", "abcdefgh\nij\nklmnopqr\n", 1, 5, "jx"),
+    ("jk returns",           "abcdefgh\nij\nklmnopqr\n", 1, 5, "jkx"),
+    ("h resets the column",  "abcdefgh\nij\nklmnopqr\n", 1, 5, "jhjx"),
+    ("l resets the column",  "abcdefgh\nij\nklmnopqr\n", 1, 5, "jljx"),
+    ("$ sticks to the end",  "abcdefgh\nij\nklmnopqr\n", 1, 1, "$jjx"),
+    ("0 then jj",            "abcdefgh\nij\nklmnopqr\n", 1, 5, "0jjx"),
+    ("jj in visual",         "abcdefgh\nij\nklmnopqr\n", 1, 5, "vjjd"),
+    ("jjj past a short line", "abcdefgh\nij\nklmnopqr\nstuvwxyz\n", 1, 6, "jjjx"),
+
     # --- yank, paste, undo ---
     ("yyp",               "aaa\nbbb\nccc\nddd\n",     2, 1, "yyp"),
     ("yyP",               "aaa\nbbb\nccc\nddd\n",     2, 1, "yyP"),

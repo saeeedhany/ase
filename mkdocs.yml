@@ -174,6 +174,7 @@ nav:
     - adr/0136-a-new-line-starts-where-the-last-one-did.md
     - adr/0137-a-count-before-an-insert.md
     - adr/0138-two-paper-cuts.md
+    - adr/0139-the-column-a-caret-is-aiming-for.md
 
 theme:
   name: material

@@ -1,6 +1,6 @@
 /*
- * `Ctrl+D` — add a caret at the next occurrence of the word under the
- * last one. See docs/adr/0138.
+ * Several carets at once: adding them with `Ctrl+D` (docs/adr/0138) and
+ * moving them vertically, each keeping its own column (docs/adr/0139).
  */
 #include "editor_viewport.h"
 
@@ -127,6 +127,45 @@ private slots:
          * there stays where it was put. */
         QCOMPARE(at[0], size_t(3)); /* end of the first "foo" */
         QCOMPARE(at[1], size_t(9)); /* untouched, inside the second */
+    }
+
+
+    /* ---- one sticky column per caret (ADR 0139) ---- */
+
+    /*
+     * The middle line is too short for the right-hand caret, which is
+     * the whole point: it has to come back to column 12 on the way out,
+     * not to the column the short line clipped it to.
+     *
+     * Short, but not so short that both carets land on the same offset
+     * — two carets in one place are one caret, here as everywhere else.
+     */
+    void eachCaretKeepsItsOwnColumn() {
+        AseBuffer *buffer = bufferFrom("ab xx efg xx z\nkkkkkkkk\nmnopqrstuvwxyz\n");
+        EditorViewport viewport(buffer, QString());
+        viewport.registerCommands(&m_windowCommands);
+        viewport.restorePosition(4, 0);
+        QVERIFY(addCaret(viewport));
+        QCOMPARE(viewport.cursorOffsets(), (QVector<size_t>{4, 12}));
+
+        QTest::keyClick(&viewport, Qt::Key_Down);
+        QTest::keyClick(&viewport, Qt::Key_Down);
+
+        QCOMPARE(viewport.cursorCount(), 2);
+        QCOMPARE(viewport.cursorOffsets(), (QVector<size_t>{28, 36}));
+    }
+
+    void caretsComingBackUpAreWhereTheyStarted() {
+        AseBuffer *buffer = bufferFrom("ab xx efg xx z\nkkkkkkkk\nmnopqrstuvwxyz\n");
+        EditorViewport viewport(buffer, QString());
+        viewport.registerCommands(&m_windowCommands);
+        viewport.restorePosition(4, 0);
+        QVERIFY(addCaret(viewport));
+
+        QTest::keyClick(&viewport, Qt::Key_Down);
+        QTest::keyClick(&viewport, Qt::Key_Up);
+
+        QCOMPARE(viewport.cursorOffsets(), (QVector<size_t>{4, 12}));
     }
 
 };

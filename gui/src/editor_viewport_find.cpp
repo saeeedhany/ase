@@ -71,7 +71,8 @@ void EditorViewport::jumpToMatch(int index, bool select) {
     size_t end = start + static_cast<size_t>(m_findNeedle.size());
     m_cursors = {select ? end : start};
     m_selectionAnchors = {start};
-    m_desiredColumn = -1;
+    m_desiredColumns.clear();
+    m_desiredColumnAt.clear();
     resetCaretBlink();
     ensureCursorVisible();
     update();
