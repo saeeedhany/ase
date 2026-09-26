@@ -1,5 +1,7 @@
 #include "ase/config.h"
 
+#include "internal.h"
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,8 +11,6 @@
 #include <direct.h>
 #else
 #include <sys/stat.h>
-
-#include "internal.h"
 #endif
 
 typedef struct {

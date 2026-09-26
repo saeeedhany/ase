@@ -9,13 +9,13 @@
 #include <lua.h>
 #include <lualib.h>
 
+#include "internal.h"
+
 #if defined(_WIN32)
 #include <windows.h>
 #else
 #include <dirent.h>
 #include <dlfcn.h>
-
-#include "internal.h"
 #endif
 
 typedef struct {

@@ -55,8 +55,15 @@ option(ASE_BUILD_SYNTAX "Build the Tree-sitter syntax module (fetches deps from 
 add_library(ase_warnings INTERFACE)
 if(MSVC)
     target_compile_options(ase_warnings INTERFACE /W4)
+    # C4013: "undefined; assuming extern returning int". In C that is not
+    # a style note — a function declared implicitly returns int, so a
+    # returned pointer is truncated to 32 bits and the program crashes on
+    # a platform where the header happened not to be included. Twice now:
+    # memmem (ADR 0130) and internal.h (ADR 0143). An error, everywhere.
+    target_compile_options(ase_warnings INTERFACE $<$<COMPILE_LANGUAGE:C>:/we4013>)
 else()
-    target_compile_options(ase_warnings INTERFACE -Wall -Wextra)
+    target_compile_options(ase_warnings INTERFACE -Wall -Wextra
+        $<$<COMPILE_LANGUAGE:C>:-Werror=implicit-function-declaration>)
 endif()
 
 enable_testing()
