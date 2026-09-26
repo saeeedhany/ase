@@ -79,7 +79,8 @@ void EditorViewport::paintEvent(QPaintEvent *) {
         if (end <= start) {
             continue;
         }
-        highlightRange(painter, start, end, firstLine, lastLine, m_selectionColor);
+        highlightRange(painter, start, end, firstLine, lastLine, m_selectionColor,
+                        m_vimMode == VimMode::Visual && m_vimVisualLinewise);
     }
 
     /* Current match drawn last, so it lands on top of any regular
@@ -501,10 +502,17 @@ int EditorViewport::columnForX(int lineStart, int lineEnd, int localX) const {
 }
 
 /* One rect per visual line [start, end) touches. */
-void EditorViewport::highlightRange(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
-                                     const QColor &color) const {
+/*
+ * One rect per visual line. Separated from the painting so the shape of
+ * a selection can be asserted on rather than only looked at — ADR 0123
+ * fixed a one-pixel sliver here with no test, and two more edges were
+ * wrong for years underneath it. See docs/adr/0144.
+ */
+QVector<QRectF> EditorViewport::highlightRects(size_t start, size_t end, int firstLine, int lastLine,
+                                                 bool linewise) const {
+    QVector<QRectF> rects;
     if (start >= end) {
-        return;
+        return rects;
     }
     int startLine = lineForOffset(start);
     int endLine = lineForOffset(end);
@@ -513,22 +521,42 @@ void EditorViewport::highlightRange(QPainter &painter, size_t start, size_t end,
         int lineEnd = (line + 1 < m_lineStarts.size()) ? m_lineStarts[line + 1] - 1 : static_cast<int>(m_cache.size());
         int rangeStartCol = (line == startLine) ? static_cast<int>(start) - lineStart : 0;
         int rangeEndCol = (line == endLine) ? static_cast<int>(end) - lineStart : lineEnd - lineStart;
-        /* The end is exclusive, so a range finishing exactly at a
-         * line's start covers none of that line. Painting it anyway hit
-         * the max(1, ...) below and drew a one-pixel sliver down the
-         * left edge of the row — which is what a linewise selection
-         * ends at, every time. See docs/adr/0123. */
-        if (rangeEndCol <= rangeStartCol) {
+
+        /* The end is exclusive, so a range finishing exactly at a line's
+         * start covers none of that line. Painting it anyway drew a
+         * one-pixel sliver down the left edge of the row, which is what
+         * a linewise selection ends at every time. See docs/adr/0123. */
+        bool empty = rangeEndCol <= rangeStartCol;
+        if (empty && !(linewise && line < endLine)) {
             continue;
         }
+
         int x0 = xForColumn(lineStart, lineEnd, rangeStartCol);
         int x1 = xForColumn(lineStart, lineEnd, rangeEndCol);
         int y = (line - firstLine) * m_lineHeight;
         int rectWidth = x1 - x0;
-        if (line < endLine) {
-            rectWidth += m_charWidth / 2; /* hints the range's line break continues */
+        if (linewise) {
+            /* An empty line has no characters to cover and is still
+             * selected: without a cell of its own, a selection with a
+             * blank line in it reads as two selections. */
+            if (empty) {
+                rectWidth = m_charWidth;
+            }
+        } else if (line < endLine) {
+            /* Charwise only, where it says the line break is inside the
+             * selection. Linewise includes every break by definition, so
+             * the same hint there is just a ragged right edge. */
+            rectWidth += m_charWidth / 2;
         }
-        painter.fillRect(QRectF(x0, y, std::max(1, rectWidth), m_lineHeight), color);
+        rects.push_back(QRectF(x0, y, std::max(1, rectWidth), m_lineHeight));
+    }
+    return rects;
+}
+
+void EditorViewport::highlightRange(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
+                                     const QColor &color, bool linewise) const {
+    for (const QRectF &rect : highlightRects(start, end, firstLine, lastLine, linewise)) {
+        painter.fillRect(rect, color);
     }
 }
 

@@ -124,6 +124,11 @@ public:
     /* How many carets there are, and where each one is — for the status
      * bar's multi-cursor count and for asserting on it. */
     int cursorCount() const { return static_cast<int>(m_cursors.size()); }
+    /* The shape a selection paints as — public so it can be asserted on.
+     * See docs/adr/0144. */
+    QVector<QRectF> highlightRects(size_t start, size_t end, int firstLine, int lastLine,
+                                    bool linewise) const;
+    int charWidth() const { return m_charWidth; }
     QVector<size_t> cursorOffsets() const { return m_cursors; }
     int scrollLine() const { return m_scrollLine; }
     void restorePosition(size_t cursor, int scrollLine);
@@ -704,8 +709,10 @@ private:
 
     /* One rect per visual line. Shared by selection and match
      * highlighting. */
+    /* `linewise` paints whole lines rather than the characters between
+     * two offsets — see docs/adr/0144. */
     void highlightRange(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
-                         const QColor &color) const;
+                         const QColor &color, bool linewise = false) const;
     /* Dim by default, brightening with a left-to-right wipe while the
      * cursor is on that line. See docs/adr/0041. */
     void drawDiagnosticUnderline(QPainter &painter, size_t start, size_t end, int firstLine, int lastLine,
