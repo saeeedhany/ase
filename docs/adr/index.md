@@ -150,3 +150,4 @@ what changed.
 | [0140](0140-the-styles-a-capture-can-have.md) | The styles a capture can have |
 | [0141](0141-what-a-plugin-is-handed.md) | What a plugin is handed |
 | [0142](0142-four-things-a-plugin-can-react-to.md) | Four things a plugin can react to |
+| [0143](0143-the-header-windows-never-got.md) | The header Windows never got |

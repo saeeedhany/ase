@@ -1031,13 +1031,6 @@ against the code on that date.
   attempted because it is unverifiable without a live AT-SPI client in
   this environment (ADR 0012, decision 4). Needs dedicated follow-up
   with proper assistive-technology test tooling.
-- **Three core suites segfault on Windows.** `ase_config_tests` inside
-  `ase_config_create_default()`, `ase_theme_tests` while reading a static
-  table it has just been handed a valid pointer into, and
-  `ase_plugin_host_tests` immediately after registering a command. None
-  reproduces on Linux or macOS, with or without sanitizers. The job runs
-  in CI without gating so the signal is not lost
-  ([ADR 0130](adr/0130-the-ci-nobody-was-reading.md)).
 - **The LSP client and `:compile` are POSIX-only.**
   `ase_process_spawn()` returns NULL on Windows (`core/src/process.c`),
   so both features are present and do nothing there. Async child-process

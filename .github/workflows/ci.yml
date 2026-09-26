@@ -39,9 +39,8 @@ jobs:
   # README says plainly that Windows is unverified, and ROADMAP tracks
   # this. See docs/adr/0130.
   core-windows:
-    name: core (headless, windows — known broken, not gating)
+    name: core (headless, windows)
     runs-on: windows-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Configure

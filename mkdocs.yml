@@ -178,6 +178,7 @@ nav:
     - adr/0140-the-styles-a-capture-can-have.md
     - adr/0141-what-a-plugin-is-handed.md
     - adr/0142-four-things-a-plugin-can-react-to.md
+    - adr/0143-the-header-windows-never-got.md
 
 theme:
   name: material
