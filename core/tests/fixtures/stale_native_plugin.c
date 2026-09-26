@@ -13,6 +13,6 @@ static void stale_command(AseEditorContext *ctx, void *user_data) {
     (void)user_data;
 }
 
-void ase_plugin_register(AsePluginHost *host, const AsePluginApi *api) {
+ASE_PLUGIN_EXPORT void ase_plugin_register(AsePluginHost *host, const AsePluginApi *api) {
     api->register_command(host, "stale_command", stale_command, NULL);
 }

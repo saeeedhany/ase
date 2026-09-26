@@ -40,6 +40,6 @@ static void reverse_command(AseEditorContext *ctx, void *user_data) {
 
 ASE_PLUGIN_ABI;
 
-void ase_plugin_register(AsePluginHost *host, const AsePluginApi *api) {
+ASE_PLUGIN_EXPORT void ase_plugin_register(AsePluginHost *host, const AsePluginApi *api) {
     api->register_command(host, "native_reverse", reverse_command, NULL);
 }

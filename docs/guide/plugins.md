@@ -144,7 +144,7 @@ static void on_saved(AseEditorContext *ctx, void *user_data) {
     ase_ctx_status(ctx, "saved");
 }
 
-void ase_plugin_register(AsePluginHost *host, const AsePluginApi *api) {
+ASE_PLUGIN_EXPORT void ase_plugin_register(AsePluginHost *host, const AsePluginApi *api) {
     (void)api;
     ase_plugin_host_on(host, ASE_EVENT_FILE_SAVED, on_saved, NULL);
 }
@@ -177,7 +177,7 @@ static void reverse_command(AseEditorContext *ctx, void *user_data) {
     ase_ctx_set_cursor(ctx, 0);
 }
 
-void ase_plugin_register(AsePluginHost *host, const AsePluginApi *api) {
+ASE_PLUGIN_EXPORT void ase_plugin_register(AsePluginHost *host, const AsePluginApi *api) {
     api->register_command(host, "native_reverse", reverse_command, NULL);
 }
 ```
@@ -187,6 +187,10 @@ Build it as a shared module and drop it in the plugins directory.
 `ASE_PLUGIN_ABI;` is not optional. It declares which ABI the plugin was
 built against, and a plugin without it is refused with a message rather
 than called through a signature it does not have.
+
+`ASE_PLUGIN_EXPORT` is what makes both symbols findable on Windows,
+where a DLL exports nothing unless it says so. It is empty everywhere
+else, so write it either way.
 
 A crashing native plugin crashes the editor. That is the inherent cost of
 native over Lua, not something this layer pretends to sandbox.

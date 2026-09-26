@@ -88,9 +88,13 @@ set(ASE_PLUGIN_FIXTURES_DIR ${CMAKE_CURRENT_BINARY_DIR}/plugin_fixtures)
 
 add_library(test_native_plugin MODULE fixtures/test_native_plugin.c)
 target_link_libraries(test_native_plugin PRIVATE ase_core)
+# The $<1:...> wrapper is the documented way to stop a multi-config
+# generator appending Debug/ to the output directory — the test looks in
+# the directory it was told about, not a configuration inside it. See
+# docs/adr/0143.
 set_target_properties(test_native_plugin PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${ASE_PLUGIN_FIXTURES_DIR}
-    RUNTIME_OUTPUT_DIRECTORY ${ASE_PLUGIN_FIXTURES_DIR}
+    LIBRARY_OUTPUT_DIRECTORY "$<1:${ASE_PLUGIN_FIXTURES_DIR}>"
+    RUNTIME_OUTPUT_DIRECTORY "$<1:${ASE_PLUGIN_FIXTURES_DIR}>"
     PREFIX ""
 )
 
@@ -99,8 +103,8 @@ set_target_properties(test_native_plugin PROPERTIES
 add_library(stale_native_plugin MODULE fixtures/stale_native_plugin.c)
 target_link_libraries(stale_native_plugin PRIVATE ase_core)
 set_target_properties(stale_native_plugin PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${ASE_PLUGIN_FIXTURES_DIR}
-    RUNTIME_OUTPUT_DIRECTORY ${ASE_PLUGIN_FIXTURES_DIR}
+    LIBRARY_OUTPUT_DIRECTORY "$<1:${ASE_PLUGIN_FIXTURES_DIR}>"
+    RUNTIME_OUTPUT_DIRECTORY "$<1:${ASE_PLUGIN_FIXTURES_DIR}>"
     PREFIX ""
 )
 

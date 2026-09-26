@@ -14,6 +14,16 @@ extern "C" {
 
 #define ASE_PLUGIN_ABI_VERSION 2
 
+/* A Windows DLL exports nothing unless it says so, and the loader finds
+ * a plugin's symbols by name — so without this the plugin loads and
+ * looks empty. Nothing on the platforms where every symbol is already
+ * visible. See docs/adr/0143. */
+#if defined(_WIN32)
+#define ASE_PLUGIN_EXPORT __declspec(dllexport)
+#else
+#define ASE_PLUGIN_EXPORT
+#endif
+
 /* Handed to a native plugin's ase_plugin_register(). Still small:
  * what a command can *do* lives on AseEditorContext, which grows by
  * gaining functions rather than by this struct gaining pointers. */
@@ -27,7 +37,8 @@ typedef struct {
  * looked up by name via dlsym/GetProcAddress):
  *
  *     ASE_PLUGIN_ABI;
- *     void ase_plugin_register(AsePluginHost *host, const AsePluginApi *api);
+ *     ASE_PLUGIN_EXPORT void ase_plugin_register(AsePluginHost *host,
+ *                                                 const AsePluginApi *api);
  *
  * ase_plugin_register is called once, immediately after the plugin is
  * loaded. Register your commands via api->register_command and return.
@@ -36,7 +47,7 @@ typedef struct {
  * from being called through the current one — the command signature
  * changed in 2, and without the check that is a wrong-type call rather
  * than a message. A plugin that does not export it is refused. */
-#define ASE_PLUGIN_ABI const int ase_plugin_abi_version = ASE_PLUGIN_ABI_VERSION
+#define ASE_PLUGIN_ABI ASE_PLUGIN_EXPORT const int ase_plugin_abi_version = ASE_PLUGIN_ABI_VERSION
 
 typedef void (*AsePluginRegisterFn)(AsePluginHost *host, const AsePluginApi *api);
 
