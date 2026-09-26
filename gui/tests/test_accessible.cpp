@@ -90,7 +90,12 @@ private:
 private slots:
     void initTestCase() {
         QAccessible::installUpdateHandler(hear);
-        QAccessible::setActive(true);
+        /* Deliberately NOT QAccessible::setActive(true): that writes
+         * through to the platform accessibility plugin, and a CI runner
+         * has none, so isActive() stays false however often it is
+         * called. Running with it false here is what makes this test
+         * mean the same thing on both machines. */
+        EditorViewport::setAccessibilityAlwaysOn(true);
     }
 
     void init() { g_heard.clear(); }
@@ -138,15 +143,17 @@ private slots:
 
     /* Nothing is computed when nothing is listening — the diff walks
      * the whole buffer, so it must not run on every keystroke for
-     * everyone else. */
+     * everyone else. Passing here is also what proves the tests above
+     * ran with isActive() false, which is the condition on a machine
+     * with no accessibility plugin. */
     void nothingIsAnnouncedWhenNoReaderIsAttached() {
-        QAccessible::setActive(false);
+        EditorViewport::setAccessibilityAlwaysOn(false);
         AseBuffer *buffer = bufferFrom("hello\n");
         EditorViewport viewport(buffer, QString());
         g_heard.clear();
         type(viewport, QStringLiteral("ix"));
         QCOMPARE(g_heard.size(), 0);
-        QAccessible::setActive(true);
+        EditorViewport::setAccessibilityAlwaysOn(true);
     }
 
     /* Without a factory the viewport is an opaque rectangle: a reader

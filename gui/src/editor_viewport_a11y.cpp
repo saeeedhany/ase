@@ -13,6 +13,21 @@
 
 #include <algorithm>
 
+namespace {
+/* QAccessible::setActive() writes through to the platform plugin, so on
+ * a machine without one it is a no-op and isActive() never becomes
+ * true. This is the override. */
+bool g_accessibilityAlwaysOn = false;
+} // namespace
+
+bool EditorViewport::announcingToAccessibility() {
+    return g_accessibilityAlwaysOn || QAccessible::isActive();
+}
+
+void EditorViewport::setAccessibilityAlwaysOn(bool alwaysOn) {
+    g_accessibilityAlwaysOn = alwaysOn;
+}
+
 QString EditorViewport::a11yText() const {
     return QString::fromUtf8(m_cache);
 }
@@ -106,7 +121,7 @@ int EditorViewport::a11yOffsetAtPoint(const QPoint &point) const {
  * costs nothing in the normal case.
  */
 void EditorViewport::notifyAccessibleTextChange(const QByteArray &before) {
-    if (!QAccessible::isActive() || before == m_cache) {
+    if (!announcingToAccessibility() || before == m_cache) {
         return;
     }
     const QString oldText = QString::fromUtf8(before);
@@ -140,7 +155,7 @@ void EditorViewport::notifyAccessibleTextChange(const QByteArray &before) {
 }
 
 void EditorViewport::notifyAccessibleCursor() {
-    if (!QAccessible::isActive()) {
+    if (!announcingToAccessibility()) {
         return;
     }
     int position = a11yCursorPosition();

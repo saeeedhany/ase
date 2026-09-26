@@ -303,7 +303,7 @@ void EditorViewport::refreshCache() {
 
     /* Implicit sharing makes this a refcount bump, not a copy — the
      * resize below is what detaches. */
-    const QByteArray beforeEdit = QAccessible::isActive() ? m_cache : QByteArray();
+    const QByteArray beforeEdit = announcingToAccessibility() ? m_cache : QByteArray();
 
     size_t len = ase_buffer_length(m_buffer);
     m_cache.resize(static_cast<qsizetype>(len));

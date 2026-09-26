@@ -77,6 +77,15 @@ else. Capturing the old text costs a refcount bump rather than a copy,
 because `QByteArray` is implicitly shared and the `resize()` below is
 what detaches.
 
+`isActive()` is not a flag, though — it asks the platform accessibility
+plugin, and `setActive()` writes through to the same place. On a machine
+with no such plugin it answers false forever and cannot be persuaded
+otherwise, which is every CI runner here. The notification tests passed
+locally and failed on all three GUI jobs for exactly that reason, and
+the fix is an explicit override rather than a test that only means
+something on one machine. The tests now run with `isActive()` false on
+purpose, so they assert the same thing everywhere.
+
 ## Consequences
 
 Seventeen tests, through `QAccessible::queryAccessibleInterface()` —

@@ -142,6 +142,17 @@ public:
     int a11yOffsetAtPoint(const QPoint &point) const;
     /* Line `index` falls on, and where that line starts and ends. */
     void a11yLineAt(int index, int *start, int *end) const;
+    /*
+     * Whether edits and caret moves are announced.
+     *
+     * Normally this is QAccessible::isActive(), which asks the platform
+     * accessibility plugin — and answers false forever when there is
+     * none, which is the case on a plain CI runner. Forcing it on is
+     * how the notification path gets exercised anywhere at all. See
+     * docs/adr/0146.
+     */
+    static bool announcingToAccessibility();
+    static void setAccessibilityAlwaysOn(bool alwaysOn);
 
     /* The shape a selection paints as — public so it can be asserted on.
      * See docs/adr/0144. */
