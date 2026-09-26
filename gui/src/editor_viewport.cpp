@@ -1,5 +1,9 @@
 #include "editor_viewport.h"
 
+#include "editor_accessible.h"
+
+#include <QAccessible>
+
 #include "motion.h"
 
 #include "about_panel.h"
@@ -28,6 +32,9 @@ EditorViewport::EditorViewport(AseBuffer *buffer, QString filePath, QWidget *par
     setFocusPolicy(Qt::StrongFocus);
     setContextMenuPolicy(Qt::NoContextMenu);
     setAutoFillBackground(false);
+    /* Before the name, so the first viewport built in a process is the
+     * one that teaches Qt how to describe it. */
+    installEditorAccessibility();
     setAccessibleName(QStringLiteral("Editor"));
     setAccessibleDescription(QStringLiteral("Text editing area"));
 
@@ -294,6 +301,10 @@ void EditorViewport::refreshCache() {
     m_bufferChangedSinceEmit = true;
     schedulePluginEvents();
 
+    /* Implicit sharing makes this a refcount bump, not a copy — the
+     * resize below is what detaches. */
+    const QByteArray beforeEdit = QAccessible::isActive() ? m_cache : QByteArray();
+
     size_t len = ase_buffer_length(m_buffer);
     m_cache.resize(static_cast<qsizetype>(len));
     if (len > 0) {
@@ -316,6 +327,8 @@ void EditorViewport::refreshCache() {
         m_lineStarts.push_back(static_cast<int>(newline - data) + 1);
         cursor = newline + 1;
     }
+
+    notifyAccessibleTextChange(beforeEdit);
 
     /* Sized here, filled by ensureCaptureWindow() for the part that is
      * about to be drawn. */

@@ -41,6 +41,8 @@ add_library(ase_gui_objects OBJECT
     # src/editor_viewport_internal.h; nothing else includes it.
     src/editor_viewport.cpp
     src/editor_viewport_config.cpp
+    src/editor_accessible.cpp
+    src/editor_viewport_a11y.cpp
     src/editor_viewport_render.cpp
     src/editor_viewport_input.cpp
     src/editor_viewport_edit.cpp

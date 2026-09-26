@@ -600,6 +600,7 @@ void EditorViewport::moveCursorEndAt(int i, bool extend) {
 
 void EditorViewport::ensureCursorVisible() {
     schedulePluginEvents();
+    notifyAccessibleCursor();
 
     size_t cursor = m_cursors.last();
     int line = lineForOffset(cursor);

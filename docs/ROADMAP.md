@@ -1026,11 +1026,15 @@ triggering a plugin command, the LSP being wired in, `didChange`, and
 panel infrastructure. They are removed. What is below was checked
 against the code on that date.
 
-- **No screen-reader text exposure** (`QAccessibleInterface`) for the
-  custom-painted viewport — a real, open accessibility gap, not
-  attempted because it is unverifiable without a live AT-SPI client in
-  this environment (ADR 0012, decision 4). Needs dedicated follow-up
-  with proper assistive-technology test tooling.
+- **Accessibility is done for the editing area and nowhere else.** The
+  viewport exposes its text, caret, selection and line/word boundaries,
+  and announces edits and caret moves
+  ([ADR 0146](adr/0146-what-a-screen-reader-is-told.md)). The buffer
+  bar, status line and floating panels have names but no structure, and
+  nothing is announced when a panel opens or the mode changes. Nor has
+  any of it been heard through a real screen reader: no Qt AT-SPI bridge
+  plugin is installed here, so the tree cannot be published to a client.
+  That last mile needs a person at a desktop running Orca or NVDA.
 - **The LSP client and `:compile` are POSIX-only.**
   `ase_process_spawn()` returns NULL on Windows (`core/src/process.c`),
   so both features are present and do nothing there. Async child-process

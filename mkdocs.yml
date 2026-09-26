@@ -181,6 +181,7 @@ nav:
     - adr/0143-the-header-windows-never-got.md
     - adr/0144-select-the-line-not-the-line-and-a-bit.md
     - adr/0145-a-count-that-runs-out-of-buffer.md
+    - adr/0146-what-a-screen-reader-is-told.md
 
 theme:
   name: material

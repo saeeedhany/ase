@@ -124,6 +124,25 @@ public:
     /* How many carets there are, and where each one is — for the status
      * bar's multi-cursor count and for asserting on it. */
     int cursorCount() const { return static_cast<int>(m_cursors.size()); }
+    /*
+     * What a screen reader is shown — see docs/adr/0146.
+     *
+     * Offsets here are QString indices, which is what the accessibility
+     * layer speaks; everything else in this class counts UTF-8 bytes.
+     * The two agree only while a file is ASCII, so the conversion lives
+     * here rather than at each call site.
+     */
+    QString a11yText() const;
+    int a11yCharacterCount() const;
+    int a11yCursorPosition() const;
+    void setA11yCursorPosition(int index);
+    bool a11ySelection(int *start, int *end) const;
+    void setA11ySelection(int start, int end);
+    QRect a11yCharacterRect(int index) const;
+    int a11yOffsetAtPoint(const QPoint &point) const;
+    /* Line `index` falls on, and where that line starts and ends. */
+    void a11yLineAt(int index, int *start, int *end) const;
+
     /* The shape a selection paints as — public so it can be asserted on.
      * See docs/adr/0144. */
     QVector<QRectF> highlightRects(size_t start, size_t end, int firstLine, int lastLine,
@@ -450,6 +469,11 @@ private:
     void ensureDesiredColumns();
     AseEditorContext *pluginContext();
     void applyPluginCursorRequest();
+    /* Told to a screen reader as it happens — nothing is computed when
+     * none is listening. See docs/adr/0146. */
+    void notifyAccessibleTextChange(const QByteArray &before);
+    void notifyAccessibleCursor();
+    int m_lastAnnouncedCursor = -1;
     void schedulePluginEvents();
     void flushPluginEvents();
     void emitPluginEvent(AseEventKind event);

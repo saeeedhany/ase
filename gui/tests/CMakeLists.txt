@@ -82,3 +82,10 @@ add_test(NAME ase_selection_shape_tests COMMAND ase_selection_shape_tests)
 set_tests_properties(ase_selection_shape_tests PROPERTIES
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/config"
 )
+
+add_executable(ase_accessible_tests test_accessible.cpp)
+target_link_libraries(ase_accessible_tests PRIVATE ase_gui_objects Qt6::Test ase_warnings)
+add_test(NAME ase_accessible_tests COMMAND ase_accessible_tests)
+set_tests_properties(ase_accessible_tests PROPERTIES
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/config"
+)
