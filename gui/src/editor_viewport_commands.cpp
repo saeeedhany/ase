@@ -929,7 +929,54 @@ void EditorViewport::compile(const QString &command) {
               directory);
 }
 
+/*
+ * The compiler's own complaints, read back out of what it printed and
+ * put where the code is — see docs/adr/0148.
+ *
+ * Parsed once at the end rather than per chunk, because a chunk from a
+ * pipe ends wherever the pipe felt like ending it, which is regularly
+ * mid-line.
+ */
+void EditorViewport::publishBuildDiagnostics() {
+    const QByteArray utf8 = m_buildOutput.toUtf8();
+    AseBuildDiagnostics *parsed =
+        ase_build_parse_output(utf8.constData(), static_cast<size_t>(utf8.size()));
+    if (parsed == nullptr) {
+        return;
+    }
+
+    QHash<QString, QVector<GuiDiagnostic>> byFile;
+    const QDir base(m_buildDirectory);
+    for (size_t i = 0; i < ase_build_diagnostic_count(parsed); ++i) {
+        const AseBuildDiagnostic *item = ase_build_diagnostic_at(parsed, i);
+        GuiDiagnostic d;
+        /* The compiler counts from one and everything here counts from
+         * zero. A missing column is column one. */
+        d.startLine = item->line - 1;
+        d.startChar = item->column > 0 ? item->column - 1 : 0;
+        d.endLine = d.startLine;
+        /* No end is given, so the mark runs to the end of the line —
+         * applyBuildDiagnostics clamps it against the real text. */
+        d.endChar = -1;
+        d.severity = item->severity;
+        d.message = QString::fromUtf8(item->message);
+        d.source = GuiDiagnostic::Source::Build;
+
+        /* Relative to wherever the build ran, which is not where this
+         * file is. */
+        const QString path = QDir::cleanPath(base.absoluteFilePath(QString::fromUtf8(item->file)));
+        byFile[path].push_back(d);
+    }
+    ase_build_diagnostics_destroy(parsed);
+
+    emit buildDiagnosticsProduced(byFile);
+}
+
 void EditorViewport::runBuild(const QString &command, const QString &directory) {
+    m_buildOutput.clear();
+    m_buildDirectory = directory;
+    emit buildStarted();
+
     QByteArray commandUtf8 = command.toUtf8();
     QByteArray cwdUtf8 = directory.toUtf8();
 
@@ -966,7 +1013,9 @@ void EditorViewport::pollCompile() {
         if (n <= 0) {
             break;
         }
-        m_outputPanel->appendText(QString::fromUtf8(buf, static_cast<int>(n)));
+        const QString chunk = QString::fromUtf8(buf, static_cast<int>(n));
+        m_buildOutput += chunk;
+        m_outputPanel->appendText(chunk);
     }
 
     if (ase_process_has_exited(m_compileProcess)) {
@@ -974,6 +1023,7 @@ void EditorViewport::pollCompile() {
         ase_process_destroy(m_compileProcess);
         m_compileProcess = nullptr;
         m_compilePollTimer->stop();
+        publishBuildDiagnostics();
     }
 }
 

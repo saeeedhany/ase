@@ -38,6 +38,11 @@ struct GuiDiagnostic {
     int endChar;
     int severity; /* 1=Error, 2=Warning, 3=Information, 4=Hint — per LSP */
     QString message;
+    /* Which of the two producers this came from. They arrive at
+     * different times and neither may clear the other's — a build's
+     * errors must survive the next keystroke's didChange, and the
+     * server's must survive a build. See docs/adr/0148. */
+    enum class Source { Lsp, Build } source = Source::Lsp;
 };
 
 /* `reveal` eases toward `target`, which is 1 while the cursor is on
@@ -282,6 +287,12 @@ public:
     /* These three are public only for the C callback trampolines in
      * editor_viewport.cpp; nothing else should call them. */
     void applyLspDiagnostics(const char *uri, const AseLspDiagnostic *diagnostics, size_t count);
+    /* Replaces this buffer's build diagnostics, leaving the server's
+     * alone. An empty list clears them. */
+    void applyBuildDiagnostics(const QVector<GuiDiagnostic> &diagnostics);
+    void clearBuildDiagnostics() { applyBuildDiagnostics({}); }
+    /* For asserting on what a build left behind. */
+    QVector<GuiDiagnostic> diagnostics() const { return m_diagnostics; }
     void applyLspCompletion(const AseJsonValue *result, const char *error_message);
     void applyLspHover(const AseJsonValue *result, const char *error_message);
     void applyLspDefinition(const AseJsonValue *result, const char *error_message);
@@ -338,6 +349,12 @@ signals:
     void statusChanged(int line, int column, bool dirty, const QString &modeLabel);
     /* Everything the editor says, on one signal. See docs/adr/0062. */
     void messagePosted(NotifyLevel level, const QString &text);
+    /* A build's findings, by absolute path. The window hands each set
+     * to the buffer holding that file, if one is open — a warning is
+     * not a reason to open a file you were not looking at. See
+     * docs/adr/0148. */
+    void buildDiagnosticsProduced(const QHash<QString, QVector<GuiDiagnostic>> &byFile);
+    void buildStarted();
     /* Only on an actual change. */
     void lspStateChanged(LspState state, const QString &serverName);
     /* Uppercase marks name a file as well as a position, which only the
@@ -795,6 +812,7 @@ private:
     void compile();
     void compile(const QString &command);
     void runBuild(const QString &command, const QString &directory);
+    void publishBuildDiagnostics();
     /* Drains available output; stops itself once the process exits. */
     void pollCompile();
     /* Shared by Ctrl+Shift+O and `:output` — see docs/adr/0025. */
@@ -992,6 +1010,10 @@ private:
     CommandLine *m_commandLine = nullptr;
     /* Where an inferred command said to run — see docs/adr/0147. */
     QString m_pendingBuildDirectory;
+    /* Kept so the whole thing can be parsed once it has finished, rather
+     * than a line at a time as it arrives. */
+    QString m_buildOutput;
+    QString m_buildDirectory;
     OutputPanel *m_outputPanel = nullptr;
     HelpPanel *m_helpPanel = nullptr;
     AboutPanel *m_aboutPanel = nullptr;

@@ -947,8 +947,10 @@ something else.
   a `compile_commands.json` entry for the current file, or the outermost
   project marker up to the repository root, and puts the command in the
   `:` line for confirmation rather than running it
-  ([ADR 0147](adr/0147-working-out-how-to-build.md)). Reading the
-  build's output back into gutter diagnostics is still open.
+  ([ADR 0147](adr/0147-working-out-how-to-build.md)). Its output is
+  parsed back into gutter marks on the lines that failed
+  ([ADR 0148](adr/0148-the-compilers-complaints-where-the-code-is.md));
+  walking the list, vim's `:cn`, is still open.
 - **A TUI frontend on the same core.** The headless-core split (ADR 0002)
   is already paid for and tested, and nothing about the buffer, undo,
   syntax, LSP or plugin layers is Qt-specific. A terminal frontend

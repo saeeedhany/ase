@@ -288,3 +288,205 @@ AseBuildGuess *ase_build_infer(const char *file_path, const char *stop_at) {
     free(dir);
     return outermost;
 }
+
+/* ------------------------------------------------------- output parsing */
+
+struct AseBuildDiagnostics {
+    AseBuildDiagnostic *items;
+    size_t count;
+    size_t capacity;
+};
+
+size_t ase_build_diagnostic_count(const AseBuildDiagnostics *diagnostics) {
+    return diagnostics == NULL ? 0 : diagnostics->count;
+}
+
+const AseBuildDiagnostic *ase_build_diagnostic_at(const AseBuildDiagnostics *diagnostics,
+                                                    size_t index) {
+    if (diagnostics == NULL || index >= diagnostics->count) {
+        return NULL;
+    }
+    return &diagnostics->items[index];
+}
+
+void ase_build_diagnostics_destroy(AseBuildDiagnostics *diagnostics) {
+    if (diagnostics == NULL) {
+        return;
+    }
+    for (size_t i = 0; i < diagnostics->count; i++) {
+        free(diagnostics->items[i].file);
+        free(diagnostics->items[i].message);
+    }
+    free(diagnostics->items);
+    free(diagnostics);
+}
+
+static bool diagnostics_push(AseBuildDiagnostics *into, const char *file, size_t file_len, int line,
+                              int column, int severity, const char *message) {
+    if (into->count == into->capacity) {
+        size_t new_cap = into->capacity == 0 ? 8 : into->capacity * 2;
+        AseBuildDiagnostic *grown =
+            (AseBuildDiagnostic *)realloc(into->items, new_cap * sizeof(AseBuildDiagnostic));
+        if (grown == NULL) {
+            return false;
+        }
+        into->items = grown;
+        into->capacity = new_cap;
+    }
+    AseBuildDiagnostic *item = &into->items[into->count];
+    item->file = ase_memdup(file, file_len + 1);
+    if (item->file == NULL) {
+        return false;
+    }
+    item->file[file_len] = '\0';
+    item->message = ase_strdup(message);
+    if (item->message == NULL) {
+        free(item->file);
+        return false;
+    }
+    item->line = line;
+    item->column = column;
+    item->severity = severity;
+    into->count++;
+    return true;
+}
+
+/* "error", "warning" or "note", or 0 for anything else. The words are
+ * the same in gcc, clang and MSVC; only the punctuation around them
+ * differs. */
+static int severity_of(const char *word, size_t len) {
+    if (len == 5 && strncmp(word, "error", 5) == 0) {
+        return 1;
+    }
+    if (len == 7 && strncmp(word, "warning", 7) == 0) {
+        return 2;
+    }
+    if (len == 4 && strncmp(word, "note", 4) == 0) {
+        return 3;
+    }
+    /* clang and gcc both say "fatal error". The word after it is
+     * skipped along with MSVC's error code, by the same step. */
+    if (len == 5 && strncmp(word, "fatal", 5) == 0) {
+        return 1;
+    }
+    return 0;
+}
+
+static const char *skip_spaces(const char *p, const char *end) {
+    while (p < end && (*p == ' ' || *p == '\t')) {
+        p++;
+    }
+    return p;
+}
+
+/*
+ * One line of output, in either of the two shapes compilers print:
+ *
+ *   path/file.c:12:5: error: message        gcc, clang
+ *   path\file.c(12,5): error C2065: message  MSVC
+ *
+ * The column is optional in both. Anything that does not match is not a
+ * diagnostic, which is most of a build's output.
+ */
+static void parse_line(const char *line, size_t len, AseBuildDiagnostics *into) {
+    /*
+     * The separator that starts the numbers: ':' after a path, or '(' for
+     * MSVC. Taken left to right, because `a.c:12:5:` read from the right
+     * parses as line 5 of a file called `a.c:12`. Everything after it is
+     * validated, so a Windows drive letter's colon simply fails and the
+     * scan moves on to the '(' that follows.
+     */
+    const char *end = line + len;
+    for (size_t at = 1; at < len; at++) {
+        char c = line[at];
+        if (c != ':' && c != '(') {
+            continue;
+        }
+        /* A compiler leaves no space between the path and the line
+         * number. "Time: 12:05" is not a diagnostic. */
+        if (at + 1 >= len || line[at + 1] == ' ' || line[at + 1] == '\t') {
+            continue;
+        }
+
+        const char *p = line + at + 1;
+        char *after = NULL;
+
+        long line_number = strtol(p, &after, 10);
+        if (after == p || line_number <= 0) {
+            continue;
+        }
+        p = after;
+
+        long column_number = 0;
+        if (p < end && (*p == ':' || *p == ',')) {
+            char *after_column = NULL;
+            long parsed = strtol(p + 1, &after_column, 10);
+            if (after_column != p + 1 && parsed > 0) {
+                column_number = parsed;
+                p = after_column;
+            }
+        }
+
+        if (c == '(') {
+            if (p >= end || *p != ')') {
+                continue;
+            }
+            p++;
+        }
+        if (p >= end || *p != ':') {
+            continue;
+        }
+        p = skip_spaces(p + 1, end);
+
+        const char *word = p;
+        while (p < end && *p != ':' && *p != ' ') {
+            p++;
+        }
+        int severity = severity_of(word, (size_t)(p - word));
+        if (severity == 0) {
+            continue;
+        }
+
+        /* MSVC puts its code between the word and the colon. */
+        p = skip_spaces(p, end);
+        while (p < end && *p != ':') {
+            p++;
+        }
+        if (p >= end) {
+            continue;
+        }
+        p = skip_spaces(p + 1, end);
+
+        char *message = ase_memdup(p, (size_t)(end - p) + 1);
+        if (message == NULL) {
+            return;
+        }
+        message[end - p] = '\0';
+        diagnostics_push(into, line, at, (int)line_number, (int)column_number, severity, message);
+        free(message);
+        return;
+    }
+}
+
+AseBuildDiagnostics *ase_build_parse_output(const char *text, size_t len) {
+    AseBuildDiagnostics *out = (AseBuildDiagnostics *)calloc(1, sizeof(AseBuildDiagnostics));
+    if (out == NULL || text == NULL) {
+        return out;
+    }
+
+    size_t start = 0;
+    for (size_t i = 0; i <= len; i++) {
+        if (i != len && text[i] != '\n') {
+            continue;
+        }
+        size_t line_len = i - start;
+        while (line_len > 0 && text[start + line_len - 1] == '\r') {
+            line_len--;
+        }
+        if (line_len > 0) {
+            parse_line(text + start, line_len, out);
+        }
+        start = i + 1;
+    }
+    return out;
+}

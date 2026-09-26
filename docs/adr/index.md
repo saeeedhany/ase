@@ -155,3 +155,4 @@ what changed.
 | [0145](0145-a-count-that-runs-out-of-buffer.md) | A count that runs out of buffer |
 | [0146](0146-what-a-screen-reader-is-told.md) | What a screen reader is told |
 | [0147](0147-working-out-how-to-build.md) | Working out how to build |
+| [0148](0148-the-compilers-complaints-where-the-code-is.md) | The compiler's complaints, where the code is |

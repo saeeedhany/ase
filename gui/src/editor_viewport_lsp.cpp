@@ -207,8 +207,11 @@ void EditorViewport::applyLspDiagnostics(const char *uri, const AseLspDiagnostic
     if (QString::fromUtf8(uri) != m_lspUri) {
         return;
     }
-    m_diagnostics.clear();
-    m_diagnostics.reserve(static_cast<int>(count));
+    /* The server's only: a build's findings are not this server's to
+     * withdraw, and a didChange arrives on every keystroke. */
+    m_diagnostics.removeIf(
+        [](const GuiDiagnostic &d) { return d.source == GuiDiagnostic::Source::Lsp; });
+    m_diagnostics.reserve(m_diagnostics.size() + static_cast<int>(count));
     for (size_t i = 0; i < count; ++i) {
         GuiDiagnostic d;
         d.startLine = diagnostics[i].start.line;
@@ -217,7 +220,36 @@ void EditorViewport::applyLspDiagnostics(const char *uri, const AseLspDiagnostic
         d.endChar = diagnostics[i].end.character;
         d.severity = diagnostics[i].severity;
         d.message = QString::fromUtf8(diagnostics[i].message);
+        d.source = GuiDiagnostic::Source::Lsp;
         m_diagnostics.push_back(d);
+    }
+    update();
+}
+
+void EditorViewport::applyBuildDiagnostics(const QVector<GuiDiagnostic> &diagnostics) {
+    m_diagnostics.removeIf(
+        [](const GuiDiagnostic &d) { return d.source == GuiDiagnostic::Source::Build; });
+    for (const GuiDiagnostic &d : diagnostics) {
+        GuiDiagnostic copy = d;
+        copy.source = GuiDiagnostic::Source::Build;
+        /* A compiler names a point, not a range. The mark runs from
+         * there to the end of that line, which is where this buffer
+         * finds out how long the line is — the producer could not
+         * know. A line past the end is dropped: the file has been
+         * edited since the build, and a mark on the wrong line is
+         * worse than none. */
+        int lastLine = static_cast<int>(m_lineStarts.size()) - 1;
+        if (copy.startLine < 0 || copy.startLine > lastLine) {
+            continue;
+        }
+        if (copy.endChar < 0) {
+            int lineStart = m_lineStarts[copy.startLine];
+            int lineEnd = (copy.startLine + 1 < m_lineStarts.size())
+                               ? m_lineStarts[copy.startLine + 1] - 1
+                               : static_cast<int>(m_cache.size());
+            copy.endChar = std::max(copy.startChar + 1, lineEnd - lineStart);
+        }
+        m_diagnostics.push_back(copy);
     }
     update();
 }

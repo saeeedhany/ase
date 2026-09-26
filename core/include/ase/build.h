@@ -48,6 +48,32 @@ AseBuildGuess *ase_build_infer(const char *file_path, const char *stop_at);
 
 void ase_build_guess_destroy(AseBuildGuess *guess);
 
+/*
+ * A compiler's complaint, parsed back out of a build's output.
+ *
+ * `line` and `column` are as printed — 1-based — and `column` is 0 when
+ * the compiler did not give one. `file` is exactly the text the
+ * compiler wrote, which may be relative to the build directory rather
+ * than to anything else, so the caller resolves it.
+ */
+typedef struct {
+    char *file;
+    int line;
+    int column;
+    int severity; /* 1 error, 2 warning, 3 note — the LSP numbering */
+    char *message;
+} AseBuildDiagnostic;
+
+typedef struct AseBuildDiagnostics AseBuildDiagnostics;
+
+/* Lines that are not a diagnostic are skipped, which is most of them.
+ * Never NULL unless allocation fails; an empty result is a result. */
+AseBuildDiagnostics *ase_build_parse_output(const char *text, size_t len);
+size_t ase_build_diagnostic_count(const AseBuildDiagnostics *diagnostics);
+const AseBuildDiagnostic *ase_build_diagnostic_at(const AseBuildDiagnostics *diagnostics,
+                                                    size_t index);
+void ase_build_diagnostics_destroy(AseBuildDiagnostics *diagnostics);
+
 /* The markers, in the order they are tried. Exposed so the help text
  * and the tests describe the same list rather than two copies of it. */
 size_t ase_build_marker_count(void);

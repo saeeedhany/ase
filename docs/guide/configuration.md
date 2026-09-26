@@ -96,6 +96,10 @@ Leave it unset and `:compile` works out what to run instead: a
 it found and puts the command in the `:` line — press Enter to run it,
 or edit it first. It never runs a command you have not seen.
 
+Errors and warnings from the build are marked in the gutter and
+underlined on the lines that produced them, the same way a language
+server's are. They stay until the next build.
+
 `:compile` or `Alt+B` runs it and puts the output in a panel below the
 buffer. `%f` in the command is replaced with the current file, so
 `gcc %f -o /tmp/a.out` works on whatever you are looking at.

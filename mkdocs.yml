@@ -183,6 +183,7 @@ nav:
     - adr/0145-a-count-that-runs-out-of-buffer.md
     - adr/0146-what-a-screen-reader-is-told.md
     - adr/0147-working-out-how-to-build.md
+    - adr/0148-the-compilers-complaints-where-the-code-is.md
 
 theme:
   name: material

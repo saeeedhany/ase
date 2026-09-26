@@ -129,6 +129,8 @@ private:
     void applyProjectReplace(const QString &root,
                               const QVector<project::Replacement> &replacements);
     EditorViewport *viewportForPath(const QString &path);
+    void distributeBuildDiagnostics(const QHash<QString, QVector<GuiDiagnostic>> &byFile);
+    void clearBuildDiagnosticsEverywhere();
     void registerWindowCommands();
     void installWindowShortcuts();
     CommandRegistry m_commands;
@@ -553,6 +555,12 @@ EditorViewport *MainWindow::addBuffer(AseBuffer *buffer, const QString &path) {
         }
     });
     connect(viewport, &EditorViewport::jumpRecorded, this, [this]() { recordJump(); });
+    connect(viewport, &EditorViewport::buildStarted, this,
+             [this]() { clearBuildDiagnosticsEverywhere(); });
+    connect(viewport, &EditorViewport::buildDiagnosticsProduced, this,
+             [this](const QHash<QString, QVector<GuiDiagnostic>> &byFile) {
+                 distributeBuildDiagnostics(byFile);
+             });
     connect(viewport, &EditorViewport::globalMarkSetRequested, this,
             [this, viewport](char name) { setGlobalMark(viewport, name); });
     connect(viewport, &EditorViewport::globalMarkJumpRequested, this,
@@ -965,6 +973,32 @@ static QString sameFileKey(const QString &path);
 
 /* Find-or-open, without making it the buffer you are looking at: a
  * replace touching nine files should not walk you through nine tabs. */
+/*
+ * A build's findings go to the buffers already open, and nowhere else.
+ * viewportForPath() would open a file to put a warning in it, which is
+ * not a thing a build should do. See docs/adr/0148.
+ */
+void MainWindow::distributeBuildDiagnostics(const QHash<QString, QVector<GuiDiagnostic>> &byFile) {
+    for (EditorViewport *viewport : m_viewports) {
+        const QString key = sameFileKey(viewport->filePath());
+        if (key.isEmpty()) {
+            continue;
+        }
+        for (auto it = byFile.constBegin(); it != byFile.constEnd(); ++it) {
+            if (sameFileKey(it.key()) == key) {
+                viewport->applyBuildDiagnostics(it.value());
+                break;
+            }
+        }
+    }
+}
+
+void MainWindow::clearBuildDiagnosticsEverywhere() {
+    for (EditorViewport *viewport : m_viewports) {
+        viewport->clearBuildDiagnostics();
+    }
+}
+
 EditorViewport *MainWindow::viewportForPath(const QString &path) {
     const QString wanted = sameFileKey(path);
     for (EditorViewport *viewport : m_viewports) {

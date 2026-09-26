@@ -222,6 +222,103 @@ static void test_nonsense_arguments(void) {
     CHECK(ase_build_marker_command(ase_build_marker_count()) == NULL);
 }
 
+/* ------------------------------------------------- reading the output back */
+
+static const AseBuildDiagnostic *only(AseBuildDiagnostics *set) {
+    CHECK(ase_build_diagnostic_count(set) == 1);
+    return ase_build_diagnostic_at(set, 0);
+}
+
+static void test_gcc_and_clang_lines(void) {
+    const char *text =
+        "src/main.c:12:5: error: expected ';' before '}' token\n"
+        "src/main.c:20: warning: unused variable 'x'\n"
+        "src/other.c:3:1: note: declared here\n";
+    AseBuildDiagnostics *set = ase_build_parse_output(text, strlen(text));
+    CHECK(ase_build_diagnostic_count(set) == 3);
+
+    const AseBuildDiagnostic *first = ase_build_diagnostic_at(set, 0);
+    CHECK(strcmp(first->file, "src/main.c") == 0);
+    CHECK(first->line == 12 && first->column == 5 && first->severity == 1);
+    CHECK(strcmp(first->message, "expected ';' before '}' token") == 0);
+
+    /* No column printed is 0, not 1: the caller can tell the difference
+     * between "column one" and "did not say". */
+    const AseBuildDiagnostic *second = ase_build_diagnostic_at(set, 1);
+    CHECK(second->line == 20 && second->column == 0 && second->severity == 2);
+
+    CHECK(ase_build_diagnostic_at(set, 2)->severity == 3);
+    CHECK(ase_build_diagnostic_at(set, 3) == NULL);
+    ase_build_diagnostics_destroy(set);
+}
+
+static void test_msvc_lines(void) {
+    const char *text =
+        "C:\\src\\main.c(12,5): error C2065: 'x': undeclared identifier\r\n"
+        "C:\\src\\main.c(20): warning C4101: unreferenced local variable\r\n";
+    AseBuildDiagnostics *set = ase_build_parse_output(text, strlen(text));
+    CHECK(ase_build_diagnostic_count(set) == 2);
+
+    const AseBuildDiagnostic *first = ase_build_diagnostic_at(set, 0);
+    /* The drive letter's colon must not be mistaken for the separator. */
+    CHECK(strcmp(first->file, "C:\\src\\main.c") == 0);
+    CHECK(first->line == 12 && first->column == 5 && first->severity == 1);
+    CHECK(strcmp(first->message, "'x': undeclared identifier") == 0);
+
+    const AseBuildDiagnostic *second = ase_build_diagnostic_at(set, 1);
+    CHECK(second->line == 20 && second->column == 0 && second->severity == 2);
+    ase_build_diagnostics_destroy(set);
+}
+
+/* Most of a build's output is not a diagnostic, and none of it may be
+ * mistaken for one. */
+static void test_ordinary_output_is_not_a_diagnostic(void) {
+    const char *text =
+        "make: Entering directory '/home/me/project'\n"
+        "[ 50%] Building C object CMakeFiles/x.dir/main.c.o\n"
+        "gcc -O2 -o x main.c\n"
+        "Time: 12:05:33\n"
+        "\n"
+        "make: *** [Makefile:7: all] Error 1\n";
+    AseBuildDiagnostics *set = ase_build_parse_output(text, strlen(text));
+    CHECK(ase_build_diagnostic_count(set) == 0);
+    ase_build_diagnostics_destroy(set);
+}
+
+/* clang says "fatal error", which is still an error. */
+static void test_fatal_error(void) {
+    const char *text = "src/a.c:1:10: fatal error: 'nope.h' file not found\n";
+    AseBuildDiagnostics *set = ase_build_parse_output(text, strlen(text));
+    const AseBuildDiagnostic *item = only(set);
+    CHECK(item->severity == 1);
+    CHECK(strcmp(item->message, "'nope.h' file not found") == 0);
+    ase_build_diagnostics_destroy(set);
+}
+
+/* A message with colons in it keeps all of them. */
+static void test_a_message_containing_colons(void) {
+    const char *text = "a.c:5:1: error: cannot convert 'int' to 'char*': no known conversion\n";
+    AseBuildDiagnostics *set = ase_build_parse_output(text, strlen(text));
+    const AseBuildDiagnostic *item = only(set);
+    CHECK(strcmp(item->file, "a.c") == 0);
+    CHECK(item->line == 5);
+    CHECK(strcmp(item->message, "cannot convert 'int' to 'char*': no known conversion") == 0);
+    ase_build_diagnostics_destroy(set);
+}
+
+static void test_empty_and_nonsense_output(void) {
+    AseBuildDiagnostics *set = ase_build_parse_output("", 0);
+    CHECK(set != NULL && ase_build_diagnostic_count(set) == 0);
+    ase_build_diagnostics_destroy(set);
+
+    set = ase_build_parse_output(NULL, 0);
+    ase_build_diagnostics_destroy(set);
+
+    CHECK(ase_build_diagnostic_count(NULL) == 0);
+    CHECK(ase_build_diagnostic_at(NULL, 0) == NULL);
+    ase_build_diagnostics_destroy(NULL);
+}
+
 int main(void) {
     RUN(test_an_unrecognised_tree_is_not_guessed_at);
     RUN(test_a_marker_above_the_file_is_found);
@@ -234,6 +331,13 @@ int main(void) {
     RUN(test_malformed_database_is_not_fatal);
     RUN(test_nonsense_arguments);
 
-    printf("all build inference tests passed\n");
+    RUN(test_gcc_and_clang_lines);
+    RUN(test_msvc_lines);
+    RUN(test_ordinary_output_is_not_a_diagnostic);
+    RUN(test_fatal_error);
+    RUN(test_a_message_containing_colons);
+    RUN(test_empty_and_nonsense_output);
+
+    printf("all build tests passed\n");
     return 0;
 }
