@@ -54,14 +54,15 @@ void CommandLine::setViewport(EditorViewport *viewport) {
     refreshTheme();
 }
 
-void CommandLine::openPrompt(QChar prefix) {
+void CommandLine::openPrompt(QChar prefix, const QString &initialText) {
     if (m_viewport == nullptr) {
         return;
     }
     m_prefixChar = prefix;
     m_prefix->setText(QString(prefix));
     refreshTheme();
-    m_edit->clear();
+    m_edit->setText(initialText);
+    m_edit->setCursorPosition(initialText.size());
     m_open = true;
     emit promptOpened();
     show();

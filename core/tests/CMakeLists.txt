@@ -16,6 +16,12 @@ add_executable(ase_config_tests
 target_link_libraries(ase_config_tests PRIVATE ase_core)
 add_test(NAME ase_config_tests COMMAND ase_config_tests)
 
+add_executable(ase_build_tests
+    test_build.c
+)
+target_link_libraries(ase_build_tests PRIVATE ase_core)
+add_test(NAME ase_build_tests COMMAND ase_build_tests)
+
 add_executable(ase_json_tests
     test_json.c
 )

@@ -14,7 +14,8 @@ panel, so you never have to go back to the buffer first just to type
 | `:42` | Go to line 42 |
 | `:s/from/to/` | Substitute on this line. `/g` for every match, `/i` to ignore case. |
 | `:editor.replace-in-project` | Replace across every file in the project, previewed first |
-| `:compile` | Run `build_command` and show the output |
+| `:compile` | Run `build_command`, or work out what to run and offer it |
+| `:compile <cmd>` | Run `<cmd>` instead, once |
 | `:output` | Show or hide the output panel |
 | `:config` | Open your config file |
 | `:theme` | List the themes; the current one is in `[brackets]` |

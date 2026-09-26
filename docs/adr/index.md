@@ -154,3 +154,4 @@ what changed.
 | [0144](0144-select-the-line-not-the-line-and-a-bit.md) | Select the line, not the line and a bit |
 | [0145](0145-a-count-that-runs-out-of-buffer.md) | A count that runs out of buffer |
 | [0146](0146-what-a-screen-reader-is-told.md) | What a screen reader is told |
+| [0147](0147-working-out-how-to-build.md) | Working out how to build |

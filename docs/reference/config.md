@@ -36,7 +36,7 @@ project, which only that project reads.
 | `auto_indent` | `true` | A new line starts where the one above it started. | — |
 | `theme` | `ase-default` | Colour palette. :theme lists them, including your own from <config dir>/themes/*.ase. | — |
 | `max_fps` | *unset* | Cap the animation rate; unset follows the display. | — |
-| `build_command` | *unset* | :compile runs this; %f is the current file. | — |
+| `build_command` | *unset* | :compile runs this; %f is the current file. Unset, :compile works out what to run and offers it. | — |
 | `lsp_command` | *unset* | Language server for any language without its own. | — |
 | `syntax_max_kb` | `4096` | Skip highlighting past this file size, in KB. Bounds memory, not lag: the parse is on its own thread. | — |
 | `restore_session` | `true` | Reopen last session's files when started bare. | — |

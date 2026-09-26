@@ -112,7 +112,7 @@ static const AseConfigKeyDoc kKeyDocs[] = {
     {"auto_indent", "true", "A new line starts where the one above it started.", false},
     {"theme", "ase-default", "Colour palette. :theme lists them, including your own from <config dir>/themes/*.ase.", false},
     {"max_fps", NULL, "Cap the animation rate; unset follows the display.", false},
-    {"build_command", NULL, ":compile runs this; %f is the current file.", false},
+    {"build_command", NULL, ":compile runs this; %f is the current file. Unset, :compile works out what to run and offers it.", false},
     {"lsp_command", NULL, "Language server for any language without its own.", false},
     {"syntax_max_kb", "4096", "Skip highlighting past this file size, in KB. Bounds memory, not lag: the parse is on its own thread.", false},
     {"restore_session", "true", "Reopen last session's files when started bare.", false},

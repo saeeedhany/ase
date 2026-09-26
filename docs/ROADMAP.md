@@ -943,14 +943,12 @@ something else.
 
 ### Tier 3 — the bets that would make it distinctive
 
-- **Smart compile.** Instead of a hand-written `build_command`, infer the
-  right action: read `compile_commands.json` when clangd is configured
-  (it already records the exact invocation per file), else walk up for a
-  `Makefile`/`CMakeLists.txt`. **Show the inferred command for
-  confirmation rather than silently running it** — this project's
-  standing rule is that an unconfigured thing is reported, never guessed
-  (ADR 0029), and a misdetected build target running silently would
-  violate that badly.
+- ~~**Smart compile.**~~ Done — `:compile` with nothing configured finds
+  a `compile_commands.json` entry for the current file, or the outermost
+  project marker up to the repository root, and puts the command in the
+  `:` line for confirmation rather than running it
+  ([ADR 0147](adr/0147-working-out-how-to-build.md)). Reading the
+  build's output back into gutter diagnostics is still open.
 - **A TUI frontend on the same core.** The headless-core split (ADR 0002)
   is already paid for and tested, and nothing about the buffer, undo,
   syntax, LSP or plugin layers is Qt-specific. A terminal frontend

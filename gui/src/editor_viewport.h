@@ -793,6 +793,8 @@ private:
      * streaming its output. A no-op (reports why) if no file is open,
      * no build_command is configured, or a build is already running. */
     void compile();
+    void compile(const QString &command);
+    void runBuild(const QString &command, const QString &directory);
     /* Drains available output; stops itself once the process exits. */
     void pollCompile();
     /* Shared by Ctrl+Shift+O and `:output` — see docs/adr/0025. */
@@ -988,6 +990,8 @@ private:
     FindBar *m_findBar = nullptr;
     FileBrowserPanel *m_fileBrowser = nullptr;
     CommandLine *m_commandLine = nullptr;
+    /* Where an inferred command said to run — see docs/adr/0147. */
+    QString m_pendingBuildDirectory;
     OutputPanel *m_outputPanel = nullptr;
     HelpPanel *m_helpPanel = nullptr;
     AboutPanel *m_aboutPanel = nullptr;

@@ -31,7 +31,10 @@ public:
     /* `prefix` is the character that opened it and decides what Enter
      * does: ':' runs a command, '/' and '?' search. It is shown, not
      * typed into the field. */
-    void openPrompt(QChar prefix);
+    /* `initialText` pre-fills the field, for a command offered rather
+     * than typed — the caret lands after it, so Enter accepts and any
+     * key edits. See docs/adr/0147. */
+    void openPrompt(QChar prefix, const QString &initialText = QString());
     void closePrompt();
     bool isPromptOpen() const { return m_open; }
     void refreshTheme();

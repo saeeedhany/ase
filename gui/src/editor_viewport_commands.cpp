@@ -1,5 +1,9 @@
 #include "editor_viewport.h"
 
+#include "command_line.h"
+
+#include "ase/build.h"
+
 #include "ase/recovery.h"
 #include "ase/theme.h"
 
@@ -384,6 +388,10 @@ void EditorViewport::runCommand(const QString &command) {
         emit closeRequested(true);
     } else if (trimmed == QLatin1String("compile")) {
         compile();
+    } else if (trimmed.startsWith(QLatin1String("compile "))) {
+        /* The command offered by inference comes back this way, and a
+         * one-off build can be typed the same way. */
+        compile(trimmed.mid(8).trimmed());
     } else if (trimmed == QLatin1String("output")) {
         toggleOutputPanel();
     } else if (trimmed == QLatin1String("config")) {
@@ -831,10 +839,15 @@ void EditorViewport::closeOutputPanel() {
     setFocus();
 }
 
-/* Reads build_command fresh from config on every call (not cached) so
- * an edited config.ase takes effect on the next :compile without a
- * restart, same hot-reload spirit as everything else config-driven in
- * this class. */
+/*
+ * `:compile` with nothing configured used to stop at "No build_command
+ * configured". It now looks for one — and shows what it found instead
+ * of running it, because a misdetected build target starting by itself
+ * is worse than being asked. See docs/adr/0147.
+ *
+ * build_command is read fresh on every call, not cached, so an edited
+ * config.ase takes effect on the next :compile without a restart.
+ */
 void EditorViewport::compile() {
     if (m_outputPanel == nullptr) {
         return;
@@ -844,37 +857,100 @@ void EditorViewport::compile() {
         m_outputPanel->show();
         return;
     }
-
-    const char *buildCommand = ase_config_get_string(m_config, "build_command");
-    if (buildCommand == nullptr) {
-        m_outputPanel->appendLine(QStringLiteral("No build_command configured — see config.ase."));
-        m_outputPanel->show();
-        return;
-    }
     if (m_filePath.isEmpty()) {
         m_outputPanel->appendLine(QStringLiteral("No file to compile — save it first."));
         m_outputPanel->show();
         return;
     }
 
-    QString substituted = QString::fromUtf8(buildCommand).replace(QLatin1String("%f"), m_filePath);
-    QByteArray substitutedUtf8 = substituted.toUtf8();
-    QByteArray cwdUtf8 = QFileInfo(m_filePath).absolutePath().toUtf8();
+    const char *buildCommand = ase_config_get_string(m_config, "build_command");
+    if (buildCommand != nullptr) {
+        runBuild(QString::fromUtf8(buildCommand).replace(QLatin1String("%f"), m_filePath),
+                  QFileInfo(m_filePath).absolutePath());
+        return;
+    }
+
+    /* Absolute: the walk goes up by trimming path components, so a
+     * relative path runs out at its own first component rather than at
+     * the project root. */
+    const QByteArray absolute = QFileInfo(m_filePath).absoluteFilePath().toUtf8();
+    AseBuildGuess *guess = ase_build_infer(absolute.constData(), nullptr);
+    if (guess == nullptr) {
+        m_outputPanel->appendLine(
+            QStringLiteral("No build_command configured, and nothing here says how to build."));
+        m_outputPanel->appendLine(QStringLiteral("Set build_command in config.ase — :config."));
+        m_outputPanel->show();
+        return;
+    }
+
+    const QString command = QString::fromUtf8(guess->command);
+    const QString evidence = QString::fromUtf8(guess->evidence);
+    const bool singleFile = guess->single_file;
+    m_pendingBuildDirectory = QString::fromUtf8(guess->directory);
+    ase_build_guess_destroy(guess);
+
+    m_outputPanel->clear();
+    m_outputPanel->appendLine(singleFile
+                                   ? QStringLiteral("Found how to build this file:")
+                                   : QStringLiteral("Found how to build this project:"));
+    m_outputPanel->appendLine(QStringLiteral("  from ") + evidence);
+    m_outputPanel->appendLine(QString());
+    m_outputPanel->appendLine(
+        QStringLiteral("Press Enter to run it, or edit it first. Put it in config.ase to skip"));
+    m_outputPanel->appendLine(QStringLiteral("this next time."));
+    m_outputPanel->show();
+
+    /* Offered, not run: the command lands in the `:` line with the
+     * caret after it. */
+    if (m_commandLine != nullptr) {
+        m_commandLine->openPrompt(QLatin1Char(':'), QStringLiteral("compile ") + command);
+    }
+}
+
+void EditorViewport::compile(const QString &command) {
+    if (m_outputPanel == nullptr || command.isEmpty()) {
+        return;
+    }
+    if (m_compileProcess != nullptr) {
+        m_outputPanel->appendLine(QStringLiteral("A build is already running."));
+        m_outputPanel->show();
+        return;
+    }
+    /* Where inference said to run it, if this is the command it offered;
+     * beside the file otherwise. */
+    QString directory = m_pendingBuildDirectory;
+    m_pendingBuildDirectory.clear();
+    if (directory.isEmpty()) {
+        directory = m_filePath.isEmpty() ? QDir::currentPath() : QFileInfo(m_filePath).absolutePath();
+    }
+    runBuild(command.contains(QLatin1String("%f")) && !m_filePath.isEmpty()
+                  ? QString(command).replace(QLatin1String("%f"), m_filePath)
+                  : command,
+              directory);
+}
+
+void EditorViewport::runBuild(const QString &command, const QString &directory) {
+    QByteArray commandUtf8 = command.toUtf8();
+    QByteArray cwdUtf8 = directory.toUtf8();
 
     /* Run through a shell, not execvp'd directly — build_command is
      * documented (config.c's starter template) as a shell command, so
-     * it can use `&&`/pipes/etc., the same way :compile's config-key
-     * comment shows. */
-    const char *argv[] = {"/bin/sh", "-c", substitutedUtf8.constData(), nullptr};
+     * it can use `&&`/pipes/etc. */
+    const char *argv[] = {"/bin/sh", "-c", commandUtf8.constData(), nullptr};
     m_compileProcess = ase_process_spawn(argv, cwdUtf8.constData());
 
     m_outputPanel->clear();
     m_outputPanel->show();
     if (m_compileProcess == nullptr) {
-        m_outputPanel->appendLine(QStringLiteral("Failed to start build_command."));
+        m_outputPanel->appendLine(QStringLiteral("Failed to start the build command."));
         return;
     }
-    m_outputPanel->appendLine(QStringLiteral("$ ") + substituted);
+    /* appendText, with the newline written out: appendLine leaves the
+     * cursor at the end of the line it wrote, and the process output
+     * arrives through appendText, which inserts raw — so the first
+     * line of a build used to run straight on from the echoed
+     * command. */
+    m_outputPanel->appendText(QStringLiteral("$ ") + command + QLatin1Char('\n'));
     m_compilePollTimer->start(100); /* same non-blocking-poll shape as ase_lsp_client_poll */
 }
 

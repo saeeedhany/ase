@@ -89,6 +89,13 @@ See [Language servers](lsp.md).
 build_command = cmake --build build
 ```
 
+Leave it unset and `:compile` works out what to run instead: a
+`compile_commands.json` entry for the file you are in, or the outermost
+`CMakeLists.txt`, `Makefile`, `Cargo.toml`, `go.mod`, `meson.build` or
+`package.json` between here and the top of the repository. It shows what
+it found and puts the command in the `:` line — press Enter to run it,
+or edit it first. It never runs a command you have not seen.
+
 `:compile` or `Alt+B` runs it and puts the output in a panel below the
 buffer. `%f` in the command is replaced with the current file, so
 `gcc %f -o /tmp/a.out` works on whatever you are looking at.
