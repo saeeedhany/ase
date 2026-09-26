@@ -5,8 +5,19 @@
 #include <stdlib.h>
 
 #if defined(_WIN32)
+/*
+ * LEAN_AND_MEAN, and then the leftovers undefined by hand: <windows.h>
+ * defines `small` (and `near`/`far`) as macros, and this header is
+ * included by every test. test_keymap.c has a `char small[8]`, which
+ * became `char char[8]` the moment this include arrived.
+ */
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <crtdbg.h>
 #include <windows.h>
+#undef small
+#undef near
+#undef far
 #endif
 
 /*
