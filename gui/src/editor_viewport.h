@@ -523,6 +523,11 @@ private:
     /* A buffer ending in a newline gets a final m_lineStarts entry at
      * EOF, which is a position but not a line vim would count. */
     int vimLastLine() const;
+    /* vim's cursor_down: `count - 1` lines below `fromLine`, clamped to
+     * the last line. False when there was nowhere to go at all, which
+     * fails the whole command rather than doing part of it — see
+     * docs/adr/0145. */
+    bool vimLineBelow(int fromLine, int count, int *target) const;
     size_t vimFirstNonBlank(int line) const;
     /* A linewise range at the buffer's end has no trailing '\n' to
      * remove, so take the preceding one instead — that deletes the line

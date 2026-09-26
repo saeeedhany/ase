@@ -151,3 +151,5 @@ what changed.
 | [0141](0141-what-a-plugin-is-handed.md) | What a plugin is handed |
 | [0142](0142-four-things-a-plugin-can-react-to.md) | Four things a plugin can react to |
 | [0143](0143-the-header-windows-never-got.md) | The header Windows never got |
+| [0144](0144-select-the-line-not-the-line-and-a-bit.md) | Select the line, not the line and a bit |
+| [0145](0145-a-count-that-runs-out-of-buffer.md) | A count that runs out of buffer |

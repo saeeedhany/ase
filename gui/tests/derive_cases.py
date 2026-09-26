@@ -336,6 +336,70 @@ INSERT_COUNT_CASES = [
     ("count: 3i nothing typed", "XY\n", 1, 1, "3i<Esc>"),
     ("count: 3o mid-buffer", "aaa\nccc\n", 1, 1, "3ob<Esc>"),
     ("count: dot after 3o", "aaa\n", 1, 1, "3ob<Esc>."),
+
+    # The four that enter Insert through a deletion. ADR 0137 left these
+    # out and recorded that none of them repeat; whether vim repeats
+    # them is the question, not the assumption.
+    ("count: 3s", "abcdef\n", 1, 1, "3sX<Esc>"),
+    ("count: s", "abcdef\n", 1, 1, "sX<Esc>"),
+    ("count: 3s past the line end", "ab\n", 1, 1, "3sX<Esc>"),
+    ("count: 3s two chars typed", "abcdef\n", 1, 1, "3sXY<Esc>"),
+    ("count: 3S", "aaa\nbbb\nccc\nddd\n", 1, 1, "3SX<Esc>"),
+    ("count: 2S mid-buffer", "aaa\nbbb\nccc\nddd\n", 2, 1, "2SX<Esc>"),
+    ("count: 3C", "aaa\nbbb\nccc\nddd\n", 1, 1, "3CX<Esc>"),
+    ("count: 2C from column 2", "aaa\nbbb\nccc\n", 1, 2, "2CX<Esc>"),
+    ("count: 3cw", "one two three four five\n", 1, 1, "3cwX<Esc>"),
+    ("count: c2w", "one two three four five\n", 1, 1, "c2wX<Esc>"),
+    ("count: 2c2w", "one two three four five six\n", 1, 1, "2c2wX<Esc>"),
+    ("count: 3cc", "aaa\nbbb\nccc\nddd\n", 1, 1, "3ccX<Esc>"),
+    ("count: 2cj", "aaa\nbbb\nccc\nddd\neee\n", 1, 1, "2cjX<Esc>"),
+    ("count: 2ce", "one two three four\n", 1, 1, "2ceX<Esc>"),
+    # Whether a count-driven change repeats with `.` the way 3o does.
+    ("count: dot after 3s", "abcdefghi\n", 1, 1, "3sX<Esc>."),
+    ("count: dot after 3cw", "one two three four five six\n", 1, 1, "3cwX<Esc>0."),
+
+    # Edges, where a count runs out of buffer.
+    ("count: 9S past the end", "aaa\nbbb\n", 1, 1, "9SX<Esc>"),
+    ("count: 9C past the end", "aaa\nbbb\n", 1, 1, "9CX<Esc>"),
+    ("count: 3C on the last line", "aaa\nbbb\n", 2, 1, "3CX<Esc>"),
+    ("count: 9s past the end", "ab\n", 1, 1, "9sX<Esc>"),
+    ("count: s on an empty line", "\nbbb\n", 1, 1, "sX<Esc>"),
+    ("count: 9cw past the end", "one two\n", 1, 1, "9cwX<Esc>"),
+    ("count: 9cc past the end", "aaa\nbbb\n", 1, 1, "9ccX<Esc>"),
+    ("count: 9cj past the end", "aaa\nbbb\n", 1, 1, "9cjX<Esc>"),
+    # Other motions under c with a count.
+    ("count: 2c$", "aaa\nbbb\nccc\n", 1, 2, "2c$X<Esc>"),
+    ("count: 3cl", "abcdef\n", 1, 1, "3clX<Esc>"),
+    ("count: 2ck", "aaa\nbbb\nccc\nddd\n", 3, 1, "2ckX<Esc>"),
+    ("count: 2ctx", "a.b.c.d\n", 1, 1, "2ct.X<Esc>"),
+    ("count: 2cfx", "a.b.c.d\n", 1, 1, "2cf.X<Esc>"),
+    ("count: 3cG", "aaa\nbbb\nccc\nddd\n", 1, 1, "cGX<Esc>"),
+
+    # Probes: what a count past the last line actually does.
+    ("probe: 1C last line", "aaa\nbbb\n", 2, 1, "1CX<Esc>"),
+    ("probe: 2C last line", "aaa\nbbb\n", 2, 1, "2CX<Esc>"),
+    ("probe: 2C of three", "aaa\nbbb\nccc\n", 2, 1, "2CX<Esc>"),
+    ("probe: 3C of three", "aaa\nbbb\nccc\n", 1, 1, "3CX<Esc>"),
+    ("probe: 4C of three", "aaa\nbbb\nccc\n", 1, 1, "4CX<Esc>"),
+    ("probe: 2S last line", "aaa\nbbb\n", 2, 1, "2SX<Esc>"),
+    ("probe: 2cc last line", "aaa\nbbb\n", 2, 1, "2ccX<Esc>"),
+    ("probe: 2cj last line", "aaa\nbbb\n", 2, 1, "2cjX<Esc>"),
+    # `$` under an operator, with and without a count.
+    ("probe: c$", "aaa\nbbb\nccc\n", 1, 2, "c$X<Esc>"),
+    ("probe: 3c$", "aaa\nbbb\nccc\nddd\n", 1, 2, "3c$X<Esc>"),
+    ("probe: d$ counted", "aaa\nbbb\nccc\n", 1, 2, "2d$"),
+    # `b` under an operator, with and without a count.
+    ("probe: cb", "one two three\n", 1, 13, "cbX<Esc>"),
+    ("probe: 2cb from col 13", "one two three\n", 1, 13, "2cbX<Esc>"),
+    ("probe: 3cb", "one two three\n", 1, 13, "3cbX<Esc>"),
+    ("probe: db counted", "one two three\n", 1, 13, "2db"),
+    ("probe: 9dd past the end", "aaa\nbbb\n", 1, 1, "9dd"),
+    ("probe: 9D past the end", "aaa\nbbb\n", 1, 1, "9D"),
+    ("probe: 2D last line", "aaa\nbbb\n", 2, 1, "2D"),
+    ("probe: 9yy past the end", "aaa\nbbb\nccc\n", 1, 1, "9yyGp"),
+    ("probe: 3dollar normal", "aaa\nbbb\nccc\nddd\n", 1, 1, "3$x"),
+    ("probe: 2dollar last line", "aaa\nbbb\n", 2, 1, "2$x"),
+    ("probe: 9dollar normal", "aaa\nbbb\nccc\n", 1, 1, "9$x"),
 ]
 
 MANUAL_CASES = []

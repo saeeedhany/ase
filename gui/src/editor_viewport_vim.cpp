@@ -308,6 +308,15 @@ void EditorViewport::vimHalfPageMotion(int direction) {
     update();
 }
 
+bool EditorViewport::vimLineBelow(int fromLine, int count, int *target) const {
+    int line = std::clamp(fromLine + count - 1, 0, vimLastLine());
+    if (count > 1 && line == fromLine) {
+        return false;
+    }
+    *target = line;
+    return true;
+}
+
 int EditorViewport::vimLastLine() const {
     int last = static_cast<int>(m_lineStarts.size()) - 1;
     if (last > 0 && static_cast<size_t>(m_lineStarts[last]) >= static_cast<size_t>(m_cache.size())) {
@@ -399,6 +408,17 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
                 return;
             }
             case '$': {
+                if (n == 0 && count > 1) {
+                    /* Once, with the count, rather than once per repeat:
+                     * `$` is idempotent, so the loop alone would leave
+                     * `3$` meaning `$`. */
+                    int target = lineForOffset(m_cursors[0]);
+                    vimLineBelow(target, count, &target);
+                    m_cursors[0] = static_cast<size_t>(m_lineStarts[target]);
+                    if (!visual) {
+                        m_selectionAnchors[0] = m_cursors[0];
+                    }
+                }
                 moveCursorEndAt(0, visual);
                 /* vim leaves the cursor on the last character, not past
                  * it. The operator branch below computes `$` for itself,
@@ -502,9 +522,12 @@ void EditorViewport::vimExecuteMotion(char m, int count) {
     } else if (m == '^') {
         after = vimFirstNonBlank(lineForOffset(before));
     } else if (m == '$') {
-        int line = lineForOffset(before);
-        after = (line + 1 < m_lineStarts.size()) ? static_cast<size_t>(m_lineStarts[line + 1] - 1)
-                                                  : static_cast<size_t>(m_cache.size());
+        int target = 0;
+        if (!vimLineBelow(lineForOffset(before), count, &target)) {
+            resetVimPendingState();
+            return;
+        }
+        after = vimLineEndOffset(target);
     } else {
         /*
          * vim's one special case, and the reason `cw` is not `dw` with a
@@ -655,7 +678,7 @@ void EditorViewport::vimApplyPendingOperatorLinewise(int startLine, int lineCoun
          * newline is what collapses the span to that one line. */
         beginUndoSession();
         size_t start = static_cast<size_t>(m_lineStarts[startLine]);
-        int lastLine = std::min(startLine + lineCount - 1, static_cast<int>(m_lineStarts.size()) - 1);
+        int lastLine = std::min(startLine + lineCount - 1, vimLastLine());
         size_t end = vimLineEndOffset(lastLine);
         if (end > start) {
             vimDeleteRange(start, end, true);
@@ -2511,13 +2534,15 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
              * line to take, and vim fails the command rather than
              * quietly doing half of it. Off the last line the count
              * clamps instead. */
-            if (count > 1 && lineForOffset(m_cursors[0]) >= vimLastLine()) {
+            int startLine = lineForOffset(m_cursors[0]);
+            int lastLine = 0;
+            if (!vimLineBelow(startLine, count, &lastLine)) {
                 resetVimPendingState();
                 ensureCursorVisible();
                 update();
                 return;
             }
-            vimApplyPendingOperatorLinewise(lineForOffset(m_cursors[0]), count);
+            vimApplyPendingOperatorLinewise(startLine, lastLine - startLine + 1);
         } else if (m_vimPending.op == '\0') {
             m_vimPending.op = c;
         } else {
@@ -2655,18 +2680,26 @@ void EditorViewport::vimApplyNormalKey(char c, int count) {
         vimChangeOrInsert(start, end);
         break;
     }
-    case 'S':
+    case 'S': {
         /* `cc`, which the linewise operator already is. */
+        int startLine = lineForOffset(m_cursors[0]);
+        int lastLine = 0;
+        if (!vimLineBelow(startLine, count, &lastLine)) {
+            break;
+        }
         m_vimPending.op = 'c';
-        vimApplyPendingOperatorLinewise(lineForOffset(m_cursors[0]), count);
+        vimApplyPendingOperatorLinewise(startLine, lastLine - startLine + 1);
         break;
+    }
     case 'C':
     case 'D': {
         /* A count runs to the end of the count-th line down, so `2D`
          * takes the rest of this line and all of the next. */
         size_t start = m_cursors[0];
-        int lastLine = std::min(lineForOffset(start) + count - 1,
-                                static_cast<int>(m_lineStarts.size()) - 1);
+        int lastLine = 0;
+        if (!vimLineBelow(lineForOffset(start), count, &lastLine)) {
+            break;
+        }
         size_t end = vimLineEndOffset(lastLine);
         if (c == 'C') {
             /* `2C` collapses the lines into one to type on, so the
