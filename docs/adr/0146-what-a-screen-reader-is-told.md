@@ -80,11 +80,24 @@ what detaches.
 `isActive()` is not a flag, though — it asks the platform accessibility
 plugin, and `setActive()` writes through to the same place. On a machine
 with no such plugin it answers false forever and cannot be persuaded
-otherwise, which is every CI runner here. The notification tests passed
-locally and failed on all three GUI jobs for exactly that reason, and
-the fix is an explicit override rather than a test that only means
-something on one machine. The tests now run with `isActive()` false on
-purpose, so they assert the same thing everywhere.
+otherwise, which is every CI runner here. So there is an explicit
+override, and the tests run with `isActive()` false on purpose rather
+than trying to turn it on.
+
+That was not the whole of it. Qt itself drops an accessibility event
+while nothing reports active — and *where* it drops it moved between
+versions: 6.11 calls an installed update handler first, 6.2 checks
+`isActive()` first and returns. A test that watches for the delivered
+event therefore asserts something real on one machine and nothing on
+another, which is how these three passed locally and failed on both GUI
+jobs twice.
+
+The decision is split from the delivery. `a11yEditBetween()` is a pure
+function — the smallest edit explaining a change — and it is what the
+tests assert on, on every machine. The event tests remain, and say out
+loud when the Qt under them will not deliver rather than pretending to
+have checked. Breaking the diff fails four tests; the delivery line
+itself is one call.
 
 ## Consequences
 

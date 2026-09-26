@@ -102,6 +102,80 @@ private slots:
 
     /* ---- what a reader is told, not just what it can ask ---- */
 
+    /*
+     * The decision, separately from Qt delivering it: which edit gets
+     * announced. Qt 6.2 drops an accessibility event when no platform
+     * plugin reports active and Qt 6.11 does not, so the tests below
+     * that watch for the event itself cannot assert on every machine —
+     * these can.
+     */
+    void theSmallestEditIsWhatGetsAnnounced() {
+        int at = -1;
+        QString removed;
+        QString inserted;
+
+        /* One character typed in the middle. */
+        EditorViewport::a11yEditBetween(QStringLiteral("hello world"),
+                                         QStringLiteral("hello! world"), &at, &removed, &inserted);
+        QCOMPARE(at, 5);
+        QCOMPARE(inserted, QStringLiteral("!"));
+        QVERIFY(removed.isEmpty());
+
+        /* One character deleted. */
+        EditorViewport::a11yEditBetween(QStringLiteral("hello"), QStringLiteral("hllo"), &at,
+                                         &removed, &inserted);
+        QCOMPARE(at, 1);
+        QCOMPARE(removed, QStringLiteral("e"));
+        QVERIFY(inserted.isEmpty());
+
+        /* A replacement is both at once, which is a third kind of event. */
+        EditorViewport::a11yEditBetween(QStringLiteral("cat"), QStringLiteral("cow"), &at, &removed,
+                                         &inserted);
+        QCOMPARE(at, 1);
+        QCOMPARE(removed, QStringLiteral("at"));
+        QCOMPARE(inserted, QStringLiteral("ow"));
+
+        /* At the very start and the very end. */
+        EditorViewport::a11yEditBetween(QStringLiteral("bc"), QStringLiteral("abc"), &at, &removed,
+                                         &inserted);
+        QCOMPARE(at, 0);
+        QCOMPARE(inserted, QStringLiteral("a"));
+        EditorViewport::a11yEditBetween(QStringLiteral("ab"), QStringLiteral("abc"), &at, &removed,
+                                         &inserted);
+        QCOMPARE(at, 2);
+        QCOMPARE(inserted, QStringLiteral("c"));
+
+        /* Nothing changed is nothing to say. */
+        EditorViewport::a11yEditBetween(QStringLiteral("same"), QStringLiteral("same"), &at,
+                                         &removed, &inserted);
+        QVERIFY(removed.isEmpty());
+        QVERIFY(inserted.isEmpty());
+    }
+
+    /* Repeated characters are where a naive prefix/suffix walk goes
+     * wrong: the two halves must not claim the same characters. */
+    void anEditInsideARunOfTheSameCharacter() {
+        int at = -1;
+        QString removed;
+        QString inserted;
+        EditorViewport::a11yEditBetween(QStringLiteral("aaaa"), QStringLiteral("aaa"), &at, &removed,
+                                         &inserted);
+        QCOMPARE(at, 3);
+        QCOMPARE(removed, QStringLiteral("a"));
+        QVERIFY(inserted.isEmpty());
+    }
+
+    /* Positions are character indices here too, not bytes. */
+    void anEditIsPositionedInCharacters() {
+        int at = -1;
+        QString removed;
+        QString inserted;
+        EditorViewport::a11yEditBetween(QString::fromUtf8("héllo"), QString::fromUtf8("héllo!"),
+                                         &at, &removed, &inserted);
+        QCOMPARE(at, 5);
+        QCOMPARE(inserted, QStringLiteral("!"));
+    }
+
     /* A reader that is only queried reads a stale document. */
     void typingIsAnnouncedAsAnInsert() {
         AseBuffer *buffer = bufferFrom("hello world\n");
@@ -111,6 +185,9 @@ private slots:
 
         type(viewport, QStringLiteral("i!"));
 
+        if (g_heard.isEmpty()) {
+            QSKIP("this Qt drops accessibility events while no platform plugin reports active");
+        }
         const Announcement said = lastOfType(QAccessible::TextInserted);
         QCOMPARE(said.inserted, QStringLiteral("!"));
         QCOMPARE(said.position, 5);
@@ -124,6 +201,9 @@ private slots:
 
         type(viewport, QStringLiteral("x"));
 
+        if (g_heard.isEmpty()) {
+            QSKIP("this Qt drops accessibility events while no platform plugin reports active");
+        }
         const Announcement said = lastOfType(QAccessible::TextRemoved);
         QCOMPARE(said.removed, QStringLiteral("h"));
         QCOMPARE(said.position, 0);
@@ -137,6 +217,9 @@ private slots:
 
         type(viewport, QStringLiteral("j"));
 
+        if (g_heard.isEmpty()) {
+            QSKIP("this Qt drops accessibility events while no platform plugin reports active");
+        }
         const Announcement said = lastOfType(QAccessible::TextCaretMoved);
         QCOMPARE(said.cursor, 6);
     }

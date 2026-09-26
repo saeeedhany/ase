@@ -151,6 +151,12 @@ public:
      * how the notification path gets exercised anywhere at all. See
      * docs/adr/0146.
      */
+    /* The smallest edit explaining the difference between two texts —
+     * what a reader is told changed. Pure, and public, because Qt
+     * delivers the event itself differently across versions and this is
+     * the part that can be wrong. See docs/adr/0146. */
+    static void a11yEditBetween(const QString &before, const QString &after, int *position,
+                                 QString *removed, QString *inserted);
     static bool announcingToAccessibility();
     static void setAccessibilityAlwaysOn(bool alwaysOn);
 

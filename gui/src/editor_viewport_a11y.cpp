@@ -120,27 +120,34 @@ int EditorViewport::a11yOffsetAtPoint(const QPoint &point) const {
  * which is what QAccessible::isActive() answers — so the diff below
  * costs nothing in the normal case.
  */
+/* A keystroke is one character in the middle of a file, and saying so
+ * is what lets a reader announce the character rather than re-read the
+ * whole document. */
+void EditorViewport::a11yEditBetween(const QString &before, const QString &after, int *position,
+                                      QString *removed, QString *inserted) {
+    int prefix = 0;
+    while (prefix < before.size() && prefix < after.size() && before[prefix] == after[prefix]) {
+        prefix++;
+    }
+    int suffix = 0;
+    while (suffix < before.size() - prefix && suffix < after.size() - prefix &&
+           before[before.size() - 1 - suffix] == after[after.size() - 1 - suffix]) {
+        suffix++;
+    }
+    *position = prefix;
+    *removed = before.mid(prefix, before.size() - prefix - suffix);
+    *inserted = after.mid(prefix, after.size() - prefix - suffix);
+}
+
 void EditorViewport::notifyAccessibleTextChange(const QByteArray &before) {
     if (!announcingToAccessibility() || before == m_cache) {
         return;
     }
-    const QString oldText = QString::fromUtf8(before);
-    const QString newText = QString::fromUtf8(m_cache);
-
-    /* The smallest edit that explains the difference. A keystroke is one
-     * character in the middle of a file, and saying so is what lets a
-     * reader announce the character rather than re-read the document. */
     int prefix = 0;
-    while (prefix < oldText.size() && prefix < newText.size() && oldText[prefix] == newText[prefix]) {
-        prefix++;
-    }
-    int suffix = 0;
-    while (suffix < oldText.size() - prefix && suffix < newText.size() - prefix &&
-           oldText[oldText.size() - 1 - suffix] == newText[newText.size() - 1 - suffix]) {
-        suffix++;
-    }
-    const QString removed = oldText.mid(prefix, oldText.size() - prefix - suffix);
-    const QString inserted = newText.mid(prefix, newText.size() - prefix - suffix);
+    QString removed;
+    QString inserted;
+    a11yEditBetween(QString::fromUtf8(before), QString::fromUtf8(m_cache), &prefix, &removed,
+                     &inserted);
 
     if (!removed.isEmpty() && !inserted.isEmpty()) {
         QAccessibleTextUpdateEvent event(this, prefix, removed, inserted);
