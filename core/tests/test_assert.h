@@ -4,6 +4,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#if defined(_WIN32)
+#include <crtdbg.h>
+#include <windows.h>
+#endif
+
+/*
+ * A failing test on Windows has to print and exit, not open a window.
+ *
+ * abort() under the Debug CRT pops a modal "Debug Error!" box, and a
+ * crash pops Windows Error Reporting. On a CI runner nobody clicks
+ * either, so the job hangs until it times out — which is how the first
+ * real failure after the internal.h fix presented: a suite that used to
+ * segfault in three seconds instead ran for twenty minutes.
+ *
+ * Idempotent and called from RUN, so it covers a crash as well as a
+ * failed CHECK. See docs/adr/0143.
+ */
+static inline void ase_test_no_dialogs(void) {
+#if defined(_WIN32)
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
+    _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
+    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
+    _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+#endif
+}
+
 /*
  * The check every test in this project uses. Not <assert.h> — see
  * docs/adr/0064.
@@ -45,6 +73,7 @@
  */
 #define RUN(fn)                                                                                    \
     do {                                                                                           \
+        ase_test_no_dialogs();                                                                     \
         fprintf(stderr, "  %s\n", #fn);                                                            \
         fflush(stderr);                                                                            \
         fn();                                                                                      \
