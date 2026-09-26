@@ -790,6 +790,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#reacting-to-things" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reacting to things
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reacting to things">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-you-can-rely-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you can rely on
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#in-c" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1288,6 +1316,8 @@
       
         
           
+        
+      
         
       
         
@@ -5574,6 +5604,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0142-four-things-a-plugin-can-react-to/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0142: Four things a plugin can react to
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5626,6 +5684,34 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reacting-to-things" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reacting to things
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reacting to things">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-you-can-rely-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you can rely on
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5738,6 +5824,7 @@ not just its text — and every other function takes it:</p>
 <li><code>ase.set_selection(ctx, start, end)</code></li>
 <li><code>ase.config(ctx, key)</code> — any <code>config.ase</code> value, or nil</li>
 <li><code>ase.status(ctx, message)</code> — say something in the status bar</li>
+<li><code>ase.on(event, function(ctx) ... end)</code> — react to something</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="c1">-- ~/.config/ase/plugins/uppercase.lua</span>
 <span class="nv">ase</span><span class="p">.</span><span class="nf">register_command</span><span class="p">(</span><span class="s2">"uppercase_all"</span><span class="p">,</span><span class="w"> </span><span class="kr">function</span><span class="p">(</span><span class="nv">ctx</span><span class="p">)</span>
@@ -5765,7 +5852,77 @@ not just its text — and every other function takes it:</p>
 first would move everything after it, <code>b</code> included.</p>
 <p>The selection you get is the one highlighted on screen. In Visual mode
 that includes the character under the caret, as Vim's does.</p>
+<h2 id="reacting-to-things">Reacting to things<a class="headerlink" href="#reacting-to-things" title="Permanent link">&para;</a></h2>
+<p>A command waits to be asked. A hook runs when something happens:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- ~/.config/ase/plugins/strip.lua</span>
+<span class="nv">ase</span><span class="p">.</span><span class="nf">on</span><span class="p">(</span><span class="s2">"file_saved"</span><span class="p">,</span><span class="w"> </span><span class="kr">function</span><span class="p">(</span><span class="nv">ctx</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ase</span><span class="p">.</span><span class="nf">buffer_length</span><span class="p">(</span><span class="nv">ctx</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ase</span><span class="p">.</span><span class="nf">buffer_get_text</span><span class="p">(</span><span class="nv">ctx</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nv">len</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">stripped</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">text</span><span class="p">:</span><span class="nf">gsub</span><span class="p">(</span><span class="s2">"[ </span><span class="se">\t</span><span class="s2">]+</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span><span class="w"> </span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="nv">stripped</span><span class="w"> </span><span class="o">~=</span><span class="w"> </span><span class="nv">text</span><span class="w"> </span><span class="kr">then</span>
+<span class="w">        </span><span class="nv">ase</span><span class="p">.</span><span class="nf">buffer_delete</span><span class="p">(</span><span class="nv">ctx</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nv">len</span><span class="p">)</span>
+<span class="w">        </span><span class="nv">ase</span><span class="p">.</span><span class="nf">buffer_insert</span><span class="p">(</span><span class="nv">ctx</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nv">stripped</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">end</span>
+<span class="kr">end</span><span class="p">)</span>
+</code></pre></div>
+<p>Four events, and there will not be many more:</p>
+<table>
+<thead>
+<tr>
+<th>event</th>
+<th>when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>buffer_changed</code></td>
+<td>the text may have changed</td>
+</tr>
+<tr>
+<td><code>cursor_moved</code></td>
+<td>the caret is somewhere else</td>
+</tr>
+<tr>
+<td><code>file_saved</code></td>
+<td>the file is on disk</td>
+</tr>
+<tr>
+<td><code>file_opened</code></td>
+<td>a buffer is ready to be worked on</td>
+</tr>
+</tbody>
+</table>
+<p>Hooks run in the order they were registered, and the same function may
+be registered more than once.</p>
+<h3 id="what-you-can-rely-on">What you can rely on<a class="headerlink" href="#what-you-can-rely-on" title="Permanent link">&para;</a></h3>
+<p><strong><code>buffer_changed</code> and <code>cursor_moved</code> are coalesced.</strong> Typing a word is
+one <code>buffer_changed</code>, not one per keystroke, and holding <code>j</code> is one
+<code>cursor_moved</code>. They describe what changed since the last one, not every
+step in between. A caret that ends where it started never fires at all.</p>
+<p><strong>A hook runs on the thread that draws, so it must be fast.</strong> A hook
+that takes 30ms makes the editor stutter. Shell out and come back later
+rather than doing the work inline.</p>
+<p><strong>What a hook does is not itself an event.</strong> A <code>file_saved</code> hook that
+edits the buffer does not trigger <code>buffer_changed</code>, and nothing a hook
+does can trigger the event it is handling. Hooks cannot make each other
+loop.</p>
+<p><strong>A hook that edits is one undo step</strong>, exactly like a command, so <code>u</code>
+takes back what it did.</p>
+<p><strong><code>file_saved</code> fires after the write, and the file is written again if
+your hook changed anything</strong> — so a formatter gets what it produced onto
+disk in one save, and the buffer is left clean rather than dirty.</p>
 <h2 id="in-c">In C<a class="headerlink" href="#in-c" title="Permanent link">&para;</a></h2>
+<p>The same four events, and <code>ase_plugin_host_on</code> to register:</p>
+<div class="highlight"><pre><span></span><code><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">on_saved</span><span class="p">(</span><span class="n">AseEditorContext</span><span class="w"> </span><span class="o">*</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">user_data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">user_data</span><span class="p">;</span>
+<span class="w">    </span><span class="n">ase_ctx_status</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="s">"saved"</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">ase_plugin_register</span><span class="p">(</span><span class="n">AsePluginHost</span><span class="w"> </span><span class="o">*</span><span class="n">host</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">AsePluginApi</span><span class="w"> </span><span class="o">*</span><span class="n">api</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">api</span><span class="p">;</span>
+<span class="w">    </span><span class="n">ase_plugin_host_on</span><span class="p">(</span><span class="n">host</span><span class="p">,</span><span class="w"> </span><span class="n">ASE_EVENT_FILE_SAVED</span><span class="p">,</span><span class="w"> </span><span class="n">on_saved</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
 <p>Two symbols, one of them a macro:</p>
 <div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">"ase/plugin_abi.h"</span>
 
@@ -5817,8 +5974,9 @@ is:</p>
 is an added function rather than a changed struct — your plugin keeps
 working across a version that adds something it does not call. See
 <a href="../../adr/0141-what-a-plugin-is-handed/">ADR 0141</a>.</p>
-<p>It still cannot draw anything or react to an event. Events are the next
-step, sketched in <a href="../../EXTENSIBILITY/">Extensibility</a>.</p>
+<p>It can also react to four events — see above, and
+<a href="../../adr/0142-four-things-a-plugin-can-react-to/">ADR 0142</a>.</p>
+<p>It still cannot draw anything.</p>
 <h3 id="one-thing-to-know">One thing to know<a class="headerlink" href="#one-thing-to-know" title="Permanent link">&para;</a></h3>
 <p>A plugin command is one undo step. <code>u</code> takes back everything it did,
 and the history from before it survives — running a formatter does not

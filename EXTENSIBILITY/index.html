@@ -1580,6 +1580,8 @@
       
         
       
+        
+      
     
     
     
@@ -5582,6 +5584,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0142-four-things-a-plugin-can-react-to/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0142: Four things a plugin can react to
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5740,10 +5770,10 @@ anything, or react to an event. That's not a criticism of ADR 0009 —
 it deliberately shipped the smallest thing that worked — but it is the
 real starting point.</p>
 <blockquote>
-<p>Written before any of this was built. Recommendations 1, 2 and 4 have
-since been done, and each is marked below. The command shape is now
-<code>void (*)(AseEditorContext *ctx, void *user_data)</code>, and binding a key
-is config.</p>
+<p>Written before any of this was built. Every recommendation below has
+since been done, and each is marked. The command shape is now
+<code>void (*)(AseEditorContext *ctx, void *user_data)</code>, binding a key is
+config, and a plugin can react to four events.</p>
 </blockquote>
 <p>Customization has the same shape: <code>config.ase</code> is genuinely live
 (hot-reloaded, ADR 0008) and covers colors, font, animations, line
@@ -5803,6 +5833,15 @@ with accessor functions in the ABI:</p>
   invariant every Vim operator already follows (ADR 0046).</li>
 </ul>
 <h2 id="recommendation-3-events-kept-to-a-deliberately-short-list">Recommendation 3 — events, kept to a deliberately short list<a class="headerlink" href="#recommendation-3-events-kept-to-a-deliberately-short-list" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Done</strong>, in <a href="../adr/0142-four-things-a-plugin-can-react-to/">ADR 0142</a>.
+Both constraints below were taken: the two hot events are coalesced
+onto a timer that only runs while something is listening, and
+re-entry is guarded rather than mutation forbidden. Two things the
+sketch did not anticipate — a hook's edit needed the same one-step
+undo recording a command's does, and <code>file_saved</code> had to write the
+file again when a hook reformats, or format-on-save takes two saves.</p>
+</blockquote>
 <p>Commands alone are pull-only; a plugin can't react. Add a small hook
 registry:</p>
 <div class="highlight"><pre><span></span><code><span class="n">ase_plugin_on</span><span class="p">(</span><span class="n">host</span><span class="p">,</span><span class="w"> </span><span class="n">ASE_EVENT_BUFFER_CHANGED</span><span class="p">,</span><span class="w"> </span><span class="n">fn</span><span class="p">,</span><span class="w"> </span><span class="n">user_data</span><span class="p">);</span>
@@ -5873,7 +5912,7 @@ A single <code>animation_speed</code> multiplier over all of them would be the
 right shape if this is ever wanted.</p>
 <h2 id="suggested-order">Suggested order<a class="headerlink" href="#suggested-order" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>Steps 1, 2, 3 and 5 are done. Step 4, events, is the open one.</p>
+<p>All five are done.</p>
 </blockquote>
 <p>The ordering matters more than the list — each step makes the next one
 informed rather than speculative:</p>
@@ -5884,7 +5923,7 @@ informed rather than speculative:</p>
    <a href="../adr/0141-what-a-plugin-is-handed/">ADR 0141</a>.</li>
 <li>Keybindings as data, with built-ins registered as commands —
    <a href="../adr/0113-keybindings-as-data/">ADR 0113</a>.</li>
-<li>Events.</li>
+<li>Events — <a href="../adr/0142-four-things-a-plugin-can-react-to/">ADR 0142</a>.</li>
 <li>Theme files + per-capture syntax colors —
    <a href="../adr/0133-a-theme-you-can-share-as-a-file/">ADR 0133</a> and
    <a href="../adr/0140-the-styles-a-capture-can-have/">ADR 0140</a>.</li>
